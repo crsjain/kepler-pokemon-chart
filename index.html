@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Kepler's Pokémon Training Chart</title>
+ <link rel="stylesheet" href="style.css">
+ <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+ <div class="app-container">
+   <!-- Header -->
+   <header class="game-header">
+     <h1 class="title">Kepler's Pokémon Training</h1>
+     <p class="subtitle">"Gotta Catch 'Em All!"</p>
+   </header>
+   <!-- Trainer Card / Progress Section -->
+   <section class="trainer-card">
+     <div class="trainer-info">
+       <div class="avatar-container">
+         <img id="pokemon-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="Active Pokemon">
+         <button id="change-partner-btn" class="pixel-btn small">Change Partner</button>
+       </div>
+       <div class="stats-container">
+         <div class="trainer-title">TRAINER KEPLER</div>
+         <div class="partner-name" id="partner-name">Pikachu</div>
+         <div class="level-badge">LV <span id="pokemon-level">1</span></div>
+         <div class="xp-bar-container">
+           <div class="xp-label">XP: <span id="current-xp">0</span> / <span id="next-level-xp">100</span></div>
+           <div class="xp-bar-outer">
+             <div class="xp-bar-inner" id="xp-bar-fill" style="width: 0%;"></div>
+           </div>
+         </div>
+       </div>
+     </div>
+     <div class="weekly-badge-card">
+       <div class="badge-title">WEEKLY BADGE</div>
+       <div id="weekly-badge-slot" class="badge-slot locked">
+         <span class="badge-icon">🔒</span>
+       </div>
+       <div class="badge-status" id="badge-status">0 / 5 Days Cleared</div>
+     </div>
+   </section>
+   <!-- Partner Selector Modal -->
+   <div id="partner-modal" class="modal hidden">
+     <div class="modal-content">
+       <h2>Choose Your Partner!</h2>
+       <div class="pokemon-options">
+         <div class="pokemon-option" data-id="25" data-name="Pikachu">
+           <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu">
+           <span>Pikachu</span>
+         </div>
+         <div class="pokemon-option" data-id="4" data-name="Charmander">
+           <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png" alt="Charmander">
+           <span>Charmander</span>
+         </div>
+         <div class="pokemon-option" data-id="1" data-name="Bulbasaur">
+           <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png" alt="Bulbasaur">
+           <span>Bulbasaur</span>
+         </div>
+         <div class="pokemon-option" data-id="7" data-name="Squirtle">
+           <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png" alt="Squirtle">
+           <span>Squirtle</span>
+         </div>
+         <div class="pokemon-option" data-id="133" data-name="Eevee">
+           <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt="Eevee">
+           <span>Eevee</span>
+         </div>
+       </div>
+       <button id="close-modal-btn" class="pixel-btn">Close</button>
+     </div>
+   </div>
+   <!-- Weekly Grid -->
+   <main class="chart-container">
+     <div class="grid-scroll-wrapper">
+       <table class="weekly-grid">
+         <thead>
+           <tr>
+             <th class="task-col-header">TRAINING TASK</th>
+             <th class="day-header" data-day="0">SUN</th>
+             <th class="day-header" data-day="1">MON</th>
+             <th class="day-header" data-day="2">TUE</th>
+             <th class="day-header" data-day="3">WED</th>
+             <th class="day-header" data-day="4">THU</th>
+             <th class="day-header" data-day="5">FRI</th>
+             <th class="day-header" data-day="6">SAT</th>
+           </tr>
+         </thead>
+         <tbody>
+           <!-- Piano Practice -->
+           <tr class="task-row" data-task="piano">
+             <td class="task-desc">
+               <span class="task-emoji">🎹</span>
+               <div class="task-text-container">
+                 <span class="task-name">Piano Practice</span>
+                 <span class="task-concept">Level up!</span>
+               </div>
+             </td>
+             <!-- Sunday to Saturday Checkboxes -->
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="0" data-task="piano"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="1" data-task="piano"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="2" data-task="piano"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="3" data-task="piano"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="4" data-task="piano"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="5" data-task="piano"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="6" data-task="piano"><span class="pokeball"></span></label></td>
+           </tr>
+           <!-- Math -->
+           <tr class="task-row" data-task="math">
+             <td class="task-desc">
+               <span class="task-emoji">📐</span>
+               <div class="task-text-container">
+                 <span class="task-name">Math Practice</span>
+                 <span class="task-concept">Intellect +1</span>
+               </div>
+             </td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="0" data-task="math"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="1" data-task="math"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="2" data-task="math"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="3" data-task="math"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="4" data-task="math"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="5" data-task="math"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="6" data-task="math"><span class="pokeball"></span></label></td>
+           </tr>
+           <!-- Reading -->
+           <tr class="task-row" data-task="reading">
+             <td class="task-desc">
+               <span class="task-emoji">📚</span>
+               <div class="task-text-container">
+                 <span class="task-name">Reading Time</span>
+                 <span class="task-concept">Explore new zones!</span>
+               </div>
+             </td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="0" data-task="reading"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="1" data-task="reading"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="2" data-task="reading"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="3" data-task="reading"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="4" data-task="reading"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="5" data-task="reading"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="6" data-task="reading"><span class="pokeball"></span></label></td>
+           </tr>
+           <!-- Writing / Chinese -->
+           <tr class="task-row" data-task="writing">
+             <td class="task-desc">
+               <span class="task-emoji">📝</span>
+               <div class="task-text-container">
+                 <span class="task-name">Writing / 💮 Chinese</span>
+                 <span class="task-concept">Skill mastery</span>
+               </div>
+             </td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="0" data-task="writing"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="1" data-task="writing"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="2" data-task="writing"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="3" data-task="writing"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="4" data-task="writing"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="5" data-task="writing"><span class="pokeball"></span></label></td>
+             <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="6" data-task="writing"><span class="pokeball"></span></label></td>
+           </tr>
+           <!-- Daily Total (Concept: All tasks cleared!) -->
+           <tr class="total-row">
+             <td class="task-desc total-desc">
+               <span class="task-emoji">⭐</span>
+               <div class="task-text-container">
+                 <span class="task-name">Daily Total</span>
+                 <span class="task-concept">All tasks cleared!</span>
+               </div>
+             </td>
+             <td class="day-total-cell" data-day="0"><div class="badge-indicator locked">❌</div></td>
+             <td class="day-total-cell" data-day="1"><div class="badge-indicator locked">❌</div></td>
+             <td class="day-total-cell" data-day="2"><div class="badge-indicator locked">❌</div></td>
+             <td class="day-total-cell" data-day="3"><div class="badge-indicator locked">❌</div></td>
+             <td class="day-total-cell" data-day="4"><div class="badge-indicator locked">❌</div></td>
+             <td class="day-total-cell" data-day="5"><div class="badge-indicator locked">❌</div></td>
+             <td class="day-total-cell" data-day="6"><div class="badge-indicator locked">❌</div></td>
+           </tr>
+         </tbody>
+       </table>
+     </div>
+   </main>
+   <!-- Bottom Section -->
+   <footer class="bottom-section">
+     <div class="reward-input-container">
+       <label for="reward-input" class="reward-label">🏆 Milestone Reward Choice:</label>
+       <input type="text" id="reward-input" placeholder="Type reward choice here... (e.g. A new Pokemon card pack!)">
+     </div>
+     <div class="motivational-quote">
+       "True Trainers never give up! Keep practicing and leveling up your skills!"
+     </div>
+     <div class="actions">
+       <button id="reset-btn" class="pixel-btn danger">Reset Week Grid</button>
+     </div>
+   </footer>
+ </div>
+ <script src="app.js"></script>
+</body>
+</html>
+
