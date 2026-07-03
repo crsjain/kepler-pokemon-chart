@@ -6,6 +6,25 @@
   <title>Kepler's Pokémon Training Chart</title>
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+  <script>
+    // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
+    window.onerror = function(msg, url, line, col, error) {
+      var div = document.createElement('div');
+      div.style.color = '#7f1d1d';
+      div.style.background = '#fef2f2';
+      div.style.padding = '15px';
+      div.style.border = '3px solid #ef4444';
+      div.style.margin = '15px';
+      div.style.borderRadius = '8px';
+      div.style.fontFamily = 'monospace';
+      div.style.fontSize = '14px';
+      div.style.zIndex = '99999';
+      div.style.position = 'relative';
+      div.innerHTML = '<strong>⚠️ JavaScript Error:</strong> ' + msg + '<br><small>Location: ' + url + ':' + line + ':' + col + '</small>';
+      document.body.insertBefore(div, document.body.firstChild);
+      return false;
+    };
+  </script>
 </head>
 <body>
   <canvas id="celebration-canvas"></canvas>
@@ -35,7 +54,7 @@
         </div>
       </div>
       <div class="weekly-badge-card">
-        <div class="badge-title">WEEKLY BADGE</div>
+        <div class="badge-title">POKEMON BADGE</div>
         <div id="weekly-badge-slot" class="badge-slot locked">
           <span class="badge-icon">🔒</span>
         </div>
@@ -49,23 +68,10 @@
         <span class="mega-counter-label"><span id="mega-weeks-count">0</span> / 4 Weeks</span>
       </div>
       <div class="mega-slots">
-        <div class="mega-slot" data-index="0">❌</div>
-        <div class="mega-slot" data-index="1">❌</div>
-        <div class="mega-slot" data-index="2">❌</div>
-        <div class="mega-slot" data-index="3">❌</div>
-      </div>
-      <div class="reward-select-container">
-        <label for="mega-reward-select" class="reward-label">💥 Mega Milestone Reward:</label>
-        <select id="mega-reward-select" class="pixel-select">
-          <option value="" disabled selected>Choose a Mega Reward...</option>
-          <option value="Booster Pack">💥 Mega Milestone: Open a Pokémon Booster Pack!</option>
-          <option value="Dessert Outing">🍦 Sweet Victory: Special Dessert Outing!</option>
-          <option value="New Book">📚 Epic Upgrade: Pick a New Book!</option>
-          <option value="Clay Set">🧱 Clay Studio: Get an Air-Dry Clay Set!</option>
-          <option value="Science Kit">🔬 Mad Scientist: Get a Cool Science Kit!</option>
-          <option value="Bike Trip">🚲 Trail Blazer: Weekend Bike Trip to a New Trail!</option>
-          <option value="Shoe Laces">👟 Speed Runner: Neon/Glow-in-the-Dark Laces!</option>
-        </select>
+        <div class="mega-slot" data-index="0"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Locked" class="mega-slot-img locked"></div>
+        <div class="mega-slot" data-index="1"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Locked" class="mega-slot-img locked"></div>
+        <div class="mega-slot" data-index="2"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Locked" class="mega-slot-img locked"></div>
+        <div class="mega-slot" data-index="3"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Locked" class="mega-slot-img locked"></div>
       </div>
     </section>
     <!-- Partner Selector Modal -->
@@ -97,6 +103,35 @@
         <button id="close-modal-btn" class="pixel-btn">Close</button>
       </div>
     </div>
+    <!-- Custom Notification Modal -->
+    <div id="notification-modal" class="modal hidden">
+      <div class="modal-content notification-content">
+        <h2 id="notification-title">Reward Earned!</h2>
+        <div class="notification-body">
+          <img id="notification-badge" src="" alt="Reward Badge" class="hidden">
+          <p id="notification-message">Message goes here</p>
+        </div>
+        <button id="notification-ok-btn" class="pixel-btn">OK</button>
+      </div>
+    </div>
+    <!-- Admin Modal -->
+    <div id="admin-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2>Parent Admin Panel</h2>
+        <div class="admin-options">
+          <button id="admin-restore-auto-btn" class="pixel-btn info">Restore from Auto-Backup</button>
+          <button id="admin-export-btn" class="pixel-btn info">Export Backup Code</button>
+          <button id="admin-import-btn" class="pixel-btn info">Import Backup Code</button>
+          <button id="admin-wipe-btn" class="pixel-btn danger">Wipe All Progress (Reset)</button>
+        </div>
+        <div class="admin-faq">
+          <h3>📋 Restore Guide</h3>
+          <p><strong>Auto-Backup:</strong> Fixes accidental resets. Rolls back to last Level Up or Week Completion.</p>
+          <p><strong>Import Code:</strong> Use if browser cache is cleared (wipes Auto-Backup too!) or if moving to a new device. (Requires previously saving the Export Code).</p>
+        </div>
+        <button id="close-admin-modal-btn" class="pixel-btn">Close</button>
+      </div>
+    </div>
     <!-- Weekly Grid -->
     <main class="chart-container">
       <div class="grid-scroll-wrapper">
@@ -117,11 +152,13 @@
           <tbody>
             <!-- Piano Practice -->
             <tr class="task-row" data-task="piano">
-              <td class="task-desc">
-                <span class="task-emoji">🎹</span>
-                <div class="task-text-container">
-                  <span class="task-name">Piano Practice</span>
-                  <span class="task-concept">Level up!</span>
+              <td>
+                <div class="task-desc">
+                  <span class="task-emoji">🎹</span>
+                  <div class="task-text-container">
+                    <span class="task-name">Piano Practice</span>
+                    <span class="task-concept">Level up!</span>
+                  </div>
                 </div>
               </td>
               <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="0" data-task="piano"><span class="pokeball"></span></label></td>
@@ -135,11 +172,13 @@
             </tr>
             <!-- Math -->
             <tr class="task-row" data-task="math">
-              <td class="task-desc">
-                <span class="task-emoji">📐</span>
-                <div class="task-text-container">
-                  <span class="task-name">Math Practice</span>
-                  <span class="task-concept">Intellect +1</span>
+              <td>
+                <div class="task-desc">
+                  <span class="task-emoji">📐</span>
+                  <div class="task-text-container">
+                    <span class="task-name">Math Practice</span>
+                    <span class="task-concept">Intellect +1</span>
+                  </div>
                 </div>
               </td>
               <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="0" data-task="math"><span class="pokeball"></span></label></td>
@@ -153,11 +192,13 @@
             </tr>
             <!-- Reading -->
             <tr class="task-row" data-task="reading">
-              <td class="task-desc">
-                <span class="task-emoji">📚</span>
-                <div class="task-text-container">
-                  <span class="task-name">Reading Time</span>
-                  <span class="task-concept">Explore new zones!</span>
+              <td>
+                <div class="task-desc">
+                  <span class="task-emoji">📚</span>
+                  <div class="task-text-container">
+                    <span class="task-name">Reading Time</span>
+                    <span class="task-concept">Explore new zones!</span>
+                  </div>
                 </div>
               </td>
               <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="0" data-task="reading"><span class="pokeball"></span></label></td>
@@ -171,11 +212,13 @@
             </tr>
             <!-- Writing -->
             <tr class="task-row" data-task="writing">
-              <td class="task-desc">
-                <span class="task-emoji">📝</span>
-                <div class="task-text-container">
-                  <span class="task-name">Writing</span>
-                  <span class="task-concept">Skill mastery</span>
+              <td>
+                <div class="task-desc">
+                  <span class="task-emoji">📝</span>
+                  <div class="task-text-container">
+                    <span class="task-name">Writing</span>
+                    <span class="task-concept">Skill mastery</span>
+                  </div>
                 </div>
               </td>
               <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="0" data-task="writing"><span class="pokeball"></span></label></td>
@@ -189,11 +232,13 @@
             </tr>
             <!-- Chinese -->
             <tr class="task-row" data-task="chinese">
-              <td class="task-desc">
-                <span class="task-emoji">💮</span>
-                <div class="task-text-container">
-                  <span class="task-name">Chinese</span>
-                  <span class="task-concept">Character master!</span>
+              <td>
+                <div class="task-desc">
+                  <span class="task-emoji">💮</span>
+                  <div class="task-text-container">
+                    <span class="task-name">Chinese</span>
+                    <span class="task-concept">Character master!</span>
+                  </div>
                 </div>
               </td>
               <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="0" data-task="chinese"><span class="pokeball"></span></label></td>
@@ -207,11 +252,13 @@
             </tr>
             <!-- Daily Total (Concept: All tasks cleared!) -->
             <tr class="total-row">
-              <td class="task-desc total-desc">
-                <span class="task-emoji">⭐</span>
-                <div class="task-text-container">
-                  <span class="task-name">Daily Total</span>
-                  <span class="task-concept">All tasks cleared!</span>
+              <td>
+                <div class="task-desc total-desc">
+                  <span class="task-emoji">⭐</span>
+                  <div class="task-text-container">
+                    <span class="task-name">Daily Total</span>
+                    <span class="task-concept">All tasks cleared!</span>
+                  </div>
                 </div>
               </td>
               <td class="day-total-cell" data-day="0"><div class="badge-indicator locked">❌</div></td>
@@ -229,8 +276,9 @@
     </main>
     <!-- Bottom Section -->
     <footer class="bottom-section">
-      <div class="reward-input-container">
-        <label for="reward-select" class="reward-label">🏆 Milestone Reward Choice:</label>
+      <!-- Weekly Milestone Reward -->
+      <div class="reward-select-container" id="weekly-reward-container">
+        <label for="reward-select" class="reward-label">🏆 Weekly Milestone Reward Choice:</label>
         <select id="reward-select" class="pixel-select">
           <option value="" disabled selected>Choose a Weekly Reward...</option>
           <option value="Bonus Tablet Time">⚡ +20 Mins of Bonus Tablet Time!</option>
@@ -243,16 +291,32 @@
           <option value="Bike Route">🚲 Adventure Guide: Pick the Weekend Bike/Scooter Route!</option>
         </select>
       </div>
+      <!-- Mega Milestone Reward -->
+      <div class="reward-select-container" id="mega-reward-container">
+        <label for="mega-reward-select" class="reward-label">💥 Mega Milestone Reward Choice (4-Weeks):</label>
+        <select id="mega-reward-select" class="pixel-select">
+          <option value="" disabled selected>Choose a Mega Reward...</option>
+          <option value="Booster Pack">💥 Mega Milestone: Open a Pokémon Booster Pack!</option>
+          <option value="Dessert Outing">🍦 Sweet Victory: Special Dessert Outing!</option>
+          <option value="New Book">📚 Epic Upgrade: Pick a New Book!</option>
+          <option value="Clay Set">🧱 Clay Studio: Get an Air-Dry Clay Set!</option>
+          <option value="Science Kit">🔬 Mad Scientist: Get a Cool Science Kit!</option>
+          <option value="Bike Trip">🚲 Trail Blazer: Weekend Bike Trip to a New Trail!</option>
+          <option value="Shoe Laces">👟 Speed Runner: Neon/Glow-in-the-Dark Laces!</option>
+        </select>
+      </div>
+      <!-- Motivational Quote -->
       <div class="motivational-quote">
         "True Trainers never give up! Keep practicing and leveling up your skills!"
       </div>
+      <!-- Action Buttons -->
       <div class="actions">
-        <button id="claim-week-btn" class="pixel-btn">Claim Successful Week!</button>
         <button id="reset-btn" class="pixel-btn warning">Reset Week Grid</button>
-        <button id="admin-reset-btn" class="pixel-btn danger small">Reset All Progress (Admin)</button>
+        <button id="admin-btn" class="pixel-btn info small">Parent Admin</button>
       </div>
     </footer>
   </div>
-  <script src="app.js"></script>
+  <script src="particles.js?v=3.1"></script>
+  <script src="app.js?v=3.1"></script>
 </body>
 </html>
