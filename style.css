@@ -1,0 +1,519 @@
+/* CSS Variables for pokemon theme */
+:root {
+ --poke-red: #ff3c3c;
+ --poke-blue: #2a71d0;
+ --poke-yellow: #ffcb05;
+ --poke-dark-blue: #1d4f90;
+ --bg-color: #f6f8fc;
+ --card-bg: #ffffff;
+ --border-color: #2d3748;
+ --text-color: #2d3748;
+ --xp-color: #4caf50;
+ --xp-bg: #e2e8f0;
+ --shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+ --pixel-border: 4px solid var(--border-color);
+}
+* {
+ box-sizing: border-box;
+ margin: 0;
+ padding: 0;
+}
+body {
+ font-family: 'Quicksand', sans-serif;
+ background-color: var(--bg-color);
+ color: var(--text-color);
+ padding: 20px 10px;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ min-height: 100vh;
+}
+.app-container {
+ max-width: 900px;
+ width: 100%;
+ background: var(--card-bg);
+ border: var(--pixel-border);
+ border-radius: 12px;
+ box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+ padding: 20px;
+ overflow: hidden;
+}
+/* Header */
+.game-header {
+ text-align: center;
+ margin-bottom: 25px;
+ border-bottom: 3px dashed var(--poke-blue);
+ padding-bottom: 15px;
+}
+.title {
+ font-family: 'Press Start 2P', cursive;
+ font-size: 1.4rem;
+ color: var(--poke-red);
+ text-shadow: 2px 2px 0px var(--poke-yellow), -2px -2px 0px var(--poke-blue);
+ margin-bottom: 10px;
+ word-wrap: break-word;
+ line-height: 1.6;
+}
+.subtitle {
+ font-family: 'Fredoka One', cursive;
+ font-size: 1.1rem;
+ color: var(--poke-dark-blue);
+ letter-spacing: 1px;
+}
+/* Trainer Card */
+.trainer-card {
+ display: grid;
+ grid-template-columns: 1.5fr 1fr;
+ gap: 20px;
+ margin-bottom: 25px;
+ background: #f8fafc;
+ border: 3px solid var(--border-color);
+ border-radius: 8px;
+ padding: 15px;
+}
+@media (max-width: 600px) {
+ .trainer-card {
+   grid-template-columns: 1fr;
+ }
+}
+.trainer-info {
+ display: flex;
+ align-items: center;
+ gap: 15px;
+}
+.avatar-container {
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ gap: 8px;
+}
+#pokemon-sprite {
+ width: 90px;
+ height: 90px;
+ object-fit: contain;
+ filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.15));
+ transition: transform 0.3s ease;
+}
+#pokemon-sprite:hover {
+ transform: scale(1.1) rotate(5deg);
+}
+.stats-container {
+ flex-grow: 1;
+}
+.trainer-title {
+ font-family: 'Press Start 2P', cursive;
+ font-size: 0.7rem;
+ color: #718096;
+ margin-bottom: 4px;
+}
+.partner-name {
+ font-family: 'Fredoka One', cursive;
+ font-size: 1.4rem;
+ color: var(--poke-blue);
+ margin-bottom: 6px;
+}
+.level-badge {
+ display: inline-block;
+ background: var(--poke-yellow);
+ border: 2px solid var(--border-color);
+ padding: 2px 8px;
+ font-family: 'Press Start 2P', cursive;
+ font-size: 0.75rem;
+ border-radius: 4px;
+ margin-bottom: 10px;
+}
+.xp-bar-container {
+ width: 100%;
+}
+.xp-label {
+ font-size: 0.85rem;
+ font-weight: bold;
+ margin-bottom: 4px;
+ display: flex;
+ justify-content: space-between;
+}
+.xp-bar-outer {
+ width: 100%;
+ height: 14px;
+ background: var(--xp-bg);
+ border: 2px solid var(--border-color);
+ border-radius: 7px;
+ overflow: hidden;
+}
+.xp-bar-inner {
+ height: 100%;
+ background: var(--xp-color);
+ transition: width 0.4s ease-out;
+}
+/* Weekly Badge Card */
+.weekly-badge-card {
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: center;
+ background: #edf2f7;
+ border: 2px dashed #a0aec0;
+ border-radius: 8px;
+ padding: 10px;
+ text-align: center;
+}
+.badge-title {
+ font-family: 'Press Start 2P', cursive;
+ font-size: 0.65rem;
+ color: var(--poke-dark-blue);
+ margin-bottom: 10px;
+}
+.badge-slot {
+ width: 65px;
+ height: 65px;
+ border-radius: 50%;
+ background: #cbd5e0;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-size: 2rem;
+ margin-bottom: 8px;
+ border: 3px solid var(--border-color);
+ transition: all 0.3s ease;
+}
+.badge-slot.unlocked {
+ background: radial-gradient(circle, #fffbeb 0%, #fef3c7 70%, #fde68a 100%);
+ box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
+ border-color: #d97706;
+ animation: pulse 2.0s infinite alternate;
+}
+.badge-slot.locked {
+ opacity: 0.6;
+}
+.badge-status {
+ font-weight: bold;
+ font-size: 0.9rem;
+}
+/* Pixel Buttons */
+.pixel-btn {
+ background: var(--poke-yellow);
+ color: var(--border-color);
+ font-family: 'Fredoka One', cursive;
+ border: 3px solid var(--border-color);
+ padding: 8px 16px;
+ font-size: 1rem;
+ cursor: pointer;
+ border-radius: 6px;
+ box-shadow: 0 4px 0 var(--border-color);
+ transition: transform 0.1s, box-shadow 0.1s;
+ outline: none;
+}
+.pixel-btn:active {
+ transform: translateY(4px);
+ box-shadow: none;
+}
+.pixel-btn.small {
+ font-size: 0.75rem;
+ padding: 4px 8px;
+ box-shadow: 0 2px 0 var(--border-color);
+}
+.pixel-btn.small:active {
+ transform: translateY(2px);
+ box-shadow: none;
+}
+.pixel-btn.danger {
+ background: var(--poke-red);
+ color: white;
+}
+/* Grid Container & Table */
+.chart-container {
+ margin-bottom: 25px;
+ border: 3px solid var(--border-color);
+ border-radius: 8px;
+ background: white;
+ overflow: hidden;
+}
+.grid-scroll-wrapper {
+ overflow-x: auto;
+}
+.weekly-grid {
+ width: 100%;
+ border-collapse: collapse;
+ min-width: 650px;
+}
+.weekly-grid th, .weekly-grid td {
+ border-bottom: 2px solid #e2e8f0;
+ border-right: 2px solid #e2e8f0;
+ padding: 12px 8px;
+ text-align: center;
+}
+.weekly-grid th:last-child, .weekly-grid td:last-child {
+ border-right: none;
+}
+.weekly-grid tr:last-child td {
+ border-bottom: none;
+}
+.weekly-grid thead tr {
+ background-color: var(--poke-blue);
+}
+.weekly-grid th {
+ color: white;
+ font-family: 'Fredoka One', cursive;
+ font-size: 0.95rem;
+ letter-spacing: 0.5px;
+}
+.task-col-header {
+ text-align: left !important;
+ padding-left: 15px !important;
+ width: 25%;
+}
+.task-row:hover {
+ background-color: #f7fafc;
+}
+.task-desc {
+ display: flex;
+ align-items: center;
+ gap: 10px;
+ text-align: left;
+}
+.task-emoji {
+ font-size: 1.6rem;
+}
+.task-text-container {
+ display: flex;
+ flex-direction: column;
+}
+.task-name {
+ font-weight: 700;
+ font-size: 0.95rem;
+}
+.task-concept {
+ font-size: 0.75rem;
+ color: #718096;
+ font-style: italic;
+}
+.checkbox-cell {
+ vertical-align: middle;
+}
+/* Pokeball Checkbox Styling */
+.pokeball-checkbox {
+ display: inline-block;
+ position: relative;
+ width: 38px;
+ height: 38px;
+ cursor: pointer;
+}
+.pokeball-checkbox input {
+ opacity: 0;
+ width: 0;
+ height: 0;
+ position: absolute;
+}
+.pokeball {
+ position: absolute;
+ top: 0;
+ left: 0;
+ width: 38px;
+ height: 38px;
+ border: 3px solid var(--border-color);
+ border-radius: 50%;
+ background: white;
+ transition: transform 0.2s ease-in-out;
+ overflow: hidden;
+}
+/* Red top half */
+.pokeball::before {
+ content: '';
+ position: absolute;
+ top: 0;
+ left: 0;
+ width: 100%;
+ height: 50%;
+ background: #cbd5e0; /* Gray when locked/unchecked */
+ border-bottom: 3px solid var(--border-color);
+ transition: background-color 0.2s;
+}
+/* Center button */
+.pokeball::after {
+ content: '';
+ position: absolute;
+ top: 50%;
+ left: 50%;
+ width: 12px;
+ height: 12px;
+ background: white;
+ border: 3px solid var(--border-color);
+ border-radius: 50%;
+ transform: translate(-50%, -50%);
+ z-index: 10;
+ transition: background-color 0.2s;
+}
+/* Active checked states */
+.pokeball-checkbox input:checked + .pokeball {
+ animation: wiggle 0.4s ease;
+}
+.pokeball-checkbox input:checked + .pokeball::before {
+ background: var(--poke-red);
+}
+.pokeball-checkbox input:checked + .pokeball::after {
+ background: var(--poke-yellow);
+}
+/* Total row */
+.total-row {
+ background-color: #f7fafc;
+ border-top: 3px solid var(--border-color);
+}
+.total-desc .task-name {
+ color: var(--poke-dark-blue);
+ font-family: 'Fredoka One', cursive;
+}
+.day-total-cell {
+ vertical-align: middle;
+}
+.badge-indicator {
+ font-size: 1.4rem;
+ line-height: 1;
+ display: inline-block;
+ transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.badge-indicator.unlocked {
+ transform: scale(1.2);
+}
+/* Bottom Section */
+.bottom-section {
+ display: flex;
+ flex-direction: column;
+ gap: 15px;
+ border-top: 3px dashed var(--poke-blue);
+ padding-top: 20px;
+}
+.reward-input-container {
+ display: flex;
+ flex-direction: column;
+ gap: 8px;
+}
+.reward-label {
+ font-family: 'Fredoka One', cursive;
+ font-size: 1rem;
+ color: var(--poke-dark-blue);
+}
+#reward-input {
+ width: 100%;
+ padding: 10px 12px;
+ border: 2px solid var(--border-color);
+ border-radius: 6px;
+ font-family: 'Quicksand', sans-serif;
+ font-size: 0.95rem;
+ font-weight: 600;
+ background: #fdfdfd;
+}
+#reward-input:focus {
+ outline: none;
+ border-color: var(--poke-blue);
+ box-shadow: 0 0 0 3px rgba(42, 113, 208, 0.2);
+}
+.motivational-quote {
+ font-family: 'Quicksand', sans-serif;
+ font-style: italic;
+ font-weight: 700;
+ text-align: center;
+ font-size: 0.95rem;
+ color: #4a5568;
+ padding: 10px;
+ background: #ebf8ff;
+ border-left: 4px solid var(--poke-blue);
+ border-radius: 4px;
+}
+.actions {
+ display: flex;
+ justify-content: flex-end;
+ margin-top: 5px;
+}
+/* Modal Styling */
+.modal {
+ position: fixed;
+ top: 0;
+ left: 0;
+ width: 100%;
+ height: 100%;
+ background: rgba(0, 0, 0, 0.5);
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ z-index: 1000;
+ opacity: 1;
+ transition: opacity 0.2s ease;
+}
+.modal.hidden {
+ display: none;
+ opacity: 0;
+}
+.modal-content {
+ background: white;
+ border: var(--pixel-border);
+ border-radius: 12px;
+ padding: 25px;
+ max-width: 450px;
+ width: 90%;
+ text-align: center;
+ box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+.modal-content h2 {
+ font-family: 'Fredoka One', cursive;
+ color: var(--poke-blue);
+ margin-bottom: 20px;
+}
+.pokemon-options {
+ display: grid;
+ grid-template-columns: repeat(3, 1fr);
+ gap: 15px;
+ margin-bottom: 20px;
+}
+@media (max-width: 400px) {
+ .pokemon-options {
+   grid-template-columns: repeat(2, 1fr);
+ }
+}
+.pokemon-option {
+ border: 2px solid #e2e8f0;
+ border-radius: 8px;
+ padding: 10px;
+ cursor: pointer;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ gap: 5px;
+ transition: all 0.2s;
+}
+.pokemon-option:hover {
+ background: #f7fafc;
+ border-color: var(--poke-blue);
+ transform: translateY(-2px);
+}
+.pokemon-option img {
+ width: 60px;
+ height: 60px;
+ object-fit: contain;
+}
+.pokemon-option span {
+ font-family: 'Fredoka One', cursive;
+ font-size: 0.8rem;
+}
+/* Animations */
+@keyframes wiggle {
+ 0% { transform: rotate(0deg); }
+ 20% { transform: rotate(-15deg); }
+ 40% { transform: rotate(15deg); }
+ 60% { transform: rotate(-10deg); }
+ 80% { transform: rotate(10deg); }
+ 100% { transform: rotate(0deg); }
+}
+@keyframes pulse {
+ 0% { transform: scale(1); box-shadow: 0 0 10px rgba(251, 191, 36, 0.4); }
+ 100% { transform: scale(1.05); box-shadow: 0 0 20px rgba(251, 191, 36, 0.7); }
+}
+@keyframes levelUpAnimation {
+ 0% { transform: scale(1); filter: brightness(1); }
+ 50% { transform: scale(1.3); filter: brightness(1.5); }
+ 100% { transform: scale(1); filter: brightness(1); }
+}
+.level-up {
+ animation: levelUpAnimation 0.8s ease-out;
+}
+
+
