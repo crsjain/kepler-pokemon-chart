@@ -756,6 +756,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 3. Render Weekly Badge Slot
+    // Clean up any old theme classes
+    for (let i = 1; i <= 4; i++) {
+      weeklyBadgeSlot.classList.remove(`badge-theme-${i}`);
+    }
+
     if (state.weeklyClaimed) {
       const currentBadge = MEGA_POKEMON[state.megaWeeks];
       if (currentBadge) {
@@ -764,6 +769,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       weeklyBadgeSlot.classList.remove('locked');
       weeklyBadgeSlot.classList.add('unlocked');
+      weeklyBadgeSlot.classList.add(`badge-theme-${state.megaWeeks + 1}`);
       rewardSelectContainer.classList.add('earned');
     } else {
       weeklyBadgeSlot.innerHTML = '<span class="badge-icon">🔒</span>';
@@ -778,9 +784,13 @@ document.addEventListener('DOMContentLoaded', () => {
     megaSlots.forEach((slot, index) => {
       const pkmn = MEGA_POKEMON[index];
       const isUnlocked = index < state.megaWeeks || (index === state.megaWeeks && state.weeklyClaimed);
+      // Clean up theme class first
+      slot.classList.remove(`badge-theme-${index + 1}`);
+      
       if (isUnlocked) {
         slot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png" alt="${pkmn.name}" class="mega-slot-img">`;
         slot.classList.add('unlocked');
+        slot.classList.add(`badge-theme-${index + 1}`);
       } else {
         slot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Locked" class="mega-slot-img locked">`;
         slot.classList.remove('unlocked');
