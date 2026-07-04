@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kepler's Pokémon Training Chart</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=3.4">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
@@ -28,12 +28,14 @@
 </head>
 <body>
   <canvas id="celebration-canvas"></canvas>
+
   <div class="app-container">
     <!-- Header -->
     <header class="game-header">
       <h1 class="title">Kepler's Pokémon Training</h1>
       <p class="subtitle">"Gotta Catch 'Em All!"</p>
     </header>
+
     <!-- Trainer Card / Progress Section -->
     <section class="trainer-card">
       <div class="trainer-info">
@@ -49,6 +51,7 @@
             <div class="xp-label">XP: <span id="current-xp">0</span> / <span id="next-level-xp">100</span></div>
             <div class="xp-bar-outer">
               <div class="xp-bar-inner" id="xp-bar-fill" style="width: 0%;"></div>
+              <div id="xp-bar-milestones" class="xp-bar-milestones"></div>
             </div>
           </div>
         </div>
@@ -61,6 +64,7 @@
         <div class="badge-status" id="badge-status">Locked</div>
       </div>
     </section>
+
     <!-- Mega Milestone Tracker -->
     <section class="mega-milestone-card">
       <div class="mega-header">
@@ -78,31 +82,13 @@
     <div id="partner-modal" class="modal hidden">
       <div class="modal-content">
         <h2>Choose Your Partner!</h2>
-        <div class="pokemon-options">
-          <div class="pokemon-option" data-id="25" data-name="Pikachu">
-            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu">
-            <span>Pikachu</span>
-          </div>
-          <div class="pokemon-option" data-id="4" data-name="Charmander">
-            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png" alt="Charmander">
-            <span>Charmander</span>
-          </div>
-          <div class="pokemon-option" data-id="1" data-name="Bulbasaur">
-            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png" alt="Bulbasaur">
-            <span>Bulbasaur</span>
-          </div>
-          <div class="pokemon-option" data-id="7" data-name="Squirtle">
-            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png" alt="Squirtle">
-            <span>Squirtle</span>
-          </div>
-          <div class="pokemon-option" data-id="133" data-name="Eevee">
-            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt="Eevee">
-            <span>Eevee</span>
-          </div>
+        <div class="pokemon-options" id="pokemon-options-container">
+          <!-- Populated dynamically via JS -->
         </div>
         <button id="close-modal-btn" class="pixel-btn">Close</button>
       </div>
     </div>
+
     <!-- Custom Notification Modal -->
     <div id="notification-modal" class="modal hidden">
       <div class="modal-content notification-content">
@@ -114,6 +100,7 @@
         <button id="notification-ok-btn" class="pixel-btn">OK</button>
       </div>
     </div>
+
     <!-- Admin Modal -->
     <div id="admin-modal" class="modal hidden">
       <div class="modal-content">
@@ -132,6 +119,8 @@
         <button id="close-admin-modal-btn" class="pixel-btn">Close</button>
       </div>
     </div>
+
+
     <!-- Weekly Grid -->
     <main class="chart-container">
       <div class="grid-scroll-wrapper">
@@ -170,6 +159,7 @@
               <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="6" data-task="piano"><span class="pokeball"></span></label></td>
               <td class="task-total-cell" data-task="piano">0 / 7</td>
             </tr>
+
             <!-- Math -->
             <tr class="task-row" data-task="math">
               <td>
@@ -190,6 +180,7 @@
               <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="6" data-task="math"><span class="pokeball"></span></label></td>
               <td class="task-total-cell" data-task="math">0 / 7</td>
             </tr>
+
             <!-- Reading -->
             <tr class="task-row" data-task="reading">
               <td>
@@ -210,6 +201,7 @@
               <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="6" data-task="reading"><span class="pokeball"></span></label></td>
               <td class="task-total-cell" data-task="reading">0 / 7</td>
             </tr>
+
             <!-- Writing -->
             <tr class="task-row" data-task="writing">
               <td>
@@ -230,6 +222,7 @@
               <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="6" data-task="writing"><span class="pokeball"></span></label></td>
               <td class="task-total-cell" data-task="writing">0 / 5</td>
             </tr>
+
             <!-- Chinese -->
             <tr class="task-row" data-task="chinese">
               <td>
@@ -250,6 +243,7 @@
               <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="6" data-task="chinese"><span class="pokeball"></span></label></td>
               <td class="task-total-cell" data-task="chinese">0 / 5</td>
             </tr>
+
             <!-- Daily Total (Concept: All tasks cleared!) -->
             <tr class="total-row">
               <td>
@@ -274,6 +268,7 @@
         </table>
       </div>
     </main>
+
     <!-- Bottom Section -->
     <footer class="bottom-section">
       <!-- Weekly Milestone Reward -->
@@ -282,8 +277,8 @@
         <select id="reward-select" class="pixel-select">
           <option value="" disabled selected>Choose a Weekly Reward...</option>
           <option value="Bonus Tablet Time">⚡ +20 Mins of Bonus Tablet Time!</option>
-          <option value="Choose Meal">🍽️ Menu Master: Choose Sunday Breakfast or Dinner!</option>
-          <option value="Parent Playtime">🎮 30-Min Parent Playtime!</option>
+          <option value="Choose Meal">🍽️ Menu Master: Choose Weekend Breakfast or Dinner!</option>
+          <option value="Parent Playtime">🎮 60-Min Playing Pokémon with a Parent!</option>
           <option value="Blanket Fort">🏰 Master Builder: Giant Living Room Blanket Fort!</option>
           <option value="One Hour Rule">👑 The Boss: Make 1 Family Rule for an Hour!</option>
           <option value="Art Project">🎨 Craft Master: Get a Special Art/Drawing Project!</option>
@@ -291,12 +286,13 @@
           <option value="Bike Route">🚲 Adventure Guide: Pick the Weekend Bike/Scooter Route!</option>
         </select>
       </div>
+
       <!-- Mega Milestone Reward -->
       <div class="reward-select-container" id="mega-reward-container">
         <label for="mega-reward-select" class="reward-label">💥 Mega Milestone Reward Choice (4-Weeks):</label>
         <select id="mega-reward-select" class="pixel-select">
           <option value="" disabled selected>Choose a Mega Reward...</option>
-          <option value="Booster Pack">💥 Mega Milestone: Open a Pokémon Booster Pack!</option>
+          <option value="Booster Pack">💥 Game Time!: Open a Pokémon Card Pack!</option>
           <option value="Dessert Outing">🍦 Sweet Victory: Special Dessert Outing!</option>
           <option value="New Book">📚 Epic Upgrade: Pick a New Book!</option>
           <option value="Clay Set">🧱 Clay Studio: Get an Air-Dry Clay Set!</option>
@@ -305,10 +301,12 @@
           <option value="Shoe Laces">👟 Speed Runner: Neon/Glow-in-the-Dark Laces!</option>
         </select>
       </div>
+
       <!-- Motivational Quote -->
       <div class="motivational-quote">
         "True Trainers never give up! Keep practicing and leveling up your skills!"
       </div>
+
       <!-- Action Buttons -->
       <div class="actions">
         <button id="reset-btn" class="pixel-btn warning">Reset Week Grid</button>
@@ -316,7 +314,8 @@
       </div>
     </footer>
   </div>
-  <script src="particles.js?v=3.1"></script>
-  <script src="app.js?v=3.1"></script>
+
+  <script src="particles.js?v=3.4"></script>
+  <script src="app.js?v=3.4"></script>
 </body>
 </html>

@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const XP_DAILY_BONUS = 15;
   const XP_LEVEL_THRESHOLD = 100;
   const ADMIN_PASSWORD = "0130";
+
   // Task Requirements
   const TASK_REQS = {
     piano: 7,
@@ -15,8 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const TASKS = ['piano', 'math', 'reading', 'writing', 'chinese'];
   const DAYS = [0, 1, 2, 3, 4, 5, 6];
+
   // 8-Bit Sound Synthesizer (Web Audio API)
   let audioCtx = null;
+
   function playSound(type) {
     try {
       if (!audioCtx) {
@@ -25,11 +28,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (audioCtx.state === 'suspended') {
         audioCtx.resume();
       }
+
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.connect(gain);
       gain.connect(audioCtx.destination);
+
       const now = audioCtx.currentTime;
+
       if (type === 'check') {
         osc.type = 'square';
         osc.frequency.setValueAtTime(587.33, now); // D5
@@ -71,26 +77,70 @@ document.addEventListener('DOMContentLoaded', () => {
       console.warn('Audio playback failed or blocked:', e);
     }
   }
+
   // Mega Milestone Pokemon
   const MEGA_POKEMON = [
     { id: 658, name: 'Greninja' },
     { id: 382, name: 'Kyogre' },
     { id: 249, name: 'Lugia' },
-    { id: 937, name: 'Ceruledge' }
+    { id: 384, name: 'Rayquaza' }
   ];
-  // State
+
+  // Evolution configurations
+  const EVOLUTIONS = {
+    '25': {
+      stages: [
+        { level: 1, id: '25', name: 'Pikachu' },
+        { level: 5, id: '26', name: 'Raichu' }
+      ]
+    },
+    '4': {
+      stages: [
+        { level: 1, id: '4', name: 'Charmander' },
+        { level: 5, id: '5', name: 'Charmeleon' },
+        { level: 10, id: '6', name: 'Charizard' }
+      ]
+    },
+    '1': {
+      stages: [
+        { level: 1, id: '1', name: 'Bulbasaur' },
+        { level: 5, id: '2', name: 'Ivysaur' },
+        { level: 10, id: '3', name: 'Venusaur' }
+      ]
+    },
+    '7': {
+      stages: [
+        { level: 1, id: '7', name: 'Squirtle' },
+        { level: 5, id: '8', name: 'Wartortle' },
+        { level: 10, id: '9', name: 'Blastoise' }
+      ]
+    },
+    '133': {
+      stages: [
+        { level: 1, id: '133', name: 'Eevee' },
+        { level: 5, id: '135', name: 'Jolteon' }
+      ]
+    }
+  };
+
+  // State V3
   let state = {
-    version: 2,
-    partnerId: '25', // Default Pikachu
-    partnerName: 'Pikachu',
-    level: 1,
-    xp: 0,
+    version: 3,
+    partnerFamily: '25', // Default Pikachu Family
+    partnersData: {
+      '25': { level: 1, xp: 0 },
+      '4': { level: 1, xp: 0 },
+      '1': { level: 1, xp: 0 },
+      '7': { level: 1, xp: 0 },
+      '133': { level: 1, xp: 0 }
+    },
     reward: '',
     megaReward: '',
     megaWeeks: 0,
     weeklyClaimed: false,
     grid: {} // key format: "day-task" -> boolean
   };
+
   // DOM Elements
   const pokemonSprite = document.getElementById('pokemon-sprite');
   const partnerNameEl = document.getElementById('partner-name');
@@ -103,11 +153,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const rewardSelectContainer = rewardSelect.parentElement;
   const megaRewardSelect = document.getElementById('mega-reward-select');
   const megaRewardSelectContainer = megaRewardSelect.parentElement;
+
   const weeklyBadgeSlot = document.getElementById('weekly-badge-slot');
   const badgeStatusEl = document.getElementById('badge-status');
   
   const megaWeeksCountEl = document.getElementById('mega-weeks-count');
   const megaSlots = document.querySelectorAll('.mega-slot');
+
   const changePartnerBtn = document.getElementById('change-partner-btn');
   const partnerModal = document.getElementById('partner-modal');
   const closeModalBtn = document.getElementById('close-modal-btn');
@@ -117,6 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const notificationMessage = document.getElementById('notification-message');
   const notificationBadge = document.getElementById('notification-badge');
   const notificationOkBtn = document.getElementById('notification-ok-btn');
+
   const resetBtn = document.getElementById('reset-btn');
   const adminBtn = document.getElementById('admin-btn');
   
@@ -127,13 +180,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const adminImportBtn = document.getElementById('admin-import-btn');
   const adminWipeBtn = document.getElementById('admin-wipe-btn');
   const closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
-  const pokemonOptions = document.querySelectorAll('.pokemon-option');
+
   const checkboxes = document.querySelectorAll('.pokeball-checkbox input');
+
   // Cached DOM elements for performance
   const taskTotalCells = {};
   TASKS.forEach(task => {
     taskTotalCells[task] = document.querySelector(`.task-total-cell[data-task="${task}"]`);
   });
+
   const dayTotalCells = {};
   const dayBadgeIndicators = {};
   DAYS.forEach(day => {
@@ -143,11 +198,40 @@ document.addEventListener('DOMContentLoaded', () => {
       dayBadgeIndicators[day] = cell.querySelector('.badge-indicator');
     }
   });
+
   // Initialize
   loadState();
   preloadImages();
   renderState();
   setupEventListeners();
+
+  function getStageInfo(familyId, level) {
+    const evo = EVOLUTIONS[familyId];
+    if (!evo) return { currentStage: { id: familyId, name: 'Unknown' }, nextStage: null, startLevel: 1, endLevel: null };
+    
+    let currentStageIndex = 0;
+    for (let i = 1; i < evo.stages.length; i++) {
+      if (level >= evo.stages[i].level) {
+        currentStageIndex = i;
+      } else {
+        break;
+      }
+    }
+    
+    const currentStage = evo.stages[currentStageIndex];
+    const nextStage = evo.stages[currentStageIndex + 1] || null;
+    
+    const startLevel = currentStage.level;
+    const endLevel = nextStage ? nextStage.level : null;
+    
+    return {
+      currentStage,
+      nextStage,
+      startLevel,
+      endLevel
+    };
+  }
+
   function loadState() {
     try {
       const savedState = localStorage.getItem('kepler_pokemon_training_v2');
@@ -155,6 +239,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const parsed = JSON.parse(savedState);
         if (parsed && typeof parsed === 'object') {
           state = { ...state, ...parsed };
+          
+          // Migration from V2 to V3
+          if (!state.partnerFamily) {
+            state.partnerFamily = state.partnerId || '25';
+            state.partnersData = {
+              '25': { level: 1, xp: 0 },
+              '4': { level: 1, xp: 0 },
+              '1': { level: 1, xp: 0 },
+              '7': { level: 1, xp: 0 },
+              '133': { level: 1, xp: 0 }
+            };
+            // Transfer old level and xp to current family
+            if (state.partnersData[state.partnerFamily]) {
+              state.partnersData[state.partnerFamily].level = state.level || 1;
+              state.partnersData[state.partnerFamily].xp = state.xp || 0;
+            }
+            // Clean up old values
+            delete state.level;
+            delete state.xp;
+            delete state.partnerId;
+            delete state.partnerName;
+            state.version = 3;
+            saveState(); // Save migrated state immediately
+          }
+          
           if (!state.grid || typeof state.grid !== 'object') {
             state.grid = {};
           }
@@ -164,6 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error loading state from localStorage:', e);
     }
   }
+
   function saveState() {
     try {
       localStorage.setItem('kepler_pokemon_training_v2', JSON.stringify(state));
@@ -171,6 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error saving state to localStorage:', e);
     }
   }
+
   function saveAutoBackup() {
     try {
       localStorage.setItem('kepler_pokemon_training_backup', JSON.stringify(state));
@@ -179,6 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error saving auto-backup to localStorage:', e);
     }
   }
+
   function restoreFromAutoBackup() {
     try {
       const backup = localStorage.getItem('kepler_pokemon_training_backup');
@@ -201,17 +313,22 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error(e);
     }
   }
+
   function preloadImages() {
+    const pokemonIds = [25, 26, 4, 5, 6, 1, 2, 3, 7, 8, 9, 133, 135];
     const imagesToPreload = [
       'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png',
       'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10034.png',
-      ...MEGA_POKEMON.map(pkmn => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png`)
+      ...MEGA_POKEMON.map(pkmn => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png`),
+      ...pokemonIds.map(id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`)
     ];
+
     imagesToPreload.forEach(url => {
       const img = new Image();
       img.src = url;
     });
   }
+
   function exportState() {
     const stateStr = JSON.stringify(state);
     navigator.clipboard.writeText(stateStr).then(() => {
@@ -220,9 +337,11 @@ document.addEventListener('DOMContentLoaded', () => {
       prompt("Could not auto-copy. Please copy this backup code manually:", stateStr);
     });
   }
+
   function importState() {
     const code = prompt("Paste your Trainer backup code here:");
     if (!code) return;
+
     try {
       const parsed = JSON.parse(code);
       if (parsed && typeof parsed === 'object') {
@@ -244,27 +363,106 @@ document.addEventListener('DOMContentLoaded', () => {
       alert("Error parsing backup code. Please try again.");
     }
   }
+
+  function renderPartnerSelector() {
+    const container = document.getElementById('pokemon-options-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const families = ['25', '4', '1', '7', '133'];
+
+    families.forEach(familyId => {
+      const stats = state.partnersData[familyId] || { level: 1, xp: 0 };
+      const stageInfo = getStageInfo(familyId, stats.level);
+      const activePokemon = stageInfo.currentStage;
+
+      const optionDiv = document.createElement('div');
+      optionDiv.className = 'pokemon-option';
+      optionDiv.dataset.id = familyId;
+
+      optionDiv.innerHTML = `
+        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png" alt="${activePokemon.name}">
+        <span class="partner-select-name">${activePokemon.name}</span>
+        <span class="partner-select-stats">LV ${stats.level} • ${stats.xp}/100 XP</span>
+      `;
+
+      optionDiv.addEventListener('click', () => {
+        state.partnerFamily = familyId;
+        saveState();
+        renderState();
+        partnerModal.classList.add('hidden');
+      });
+
+      container.appendChild(optionDiv);
+    });
+  }
+
   function renderState() {
-    // 1. Render Partner
-    pokemonSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${state.partnerId}.png`;
-    partnerNameEl.textContent = state.partnerName;
+    const family = state.partnerFamily || '25';
+    const stats = state.partnersData[family] || { level: 1, xp: 0 };
+    const stageInfo = getStageInfo(family, stats.level);
+    const activePokemon = stageInfo.currentStage;
+
+    // 1. Render Partner (Active Evolved Form)
+    pokemonSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`;
+    partnerNameEl.textContent = activePokemon.name;
+
     // 2. Render Stats
-    levelEl.textContent = state.level;
-    currentXpEl.textContent = state.xp;
+    levelEl.textContent = stats.level;
+    currentXpEl.textContent = stats.xp;
     nextLevelXpEl.textContent = XP_LEVEL_THRESHOLD;
-    const xpPercent = Math.min(100, (state.xp / XP_LEVEL_THRESHOLD) * 100);
-    xpBarFill.style.width = `${xpPercent}%`;
-    // 3. Render Dropdowns
+
+    // 3. Render XP Bar with Milestones
+    const xpBarMilestones = document.getElementById('xp-bar-milestones');
+    if (xpBarMilestones) {
+      xpBarMilestones.innerHTML = ''; // Clear previous milestones
+    }
+
+    let progressPercent = 0;
+    if (stageInfo.endLevel) {
+      // We have a next evolution stage
+      const stageStartLevel = stageInfo.startLevel;
+      const stageEndLevel = stageInfo.endLevel;
+      const totalStageLevels = stageEndLevel - stageStartLevel;
+      const totalStageXp = totalStageLevels * XP_LEVEL_THRESHOLD;
+      
+      const currentStageXp = (stats.level - stageStartLevel) * XP_LEVEL_THRESHOLD + stats.xp;
+      progressPercent = Math.min(100, (currentStageXp / totalStageXp) * 100);
+
+      // Render milestones
+      if (xpBarMilestones) {
+        const numMilestones = totalStageLevels - 1;
+        for (let i = 1; i <= numMilestones; i++) {
+          const milestoneXp = i * XP_LEVEL_THRESHOLD;
+          const milestonePercent = (milestoneXp / totalStageXp) * 100;
+          
+          const marker = document.createElement('div');
+          marker.className = 'xp-milestone-marker';
+          marker.style.left = `${milestonePercent}%`;
+          xpBarMilestones.appendChild(marker);
+        }
+      }
+    } else {
+      // Max evolution stage reached, standard 100 XP bar
+      progressPercent = Math.min(100, (stats.xp / XP_LEVEL_THRESHOLD) * 100);
+    }
+    
+    xpBarFill.style.width = `${progressPercent}%`;
+
+    // 4. Render Dropdowns
     rewardSelect.value = state.reward || '';
     megaRewardSelect.value = state.megaReward || '';
-    // 4. Render Grid Checkboxes
+
+    // 5. Render Grid Checkboxes
     checkboxes.forEach(cb => {
       const key = `${cb.dataset.day}-${cb.dataset.task}`;
       cb.checked = !!state.grid[key];
     });
-    // 5. Update Progress
+
+    // 6. Update Progress
     renderProgress();
   }
+
   function setupEventListeners() {
     // Checkbox changes
     checkboxes.forEach(cb => {
@@ -287,19 +485,24 @@ document.addEventListener('DOMContentLoaded', () => {
           );
           return;
         }
+
         const day = cb.dataset.day;
         const task = cb.dataset.task;
         const key = `${day}-${task}`;
         const wasChecked = !!state.grid[key];
         const isChecked = cb.checked;
+
         // Check if the day WAS fully checked before this change
         const wasDayFullyChecked = TASKS.every(t => {
           if (t === task) return wasChecked;
           return !!state.grid[`${day}-${t}`];
         });
+
         state.grid[key] = isChecked;
+
         // Check if the day IS fully checked after this change
         const isDayFullyChecked = TASKS.every(t => !!state.grid[`${day}-${t}`]);
+
         // Calculate XP diff
         let xpGained = 0;
         if (isChecked && !wasChecked) {
@@ -309,6 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
           xpGained -= XP_PER_TASK;
           playSound('uncheck');
         }
+
         // Daily bonus XP logic
         if (isDayFullyChecked && !wasDayFullyChecked) {
           xpGained += XP_DAILY_BONUS;
@@ -323,6 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (!isDayFullyChecked && wasDayFullyChecked) {
           xpGained -= XP_DAILY_BONUS;
         }
+
         addXp(xpGained);
         saveState();
         
@@ -330,37 +535,35 @@ document.addEventListener('DOMContentLoaded', () => {
         renderState();
       });
     });
+
     // Dropdowns
     rewardSelect.addEventListener('change', () => {
       state.reward = rewardSelect.value;
       saveState();
     });
+
     megaRewardSelect.addEventListener('change', () => {
       state.megaReward = megaRewardSelect.value;
       saveState();
     });
+
     // Partner Selection
     changePartnerBtn.addEventListener('click', () => {
+      renderPartnerSelector();
       partnerModal.classList.remove('hidden');
     });
+
     closeModalBtn.addEventListener('click', () => {
       partnerModal.classList.add('hidden');
     });
-    pokemonOptions.forEach(option => {
-      option.addEventListener('click', () => {
-        state.partnerId = option.dataset.id;
-        state.partnerName = option.dataset.name;
-        saveState();
-        renderState();
-        partnerModal.classList.add('hidden');
-      });
-    });
+
     // Reset current week only
     resetBtn.addEventListener('click', () => {
       if (confirm('Reset this week\'s training grid? Kepler\'s Levels and Mega Milestone progress will NOT be lost.')) {
         resetWeekGrid();
       }
     });
+
     // Admin Panel (Password protected)
     adminBtn.addEventListener('click', () => {
       const password = prompt('Enter Parent Password to open Admin Panel:');
@@ -370,27 +573,36 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('Wrong Code! Try again, Parent!');
       }
     });
+
     closeAdminModalBtn.addEventListener('click', () => {
       adminModal.classList.add('hidden');
     });
+
     // Admin Modal Actions
     adminRestoreAutoBtn.addEventListener('click', () => {
       restoreFromAutoBackup();
     });
+
     adminExportBtn.addEventListener('click', () => {
       exportState();
     });
+
     adminImportBtn.addEventListener('click', () => {
       importState();
     });
+
     adminWipeBtn.addEventListener('click', () => {
       if (confirm('WARNING: This will completely reset Kepler back to Level 1 and wipe all saved progress. Proceed?')) {
         state = {
-          version: 2,
-          partnerId: '25',
-          partnerName: 'Pikachu',
-          level: 1,
-          xp: 0,
+          version: 3,
+          partnerFamily: '25',
+          partnersData: {
+            '25': { level: 1, xp: 0 },
+            '4': { level: 1, xp: 0 },
+            '1': { level: 1, xp: 0 },
+            '7': { level: 1, xp: 0 },
+            '133': { level: 1, xp: 0 }
+          },
           reward: '',
           megaReward: '',
           megaWeeks: 0,
@@ -403,7 +615,9 @@ document.addEventListener('DOMContentLoaded', () => {
         adminModal.classList.add('hidden');
       }
     });
+
   }
+
   function resetWeekGrid() {
     if (state.weeklyClaimed) {
       state.megaWeeks += 1;
@@ -418,38 +632,84 @@ document.addEventListener('DOMContentLoaded', () => {
     saveState();
     renderState();
   }
+
   function addXp(amount) {
     if (amount === 0) return;
     
-    let totalXp = state.xp + amount;
+    const family = state.partnerFamily;
+    const stats = state.partnersData[family];
+    const oldLevel = stats.level;
+    let totalXp = stats.xp + amount;
+    
+    let leveledUp = false;
+    let evolved = false;
+    let newLevel = oldLevel;
+    let newXp = totalXp;
     
     if (totalXp >= XP_LEVEL_THRESHOLD) {
-      state.level += 1;
-      state.xp = totalXp - XP_LEVEL_THRESHOLD;
-      triggerLevelUpAnimation();
-      playSound('levelUp');
-      saveAutoBackup();
+      newLevel += 1;
+      newXp = totalXp - XP_LEVEL_THRESHOLD;
+      leveledUp = true;
+      
+      // Check evolution
+      const oldStageInfo = getStageInfo(family, oldLevel);
+      const newStageInfo = getStageInfo(family, newLevel);
+      if (oldStageInfo.currentStage.id !== newStageInfo.currentStage.id) {
+        evolved = true;
+      }
     } else if (totalXp < 0) {
-      if (state.level > 1) {
-        state.level -= 1;
-        state.xp = XP_LEVEL_THRESHOLD + totalXp;
+      if (newLevel > 1) {
+        newLevel -= 1;
+        newXp = XP_LEVEL_THRESHOLD + totalXp;
+        leveledUp = true;
+        
+        // Check devolution
+        const oldStageInfo = getStageInfo(family, oldLevel);
+        const newStageInfo = getStageInfo(family, newLevel);
+        if (oldStageInfo.currentStage.id !== newStageInfo.currentStage.id) {
+          evolved = true;
+        }
       } else {
-        state.xp = 0;
+        newXp = 0;
       }
     } else {
-      state.xp = totalXp;
+      newXp = totalXp;
     }
-    levelEl.textContent = state.level;
-    currentXpEl.textContent = state.xp;
-    const xpPercent = Math.min(100, (state.xp / XP_LEVEL_THRESHOLD) * 100);
-    xpBarFill.style.width = `${xpPercent}%`;
+
+    stats.level = newLevel;
+    stats.xp = newXp;
+
+    if (leveledUp) {
+      saveAutoBackup();
+      if (evolved) {
+        const oldStageInfo = getStageInfo(family, oldLevel);
+        const newStageInfo = getStageInfo(family, newLevel);
+        const oldStage = oldStageInfo.currentStage;
+        const newStage = newStageInfo.currentStage;
+        
+        CelebrationEngine.triggerCelebration(true); // Mega celebration
+        playSound('badge');
+        showCustomNotification(
+          "✨ POKEMON EVOLVED! ✨",
+          `Congratulations! Kepler's ${oldStage.name} evolved into ${newStage.name}!`,
+          `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${newStage.id}.png`,
+          true,
+          null
+        );
+      } else {
+        triggerLevelUpAnimation();
+        playSound('levelUp');
+      }
+    }
   }
+
   function triggerLevelUpAnimation() {
     pokemonSprite.classList.add('level-up');
     setTimeout(() => {
       pokemonSprite.classList.remove('level-up');
     }, 800);
   }
+
   function renderProgress() {
     // 1. Calculate Task Totals (Across the Week)
     const taskTotals = { piano: 0, math: 0, reading: 0, writing: 0, chinese: 0 };
@@ -460,6 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
           taskTotals[task]++;
         }
       });
+
       // Update grid cells in the "GOAL" column
       const totalCell = taskTotalCells[task];
       if (totalCell) {
@@ -473,6 +734,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     });
+
     // 2. Calculate Daily Totals (For ⭐ Daily Total row visual decoration)
     DAYS.forEach(day => {
       const allChecked = TASKS.every(task => !!state.grid[`${day}-${task}`]);
@@ -492,6 +754,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     });
+
     // 3. Render Weekly Badge Slot
     if (state.weeklyClaimed) {
       const currentBadge = MEGA_POKEMON[state.megaWeeks];
@@ -509,6 +772,7 @@ document.addEventListener('DOMContentLoaded', () => {
       badgeStatusEl.innerHTML = "Piano, Math, Reading: 7 days.<br>Writing, Chinese: 5 days.";
       rewardSelectContainer.classList.remove('earned');
     }
+
     // 4. Render Mega Milestone Progress Tracker
     megaWeeksCountEl.textContent = `${state.weeklyClaimed ? Math.min(4, state.megaWeeks + 1) : state.megaWeeks}`;
     megaSlots.forEach((slot, index) => {
@@ -522,6 +786,7 @@ document.addEventListener('DOMContentLoaded', () => {
         slot.classList.remove('unlocked');
       }
     });
+
     // Highlight Mega Reward if they have completed 3 weeks and this week is ready
     if ((state.megaWeeks === 3 && state.weeklyClaimed) || state.megaWeeks > 3) {
       megaRewardSelectContainer.classList.add('mega-earned');
@@ -529,6 +794,7 @@ document.addEventListener('DOMContentLoaded', () => {
       megaRewardSelectContainer.classList.remove('mega-earned');
     }
   }
+
   function checkAndTriggerWeeklySuccess() {
     const weeklySuccess = checkWeeklySuccess();
     
@@ -555,10 +821,13 @@ document.addEventListener('DOMContentLoaded', () => {
           CelebrationEngine.triggerCelebration(false);
           playSound('badge');
           const currentBadge = MEGA_POKEMON[state.megaWeeks];
+          const family = state.partnerFamily;
+          const stats = state.partnersData[family];
+          const activePokemon = getStageInfo(family, stats.level).currentStage;
           showCustomNotification(
             "📛 POKEMON BADGE EARNED! 📛",
             `Awesome job, Kepler! You earned your ${currentBadge.name} Badge & Weekly Reward:\n\n"${rewardSelect.value || 'A cool reward'}"`,
-            `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${state.partnerId}.png`,
+            `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`,
             true,
             null
           );
@@ -566,6 +835,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 500);
     }
   }
+
   function checkWeeklySuccess() {
     const taskTotals = { piano: 0, math: 0, reading: 0, writing: 0, chinese: 0 };
     
@@ -576,6 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     });
+
     return (
       taskTotals.piano >= TASK_REQS.piano &&
       taskTotals.math >= TASK_REQS.math &&
@@ -584,6 +855,7 @@ document.addEventListener('DOMContentLoaded', () => {
       taskTotals.chinese >= TASK_REQS.chinese
     );
   }
+
   function showCustomNotification(title, message, badgeUrl = '', bounceBadge = false, onCloseCallback = null) {
     notificationTitle.textContent = title;
     notificationMessage.textContent = message;
@@ -600,10 +872,13 @@ document.addEventListener('DOMContentLoaded', () => {
       notificationBadge.classList.add('hidden');
       notificationBadge.src = '';
     }
+
     notificationModal.classList.remove('hidden');
+
     const okBtn = document.getElementById('notification-ok-btn');
     const newOkBtn = okBtn.cloneNode(true);
     okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+
     newOkBtn.addEventListener('click', () => {
       notificationModal.classList.add('hidden');
       if (onCloseCallback && typeof onCloseCallback === 'function') {

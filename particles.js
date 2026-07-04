@@ -2,6 +2,8 @@
   let canvas, ctx;
   let particles = [];
   let animationId = null;
+  let lastTime = 0;
+
   // Daily Celebration Colors (Planetary themes)
   const DAY_COLORS = [
     ['#ffcb05', '#ff9f05', '#ffe57f'], // Sun (Gold)
@@ -12,6 +14,7 @@
     ['#ff80ab', '#ff4081', '#f50057'], // Venus (Pink/Rose)
     ['#9c27b0', '#6a1b9a', '#e1bee7']  // Saturn (Purple)
   ];
+
   function init() {
     canvas = document.getElementById('celebration-canvas');
     if (!canvas) return;
@@ -20,6 +23,7 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
   }
+
   function resizeCanvas() {
     if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
@@ -27,6 +31,7 @@
     canvas.height = window.innerHeight * dpr;
     ctx.scale(dpr, dpr);
   }
+
   function triggerDailyCelebration(dayIndex, startX, startY) {
     const colors = DAY_COLORS[dayIndex] || ['#ffcb05', '#ffffff'];
     const count = 30;
@@ -36,15 +41,17 @@
     }
     
     if (!animationId) {
-      animate();
+      lastTime = performance.now();
+      animationId = requestAnimationFrame(animate);
     }
   }
+
   function createDailyParticle(startX, startY, colors) {
     const size = Math.random() * 6 + 4;
     const color = colors[Math.floor(Math.random() * colors.length)];
     
     const angle = (Math.random() * 60 + 60) * Math.PI / 180;
-    const speed = Math.random() * 10 + 10;
+    const speed = Math.random() * 4 + 4; // Reduced from 10+10
     
     return {
       x: startX,
@@ -55,12 +62,13 @@
       vx: Math.cos(angle) * speed * (Math.random() > 0.5 ? 1 : -1),
       vy: -Math.sin(angle) * speed,
       rotation: Math.random() * 360,
-      rotationSpeed: (Math.random() - 0.5) * 15,
+      rotationSpeed: (Math.random() - 0.5) * 8, // Reduced from 15
       opacity: 1,
-      gravity: 0.6,
-      decay: 0.05
+      gravity: 0.22, // Reduced from 0.6
+      decay: 0.035  // Reduced from 0.05 (lasts slightly longer)
     };
   }
+
   function triggerCelebration(isMega) {
     if (animationId) {
       cancelAnimationFrame(animationId);
@@ -76,8 +84,10 @@
       particles.push(createParticle(isMega, colors));
     }
     
-    animate();
+    lastTime = performance.now();
+    animationId = requestAnimationFrame(animate);
   }
+
   function createParticle(isMega, colors) {
     const x = Math.random() * canvas.width;
     const y = isMega ? Math.random() * canvas.height - canvas.height : -20;
@@ -97,6 +107,7 @@
       opacity: 1
     };
   }
+
   function drawRotatedStar(x, y, r, p, m, color, rotation) {
     ctx.save();
     ctx.translate(x, y);
@@ -114,21 +125,31 @@
     ctx.fill();
     ctx.restore();
   }
-  function animate() {
+
+  function animate(timestamp) {
+    if (!timestamp) timestamp = performance.now();
+    if (!lastTime) lastTime = timestamp;
+    const elapsed = Math.min(100, timestamp - lastTime);
+    lastTime = timestamp;
+
+    const dt = elapsed / 16.67;
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     let active = false;
+
     particles.forEach(p => {
       if (p.opacity > 0) {
         active = true;
         
         if (p.gravity) {
-          p.vy += p.gravity;
+          p.vy += p.gravity * dt;
         }
-        p.x += p.vx;
-        p.y += p.vy;
-        p.rotation += p.rotationSpeed;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.rotation += p.rotationSpeed * dt;
         
         ctx.globalAlpha = p.opacity;
+
         if (p.shape === 'star') {
           drawRotatedStar(p.x, p.y, p.size, 5, 0.5, p.color, p.rotation);
         } else {
@@ -139,22 +160,26 @@
         }
         
         if (p.decay) {
-          p.opacity -= p.decay;
+          p.opacity -= p.decay * dt;
         } else if (p.y > canvas.height - 50) {
-          p.opacity -= 0.02;
+          p.opacity -= 0.02 * dt;
         }
       }
     });
+
     if (active) {
       animationId = requestAnimationFrame(animate);
     } else {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       cancelAnimationFrame(animationId);
       animationId = null;
+      lastTime = 0;
     }
   }
+
   // Initialize when DOM is loaded
   document.addEventListener('DOMContentLoaded', init);
+
   // Expose to global scope
   window.CelebrationEngine = {
     triggerCelebration,
