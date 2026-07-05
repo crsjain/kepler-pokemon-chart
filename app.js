@@ -132,21 +132,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // State V4 (Eevee evolution choice)
+  // State V6 (Debug Sidebar Toggle)
   let state = {
-    version: 4,
+    version: 6,
     partnerFamily: '25', // Default Pikachu Family
     partnersData: {
-      '25': { level: 1, xp: 0 },
-      '4': { level: 1, xp: 0 },
-      '1': { level: 1, xp: 0 },
-      '7': { level: 1, xp: 0 },
-      '133': { level: 1, xp: 0, evolvedId: null }
+      '25': { level: 1, xp: 0, stageId: '25' },
+      '4': { level: 1, xp: 0, stageId: '4' },
+      '1': { level: 1, xp: 0, stageId: '1' },
+      '7': { level: 1, xp: 0, stageId: '7' },
+      '133': { level: 1, xp: 0, stageId: '133' }
     },
     reward: '',
     megaReward: '',
     megaWeeks: 0,
     weeklyClaimed: false,
+    debugSidebarEnabled: false,
     grid: {} // key format: "day-task" -> boolean
   };
 
@@ -189,6 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const adminImportBtn = document.getElementById('admin-import-btn');
   const adminWipeBtn = document.getElementById('admin-wipe-btn');
   const closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
+  const toggleDebugSidebar = document.getElementById('toggle-debug-sidebar');
 
   // Testing Panel Elements
   const testMilestoneMinusOneBtn = document.getElementById('test-milestone-minus-one');
@@ -208,6 +210,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Eevee Modal Elements
   const eeveeModal = document.getElementById('eevee-modal');
+  
+  // Debug Sidebar Element
+  const debugSidebar = document.getElementById('debug-sidebar');
 
   const checkboxes = document.querySelectorAll('.pokeball-checkbox input');
 
@@ -344,6 +349,13 @@ document.addEventListener('DOMContentLoaded', () => {
               }
             });
             state.version = 5;
+            saveState();
+          }
+
+          // Migration from V5 to V6 (Debug Sidebar Toggle)
+          if (state.version === 5) {
+            state.debugSidebarEnabled = false;
+            state.version = 6;
             saveState();
           }
           
@@ -549,6 +561,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (family === '133' && stats.level >= 5 && stats.stageId === '133') {
       showEeveeEvolutionDialog();
     }
+
+    // Render Debug Sidebar Visibility
+    renderDebugSidebarVisibility();
+  }
+
+  function renderDebugSidebarVisibility() {
+    if (!debugSidebar || !toggleDebugSidebar) return;
+    if (state.debugSidebarEnabled) {
+      debugSidebar.classList.remove('hidden');
+      toggleDebugSidebar.checked = true;
+    } else {
+      debugSidebar.classList.add('hidden');
+      toggleDebugSidebar.checked = false;
+    }
   }
 
   function setupEventListeners() {
@@ -729,6 +755,14 @@ document.addEventListener('DOMContentLoaded', () => {
     testWeek3Btn.addEventListener('click', () => { setWeek(3); adminModal.classList.add('hidden'); });
     testWeek4Btn.addEventListener('click', () => { setWeek(4); adminModal.classList.add('hidden'); });
 
+    // Toggle Debug Sidebar
+    if (toggleDebugSidebar) {
+      toggleDebugSidebar.addEventListener('change', (e) => {
+        state.debugSidebarEnabled = e.target.checked;
+        saveState();
+        renderDebugSidebarVisibility();
+      });
+    }
   }
 
   function resetWeekGrid() {
@@ -784,7 +818,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (family === '133') {
       targetLevel = 4;
-      stats.evolvedId = null; // Reset choice for testing
+      stats.stageId = '133'; // Reset choice for testing
     } else {
       let nextStage = null;
       for (let i = 0; i < evo.stages.length; i++) {

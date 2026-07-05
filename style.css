@@ -961,20 +961,101 @@ body {
   line-height: 1.4;
 }
 
-/* Testing Panel Styles */
-.admin-section.testing-panel {
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 2px dashed var(--poke-blue);
-  text-align: left;
+/* Layout Wrapper & Sidebar Styles */
+.layout-container {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  max-width: 1200px;
+  width: 95%;
+  justify-content: center;
+  margin: 0 auto;
 }
 
-.admin-section.testing-panel h3 {
+.debug-sidebar {
+  background: white;
+  border: var(--pixel-border);
+  border-radius: 12px;
+  padding: 20px;
+  width: 250px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  z-index: 5;
+}
+
+.debug-sidebar.hidden {
+  display: none;
+}
+
+.debug-sidebar h3 {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.1rem;
+  color: var(--poke-dark-blue);
+  margin-bottom: 5px;
+  text-align: center;
+  border-bottom: 2px dashed var(--poke-blue);
+  padding-bottom: 8px;
+}
+
+/* Toggle Switch Styles */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 24px;
+  border: 2px solid var(--border-color);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+}
+
+input:checked + .slider {
+  background-color: var(--poke-blue);
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.admin-option-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 2px dashed #e2e8f0;
   font-family: 'Fredoka One', cursive;
   font-size: 0.95rem;
   color: var(--poke-dark-blue);
-  margin-bottom: 12px;
-  text-align: center;
 }
 
 .testing-buttons {

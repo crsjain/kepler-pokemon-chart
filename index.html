@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kepler's Pokémon Training Chart</title>
-  <link rel="stylesheet" href="style.css?v=4.3">
+  <link rel="stylesheet" href="style.css?v=4.4">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
@@ -29,7 +29,8 @@
 <body>
   <canvas id="celebration-canvas"></canvas>
 
-  <div class="app-container">
+  <div class="layout-container">
+    <div class="app-container">
     <!-- Header -->
     <header class="game-header">
       <h1 class="title">Kepler's Pokémon Training</h1>
@@ -137,23 +138,13 @@
           <button id="admin-wipe-btn" class="pixel-btn danger">Wipe All Progress (Reset)</button>
         </div>
 
-        <!-- Testing Panel -->
-        <div class="admin-section testing-panel">
-          <h3>🧪 Debug / Testing Panel</h3>
-          <div class="testing-buttons">
-            <button id="test-milestone-minus-one" class="pixel-btn warning">Milestone -1 Ball</button>
-            <div class="testing-row">
-              <button id="test-near-evolve" class="pixel-btn warning">Near Evolution</button>
-              <button id="test-near-levelup" class="pixel-btn warning">Near Level Up</button>
-            </div>
-            <div class="test-week-selector">
-              <span>Set Week:</span>
-              <button id="test-week-1" class="pixel-btn info small">W1</button>
-              <button id="test-week-2" class="pixel-btn info small">W2</button>
-              <button id="test-week-3" class="pixel-btn info small">W3</button>
-              <button id="test-week-4" class="pixel-btn info small">W4</button>
-            </div>
-          </div>
+        <!-- Debug Sidebar Toggle -->
+        <div class="admin-option-row">
+          <span>Enable Debug Sidebar:</span>
+          <label class="switch">
+            <input type="checkbox" id="toggle-debug-sidebar">
+            <span class="slider"></span>
+          </label>
         </div>
 
         <div class="admin-faq">
@@ -358,9 +349,29 @@
         <button id="admin-btn" class="pixel-btn info small">Parent Admin</button>
       </div>
     </footer>
+    </div>
+
+    <!-- Debug Sidebar -->
+    <div id="debug-sidebar" class="debug-sidebar hidden">
+      <h3>🧪 Debug Panel</h3>
+      <div class="testing-buttons">
+        <button id="test-milestone-minus-one" class="pixel-btn warning">Milestone -1 Ball</button>
+        <div class="testing-row">
+          <button id="test-near-evolve" class="pixel-btn warning">Near Evolution</button>
+          <button id="test-near-levelup" class="pixel-btn warning">Near Level Up</button>
+        </div>
+        <div class="test-week-selector">
+          <span>Set Week:</span>
+          <button id="test-week-1" class="pixel-btn info small">W1</button>
+          <button id="test-week-2" class="pixel-btn info small">W2</button>
+          <button id="test-week-3" class="pixel-btn info small">W3</button>
+          <button id="test-week-4" class="pixel-btn info small">W4</button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <script src="particles.js?v=4.3"></script>
-  <script src="app.js?v=4.3"></script>
+  <script src="particles.js?v=4.4"></script>
+  <script src="app.js?v=4.4"></script>
 </body>
 </html>
