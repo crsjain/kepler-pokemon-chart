@@ -544,6 +544,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 6. Update Progress
     renderProgress();
+
+    // Auto-trigger Eevee evolution if they are in inconsistent state (Level >= 5 but not evolved)
+    if (family === '133' && stats.level >= 5 && stats.stageId === '133') {
+      showEeveeEvolutionDialog();
+    }
   }
 
   function setupEventListeners() {
