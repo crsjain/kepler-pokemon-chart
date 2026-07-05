@@ -75,7 +75,6 @@ const eeveeModal = document.getElementById('eevee-modal');
 const debugSidebar = document.getElementById('debug-sidebar');
 
 // Audio control footer elements
-const volumeSlider = document.getElementById('volume-slider');
 const muteToggleBtn = document.getElementById('mute-toggle-btn');
 
 // DOM Cache for Optimization
@@ -812,16 +811,6 @@ function setupEventListeners() {
     renderRewardDropdowns();
   });
 
-  if (volumeSlider) {
-    volumeSlider.value = state.volume !== undefined ? state.volume : 50;
-    volumeSlider.addEventListener('input', (e) => {
-      const vol = parseInt(e.target.value);
-      state.volume = vol;
-      saveState();
-      updateVolumeIcon();
-    });
-  }
-
   if (muteToggleBtn) {
     muteToggleBtn.addEventListener('click', () => {
       if (state.volume > 0) {
@@ -831,7 +820,6 @@ function setupEventListeners() {
         const prev = parseInt(muteToggleBtn.dataset.prevVolume || 50);
         state.volume = prev > 0 ? prev : 50;
       }
-      if (volumeSlider) volumeSlider.value = state.volume;
       saveState();
       updateVolumeIcon();
     });
