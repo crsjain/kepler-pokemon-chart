@@ -45,6 +45,8 @@ body {
 }
 
 .app-container {
+  flex: 1;
+  min-width: 0;
   max-width: 900px;
   width: 100%;
   background: var(--card-bg);
@@ -997,6 +999,17 @@ body {
   text-align: center;
   border-bottom: 2px dashed var(--poke-blue);
   padding-bottom: 8px;
+}
+
+@media (max-width: 1023px) {
+  .layout-container {
+    flex-direction: column;
+    align-items: center;
+  }
+  .debug-sidebar {
+    width: 100%;
+    max-width: 900px;
+  }
 }
 
 /* Toggle Switch Styles */
