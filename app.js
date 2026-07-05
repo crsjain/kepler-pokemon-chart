@@ -758,7 +758,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const oldLevel = stats.level;
     let totalXp = stats.xp + amount;
     
-    let leveledUp = false;
+    let levelIncreased = false;
+    let levelDecreased = false;
     let evolved = false;
     let newLevel = oldLevel;
     let newXp = totalXp;
@@ -766,7 +767,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (totalXp >= XP_LEVEL_THRESHOLD) {
       newLevel += 1;
       newXp = totalXp - XP_LEVEL_THRESHOLD;
-      leveledUp = true;
+      levelIncreased = true;
       
       // Check evolution
       const oldStageInfo = getStageInfo(family, oldLevel);
@@ -778,14 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (newLevel > 1) {
         newLevel -= 1;
         newXp = XP_LEVEL_THRESHOLD + totalXp;
-        leveledUp = true;
-        
-        // Check devolution
-        const oldStageInfo = getStageInfo(family, oldLevel);
-        const newStageInfo = getStageInfo(family, newLevel);
-        if (oldStageInfo.currentStage.id !== newStageInfo.currentStage.id) {
-          evolved = true;
-        }
+        levelDecreased = true;
       } else {
         newXp = 0;
       }
@@ -796,7 +790,7 @@ document.addEventListener('DOMContentLoaded', () => {
     stats.level = newLevel;
     stats.xp = newXp;
 
-    if (leveledUp) {
+    if (levelIncreased) {
       saveAutoBackup();
       if (evolved) {
         const oldStageInfo = getStageInfo(family, oldLevel);
@@ -817,6 +811,8 @@ document.addEventListener('DOMContentLoaded', () => {
         triggerLevelUpAnimation();
         playSound('levelUp');
       }
+    } else if (levelDecreased) {
+      saveAutoBackup();
     }
   }
 
