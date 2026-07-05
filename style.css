@@ -1216,6 +1216,56 @@ input:checked + .slider:before {
 .pixel-select.flash-attention {
   animation: flash-select-attention 1s ease-in-out 3;
 }
+/* Backup History Styles */
+.backup-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px;
+  background: #f8fafc;
+  margin-top: 8px;
+  margin-bottom: 15px;
+}
 
+.backup-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  gap: 10px;
+}
 
+.backup-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-family: 'Quicksand', sans-serif;
+  text-align: left;
+}
 
+.backup-date {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--poke-dark-blue);
+}
+
+.backup-context {
+  font-size: 0.75rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.no-backups {
+  text-align: center;
+  font-family: 'Quicksand', sans-serif;
+  color: #a0aec0;
+  font-size: 0.9rem;
+  padding: 15px 0;
+}

@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kepler's Pokémon Training Chart</title>
-  <link rel="stylesheet" href="style.css?v=4.9">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2a71d0">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="stylesheet" href="style.css?v=5.0">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
@@ -132,10 +135,18 @@
       <div class="modal-content">
         <h2>Parent Admin Panel</h2>
         <div class="admin-options">
-          <button id="admin-restore-auto-btn" class="pixel-btn info">Restore from Auto-Backup</button>
+          <button id="admin-diagnostics-btn" class="pixel-btn info">Run Diagnostics</button>
           <button id="admin-export-btn" class="pixel-btn info">Export Backup Code</button>
           <button id="admin-import-btn" class="pixel-btn info">Import Backup Code</button>
           <button id="admin-wipe-btn" class="pixel-btn danger">Wipe All Progress (Reset)</button>
+        </div>
+
+        <!-- Auto-Backup History -->
+        <div class="admin-section">
+          <h3>📋 Auto-Backup History</h3>
+          <div id="backup-history-list" class="backup-history-list">
+            <p class="no-backups">No backups available yet.</p>
+          </div>
         </div>
 
         <!-- Debug Sidebar Toggle -->
@@ -371,7 +382,7 @@
     </div>
   </div>
 
-  <script src="particles.js?v=4.9"></script>
-  <script src="app.js?v=4.9"></script>
+  <script src="particles.js?v=5.0"></script>
+  <script src="app.js?v=5.0"></script>
 </body>
 </html>

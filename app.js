@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Admin Modal Elements
   const adminModal = document.getElementById('admin-modal');
-  const adminRestoreAutoBtn = document.getElementById('admin-restore-auto-btn');
+  const adminDiagnosticsBtn = document.getElementById('admin-diagnostics-btn');
   const adminExportBtn = document.getElementById('admin-export-btn');
   const adminImportBtn = document.getElementById('admin-import-btn');
   const adminWipeBtn = document.getElementById('admin-wipe-btn');
@@ -379,33 +379,211 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function saveAutoBackup() {
     try {
+      const historyStr = localStorage.getItem('kepler_pokemon_backups_history');
+      let history = [];
+      if (historyStr) {
+        history = JSON.parse(historyStr) || [];
+      }
+      
+      const backupEntry = {
+        timestamp: new Date().toISOString(),
+        state: JSON.parse(JSON.stringify(state))
+      };
+      
+      history.unshift(backupEntry);
+      if (history.length > 5) {
+        history = history.slice(0, 5);
+      }
+      
+      localStorage.setItem('kepler_pokemon_backups_history', JSON.stringify(history));
+      // Keep old key for compatibility
       localStorage.setItem('kepler_pokemon_training_backup', JSON.stringify(state));
-      console.log('Auto-backup saved.');
+      console.log('Auto-backup saved in history.');
     } catch (e) {
       console.error('Error saving auto-backup to localStorage:', e);
     }
   }
 
-  function restoreFromAutoBackup() {
+  function renderBackupHistory() {
+    const listContainer = document.getElementById('backup-history-list');
+    if (!listContainer) return;
+    
+    listContainer.innerHTML = '';
+    
     try {
-      const backup = localStorage.getItem('kepler_pokemon_training_backup');
+      const historyStr = localStorage.getItem('kepler_pokemon_backups_history');
+      if (!historyStr) {
+        listContainer.innerHTML = '<p class="no-backups">No backups available yet.</p>';
+        return;
+      }
+      
+      const history = JSON.parse(historyStr) || [];
+      if (history.length === 0) {
+        listContainer.innerHTML = '<p class="no-backups">No backups available yet.</p>';
+        return;
+      }
+      
+      history.forEach((backup, index) => {
+        const date = new Date(backup.timestamp);
+        const formattedDate = date.toLocaleString();
+        
+        const family = backup.state.partnerFamily || '25';
+        const stats = backup.state.partnersData[family] || { level: 1 };
+        const stageInfo = getStageInfo(family, stats.stageId || family);
+        const partnerName = stageInfo.currentStage.name;
+        
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'backup-item';
+        itemDiv.innerHTML = `
+          <div class="backup-info">
+            <span class="backup-date">${formattedDate}</span>
+            <span class="backup-context">${partnerName} (LV ${stats.level}) • W${(backup.state.megaWeeks || 0) + 1}</span>
+          </div>
+          <button class="pixel-btn small warning restore-backup-btn" data-index="${index}">Restore</button>
+        `;
+        
+        listContainer.appendChild(itemDiv);
+      });
+      
+      listContainer.querySelectorAll('.restore-backup-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          restoreBackupFromHistory(idx);
+        });
+      });
+      
+    } catch (e) {
+      console.error('Error rendering backup history:', e);
+      listContainer.innerHTML = '<p class="no-backups">Error loading history.</p>';
+    }
+  }
+
+  function restoreBackupFromHistory(index) {
+    try {
+      const historyStr = localStorage.getItem('kepler_pokemon_backups_history');
+      if (!historyStr) return;
+      const history = JSON.parse(historyStr) || [];
+      const backup = history[index];
+      
       if (backup) {
-        const parsed = JSON.parse(backup);
-        if (parsed && typeof parsed === 'object') {
-          if (confirm("Are you sure you want to restore from the last auto-backup? This will overwrite current progress.")) {
-            state = { ...state, ...parsed };
+        showCustomConfirm(
+          "Restore Backup? 📋",
+          `Restore progress from ${new Date(backup.timestamp).toLocaleString()}? Current progress will be overwritten.`,
+          () => {
+            state = backup.state;
             saveState();
             renderState();
-            alert("Progress restored from auto-backup successfully!");
+            alert("Restored successfully!");
             adminModal.classList.add('hidden');
           }
-        }
-      } else {
-        alert("No auto-backup found!");
+        );
       }
     } catch (e) {
-      alert("Error restoring from auto-backup.");
-      console.error(e);
+      console.error('Error restoring backup:', e);
+      alert('Failed to restore backup.');
+    }
+  }
+
+  function runStateDiagnostics() {
+    let issues = [];
+    let fixed = [];
+    
+    if (!state.partnersData) {
+      state.partnersData = {};
+      issues.push("Missing partnersData container.");
+      fixed.push("Initialized empty partnersData.");
+    }
+    
+    const families = ['25', '4', '1', '7', '133'];
+    families.forEach(fid => {
+      if (!state.partnersData[fid]) {
+        state.partnersData[fid] = { level: 1, xp: 0, stageId: fid };
+        issues.push(`Missing partner data for family ${fid}.`);
+        fixed.push(`Initialized default data for family ${fid}.`);
+      } else {
+        const pData = state.partnersData[fid];
+        if (typeof pData.level !== 'number' || pData.level < 1) {
+          issues.push(`Invalid level for family ${fid}: ${pData.level}`);
+          pData.level = 1;
+          fixed.push(`Reset level to 1 for family ${fid}.`);
+        }
+        if (typeof pData.xp !== 'number' || pData.xp < 0 || pData.xp >= 100) {
+          issues.push(`Invalid XP for family ${fid}: ${pData.xp}`);
+          pData.xp = Math.max(0, Math.min(99, pData.xp));
+          fixed.push(`Clamped XP for family ${fid} between 0 and 99.`);
+        }
+        if (!pData.stageId) {
+          const evo = EVOLUTIONS[fid];
+          let index = 0;
+          if (evo && fid !== '133') {
+            for (let i = 1; i < evo.stages.length; i++) {
+              if (pData.level >= evo.stages[i].level) {
+                index = i;
+              } else {
+                break;
+              }
+            }
+            pData.stageId = evo.stages[index].id;
+          } else {
+            pData.stageId = fid;
+          }
+          issues.push(`Missing stageId for family ${fid}.`);
+          fixed.push(`Set stageId to ${pData.stageId} based on level.`);
+        } else {
+          const evo = EVOLUTIONS[fid];
+          if (fid === '133') {
+            const isValidEeveeStage = pData.stageId === '133' || evo.options.some(opt => opt.id === pData.stageId);
+            if (!isValidEeveeStage) {
+              issues.push(`Invalid stageId for Eevee family: ${pData.stageId}`);
+              pData.stageId = '133';
+              fixed.push(`Reset Eevee stageId to '133'.`);
+            }
+          } else if (evo) {
+            const isValidStage = evo.stages.some(s => s.id === pData.stageId);
+            if (!isValidStage) {
+              issues.push(`Invalid stageId for family ${fid}: ${pData.stageId}`);
+              pData.stageId = fid;
+              fixed.push(`Reset stageId to ${fid} for family ${fid}.`);
+            }
+          }
+        }
+      }
+    });
+    
+    if (!state.grid || typeof state.grid !== 'object') {
+      state.grid = {};
+      issues.push("Grid was missing or invalid.");
+      fixed.push("Reset grid to empty.");
+    }
+    
+    if (state.version !== 6) {
+      issues.push(`State version mismatch. Current: ${state.version}, Expected: 6`);
+      state.version = 6;
+      fixed.push("Forced state version to 6.");
+    }
+    
+    if (fixed.length > 0) {
+      saveState();
+      renderState();
+      
+      const issueList = issues.map(i => `• ${i}`).join('\n');
+      const fixList = fixed.map(f => `• ${f}`).join('\n');
+      
+      showCustomNotification(
+        "🛠️ DIAGNOSTICS COMPLETE 🛠️",
+        `Diagnostics found and fixed ${fixed.length} issues:\n\nISSUES:\n${issueList}\n\nFIXES:\n${fixList}`,
+        'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/max-remedy.png',
+        false,
+        null
+      );
+    } else {
+      showCustomNotification(
+        "✅ DIAGNOSTICS HEALTHY ✅",
+        "Diagnostics completed. State is 100% healthy! No issues found.",
+        'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/max-remedy.png',
+        false,
+        null
+      );
     }
   }
 
@@ -692,6 +870,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const password = prompt('Enter Parent Password to open Admin Panel:');
       if (password === ADMIN_PASSWORD) {
         adminModal.classList.remove('hidden');
+        renderBackupHistory();
       } else if (password !== null) {
         alert('Wrong Code! Try again, Parent!');
       }
@@ -702,9 +881,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Admin Modal Actions
-    adminRestoreAutoBtn.addEventListener('click', () => {
-      restoreFromAutoBackup();
-    });
+    if (adminDiagnosticsBtn) {
+      adminDiagnosticsBtn.addEventListener('click', () => {
+        runStateDiagnostics();
+      });
+    }
 
     adminExportBtn.addEventListener('click', () => {
       exportState();
@@ -1258,5 +1439,14 @@ document.addEventListener('DOMContentLoaded', () => {
       true,
       null
     );
+  }
+
+  // Register Service Worker for PWA offline support
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(reg => console.log('Service Worker registered successfully.', reg.scope))
+        .catch(err => console.log('Service Worker registration failed:', err));
+    });
   }
 });

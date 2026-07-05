@@ -1,0 +1,17 @@
+{
+  "name": "Kepler's Pokémon Training Chart",
+  "short_name": "Poke Chart",
+  "description": "Weekly training reward chart for Kepler.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f6f8fc",
+  "theme_color": "#2a71d0",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "475x475",
+      "type": "image/png"
+    }
+  ]
+}
