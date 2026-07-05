@@ -15,6 +15,18 @@
   }
 
   async function runSuite() {
+    const originalConfirm = window.confirm;
+    const originalAlert = window.alert;
+    const originalPrompt = window.prompt;
+    let mocksActive = false;
+
+    function restoreMocks() {
+      window.confirm = originalConfirm;
+      window.alert = originalAlert;
+      window.prompt = originalPrompt;
+      mocksActive = false;
+    }
+
     try {
       // 1. Reset state to clean V8 default
       if (window.__test_helpers__ && window.__test_helpers__.resetState) {
@@ -107,6 +119,16 @@
       assert(state.partnersData['133'].stageId === '134', "Eevee stageId in state should be Vaporeon (134)");
       assert(document.getElementById('partner-name').textContent === 'Vaporeon', "Sprite label should update to Vaporeon");
 
+      // Dismiss custom evolution notification modal programmatically
+      const notifModal = document.querySelector('.notif-modal');
+      if (notifModal) {
+        const closeBtn = notifModal.querySelector('.notif-close-btn');
+        if (closeBtn) {
+          closeBtn.click();
+        }
+      }
+      await sleep(300); // Wait for CSS transition
+
       // Restore back to Pikachu for subsequent tests
       state.partnerFamily = '25';
       window.__test_helpers__.renderState(false);
@@ -115,14 +137,11 @@
       console.log("Testing Dynamic Task Customization...");
       
       // Mock window prompts/alerts/confirms to run headlessly
-      const originalConfirm = window.confirm;
-      const originalAlert = window.alert;
-      const originalPrompt = window.prompt;
-      
       let alertMsg = "";
       window.confirm = () => true; // Auto-confirm
       window.alert = (msg) => { alertMsg = msg; console.log("Mock Alert:", msg); };
       window.prompt = () => "0130"; // Admin password bypass
+      mocksActive = true;
       
       // Click Admin Button to open
       const adminBtn = document.getElementById('admin-btn');
@@ -201,10 +220,7 @@
       assert(state.partnersData['25'].xp === 99, "XP should clamp to 99");
       assert(state.partnersData['25'].stageId === '25', "Stage ID should recover to default Pikachu");
 
-      // Clean up mocks
-      window.confirm = originalConfirm;
-      window.alert = originalAlert;
-      window.prompt = originalPrompt;
+      restoreMocks();
 
       // Close admin modal
       const closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
@@ -214,6 +230,7 @@
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
+      restoreMocks(); // Ensure mocks are restored on failure so alert works
       console.error("❌ Test Suite Failed:", e);
       alert("❌ Test Suite Failed: " + e.message);
     }
