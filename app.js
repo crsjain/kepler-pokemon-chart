@@ -671,6 +671,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tbody.appendChild(totalRow);
     
     setupCheckboxListeners();
+    renderProgress();
   }
 
   function setupCheckboxListeners() {
