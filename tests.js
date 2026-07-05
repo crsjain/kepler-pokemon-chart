@@ -76,7 +76,7 @@
       state.partnersData['133'].stageId = '133';
       
       // Trigger render (does not rebuild grid because rebuildGrid=false)
-      renderState(false);
+      window.__test_helpers__.renderState(false);
       assert(document.getElementById('partner-name').textContent === 'Eevee', "Active partner should be Eevee");
       assert(window.__grid_rebuild_count__ === 1, "Switching partner should not rebuild the grid");
 
@@ -109,7 +109,7 @@
 
       // Restore back to Pikachu for subsequent tests
       state.partnerFamily = '25';
-      renderState(false);
+      window.__test_helpers__.renderState(false);
 
       // 4. Test Dynamic Task Customization (Save, Edit, Delete)
       console.log("Testing Dynamic Task Customization...");

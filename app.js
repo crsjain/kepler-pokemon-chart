@@ -1924,7 +1924,8 @@ document.addEventListener('DOMContentLoaded', () => {
         gridRebuildCount = 0; // Reset rebuild counter for clean test run
         saveState();
         renderState(true); // Force rebuild
-      }
+      },
+      renderState: (rebuildGrid) => renderState(rebuildGrid)
     };
     
     // Load test script dynamically
