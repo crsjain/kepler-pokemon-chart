@@ -1047,4 +1047,70 @@ body {
   max-width: 150px;
 }
 
+/* Eevee Modal Styles */
+.eevee-content {
+  border: 4px solid #b794f4; /* Purple border for Eevee theme */
+  background: radial-gradient(circle, #ffffff 0%, #faf5ff 100%);
+}
+
+.eevee-content h2 {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.60rem;
+  color: #6b46c1;
+  margin-bottom: 5px;
+}
+
+.eevee-subtitle {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #718096;
+  margin-bottom: 20px;
+}
+
+.eevee-options-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 480px) {
+  .eevee-options-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.eevee-option {
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+  background: white;
+}
+
+.eevee-option:hover {
+  background: #faf5ff;
+  border-color: #9f7aea;
+  transform: translateY(-2px);
+}
+
+.eevee-option img {
+  width: 55px;
+  height: 55px;
+  object-fit: contain;
+}
+
+.eevee-option-name {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.75rem;
+  color: var(--text-color);
+}
+
+
 

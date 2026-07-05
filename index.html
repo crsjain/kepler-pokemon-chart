@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kepler's Pokémon Training Chart</title>
-  <link rel="stylesheet" href="style.css?v=4.0">
+  <link rel="stylesheet" href="style.css?v=4.1">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
@@ -111,6 +111,17 @@
         <div class="confirm-actions">
           <button id="confirm-yes-btn" class="pixel-btn info">Let's Go! 🚀</button>
           <button id="confirm-no-btn" class="pixel-btn">Not Yet</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Eevee Evolution Choice Modal -->
+    <div id="eevee-modal" class="modal hidden">
+      <div class="modal-content eevee-content">
+        <h2>Evolve Eevee! ✨</h2>
+        <p class="eevee-subtitle">Choose your Eevee's evolution form:</p>
+        <div class="eevee-options-grid">
+          <!-- Populated dynamically via JS -->
         </div>
       </div>
     </div>
@@ -349,7 +360,7 @@
     </footer>
   </div>
 
-  <script src="particles.js?v=4.0"></script>
-  <script src="app.js?v=4.0"></script>
+  <script src="particles.js?v=4.1"></script>
+  <script src="app.js?v=4.1"></script>
 </body>
 </html>

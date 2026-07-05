@@ -117,22 +117,31 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     '133': {
       stages: [
-        { level: 1, id: '133', name: 'Eevee' },
-        { level: 5, id: '135', name: 'Jolteon' }
+        { level: 1, id: '133', name: 'Eevee' }
+      ],
+      options: [
+        { id: '134', name: 'Vaporeon' },
+        { id: '135', name: 'Jolteon' },
+        { id: '136', name: 'Flareon' },
+        { id: '196', name: 'Espeon' },
+        { id: '197', name: 'Umbreon' },
+        { id: '470', name: 'Leafeon' },
+        { id: '471', name: 'Glaceon' },
+        { id: '700', name: 'Sylveon' }
       ]
     }
   };
 
-  // State V3
+  // State V4 (Eevee evolution choice)
   let state = {
-    version: 3,
+    version: 4,
     partnerFamily: '25', // Default Pikachu Family
     partnersData: {
       '25': { level: 1, xp: 0 },
       '4': { level: 1, xp: 0 },
       '1': { level: 1, xp: 0 },
       '7': { level: 1, xp: 0 },
-      '133': { level: 1, xp: 0 }
+      '133': { level: 1, xp: 0, evolvedId: null }
     },
     reward: '',
     megaReward: '',
@@ -197,6 +206,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const confirmYesBtn = document.getElementById('confirm-yes-btn');
   const confirmNoBtn = document.getElementById('confirm-no-btn');
 
+  // Eevee Modal Elements
+  const eeveeModal = document.getElementById('eevee-modal');
+
   const checkboxes = document.querySelectorAll('.pokeball-checkbox input');
 
   // Cached DOM elements for performance
@@ -224,6 +236,28 @@ document.addEventListener('DOMContentLoaded', () => {
   function getStageInfo(familyId, level) {
     const evo = EVOLUTIONS[familyId];
     if (!evo) return { currentStage: { id: familyId, name: 'Unknown' }, nextStage: null, startLevel: 1, endLevel: null };
+    
+    // Special case for Eevee family
+    if (familyId === '133') {
+      const stats = state.partnersData['133'];
+      if (level >= 5 && stats && stats.evolvedId) {
+        const chosen = evo.options.find(opt => opt.id === stats.evolvedId);
+        if (chosen) {
+          return {
+            currentStage: { level: 5, id: chosen.id, name: chosen.name },
+            nextStage: null,
+            startLevel: 5,
+            endLevel: null
+          };
+        }
+      }
+      return {
+        currentStage: evo.stages[0], // Eevee
+        nextStage: { level: 5, id: 'choice', name: 'Evolution Choice' },
+        startLevel: 1,
+        endLevel: 5
+      };
+    }
     
     let currentStageIndex = 0;
     for (let i = 1; i < evo.stages.length; i++) {
@@ -278,6 +312,15 @@ document.addEventListener('DOMContentLoaded', () => {
             delete state.partnerName;
             state.version = 3;
             saveState(); // Save migrated state immediately
+          }
+
+          // Migration from V3 to V4 (Eevee evolvedId)
+          if (state.version === 3) {
+            if (state.partnersData['133']) {
+              state.partnersData['133'].evolvedId = null;
+            }
+            state.version = 4;
+            saveState();
           }
           
           if (!state.grid || typeof state.grid !== 'object') {
@@ -709,18 +752,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!evo) return;
     
     let targetLevel = 4;
-    let nextStage = null;
-    for (let i = 0; i < evo.stages.length; i++) {
-      if (evo.stages[i].level > stats.level) {
-        nextStage = evo.stages[i];
-        break;
-      }
-    }
     
-    if (nextStage) {
-      targetLevel = nextStage.level - 1;
+    if (family === '133') {
+      targetLevel = 4;
+      stats.evolvedId = null; // Reset choice for testing
     } else {
-      targetLevel = evo.stages[1].level - 1;
+      let nextStage = null;
+      for (let i = 0; i < evo.stages.length; i++) {
+        if (evo.stages[i].level > stats.level) {
+          nextStage = evo.stages[i];
+          break;
+        }
+      }
+      
+      if (nextStage) {
+        targetLevel = nextStage.level - 1;
+      } else {
+        targetLevel = evo.stages[1].level - 1;
+      }
     }
     
     stats.level = targetLevel;
@@ -792,7 +841,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (levelIncreased) {
       saveAutoBackup();
-      if (evolved) {
+      
+      // Special Eevee evolution choice trigger
+      if (family === '133' && newLevel === 5 && !stats.evolvedId) {
+        showEeveeEvolutionDialog();
+      } else if (evolved) {
         const oldStageInfo = getStageInfo(family, oldLevel);
         const newStageInfo = getStageInfo(family, newLevel);
         const oldStage = oldStageInfo.currentStage;
@@ -812,6 +865,9 @@ document.addEventListener('DOMContentLoaded', () => {
         playSound('levelUp');
       }
     } else if (levelDecreased) {
+      if (family === '133' && newLevel < 5) {
+        stats.evolvedId = null; // Reset evolution choice if they drop below level 5
+      }
       saveAutoBackup();
     }
   }
@@ -1038,5 +1094,51 @@ document.addEventListener('DOMContentLoaded', () => {
         onNoCallback();
       }
     });
+  }
+
+  function showEeveeEvolutionDialog() {
+    const grid = eeveeModal.querySelector('.eevee-options-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    
+    const options = EVOLUTIONS['133'].options;
+    
+    options.forEach(opt => {
+      const optDiv = document.createElement('div');
+      optDiv.className = 'eevee-option';
+      optDiv.innerHTML = `
+        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${opt.id}.png" alt="${opt.name}">
+        <span class="eevee-option-name">${opt.name}</span>
+      `;
+      
+      optDiv.addEventListener('click', () => {
+        selectEeveeEvolution(opt.id, opt.name);
+      });
+      
+      grid.appendChild(optDiv);
+    });
+    
+    eeveeModal.classList.remove('hidden');
+  }
+
+  function selectEeveeEvolution(evolvedId, evolvedName) {
+    eeveeModal.classList.add('hidden');
+    
+    const stats = state.partnersData['133'];
+    stats.evolvedId = evolvedId;
+    
+    saveState();
+    renderState();
+    
+    // Trigger celebration
+    CelebrationEngine.triggerCelebration(true); // Mega celebration
+    playSound('badge');
+    showCustomNotification(
+      "✨ EEVEE EVOLVED! ✨",
+      `Congratulations! Kepler's Eevee evolved into ${evolvedName}!`,
+      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${evolvedId}.png`,
+      true,
+      null
+    );
   }
 });
