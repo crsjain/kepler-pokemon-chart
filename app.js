@@ -1921,6 +1921,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.weeklyClaimed = false;
         state.grid = {};
         state.claimedRewardsHistory = [];
+        gridRebuildCount = 0; // Reset rebuild counter for clean test run
         saveState();
         renderState(true); // Force rebuild
       }
