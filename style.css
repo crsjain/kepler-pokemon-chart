@@ -1014,3 +1014,37 @@ body {
   text-align: center;
 }
 
+/* Confirm Modal Styles */
+.confirm-content {
+  border: 4px solid var(--poke-blue);
+  background: radial-gradient(circle, #ffffff 0%, #f0f4ff 100%);
+}
+
+.confirm-content h2 {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.5rem;
+  color: var(--poke-dark-blue);
+  margin-bottom: 15px;
+}
+
+.confirm-body {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-color);
+  margin-bottom: 25px;
+  line-height: 1.4;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.confirm-actions .pixel-btn {
+  flex: 1;
+  max-width: 150px;
+}
+
+

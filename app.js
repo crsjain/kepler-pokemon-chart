@@ -190,6 +190,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const testWeek3Btn = document.getElementById('test-week-3');
   const testWeek4Btn = document.getElementById('test-week-4');
 
+  // Confirm Modal Elements
+  const confirmModal = document.getElementById('confirm-modal');
+  const confirmTitle = document.getElementById('confirm-title');
+  const confirmMessage = document.getElementById('confirm-message');
+  const confirmYesBtn = document.getElementById('confirm-yes-btn');
+  const confirmNoBtn = document.getElementById('confirm-no-btn');
+
   const checkboxes = document.querySelectorAll('.pokeball-checkbox input');
 
   // Cached DOM elements for performance
@@ -568,9 +575,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Reset current week only
     resetBtn.addEventListener('click', () => {
-      if (confirm('Reset this week\'s training grid? Kepler\'s Levels and Mega Milestone progress will NOT be lost.')) {
-        resetWeekGrid();
-      }
+      showCustomConfirm(
+        "Start New Week? 📅",
+        "Ready to start the next week and continue progress towards a Mega Milestone? Your Pokémon levels will NOT be lost!",
+        () => {
+          resetWeekGrid();
+        }
+      );
     });
 
     // Admin Panel (Password protected)
@@ -999,6 +1010,36 @@ document.addEventListener('DOMContentLoaded', () => {
       notificationModal.classList.add('hidden');
       if (onCloseCallback && typeof onCloseCallback === 'function') {
         onCloseCallback();
+      }
+    });
+  }
+
+  function showCustomConfirm(title, message, onYesCallback, onNoCallback = null) {
+    confirmTitle.textContent = title;
+    confirmMessage.textContent = message;
+    
+    confirmModal.classList.remove('hidden');
+    
+    // Rebuild buttons to clear previous listeners
+    const yesBtn = document.getElementById('confirm-yes-btn');
+    const newYesBtn = yesBtn.cloneNode(true);
+    yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+    
+    const noBtn = document.getElementById('confirm-no-btn');
+    const newNoBtn = noBtn.cloneNode(true);
+    noBtn.parentNode.replaceChild(newNoBtn, noBtn);
+    
+    newYesBtn.addEventListener('click', () => {
+      confirmModal.classList.add('hidden');
+      if (onYesCallback && typeof onYesCallback === 'function') {
+        onYesCallback();
+      }
+    });
+    
+    newNoBtn.addEventListener('click', () => {
+      confirmModal.classList.add('hidden');
+      if (onNoCallback && typeof onNoCallback === 'function') {
+        onNoCallback();
       }
     });
   }
