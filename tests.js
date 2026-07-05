@@ -26,7 +26,7 @@
       const state = window.__app_state__;
       assert(state.version === 8, "State version should be 8");
       assert(state.weeklyClaimed === false, "Weekly claimed should be false");
-      assert(window.__grid_rebuild_count__ === 1, "Grid should have been built exactly once on reset");
+      assert(window.__grid_rebuild_count__ === 1, `Grid should have been built exactly once on reset (actual: ${window.__grid_rebuild_count__})`);
 
       // Verify initial UI state
       const xpText = document.getElementById('current-xp').textContent;
