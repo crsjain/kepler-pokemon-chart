@@ -1339,7 +1339,10 @@ function selectEeveeEvolution(evolvedId, evolvedName) {
 
 // Test Mode setup
 if (location.search.includes('runTests=true')) {
-  window.__app_state__ = state;
+  Object.defineProperty(window, '__app_state__', {
+    get: () => state,
+    configurable: true
+  });
   window.__test_helpers__ = {
     resetState: () => {
       resetStateToDefault();
