@@ -121,6 +121,7 @@ body {
   object-fit: contain;
   filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.15));
   transition: transform 0.3s ease;
+  cursor: pointer;
 }
 
 #pokemon-sprite:hover {
@@ -721,6 +722,8 @@ body {
   width: 90%;
   text-align: center;
   box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal-content h2 {
@@ -1270,6 +1273,69 @@ input:checked + .slider:before {
   padding: 15px 0;
 }
 
+/* Claimed Rewards History Styles */
+.claimed-rewards-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px;
+  background: #f8fafc;
+  margin-top: 8px;
+  margin-bottom: 15px;
+}
+
+.reward-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  gap: 10px;
+}
+
+.reward-history-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-family: 'Quicksand', sans-serif;
+  text-align: left;
+}
+
+.reward-history-date {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--poke-dark-blue);
+}
+
+.reward-history-details {
+  font-size: 0.75rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.reward-history-name {
+  font-weight: 700;
+  color: var(--poke-blue);
+}
+
+.reward-history-name.mega {
+  color: #7c3aed;
+}
+
+.no-rewards {
+  text-align: center;
+  font-family: 'Quicksand', sans-serif;
+  color: #a0aec0;
+  font-size: 0.9rem;
+  padding: 15px 0;
+}
+
 /* Sound Control Styles */
 .sound-control {
   display: flex;
@@ -1367,4 +1433,62 @@ input:checked + .slider:before {
   justify-content: flex-end;
   margin-top: 5px;
   margin-bottom: 15px;
+}
+
+.remove-task-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0 !important;
+}
+
+.delete-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Partner Modal Specific Styles (Bigger Dialog) */
+#partner-modal .modal-content {
+  max-width: 650px;
+}
+
+#partner-modal .pokemon-options {
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+#partner-modal .pokemon-option {
+  padding: 12px 8px;
+}
+
+#partner-modal .pokemon-option img {
+  width: 80px;
+  height: 80px;
+}
+
+#partner-modal .partner-select-name {
+  font-size: 0.95rem;
+}
+
+#partner-modal .partner-select-stats {
+  font-size: 0.8rem;
+}
+
+/* Responsive adjustments for Partner Modal */
+@media (max-width: 650px) {
+  #partner-modal .pokemon-options {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  #partner-modal .pokemon-options {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  #partner-modal .pokemon-option img {
+    width: 65px;
+    height: 65px;
+  }
 }

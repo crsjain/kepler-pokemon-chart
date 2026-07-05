@@ -69,6 +69,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function playActivePokemonCry() {
+    try {
+      const family = state.partnerFamily || '25';
+      const stats = state.partnersData[family] || { level: 1, xp: 0, stageId: family };
+      const stageInfo = getStageInfo(family, stats.stageId || family);
+      const activePokemon = stageInfo.currentStage;
+      
+      if (activePokemon && activePokemon.id) {
+        const cryUrl = `https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/${activePokemon.id}.ogg`;
+        const audio = new Audio(cryUrl);
+        audio.volume = (state.volume !== undefined ? state.volume : 50) / 100;
+        audio.play().catch(err => {
+          console.warn("Failed to play pokemon cry:", err);
+        });
+      }
+    } catch (e) {
+      console.warn("Error playing active pokemon cry:", e);
+    }
+  }
+
   // Mega Milestone Pokemon
   const MEGA_POKEMON = [
     { id: 658, name: 'Greninja' },
@@ -123,9 +143,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // State V7 (Dynamic Tasks, Reward History, Volume)
+  // State V8 (Dynamic Tasks, Reward History, Volume, Claimed Rewards History)
   let state = {
-    version: 7,
+    version: 8,
     partnerFamily: '25', // Default Pikachu Family
     partnersData: {
       '25': { level: 1, xp: 0, stageId: '25' },
@@ -149,8 +169,17 @@ document.addEventListener('DOMContentLoaded', () => {
     ],
     rewardHistory: [],
     megaRewardHistory: [],
-    volume: 50
+    volume: 50,
+    claimedRewardsHistory: []
   };
+
+  // DOM Cache for Optimization
+  let domCache = {
+    taskTotals: {},
+    dayTotals: {},
+    checkboxes: {}
+  };
+  let gridRebuildCount = 0;
 
   // DOM Elements
   const pokemonSprite = document.getElementById('pokemon-sprite');
@@ -220,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize
   loadState();
   preloadImages();
-  renderState();
+  renderState(true);
   setupEventListeners();
 
   function getStageInfo(familyId, stageId) {
@@ -360,6 +389,13 @@ document.addEventListener('DOMContentLoaded', () => {
             saveState();
           }
           
+          // Migration from V7 to V8 (Claimed Rewards History)
+          if (state.version === 7) {
+            state.claimedRewardsHistory = [];
+            state.version = 8;
+            saveState();
+          }
+          
           if (!state.grid || typeof state.grid !== 'object') {
             state.grid = {};
           }
@@ -392,8 +428,8 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       
       history.unshift(backupEntry);
-      if (history.length > 5) {
-        history = history.slice(0, 5);
+      if (history.length > 3) {
+        history = history.slice(0, 3);
       }
       
       localStorage.setItem('kepler_pokemon_backups_history', JSON.stringify(history));
@@ -458,6 +494,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function renderClaimedRewardsHistory() {
+    const listContainer = document.getElementById('claimed-rewards-history-list');
+    if (!listContainer) return;
+    
+    listContainer.innerHTML = '';
+    
+    const history = state.claimedRewardsHistory || [];
+    if (history.length === 0) {
+      listContainer.innerHTML = '<p class="no-rewards">No rewards claimed yet.</p>';
+      return;
+    }
+    
+    history.forEach(entry => {
+      const date = new Date(entry.date);
+      const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      
+      const typeLabel = entry.type === 'mega' ? '🔮 MEGA' : '📛 WEEKLY';
+      const typeClass = entry.type === 'mega' ? 'reward-history-name mega' : 'reward-history-name';
+      
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'reward-history-item';
+      itemDiv.innerHTML = `
+        <div class="reward-history-info">
+          <span class="reward-history-date">${formattedDate}</span>
+          <span class="reward-history-details">${typeLabel} • Week ${entry.weekNumber} • ${entry.partner} (LV ${entry.level})</span>
+          <span class="${typeClass}">"${entry.reward}"</span>
+        </div>
+      `;
+      
+      listContainer.appendChild(itemDiv);
+    });
+  }
+
   function restoreBackupFromHistory(index) {
     try {
       const historyStr = localStorage.getItem('kepler_pokemon_backups_history');
@@ -472,7 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
           () => {
             state = backup.state;
             saveState();
-            renderState();
+            renderState(true);
             alert("Restored successfully!");
             adminModal.classList.add('hidden');
           }
@@ -568,15 +637,21 @@ document.addEventListener('DOMContentLoaded', () => {
       fixed.push("Reset to default tasks.");
     }
     
-    if (state.version !== 7) {
-      issues.push(`State version mismatch. Current: ${state.version}, Expected: 7`);
-      state.version = 7;
-      fixed.push("Forced state version to 7.");
+    if (!state.claimedRewardsHistory || !Array.isArray(state.claimedRewardsHistory)) {
+      state.claimedRewardsHistory = [];
+      issues.push("Claimed rewards history was missing or invalid.");
+      fixed.push("Initialized empty claimed rewards history.");
+    }
+    
+    if (state.version !== 8) {
+      issues.push(`State version mismatch. Current: ${state.version}, Expected: 8`);
+      state.version = 8;
+      fixed.push("Forced state version to 8.");
     }
     
     if (fixed.length > 0) {
       saveState();
-      renderState();
+      renderState(true);
       
       const issueList = issues.map(i => `• ${i}`).join('\n');
       const fixList = fixed.map(f => `• ${f}`).join('\n');
@@ -600,6 +675,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderGridTable() {
+    gridRebuildCount++;
+    if (location.search.includes('runTests=true')) {
+      window.__grid_rebuild_count__ = gridRebuildCount;
+    }
     const tbody = document.getElementById('grid-tbody');
     if (!tbody) return;
     
@@ -670,8 +749,34 @@ document.addEventListener('DOMContentLoaded', () => {
     totalRow.innerHTML = totalHtml;
     tbody.appendChild(totalRow);
     
+    // Populate DOM Cache for partial updates
+    domCache.taskTotals = {};
+    tasks.forEach(task => {
+      domCache.taskTotals[task.id] = tbody.querySelector(`.task-total-cell[data-task="${task.id}"]`);
+    });
+
+    domCache.dayTotals = {};
+    DAYS.forEach(day => {
+      domCache.dayTotals[day] = tbody.querySelector(`.day-total-cell[data-day="${day}"]`);
+    });
+
+    domCache.checkboxes = {};
+    const inputs = tbody.querySelectorAll('input[type="checkbox"]');
+    inputs.forEach(input => {
+      const key = `${input.dataset.day}-${input.dataset.task}`;
+      domCache.checkboxes[key] = input;
+    });
+    
     setupCheckboxListeners();
     renderProgress();
+  }
+
+  function updateGridCheckboxes() {
+    for (const key in domCache.checkboxes) {
+      if (domCache.checkboxes[key]) {
+        domCache.checkboxes[key].checked = !!state.grid[key];
+      }
+    }
   }
 
   function setupCheckboxListeners() {
@@ -823,7 +928,12 @@ document.addEventListener('DOMContentLoaded', () => {
         </select>
         <input type="text" value="${task.name}" class="task-name-input" data-index="${index}" placeholder="Activity Name">
         <input type="number" min="1" max="7" value="${task.req}" class="task-req-input" data-index="${index}" placeholder="Days">
-        <button class="pixel-btn small danger remove-task-btn" data-index="${index}">❌</button>
+        <button class="pixel-btn small danger remove-task-btn" title="Delete Activity" data-index="${index}">
+          <svg class="delete-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
       `;
       
       container.appendChild(item);
@@ -831,7 +941,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     container.querySelectorAll('.remove-task-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const idx = parseInt(e.target.dataset.index);
+        const idx = parseInt(e.currentTarget.dataset.index);
         removeTask(idx);
       });
     });
@@ -894,7 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (!hasError) {
       saveState();
-      renderState();
+      renderState(true);
       alert("Activities saved successfully!");
     }
   }
@@ -943,11 +1053,12 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const parsed = JSON.parse(code);
       if (parsed && typeof parsed === 'object') {
-        if (parsed.level !== undefined && parsed.grid !== undefined) {
+        if ((parsed.level !== undefined || parsed.partnersData !== undefined) && parsed.grid !== undefined) {
           if (confirm("Are you sure you want to restore this backup? It will overwrite current progress!")) {
             state = { ...state, ...parsed };
             saveState();
-            renderState();
+            loadState(); // Run migrations if imported old version
+            renderState(true); // Force grid rebuild
             alert("Trainer progress restored successfully!");
             adminModal.classList.add('hidden');
           }
@@ -981,7 +1092,7 @@ document.addEventListener('DOMContentLoaded', () => {
       optionDiv.innerHTML = `
         <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png" alt="${activePokemon.name}">
         <span class="partner-select-name">${activePokemon.name}</span>
-        <span class="partner-select-stats">LV ${stats.level} • ${stats.xp}/100 XP</span>
+        <span class="partner-select-stats">LV ${stats.level}<br>${stats.xp}/100 XP</span>
       `;
 
       optionDiv.addEventListener('click', () => {
@@ -995,7 +1106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function renderState() {
+  function renderState(rebuildGrid = false) {
     const family = state.partnerFamily || '25';
     const stats = state.partnersData[family] || { level: 1, xp: 0, stageId: family };
     const stageInfo = getStageInfo(family, stats.stageId || family);
@@ -1052,8 +1163,13 @@ document.addEventListener('DOMContentLoaded', () => {
     rewardSelect.value = state.reward || '';
     megaRewardSelect.value = state.megaReward || '';
 
-    // 5. Render Grid Table (calls renderProgress internally)
-    renderGridTable();
+    // 5. Render Grid Table (conditional build vs update)
+    if (rebuildGrid) {
+      renderGridTable();
+    } else {
+      updateGridCheckboxes();
+      renderProgress();
+    }
     updateVolumeIcon();
 
     // Auto-trigger Eevee evolution if they are in inconsistent state (Level >= 5 but not evolved)
@@ -1102,6 +1218,11 @@ document.addEventListener('DOMContentLoaded', () => {
       partnerModal.classList.add('hidden');
     });
 
+    // Play Cry on Sprite Click
+    pokemonSprite.addEventListener('click', () => {
+      playActivePokemonCry();
+    });
+
     // Reset current week only
     resetBtn.addEventListener('click', () => {
       const isMegaMilestoneCompleted = state.megaWeeks === 3 && state.weeklyClaimed;
@@ -1125,6 +1246,7 @@ document.addEventListener('DOMContentLoaded', () => {
         adminModal.classList.remove('hidden');
         renderBackupHistory();
         renderAdminTasksList();
+        renderClaimedRewardsHistory();
       } else if (password !== null) {
         alert('Wrong Code! Try again, Parent!');
       }
@@ -1152,23 +1274,35 @@ document.addEventListener('DOMContentLoaded', () => {
     adminWipeBtn.addEventListener('click', () => {
       if (confirm('WARNING: This will completely reset Kepler back to Level 1 and wipe all saved progress. Proceed?')) {
         state = {
-          version: 3,
+          version: 8,
           partnerFamily: '25',
           partnersData: {
-            '25': { level: 1, xp: 0 },
-            '4': { level: 1, xp: 0 },
-            '1': { level: 1, xp: 0 },
-            '7': { level: 1, xp: 0 },
-            '133': { level: 1, xp: 0 }
+            '25': { level: 1, xp: 0, stageId: '25' },
+            '4': { level: 1, xp: 0, stageId: '4' },
+            '1': { level: 1, xp: 0, stageId: '1' },
+            '7': { level: 1, xp: 0, stageId: '7' },
+            '133': { level: 1, xp: 0, stageId: '133' }
           },
           reward: '',
           megaReward: '',
           megaWeeks: 0,
           weeklyClaimed: false,
-          grid: {}
+          debugSidebarEnabled: false,
+          grid: {},
+          tasks: [
+            { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!' },
+            { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1' },
+            { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!' },
+            { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery' },
+            { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!' }
+          ],
+          rewardHistory: [],
+          megaRewardHistory: [],
+          volume: 50,
+          claimedRewardsHistory: []
         };
         saveState();
-        renderState();
+        renderState(true);
         alert('System completely rebooted! Good luck, Kepler!');
         adminModal.classList.add('hidden');
       }
@@ -1270,7 +1404,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     state.grid = {};
     saveState();
-    renderState();
+    renderState(true);
     
     if (flashWeekly) {
       flashElement(rewardSelect);
@@ -1301,7 +1435,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.weeklyClaimed = false;
     
     saveState();
-    renderState();
+    renderState(true);
   }
 
   function setNearEvolution() {
@@ -1352,7 +1486,7 @@ document.addEventListener('DOMContentLoaded', () => {
     stats.xp = XP_LEVEL_THRESHOLD - XP_PER_TASK; // 95 XP
     
     saveState();
-    renderState();
+    renderState(false);
   }
 
   function setNearLevelUp() {
@@ -1360,7 +1494,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const stats = state.partnersData[family];
     stats.xp = XP_LEVEL_THRESHOLD - XP_PER_TASK; // 95 XP
     saveState();
-    renderState();
+    renderState(false);
   }
 
   function setWeek(weekNum) {
@@ -1372,7 +1506,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!state.megaReward) state.megaReward = "Mega Reward";
     
     saveState();
-    renderState();
+    renderState(true);
   }
 
   function addXp(amount) {
@@ -1479,8 +1613,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
-      // Update grid cells in the "GOAL" column
-      const totalCell = document.querySelector(`.task-total-cell[data-task="${task.id}"]`);
+      // Update grid cells in the "GOAL" column from cache
+      const totalCell = domCache.taskTotals[task.id];
       if (totalCell) {
         const required = task.req || 5;
         totalCell.textContent = `${taskTotals[task.id]} / ${required}`;
@@ -1493,10 +1627,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // 2. Calculate Daily Totals (For ⭐ Daily Total row visual decoration)
+    // 2. Calculate Daily Totals (For ⭐ Daily Total row visual decoration) from cache
     DAYS.forEach(day => {
       const allChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${day}-${task.id}`]);
-      const totalCell = document.querySelector(`.day-total-cell[data-day="${day}"]`);
+      const totalCell = domCache.dayTotals[day];
       if (totalCell) {
         const indicator = totalCell.querySelector('.badge-indicator');
         if (indicator) {
@@ -1568,6 +1702,36 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (weeklySuccess && !state.weeklyClaimed) {
       state.weeklyClaimed = true;
+      
+      // Record Claimed Reward(s)
+      const family = state.partnerFamily;
+      const stats = state.partnersData[family];
+      const activePokemon = getStageInfo(family, stats.stageId).currentStage;
+      
+      if (!state.claimedRewardsHistory) state.claimedRewardsHistory = [];
+      
+      // Always record weekly reward
+      state.claimedRewardsHistory.unshift({
+        date: new Date().toISOString(),
+        reward: state.reward || 'A cool reward',
+        type: 'weekly',
+        weekNumber: state.megaWeeks + 1,
+        partner: activePokemon.name,
+        level: stats.level
+      });
+      
+      // Record mega reward if Week 4 completed
+      if (state.megaWeeks === 3) {
+        state.claimedRewardsHistory.unshift({
+          date: new Date().toISOString(),
+          reward: state.megaReward || 'A special reward',
+          type: 'mega',
+          weekNumber: 4,
+          partner: activePokemon.name,
+          level: stats.level
+        });
+      }
+      
       saveState();
       saveAutoBackup();
       
@@ -1715,7 +1879,7 @@ document.addEventListener('DOMContentLoaded', () => {
     stats.stageId = evolvedId;
     
     saveState();
-    renderState();
+    renderState(false);
     
     // Trigger celebration
     CelebrationEngine.triggerCelebration(true); // Mega celebration
@@ -1736,5 +1900,35 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(reg => console.log('Service Worker registered successfully.', reg.scope))
         .catch(err => console.log('Service Worker registration failed:', err));
     });
+  }
+
+  // Test Mode setup
+  if (location.search.includes('runTests=true')) {
+    window.__app_state__ = state;
+    window.__test_helpers__ = {
+      resetState: () => {
+        state.partnerFamily = '25';
+        state.partnersData = {
+          '25': { level: 1, xp: 0, stageId: '25' },
+          '4': { level: 1, xp: 0, stageId: '4' },
+          '1': { level: 1, xp: 0, stageId: '1' },
+          '7': { level: 1, xp: 0, stageId: '7' },
+          '133': { level: 1, xp: 0, stageId: '133' }
+        };
+        state.reward = '';
+        state.megaReward = '';
+        state.megaWeeks = 0;
+        state.weeklyClaimed = false;
+        state.grid = {};
+        state.claimedRewardsHistory = [];
+        saveState();
+        renderState(true); // Force rebuild
+      }
+    };
+    
+    // Load test script dynamically
+    const script = document.createElement('script');
+    script.src = 'tests.js';
+    document.body.appendChild(script);
   }
 });
