@@ -181,6 +181,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const adminWipeBtn = document.getElementById('admin-wipe-btn');
   const closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
 
+  // Testing Panel Elements
+  const testMilestoneMinusOneBtn = document.getElementById('test-milestone-minus-one');
+  const testNearEvolveBtn = document.getElementById('test-near-evolve');
+  const testNearLevelupBtn = document.getElementById('test-near-levelup');
+  const testWeek1Btn = document.getElementById('test-week-1');
+  const testWeek2Btn = document.getElementById('test-week-2');
+  const testWeek3Btn = document.getElementById('test-week-3');
+  const testWeek4Btn = document.getElementById('test-week-4');
+
   const checkboxes = document.querySelectorAll('.pokeball-checkbox input');
 
   // Cached DOM elements for performance
@@ -616,6 +625,27 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    // Testing Panel Actions
+    testMilestoneMinusOneBtn.addEventListener('click', () => {
+      setMilestoneMinusOne();
+      adminModal.classList.add('hidden');
+    });
+
+    testNearEvolveBtn.addEventListener('click', () => {
+      setNearEvolution();
+      adminModal.classList.add('hidden');
+    });
+
+    testNearLevelupBtn.addEventListener('click', () => {
+      setNearLevelUp();
+      adminModal.classList.add('hidden');
+    });
+
+    testWeek1Btn.addEventListener('click', () => { setWeek(1); adminModal.classList.add('hidden'); });
+    testWeek2Btn.addEventListener('click', () => { setWeek(2); adminModal.classList.add('hidden'); });
+    testWeek3Btn.addEventListener('click', () => { setWeek(3); adminModal.classList.add('hidden'); });
+    testWeek4Btn.addEventListener('click', () => { setWeek(4); adminModal.classList.add('hidden'); });
+
   }
 
   function resetWeekGrid() {
@@ -629,6 +659,82 @@ document.addEventListener('DOMContentLoaded', () => {
       state.reward = ''; // Clear weekly reward for new week
     }
     state.grid = {};
+    saveState();
+    renderState();
+  }
+
+  // Testing Panel Helper Functions
+  function setMilestoneMinusOne() {
+    if (!state.reward) state.reward = "Test Reward";
+    if (!state.megaReward) state.megaReward = "Test Mega Reward";
+
+    state.grid = {};
+    
+    // Requirements: piano:7, math:7, reading:7, writing:5, chinese:5
+    for (let d = 0; d < 7; d++) {
+      state.grid[`${d}-piano`] = true;
+      state.grid[`${d}-math`] = true;
+      state.grid[`${d}-reading`] = true;
+    }
+    for (let d = 0; d < 5; d++) {
+      state.grid[`${d}-writing`] = true;
+    }
+    // Chinese needs 5, we set 4
+    for (let d = 0; d < 4; d++) {
+      state.grid[`${d}-chinese`] = true;
+    }
+    
+    state.weeklyClaimed = false;
+    
+    saveState();
+    renderState();
+  }
+
+  function setNearEvolution() {
+    const family = state.partnerFamily;
+    const stats = state.partnersData[family];
+    const evo = EVOLUTIONS[family];
+    
+    if (!evo) return;
+    
+    let targetLevel = 4;
+    let nextStage = null;
+    for (let i = 0; i < evo.stages.length; i++) {
+      if (evo.stages[i].level > stats.level) {
+        nextStage = evo.stages[i];
+        break;
+      }
+    }
+    
+    if (nextStage) {
+      targetLevel = nextStage.level - 1;
+    } else {
+      targetLevel = evo.stages[1].level - 1;
+    }
+    
+    stats.level = targetLevel;
+    stats.xp = XP_LEVEL_THRESHOLD - XP_PER_TASK; // 95 XP
+    
+    saveState();
+    renderState();
+  }
+
+  function setNearLevelUp() {
+    const family = state.partnerFamily;
+    const stats = state.partnersData[family];
+    stats.xp = XP_LEVEL_THRESHOLD - XP_PER_TASK; // 95 XP
+    saveState();
+    renderState();
+  }
+
+  function setWeek(weekNum) {
+    state.megaWeeks = weekNum - 1;
+    state.weeklyClaimed = false;
+    state.grid = {};
+    
+    if (!state.reward) state.reward = `Week ${weekNum} Reward`;
+    if (!state.megaReward) state.megaReward = "Mega Reward";
+    
     saveState();
     renderState();
   }

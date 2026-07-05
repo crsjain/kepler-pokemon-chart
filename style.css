@@ -959,3 +959,57 @@ body {
   margin-bottom: 8px;
   line-height: 1.4;
 }
+
+/* Testing Panel Styles */
+.admin-section.testing-panel {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 2px dashed var(--poke-blue);
+  text-align: left;
+}
+
+.admin-section.testing-panel h3 {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.95rem;
+  color: var(--poke-dark-blue);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.testing-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.testing-buttons > .pixel-btn {
+  width: 100%;
+  text-align: center;
+}
+
+.testing-row {
+  display: flex;
+  gap: 10px;
+}
+
+.testing-row .pixel-btn {
+  flex: 1;
+  text-align: center;
+}
+
+.test-week-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  margin-top: 5px;
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.85rem;
+  color: var(--border-color);
+}
+
+.test-week-selector .pixel-btn.small {
+  flex: 1;
+  text-align: center;
+}
+

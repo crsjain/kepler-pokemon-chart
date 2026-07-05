@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kepler's Pokémon Training Chart</title>
-  <link rel="stylesheet" href="style.css?v=3.6">
+  <link rel="stylesheet" href="style.css?v=3.7">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
@@ -111,6 +111,26 @@
           <button id="admin-import-btn" class="pixel-btn info">Import Backup Code</button>
           <button id="admin-wipe-btn" class="pixel-btn danger">Wipe All Progress (Reset)</button>
         </div>
+
+        <!-- Testing Panel -->
+        <div class="admin-section testing-panel">
+          <h3>🧪 Debug / Testing Panel</h3>
+          <div class="testing-buttons">
+            <button id="test-milestone-minus-one" class="pixel-btn warning">Milestone -1 Ball</button>
+            <div class="testing-row">
+              <button id="test-near-evolve" class="pixel-btn warning">Near Evolution</button>
+              <button id="test-near-levelup" class="pixel-btn warning">Near Level Up</button>
+            </div>
+            <div class="test-week-selector">
+              <span>Set Week:</span>
+              <button id="test-week-1" class="pixel-btn info small">W1</button>
+              <button id="test-week-2" class="pixel-btn info small">W2</button>
+              <button id="test-week-3" class="pixel-btn info small">W3</button>
+              <button id="test-week-4" class="pixel-btn info small">W4</button>
+            </div>
+          </div>
+        </div>
+
         <div class="admin-faq">
           <h3>📋 Restore Guide</h3>
           <p><strong>Auto-Backup:</strong> Fixes accidental resets. Rolls back to last Level Up or Week Completion.</p>
@@ -315,7 +335,7 @@
     </footer>
   </div>
 
-  <script src="particles.js?v=3.6"></script>
-  <script src="app.js?v=3.6"></script>
+  <script src="particles.js?v=3.7"></script>
+  <script src="app.js?v=3.7"></script>
 </body>
 </html>
