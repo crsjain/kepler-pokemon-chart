@@ -233,43 +233,38 @@ document.addEventListener('DOMContentLoaded', () => {
   renderState();
   setupEventListeners();
 
-  function getStageInfo(familyId, level) {
+  function getStageInfo(familyId, stageId) {
     const evo = EVOLUTIONS[familyId];
     if (!evo) return { currentStage: { id: familyId, name: 'Unknown' }, nextStage: null, startLevel: 1, endLevel: null };
     
     // Special case for Eevee family
-    if (familyId === '133') {
-      const stats = state.partnersData['133'];
-      if (level >= 5 && stats && stats.evolvedId) {
-        const chosen = evo.options.find(opt => opt.id === stats.evolvedId);
-        if (chosen) {
-          return {
-            currentStage: { level: 5, id: chosen.id, name: chosen.name },
-            nextStage: null,
-            startLevel: 5,
-            endLevel: null
-          };
-        }
+    if (familyId === '133' && stageId !== '133') {
+      const chosen = evo.options.find(opt => opt.id === stageId);
+      if (chosen) {
+        return {
+          currentStage: { level: 5, id: chosen.id, name: chosen.name },
+          nextStage: null,
+          startLevel: 5,
+          endLevel: null
+        };
       }
-      return {
-        currentStage: evo.stages[0], // Eevee
-        nextStage: { level: 5, id: 'choice', name: 'Evolution Choice' },
-        startLevel: 1,
-        endLevel: 5
-      };
     }
     
     let currentStageIndex = 0;
-    for (let i = 1; i < evo.stages.length; i++) {
-      if (level >= evo.stages[i].level) {
-        currentStageIndex = i;
-      } else {
-        break;
+    if (evo.stages) {
+      const idx = evo.stages.findIndex(s => s.id === stageId);
+      if (idx !== -1) {
+        currentStageIndex = idx;
       }
     }
     
     const currentStage = evo.stages[currentStageIndex];
-    const nextStage = evo.stages[currentStageIndex + 1] || null;
+    let nextStage = null;
+    if (familyId === '133' && stageId === '133') {
+      nextStage = { level: 5, id: 'choice', name: 'Evolution Choice' };
+    } else {
+      nextStage = evo.stages[currentStageIndex + 1] || null;
+    }
     
     const startLevel = currentStage.level;
     const endLevel = nextStage ? nextStage.level : null;
@@ -320,6 +315,35 @@ document.addEventListener('DOMContentLoaded', () => {
               state.partnersData['133'].evolvedId = null;
             }
             state.version = 4;
+            saveState();
+          }
+
+          // Migration from V4 to V5 (stageId for all, no devolution)
+          if (state.version === 4) {
+            const families = ['25', '4', '1', '7', '133'];
+            families.forEach(fid => {
+              if (state.partnersData[fid]) {
+                if (fid === '133') {
+                  state.partnersData[fid].stageId = state.partnersData[fid].evolvedId || '133';
+                  delete state.partnersData[fid].evolvedId;
+                } else {
+                  const lvl = state.partnersData[fid].level || 1;
+                  const evo = EVOLUTIONS[fid];
+                  let index = 0;
+                  if (evo) {
+                    for (let i = 1; i < evo.stages.length; i++) {
+                      if (lvl >= evo.stages[i].level) {
+                        index = i;
+                      } else {
+                        break;
+                      }
+                    }
+                  }
+                  state.partnersData[fid].stageId = evo ? evo.stages[index].id : fid;
+                }
+              }
+            });
+            state.version = 5;
             saveState();
           }
           
@@ -431,8 +455,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const families = ['25', '4', '1', '7', '133'];
 
     families.forEach(familyId => {
-      const stats = state.partnersData[familyId] || { level: 1, xp: 0 };
-      const stageInfo = getStageInfo(familyId, stats.level);
+      const stats = state.partnersData[familyId] || { level: 1, xp: 0, stageId: familyId };
+      const stageInfo = getStageInfo(familyId, stats.stageId || familyId);
       const activePokemon = stageInfo.currentStage;
 
       const optionDiv = document.createElement('div');
@@ -458,8 +482,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderState() {
     const family = state.partnerFamily || '25';
-    const stats = state.partnersData[family] || { level: 1, xp: 0 };
-    const stageInfo = getStageInfo(family, stats.level);
+    const stats = state.partnersData[family] || { level: 1, xp: 0, stageId: family };
+    const stageInfo = getStageInfo(family, stats.stageId || family);
     const activePokemon = stageInfo.currentStage;
 
     // 1. Render Partner (Active Evolved Form)
@@ -485,7 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const totalStageLevels = stageEndLevel - stageStartLevel;
       const totalStageXp = totalStageLevels * XP_LEVEL_THRESHOLD;
       
-      const currentStageXp = (stats.level - stageStartLevel) * XP_LEVEL_THRESHOLD + stats.xp;
+      const currentStageXp = Math.max(0, (stats.level - stageStartLevel) * XP_LEVEL_THRESHOLD + stats.xp);
       progressPercent = Math.min(100, (currentStageXp / totalStageXp) * 100);
 
       // Render milestones
@@ -819,10 +843,23 @@ document.addEventListener('DOMContentLoaded', () => {
       levelIncreased = true;
       
       // Check evolution
-      const oldStageInfo = getStageInfo(family, oldLevel);
-      const newStageInfo = getStageInfo(family, newLevel);
-      if (oldStageInfo.currentStage.id !== newStageInfo.currentStage.id) {
-        evolved = true;
+      const evo = EVOLUTIONS[family];
+      if (evo && evo.stages) {
+        const currentStageIndex = evo.stages.findIndex(s => s.id === stats.stageId);
+        if (currentStageIndex !== -1) {
+          let newStageIndex = 0;
+          for (let i = 1; i < evo.stages.length; i++) {
+            if (newLevel >= evo.stages[i].level) {
+              newStageIndex = i;
+            } else {
+              break;
+            }
+          }
+          if (newStageIndex > currentStageIndex) {
+            evolved = true;
+            stats.stageId = evo.stages[newStageIndex].id;
+          }
+        }
       }
     } else if (totalXp < 0) {
       if (newLevel > 1) {
@@ -843,13 +880,13 @@ document.addEventListener('DOMContentLoaded', () => {
       saveAutoBackup();
       
       // Special Eevee evolution choice trigger
-      if (family === '133' && newLevel === 5 && !stats.evolvedId) {
+      if (family === '133' && newLevel === 5 && stats.stageId === '133') {
         showEeveeEvolutionDialog();
       } else if (evolved) {
-        const oldStageInfo = getStageInfo(family, oldLevel);
-        const newStageInfo = getStageInfo(family, newLevel);
-        const oldStage = oldStageInfo.currentStage;
-        const newStage = newStageInfo.currentStage;
+        const evo = EVOLUTIONS[family];
+        const newStage = evo.stages.find(s => s.id === stats.stageId);
+        const newStageIndex = evo.stages.findIndex(s => s.id === stats.stageId);
+        const oldStage = evo.stages[newStageIndex - 1] || evo.stages[0];
         
         CelebrationEngine.triggerCelebration(true); // Mega celebration
         playSound('badge');
@@ -865,9 +902,6 @@ document.addEventListener('DOMContentLoaded', () => {
         playSound('levelUp');
       }
     } else if (levelDecreased) {
-      if (family === '133' && newLevel < 5) {
-        stats.evolvedId = null; // Reset evolution choice if they drop below level 5
-      }
       saveAutoBackup();
     }
   }
@@ -1002,7 +1036,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const currentBadge = MEGA_POKEMON[state.megaWeeks];
           const family = state.partnerFamily;
           const stats = state.partnersData[family];
-          const activePokemon = getStageInfo(family, stats.level).currentStage;
+          const activePokemon = getStageInfo(family, stats.stageId).currentStage;
           showCustomNotification(
             "📛 POKEMON BADGE EARNED! 📛",
             `Awesome job, Kepler! You earned your ${currentBadge.name} Badge & Weekly Reward:\n\n"${rewardSelect.value || 'A cool reward'}"`,
@@ -1125,7 +1159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     eeveeModal.classList.add('hidden');
     
     const stats = state.partnersData['133'];
-    stats.evolvedId = evolvedId;
+    stats.stageId = evolvedId;
     
     saveState();
     renderState();
