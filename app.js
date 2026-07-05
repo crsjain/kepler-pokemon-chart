@@ -1252,12 +1252,38 @@ function renderProgress() {
     const currentBadge = MEGA_POKEMON[state.megaWeeks];
     if (currentBadge) {
       weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${currentBadge.id}.png" alt="${currentBadge.name}" class="mega-slot-img">`;
-      weeklyBadgeSlot.classList.add(`badge-theme-${state.megaWeeks + 1}`);
+      badgeStatusEl.textContent = `${currentBadge.name} Badge Earned!`;
     }
-    badgeStatusEl.textContent = "CLAIMED!";
+    weeklyBadgeSlot.classList.remove('locked');
+    weeklyBadgeSlot.classList.add('unlocked');
+    weeklyBadgeSlot.classList.add(`badge-theme-${state.megaWeeks + 1}`);
+    rewardSelectContainer.classList.add('earned');
   } else {
     weeklyBadgeSlot.innerHTML = `<div class="badge-placeholder">?</div>`;
-    badgeStatusEl.textContent = "TRAINING...";
+    weeklyBadgeSlot.classList.remove('unlocked');
+    weeklyBadgeSlot.classList.add('locked');
+    rewardSelectContainer.classList.remove('earned');
+
+    // Dynamic requirements summary
+    const tasks = state.tasks || [];
+    if (tasks.length === 0) {
+      badgeStatusEl.textContent = "No activities configured. Add some in Admin Panel!";
+    } else {
+      const groups = {};
+      tasks.forEach(t => {
+        const days = t.req || 5;
+        if (!groups[days]) groups[days] = [];
+        groups[days].push(t.name);
+      });
+      const summaryParts = Object.keys(groups)
+        .map(Number)
+        .sort((a, b) => b - a)
+        .map(days => {
+          const names = groups[days].join(', ');
+          return `${names}: ${days} day${days > 1 ? 's' : ''}`;
+        });
+      badgeStatusEl.innerHTML = summaryParts.join('. ') + '.';
+    }
   }
 
   megaWeeksCountEl.textContent = state.megaWeeks;
