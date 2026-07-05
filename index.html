@@ -7,7 +7,7 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
-  <link rel="stylesheet" href="style.css?v=5.0">
+  <link rel="stylesheet" href="style.css?v=5.1">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
@@ -149,6 +149,18 @@
           </div>
         </div>
 
+        <!-- Customize Activities & Goals -->
+        <div class="admin-section">
+          <h3>📋 Customize Activities & Goals</h3>
+          <div id="admin-tasks-list" class="admin-tasks-list">
+            <!-- Populated dynamically via JS -->
+          </div>
+          <div class="admin-tasks-actions">
+            <button id="admin-add-task-btn" class="pixel-btn small info">Add Activity</button>
+            <button id="admin-save-tasks-btn" class="pixel-btn small warning">Save Activities</button>
+          </div>
+        </div>
+
         <!-- Debug Sidebar Toggle -->
         <div class="admin-option-row">
           <span>Enable Debug Sidebar:</span>
@@ -185,132 +197,8 @@
               <th class="total-header">GOAL</th>
             </tr>
           </thead>
-          <tbody>
-            <!-- Piano Practice -->
-            <tr class="task-row" data-task="piano">
-              <td>
-                <div class="task-desc">
-                  <span class="task-emoji">🎹</span>
-                  <div class="task-text-container">
-                    <span class="task-name">Piano Practice</span>
-                    <span class="task-concept">Level up!</span>
-                  </div>
-                </div>
-              </td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="0" data-task="piano"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="1" data-task="piano"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="2" data-task="piano"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="3" data-task="piano"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="4" data-task="piano"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="5" data-task="piano"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="6" data-task="piano"><span class="pokeball"></span></label></td>
-              <td class="task-total-cell" data-task="piano">0 / 7</td>
-            </tr>
-
-            <!-- Math -->
-            <tr class="task-row" data-task="math">
-              <td>
-                <div class="task-desc">
-                  <span class="task-emoji">📐</span>
-                  <div class="task-text-container">
-                    <span class="task-name">Math Practice</span>
-                    <span class="task-concept">Intellect +1</span>
-                  </div>
-                </div>
-              </td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="0" data-task="math"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="1" data-task="math"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="2" data-task="math"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="3" data-task="math"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="4" data-task="math"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="5" data-task="math"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="6" data-task="math"><span class="pokeball"></span></label></td>
-              <td class="task-total-cell" data-task="math">0 / 7</td>
-            </tr>
-
-            <!-- Reading -->
-            <tr class="task-row" data-task="reading">
-              <td>
-                <div class="task-desc">
-                  <span class="task-emoji">📚</span>
-                  <div class="task-text-container">
-                    <span class="task-name">Reading Time</span>
-                    <span class="task-concept">Explore new zones!</span>
-                  </div>
-                </div>
-              </td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="0" data-task="reading"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="1" data-task="reading"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="2" data-task="reading"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="3" data-task="reading"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="4" data-task="reading"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="5" data-task="reading"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="6" data-task="reading"><span class="pokeball"></span></label></td>
-              <td class="task-total-cell" data-task="reading">0 / 7</td>
-            </tr>
-
-            <!-- Writing -->
-            <tr class="task-row" data-task="writing">
-              <td>
-                <div class="task-desc">
-                  <span class="task-emoji">📝</span>
-                  <div class="task-text-container">
-                    <span class="task-name">Writing</span>
-                    <span class="task-concept">Skill mastery</span>
-                  </div>
-                </div>
-              </td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="0" data-task="writing"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="1" data-task="writing"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="2" data-task="writing"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="3" data-task="writing"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="4" data-task="writing"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="5" data-task="writing"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="6" data-task="writing"><span class="pokeball"></span></label></td>
-              <td class="task-total-cell" data-task="writing">0 / 5</td>
-            </tr>
-
-            <!-- Chinese -->
-            <tr class="task-row" data-task="chinese">
-              <td>
-                <div class="task-desc">
-                  <span class="task-emoji">💮</span>
-                  <div class="task-text-container">
-                    <span class="task-name">Chinese</span>
-                    <span class="task-concept">Character master!</span>
-                  </div>
-                </div>
-              </td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="0" data-task="chinese"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="1" data-task="chinese"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="2" data-task="chinese"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="3" data-task="chinese"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="4" data-task="chinese"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="5" data-task="chinese"><span class="pokeball"></span></label></td>
-              <td class="checkbox-cell"><label class="pokeball-checkbox"><input type="checkbox" data-day="6" data-task="chinese"><span class="pokeball"></span></label></td>
-              <td class="task-total-cell" data-task="chinese">0 / 5</td>
-            </tr>
-
-            <!-- Daily Total (Concept: All tasks cleared!) -->
-            <tr class="total-row">
-              <td>
-                <div class="task-desc total-desc">
-                  <span class="task-emoji">⭐</span>
-                  <div class="task-text-container">
-                    <span class="task-name">Daily Total</span>
-                    <span class="task-concept">All tasks cleared!</span>
-                  </div>
-                </div>
-              </td>
-              <td class="day-total-cell" data-day="0"><div class="badge-indicator locked">❌</div></td>
-              <td class="day-total-cell" data-day="1"><div class="badge-indicator locked">❌</div></td>
-              <td class="day-total-cell" data-day="2"><div class="badge-indicator locked">❌</div></td>
-              <td class="day-total-cell" data-day="3"><div class="badge-indicator locked">❌</div></td>
-              <td class="day-total-cell" data-day="4"><div class="badge-indicator locked">❌</div></td>
-              <td class="day-total-cell" data-day="5"><div class="badge-indicator locked">❌</div></td>
-              <td class="day-total-cell" data-day="6"><div class="badge-indicator locked">❌</div></td>
-              <td class="empty-cell"></td>
-            </tr>
+          <tbody id="grid-tbody">
+            <!-- Populated dynamically via JS -->
           </tbody>
         </table>
       </div>
@@ -331,6 +219,7 @@
           <option value="Art Project">🎨 Craft Master: Get a Special Art/Drawing Project!</option>
           <option value="Lego Challenge">🧱 Lego Challenge: Parent Builds Whatever You Design!</option>
           <option value="Bike Route">🚲 Adventure Guide: Pick the Weekend Bike/Scooter Route!</option>
+          <optgroup label="Recent Rewards" class="recent-rewards-group hidden"></optgroup>
         </select>
       </div>
 
@@ -346,6 +235,7 @@
           <option value="Science Kit">🔬 Mad Scientist: Get a Cool Science Kit!</option>
           <option value="Bike Trip">🚲 Trail Blazer: Weekend Bike Trip to a New Trail!</option>
           <option value="Shoe Laces">👟 Speed Runner: Neon/Glow-in-the-Dark Laces!</option>
+          <optgroup label="Recent Rewards" class="recent-rewards-group hidden"></optgroup>
         </select>
       </div>
 
@@ -358,6 +248,10 @@
       <div class="actions">
         <button id="reset-btn" class="pixel-btn warning">Reset Week Grid</button>
         <button id="admin-btn" class="pixel-btn info small">Parent Admin</button>
+        <div class="sound-control">
+          <span class="sound-icon">🔊</span>
+          <input type="range" id="volume-slider" min="0" max="100" value="50" class="volume-slider">
+        </div>
       </div>
     </footer>
     </div>
@@ -382,7 +276,7 @@
     </div>
   </div>
 
-  <script src="particles.js?v=5.0"></script>
-  <script src="app.js?v=5.0"></script>
+  <script src="particles.js?v=5.1"></script>
+  <script src="app.js?v=5.1"></script>
 </body>
 </html>

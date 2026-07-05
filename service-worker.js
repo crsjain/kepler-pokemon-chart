@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poke-chart-cache-v1';
+const CACHE_NAME = 'poke-chart-cache-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -45,7 +45,7 @@ self.addEventListener('fetch', event => {
 
   if (isLocalAsset || isPokeapiSprite) {
     event.respondWith(
-      caches.match(event.request)
+      caches.match(event.request, { ignoreSearch: true })
         .then(cachedResponse => {
           if (cachedResponse) {
             // Return cached version

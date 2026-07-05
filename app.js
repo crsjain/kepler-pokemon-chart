@@ -5,16 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const XP_LEVEL_THRESHOLD = 100;
   const ADMIN_PASSWORD = "0130";
 
-  // Task Requirements
-  const TASK_REQS = {
-    piano: 7,
-    math: 7,
-    reading: 7,
-    writing: 5,
-    chinese: 5
-  };
-  
-  const TASKS = ['piano', 'math', 'reading', 'writing', 'chinese'];
   const DAYS = [0, 1, 2, 3, 4, 5, 6];
 
   // 8-Bit Sound Synthesizer (Web Audio API)
@@ -35,21 +25,22 @@ document.addEventListener('DOMContentLoaded', () => {
       gain.connect(audioCtx.destination);
 
       const now = audioCtx.currentTime;
+      const volumeMultiplier = (state.volume !== undefined ? state.volume : 50) / 100;
 
       if (type === 'check') {
         osc.type = 'square';
         osc.frequency.setValueAtTime(587.33, now); // D5
         osc.frequency.setValueAtTime(880, now + 0.08); // A5
-        gain.gain.setValueAtTime(0.05, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        gain.gain.setValueAtTime(0.05 * volumeMultiplier, now);
+        gain.gain.exponentialRampToValueAtTime(0.01 * volumeMultiplier, now + 0.2);
         osc.start(now);
         osc.stop(now + 0.2);
       } else if (type === 'uncheck') {
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(220, now); // A3
         osc.frequency.exponentialRampToValueAtTime(110, now + 0.12); // A2
-        gain.gain.setValueAtTime(0.05, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+        gain.gain.setValueAtTime(0.05 * volumeMultiplier, now);
+        gain.gain.exponentialRampToValueAtTime(0.01 * volumeMultiplier, now + 0.12);
         osc.start(now);
         osc.stop(now + 0.12);
       } else if (type === 'levelUp') {
@@ -58,8 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
         notes.forEach((freq, idx) => {
           osc.frequency.setValueAtTime(freq, now + idx * 0.08);
         });
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        gain.gain.setValueAtTime(0.1 * volumeMultiplier, now);
+        gain.gain.exponentialRampToValueAtTime(0.01 * volumeMultiplier, now + 0.4);
         osc.start(now);
         osc.stop(now + 0.4);
       } else if (type === 'badge') {
@@ -68,8 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
         osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
         osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
         osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        gain.gain.setValueAtTime(0.08 * volumeMultiplier, now);
+        gain.gain.exponentialRampToValueAtTime(0.01 * volumeMultiplier, now + 0.5);
         osc.start(now);
         osc.stop(now + 0.5);
       }
@@ -132,9 +123,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // State V6 (Debug Sidebar Toggle)
+  // State V7 (Dynamic Tasks, Reward History, Volume)
   let state = {
-    version: 6,
+    version: 7,
     partnerFamily: '25', // Default Pikachu Family
     partnersData: {
       '25': { level: 1, xp: 0, stageId: '25' },
@@ -148,7 +139,17 @@ document.addEventListener('DOMContentLoaded', () => {
     megaWeeks: 0,
     weeklyClaimed: false,
     debugSidebarEnabled: false,
-    grid: {} // key format: "day-task" -> boolean
+    grid: {}, // key format: "day-task" -> boolean
+    tasks: [
+      { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!' },
+      { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1' },
+      { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!' },
+      { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery' },
+      { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!' }
+    ],
+    rewardHistory: [],
+    megaRewardHistory: [],
+    volume: 50
   };
 
   // DOM Elements
@@ -214,23 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Debug Sidebar Element
   const debugSidebar = document.getElementById('debug-sidebar');
 
-  const checkboxes = document.querySelectorAll('.pokeball-checkbox input');
 
-  // Cached DOM elements for performance
-  const taskTotalCells = {};
-  TASKS.forEach(task => {
-    taskTotalCells[task] = document.querySelector(`.task-total-cell[data-task="${task}"]`);
-  });
-
-  const dayTotalCells = {};
-  const dayBadgeIndicators = {};
-  DAYS.forEach(day => {
-    const cell = document.querySelector(`.day-total-cell[data-day="${day}"]`);
-    dayTotalCells[day] = cell;
-    if (cell) {
-      dayBadgeIndicators[day] = cell.querySelector('.badge-indicator');
-    }
-  });
 
   // Initialize
   loadState();
@@ -358,6 +343,22 @@ document.addEventListener('DOMContentLoaded', () => {
             state.version = 6;
             saveState();
           }
+
+          // Migration from V6 to V7 (Dynamic Tasks, Reward History, Volume)
+          if (state.version === 6) {
+            state.tasks = [
+              { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!' },
+              { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1' },
+              { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!' },
+              { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery' },
+              { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!' }
+            ];
+            state.rewardHistory = [];
+            state.megaRewardHistory = [];
+            state.volume = 50;
+            state.version = 7;
+            saveState();
+          }
           
           if (!state.grid || typeof state.grid !== 'object') {
             state.grid = {};
@@ -396,7 +397,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       localStorage.setItem('kepler_pokemon_backups_history', JSON.stringify(history));
-      // Keep old key for compatibility
       localStorage.setItem('kepler_pokemon_training_backup', JSON.stringify(state));
       console.log('Auto-backup saved in history.');
     } catch (e) {
@@ -555,11 +555,23 @@ document.addEventListener('DOMContentLoaded', () => {
       issues.push("Grid was missing or invalid.");
       fixed.push("Reset grid to empty.");
     }
+
+    if (!state.tasks || !Array.isArray(state.tasks) || state.tasks.length === 0) {
+      state.tasks = [
+        { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!' },
+        { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1' },
+        { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!' },
+        { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery' },
+        { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!' }
+      ];
+      issues.push("Tasks list was missing or invalid.");
+      fixed.push("Reset to default tasks.");
+    }
     
-    if (state.version !== 6) {
-      issues.push(`State version mismatch. Current: ${state.version}, Expected: 6`);
-      state.version = 6;
-      fixed.push("Forced state version to 6.");
+    if (state.version !== 7) {
+      issues.push(`State version mismatch. Current: ${state.version}, Expected: 7`);
+      state.version = 7;
+      fixed.push("Forced state version to 7.");
     }
     
     if (fixed.length > 0) {
@@ -584,6 +596,318 @@ document.addEventListener('DOMContentLoaded', () => {
         false,
         null
       );
+    }
+  }
+
+  function renderGridTable() {
+    const tbody = document.getElementById('grid-tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    const tasks = state.tasks || [];
+    
+    tasks.forEach(task => {
+      const row = document.createElement('tr');
+      row.className = 'task-row';
+      row.dataset.task = task.id;
+      
+      const reqDays = task.req || 5;
+      const taskName = task.name || 'Unknown';
+      const emoji = task.emoji || '📝';
+      
+      let html = `
+        <td>
+          <div class="task-desc">
+            <span class="task-emoji">${emoji}</span>
+            <div class="task-text-container">
+              <span class="task-name">${taskName}</span>
+              <span class="task-concept">${task.concept || 'Practice!'}</span>
+            </div>
+          </div>
+        </td>
+      `;
+      
+      for (let d = 0; d < 7; d++) {
+        const key = `${d}-${task.id}`;
+        const checked = !!state.grid[key];
+        html += `
+          <td class="checkbox-cell">
+            <label class="pokeball-checkbox">
+              <input type="checkbox" data-day="${d}" data-task="${task.id}" ${checked ? 'checked' : ''}>
+              <span class="pokeball"></span>
+            </label>
+          </td>
+        `;
+      }
+      
+      html += `<td class="task-total-cell" data-task="${task.id}">0 / ${reqDays}</td>`;
+      
+      row.innerHTML = html;
+      tbody.appendChild(row);
+    });
+    
+    const totalRow = document.createElement('tr');
+    totalRow.className = 'total-row';
+    
+    let totalHtml = `
+      <td>
+        <div class="task-desc total-desc">
+          <span class="task-emoji">⭐</span>
+          <div class="task-text-container">
+            <span class="task-name">Daily Total</span>
+            <span class="task-concept">All tasks cleared!</span>
+          </div>
+        </div>
+      </td>
+    `;
+    
+    for (let d = 0; d < 7; d++) {
+      totalHtml += `<td class="day-total-cell" data-day="${d}"><div class="badge-indicator locked">❌</div></td>`;
+    }
+    
+    totalHtml += `<td class="empty-cell"></td>`;
+    totalRow.innerHTML = totalHtml;
+    tbody.appendChild(totalRow);
+    
+    setupCheckboxListeners();
+  }
+
+  function setupCheckboxListeners() {
+    const cbs = document.querySelectorAll('.pokeball-checkbox input');
+    cbs.forEach(cb => {
+      cb.addEventListener('change', handleCheckboxChange);
+    });
+  }
+
+  function handleCheckboxChange(e) {
+    const cb = e.target;
+    
+    if (!state.reward || !state.megaReward) {
+      cb.checked = false;
+      showCustomNotification(
+        "⚠️ ATTENTION, TRAINER! ⚠️",
+        "Choose your Weekly Reward and Mega Reward first to start training!",
+        'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png',
+        false,
+        () => {
+          if (!state.reward) {
+            rewardSelect.focus();
+          } else {
+            megaRewardSelect.focus();
+          }
+        }
+      );
+      return;
+    }
+
+    const day = cb.dataset.day;
+    const task = cb.dataset.task;
+    const key = `${day}-${task}`;
+    const wasChecked = !!state.grid[key];
+    const isChecked = cb.checked;
+    const tasks = state.tasks || [];
+
+    const wasDayFullyChecked = tasks.length > 0 && tasks.every(t => {
+      if (t.id === task) return wasChecked;
+      return !!state.grid[`${day}-${t.id}`];
+    });
+
+    state.grid[key] = isChecked;
+
+    const isDayFullyChecked = tasks.length > 0 && tasks.every(t => !!state.grid[`${day}-${t.id}`]);
+
+    let xpGained = 0;
+    if (isChecked && !wasChecked) {
+      xpGained += XP_PER_TASK;
+      playSound('check');
+    } else if (!isChecked && wasChecked) {
+      xpGained -= XP_PER_TASK;
+      playSound('uncheck');
+    }
+
+    if (isDayFullyChecked && !wasDayFullyChecked) {
+      xpGained += XP_DAILY_BONUS;
+      const totalCell = document.querySelector(`.day-total-cell[data-day="${day}"]`);
+      if (totalCell) {
+        const rect = totalCell.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        CelebrationEngine.triggerDailyCelebration(day, x, y);
+      }
+    } else if (!isDayFullyChecked && wasDayFullyChecked) {
+      xpGained -= XP_DAILY_BONUS;
+    }
+
+    addXp(xpGained);
+    saveState();
+    
+    checkAndTriggerWeeklySuccess();
+    renderState();
+  }
+
+  function renderRewardDropdowns() {
+    const weeklyGroup = rewardSelect.querySelector('.recent-rewards-group');
+    if (weeklyGroup) {
+      weeklyGroup.innerHTML = '';
+      const history = state.rewardHistory || [];
+      if (history.length > 0) {
+        weeklyGroup.classList.remove('hidden');
+        history.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r;
+          opt.textContent = r;
+          weeklyGroup.appendChild(opt);
+        });
+      } else {
+        weeklyGroup.classList.add('hidden');
+      }
+    }
+    
+    const megaGroup = megaRewardSelect.querySelector('.recent-rewards-group');
+    if (megaGroup) {
+      megaGroup.innerHTML = '';
+      const history = state.megaRewardHistory || [];
+      if (history.length > 0) {
+        megaGroup.classList.remove('hidden');
+        history.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r;
+          opt.textContent = r;
+          megaGroup.appendChild(opt);
+        });
+      } else {
+        megaGroup.classList.add('hidden');
+      }
+    }
+  }
+
+  function addRewardToHistory(reward, type) {
+    if (!reward) return;
+    const historyKey = type === 'weekly' ? 'rewardHistory' : 'megaRewardHistory';
+    if (!state[historyKey]) state[historyKey] = [];
+    
+    state[historyKey] = state[historyKey].filter(r => r !== reward);
+    state[historyKey].unshift(reward);
+    if (state[historyKey].length > 5) {
+      state[historyKey] = state[historyKey].slice(0, 5);
+    }
+    saveState();
+  }
+
+  function renderAdminTasksList() {
+    const container = document.getElementById('admin-tasks-list');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    const tasks = state.tasks || [];
+    
+    tasks.forEach((task, index) => {
+      const item = document.createElement('div');
+      item.className = 'admin-task-item';
+      item.dataset.index = index;
+      
+      const emojis = ['🎹', '🧮', '📚', '✏️', '💮', '🎨', '🏰', '👑', '🧱', '🚲', '⚡', '🍽️', '🎮', '👟', '🔬', '⭐', '📝', '🏃'];
+      let emojiOptionsHtml = '';
+      emojis.forEach(e => {
+        emojiOptionsHtml += `<option value="${e}" ${task.emoji === e ? 'selected' : ''}>${e}</option>`;
+      });
+      if (!emojis.includes(task.emoji)) {
+        emojiOptionsHtml += `<option value="${task.emoji}" selected>${task.emoji}</option>`;
+      }
+      
+      item.innerHTML = `
+        <select class="task-emoji-select" data-index="${index}">
+          ${emojiOptionsHtml}
+        </select>
+        <input type="text" value="${task.name}" class="task-name-input" data-index="${index}" placeholder="Activity Name">
+        <input type="number" min="1" max="7" value="${task.req}" class="task-req-input" data-index="${index}" placeholder="Days">
+        <button class="pixel-btn small danger remove-task-btn" data-index="${index}">❌</button>
+      `;
+      
+      container.appendChild(item);
+    });
+    
+    container.querySelectorAll('.remove-task-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt(e.target.dataset.index);
+        removeTask(idx);
+      });
+    });
+  }
+
+  function removeTask(index) {
+    if (!state.tasks) return;
+    const taskToRemove = state.tasks[index];
+    if (confirm(`Remove task "${taskToRemove.name}"? This will delete all checked history for this task.`)) {
+      DAYS.forEach(day => {
+        delete state.grid[`${day}-${taskToRemove.id}`];
+      });
+      state.tasks.splice(index, 1);
+      renderAdminTasksList();
+    }
+  }
+
+  function addNewTask() {
+    if (!state.tasks) state.tasks = [];
+    const newId = `task_${Date.now()}`;
+    state.tasks.push({
+      id: newId,
+      name: 'New Activity',
+      req: 5,
+      emoji: '📝',
+      concept: 'Keep practicing!'
+    });
+    renderAdminTasksList();
+  }
+
+  function saveAdminTasks() {
+    const container = document.getElementById('admin-tasks-list');
+    if (!container) return;
+    
+    const items = container.querySelectorAll('.admin-task-item');
+    let hasError = false;
+    
+    items.forEach(item => {
+      const idx = parseInt(item.dataset.index);
+      const emoji = item.querySelector('.task-emoji-select').value;
+      const name = item.querySelector('.task-name-input').value.trim();
+      const req = parseInt(item.querySelector('.task-req-input').value);
+      
+      if (!name) {
+        alert("Activity name cannot be empty!");
+        hasError = true;
+        return;
+      }
+      
+      if (isNaN(req) || req < 1 || req > 7) {
+        alert("Goal days must be between 1 and 7!");
+        hasError = true;
+        return;
+      }
+      
+      state.tasks[idx].emoji = emoji;
+      state.tasks[idx].name = name;
+      state.tasks[idx].req = req;
+    });
+    
+    if (!hasError) {
+      saveState();
+      renderState();
+      alert("Activities saved successfully!");
+    }
+  }
+
+  function updateVolumeIcon() {
+    const soundIcon = document.querySelector('.sound-icon');
+    if (!soundIcon) return;
+    const vol = state.volume !== undefined ? state.volume : 50;
+    if (vol === 0) {
+      soundIcon.textContent = '🔈';
+    } else if (vol < 50) {
+      soundIcon.textContent = '🔉';
+    } else {
+      soundIcon.textContent = '🔊';
     }
   }
 
@@ -723,17 +1047,13 @@ document.addEventListener('DOMContentLoaded', () => {
     xpBarFill.style.width = `${progressPercent}%`;
 
     // 4. Render Dropdowns
+    renderRewardDropdowns();
     rewardSelect.value = state.reward || '';
     megaRewardSelect.value = state.megaReward || '';
 
-    // 5. Render Grid Checkboxes
-    checkboxes.forEach(cb => {
-      const key = `${cb.dataset.day}-${cb.dataset.task}`;
-      cb.checked = !!state.grid[key];
-    });
-
-    // 6. Update Progress
-    renderProgress();
+    // 5. Render Grid Table (calls renderProgress internally)
+    renderGridTable();
+    updateVolumeIcon();
 
     // Auto-trigger Eevee evolution if they are in inconsistent state (Level >= 5 but not evolved)
     if (family === '133' && stats.level >= 5 && stats.stageId === '133') {
@@ -756,87 +1076,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function setupEventListeners() {
-    // Checkbox changes
-    checkboxes.forEach(cb => {
-      cb.addEventListener('change', (e) => {
-        // Validation: Must select prizes first
-        if (!state.reward || !state.megaReward) {
-          cb.checked = false; // Undo check
-          showCustomNotification(
-            "⚠️ ATTENTION, TRAINER! ⚠️",
-            "Choose your Weekly Reward and Mega Reward first to start training!",
-            'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png',
-            false,
-            () => {
-              if (!state.reward) {
-                rewardSelect.focus();
-              } else {
-                megaRewardSelect.focus();
-              }
-            }
-          );
-          return;
-        }
-
-        const day = cb.dataset.day;
-        const task = cb.dataset.task;
-        const key = `${day}-${task}`;
-        const wasChecked = !!state.grid[key];
-        const isChecked = cb.checked;
-
-        // Check if the day WAS fully checked before this change
-        const wasDayFullyChecked = TASKS.every(t => {
-          if (t === task) return wasChecked;
-          return !!state.grid[`${day}-${t}`];
-        });
-
-        state.grid[key] = isChecked;
-
-        // Check if the day IS fully checked after this change
-        const isDayFullyChecked = TASKS.every(t => !!state.grid[`${day}-${t}`]);
-
-        // Calculate XP diff
-        let xpGained = 0;
-        if (isChecked && !wasChecked) {
-          xpGained += XP_PER_TASK;
-          playSound('check');
-        } else if (!isChecked && wasChecked) {
-          xpGained -= XP_PER_TASK;
-          playSound('uncheck');
-        }
-
-        // Daily bonus XP logic
-        if (isDayFullyChecked && !wasDayFullyChecked) {
-          xpGained += XP_DAILY_BONUS;
-          // Trigger daily celebration
-          const totalCell = dayTotalCells[day];
-          if (totalCell) {
-            const rect = totalCell.getBoundingClientRect();
-            const x = rect.left + rect.width / 2;
-            const y = rect.top + rect.height / 2;
-            CelebrationEngine.triggerDailyCelebration(day, x, y);
-          }
-        } else if (!isDayFullyChecked && wasDayFullyChecked) {
-          xpGained -= XP_DAILY_BONUS;
-        }
-
-        addXp(xpGained);
-        saveState();
-        
-        checkAndTriggerWeeklySuccess();
-        renderState();
-      });
-    });
-
     // Dropdowns
     rewardSelect.addEventListener('change', () => {
       state.reward = rewardSelect.value;
+      addRewardToHistory(state.reward, 'weekly');
       saveState();
+      renderRewardDropdowns();
     });
 
     megaRewardSelect.addEventListener('change', () => {
       state.megaReward = megaRewardSelect.value;
+      addRewardToHistory(state.megaReward, 'mega');
       saveState();
+      renderRewardDropdowns();
     });
 
     // Partner Selection
@@ -871,6 +1123,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (password === ADMIN_PASSWORD) {
         adminModal.classList.remove('hidden');
         renderBackupHistory();
+        renderAdminTasksList();
       } else if (password !== null) {
         alert('Wrong Code! Try again, Parent!');
       }
@@ -949,6 +1202,42 @@ document.addEventListener('DOMContentLoaded', () => {
         renderDebugSidebarVisibility();
       });
     }
+
+    // Volume Control
+    const volumeSlider = document.getElementById('volume-slider');
+    const soundIcon = document.querySelector('.sound-icon');
+    if (volumeSlider) {
+      volumeSlider.value = state.volume !== undefined ? state.volume : 50;
+      volumeSlider.addEventListener('input', (e) => {
+        state.volume = parseInt(e.target.value);
+        saveState();
+        updateVolumeIcon();
+      });
+    }
+    if (soundIcon) {
+      soundIcon.addEventListener('click', () => {
+        if (state.volume > 0) {
+          state.oldVolume = state.volume;
+          state.volume = 0;
+        } else {
+          state.volume = state.oldVolume || 50;
+        }
+        if (volumeSlider) volumeSlider.value = state.volume;
+        saveState();
+        updateVolumeIcon();
+        playSound('check');
+      });
+    }
+
+    // Dynamic Tasks Editor Buttons
+    const adminAddTaskBtn = document.getElementById('admin-add-task-btn');
+    const adminSaveTasksBtn = document.getElementById('admin-save-tasks-btn');
+    if (adminAddTaskBtn) {
+      adminAddTaskBtn.addEventListener('click', addNewTask);
+    }
+    if (adminSaveTasksBtn) {
+      adminSaveTasksBtn.addEventListener('click', saveAdminTasks);
+    }
   }
 
   function flashElement(element) {
@@ -997,19 +1286,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     state.grid = {};
     
-    // Requirements: piano:7, math:7, reading:7, writing:5, chinese:5
-    for (let d = 0; d < 7; d++) {
-      state.grid[`${d}-piano`] = true;
-      state.grid[`${d}-math`] = true;
-      state.grid[`${d}-reading`] = true;
-    }
-    for (let d = 0; d < 5; d++) {
-      state.grid[`${d}-writing`] = true;
-    }
-    // Chinese needs 5, we set 4
-    for (let d = 0; d < 4; d++) {
-      state.grid[`${d}-chinese`] = true;
-    }
+    // Fill all tasks to max, except the last one which gets max - 1
+    const tasks = state.tasks || [];
+    tasks.forEach((task, idx) => {
+      const isLast = idx === tasks.length - 1;
+      const fillCount = isLast ? task.req - 1 : task.req;
+      
+      for (let d = 0; d < fillCount; d++) {
+        state.grid[`${d}-${task.id}`] = true;
+      }
+    });
     
     state.weeklyClaimed = false;
     
@@ -1179,23 +1465,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderProgress() {
-    // 1. Calculate Task Totals (Across the Week)
-    const taskTotals = { piano: 0, math: 0, reading: 0, writing: 0, chinese: 0 };
+    const tasks = state.tasks || [];
     
-    TASKS.forEach(task => {
+    // 1. Calculate Task Totals (Across the Week)
+    const taskTotals = {};
+    tasks.forEach(t => { taskTotals[t.id] = 0; });
+    
+    tasks.forEach(task => {
       DAYS.forEach(day => {
-        if (state.grid[`${day}-${task}`]) {
-          taskTotals[task]++;
+        if (state.grid[`${day}-${task.id}`]) {
+          taskTotals[task.id]++;
         }
       });
 
       // Update grid cells in the "GOAL" column
-      const totalCell = taskTotalCells[task];
+      const totalCell = document.querySelector(`.task-total-cell[data-task="${task.id}"]`);
       if (totalCell) {
-        const required = TASK_REQS[task];
-        totalCell.textContent = `${taskTotals[task]} / ${required}`;
+        const required = task.req || 5;
+        totalCell.textContent = `${taskTotals[task.id]} / ${required}`;
         
-        if (taskTotals[task] >= required) {
+        if (taskTotals[task.id] >= required) {
           totalCell.classList.add('completed');
         } else {
           totalCell.classList.remove('completed');
@@ -1205,10 +1494,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Calculate Daily Totals (For ⭐ Daily Total row visual decoration)
     DAYS.forEach(day => {
-      const allChecked = TASKS.every(task => !!state.grid[`${day}-${task}`]);
-      const totalCell = dayTotalCells[day];
+      const allChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${day}-${task.id}`]);
+      const totalCell = document.querySelector(`.day-total-cell[data-day="${day}"]`);
       if (totalCell) {
-        const indicator = dayBadgeIndicators[day];
+        const indicator = totalCell.querySelector('.badge-indicator');
         if (indicator) {
           if (allChecked) {
             indicator.textContent = '🌟';
@@ -1315,23 +1604,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function checkWeeklySuccess() {
-    const taskTotals = { piano: 0, math: 0, reading: 0, writing: 0, chinese: 0 };
+    const tasks = state.tasks || [];
+    if (tasks.length === 0) return false;
     
-    TASKS.forEach(task => {
+    const taskTotals = {};
+    tasks.forEach(t => { taskTotals[t.id] = 0; });
+    
+    tasks.forEach(task => {
       DAYS.forEach(day => {
-        if (state.grid[`${day}-${task}`]) {
-          taskTotals[task]++;
+        if (state.grid[`${day}-${task.id}`]) {
+          taskTotals[task.id]++;
         }
       });
     });
 
-    return (
-      taskTotals.piano >= TASK_REQS.piano &&
-      taskTotals.math >= TASK_REQS.math &&
-      taskTotals.reading >= TASK_REQS.reading &&
-      taskTotals.writing >= TASK_REQS.writing &&
-      taskTotals.chinese >= TASK_REQS.chinese
-    );
+    return tasks.every(task => taskTotals[task.id] >= task.req);
   }
 
   function showCustomNotification(title, message, badgeUrl = '', bounceBadge = false, onCloseCallback = null) {
