@@ -673,9 +673,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Reset current week only
     resetBtn.addEventListener('click', () => {
+      const isMegaMilestoneCompleted = state.megaWeeks === 3 && state.weeklyClaimed;
+      const confirmMessage = isMegaMilestoneCompleted
+        ? "Ready to start the next week and continue progress towards a NEW Mega Milestone? Your Pokémon levels will NOT be lost!"
+        : "Ready to start the next week and continue progress towards a Mega Milestone? Your Pokémon levels will NOT be lost!";
+        
       showCustomConfirm(
         "Start New Week? 📅",
-        "Ready to start the next week and continue progress towards a Mega Milestone? Your Pokémon levels will NOT be lost!",
+        confirmMessage,
         () => {
           resetWeekGrid();
         }
@@ -765,19 +770,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function flashElement(element) {
+    if (!element) return;
+    element.classList.remove('flash-attention');
+    // Force reflow
+    void element.offsetWidth;
+    element.classList.add('flash-attention');
+    setTimeout(() => {
+      element.classList.remove('flash-attention');
+    }, 3100);
+  }
+
   function resetWeekGrid() {
+    let flashWeekly = false;
+    let flashMega = false;
+    
     if (state.weeklyClaimed) {
       state.megaWeeks += 1;
       if (state.megaWeeks >= 4) {
         state.megaWeeks = 0;
         state.megaReward = ''; // Clear mega reward on loop reset
+        flashMega = true;
       }
       state.weeklyClaimed = false;
       state.reward = ''; // Clear weekly reward for new week
+      flashWeekly = true;
     }
+    
     state.grid = {};
     saveState();
     renderState();
+    
+    if (flashWeekly) {
+      flashElement(rewardSelect);
+    }
+    if (flashMega) {
+      flashElement(megaRewardSelect);
+    }
   }
 
   // Testing Panel Helper Functions
