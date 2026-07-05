@@ -831,8 +831,24 @@ document.addEventListener('DOMContentLoaded', () => {
       if (nextStage) {
         targetLevel = nextStage.level - 1;
       } else {
-        targetLevel = evo.stages[1].level - 1;
+        const numStages = evo.stages.length;
+        if (numStages > 1) {
+          targetLevel = evo.stages[numStages - 1].level - 1;
+        } else {
+          targetLevel = 4;
+        }
       }
+      
+      // Reset stageId to match the targetLevel for testing
+      let stageIdx = 0;
+      for (let i = 1; i < evo.stages.length; i++) {
+        if (targetLevel >= evo.stages[i].level) {
+          stageIdx = i;
+        } else {
+          break;
+        }
+      }
+      stats.stageId = evo.stages[stageIdx].id;
     }
     
     stats.level = targetLevel;
