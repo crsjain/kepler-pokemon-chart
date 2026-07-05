@@ -1,5 +1,5 @@
 export const ADMIN_PASSWORD = "0130";
-export const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+export const DAYS = [0, 1, 2, 3, 4, 5, 6];
 export const XP_LEVEL_THRESHOLD = 100;
 export const XP_DAILY_BONUS = 15;
 export const XP_PER_TASK = 5;
