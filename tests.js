@@ -189,7 +189,8 @@
       await sleep(100);
 
       assert(state.grid[`0-${newTaskId}`] === true, "State should record new task check");
-      assert(newRow.querySelector('.task-total-cell').textContent === "1 / 3", "Goal column should show 1/3");
+      const actualGoalText = newRow.querySelector('.task-total-cell').textContent;
+      assert(actualGoalText === "1 / 3", `Goal column should show 1/3 (actual: "${actualGoalText}")`);
 
       // Delete task in Admin
       const deleteBtn = newItem.querySelector('.remove-task-btn');
