@@ -1286,21 +1286,20 @@ function renderProgress() {
     }
   }
 
-  megaWeeksCountEl.textContent = state.megaWeeks;
-  
+  megaWeeksCountEl.textContent = `${state.weeklyClaimed ? Math.min(4, state.megaWeeks + 1) : state.megaWeeks}`;
   megaSlots.forEach((slot, index) => {
-    slot.innerHTML = '';
-    const badge = MEGA_POKEMON[index];
+    const pkmn = MEGA_POKEMON[index];
+    const isUnlocked = index < state.megaWeeks || (index === state.megaWeeks && state.weeklyClaimed);
     
-    if (index < state.megaWeeks) {
-      slot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badge.id}.png" alt="${badge.name}" class="mega-slot-img completed">`;
-      slot.classList.add('earned');
-    } else if (index === state.megaWeeks && state.weeklyClaimed) {
-      slot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badge.id}.png" alt="${badge.name}" class="mega-slot-img completed animate-pop">`;
-      slot.classList.add('earned');
+    slot.classList.remove(`badge-theme-${index + 1}`);
+    
+    if (isUnlocked) {
+      slot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png" alt="${pkmn.name}" class="mega-slot-img ${index === state.megaWeeks && state.weeklyClaimed ? 'animate-pop' : ''}">`;
+      slot.classList.add('unlocked');
+      slot.classList.add(`badge-theme-${index + 1}`);
     } else {
-      slot.innerHTML = `<div class="mega-slot-placeholder">${index + 1}</div>`;
-      slot.classList.remove('earned');
+      slot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Locked" class="mega-slot-img locked">`;
+      slot.classList.remove('unlocked');
     }
   });
 }
