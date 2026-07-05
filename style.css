@@ -715,7 +715,7 @@ body {
   border: var(--pixel-border);
   border-radius: 12px;
   padding: 25px;
-  max-width: 450px;
+  max-width: 500px;
   width: 90%;
   text-align: center;
   box-shadow: 0 10px 30px rgba(0,0,0,0.25);
@@ -814,10 +814,11 @@ body {
 
 .notification-content h2 {
   font-family: 'Press Start 2P', cursive;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   color: var(--poke-red);
   text-shadow: 1px 1px 0px var(--poke-yellow);
   margin-bottom: 20px;
+  line-height: 1.4;
 }
 
 .notification-body {
