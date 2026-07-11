@@ -18,6 +18,7 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - Week 2: **Kyogre Badge**
   - Week 3: **Lugia Badge**
   - Week 4: **Rayquaza Badge** (Triggers Mega Celebration!)
+- 🎒 **Badge Case (Visual Collection)**: Daily total stars (earned by clearing all tasks in a day) accumulate as visual collectible badges in Kepler's Badge Case. These badges are customized based on the active Pokémon partner that earned them, encouraging Kepler to rotate partners to "collect them all". Temporary badges glow in the case and are locked in permanently when the week is reset.
 - 🔊 **Audio & Sound Effects**: Game-synthesized beeps play on checkbox toggles, daily totals, and level-ups at a comfortable preset volume.
 - 📲 **PWA Offline Support**: Fully compatible as a Progressive Web App. Once loaded, it works entirely offline and caches PokeAPI sprite assets locally.
 - 💾 **Local Progress Saving**: Progress is saved automatically in the browser's local storage.
