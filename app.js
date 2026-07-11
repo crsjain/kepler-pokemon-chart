@@ -38,10 +38,6 @@ const badgeStatusEl = document.getElementById('badge-status');
 const megaWeeksCountEl = document.getElementById('mega-weeks-count');
 const megaSlots = document.querySelectorAll('.mega-slot');
 
-// Badge Case Elements
-const badgeCaseGrid = document.getElementById('badge-case-grid');
-const badgeCaseCountEl = document.getElementById('badge-case-count');
-
 const changePartnerBtn = document.getElementById('change-partner-btn');
 const partnerModal = document.getElementById('partner-modal');
 const closeModalBtn = document.getElementById('close-modal-btn');
@@ -370,9 +366,6 @@ export function renderState(rebuildGrid = false) {
 
   // Render Debug Sidebar Visibility
   renderDebugSidebarVisibility();
-
-  // Render Badge Case
-  renderBadgeCase();
 }
 
 function renderDebugSidebarVisibility() {
@@ -604,23 +597,8 @@ function handleCheckboxChange(e) {
       const y = rect.top + rect.height / 2;
       CelebrationEngine.triggerDailyCelebration(day, x, y);
     }
-    // Add temporary badge to current week
-    const dateStr = getDateForWeekday(day);
-    const family = state.partnerFamily;
-    const stats = state.partnersData[family];
-    const activePokemon = getStageInfo(family, stats.stageId).currentStage;
-    if (!state.currentWeekBadges) state.currentWeekBadges = {};
-    state.currentWeekBadges[day] = {
-      partnerId: activePokemon.id,
-      name: activePokemon.name,
-      date: dateStr
-    };
   } else if (!isDayFullyChecked && wasDayFullyChecked) {
     xpGained -= XP_DAILY_BONUS;
-    // Remove temporary badge
-    if (state.currentWeekBadges) {
-      delete state.currentWeekBadges[day];
-    }
   }
 
   addXp(xpGained);
@@ -818,8 +796,6 @@ function importState() {
             state.megaWeeks = parsed.megaWeeks || 0;
             state.weeklyClaimed = parsed.weeklyClaimed || false;
             state.claimedRewardsHistory = parsed.claimedRewardsHistory || [];
-            state.badgeCase = parsed.badgeCase || [];
-            state.currentWeekBadges = parsed.currentWeekBadges || {};
             
             saveState();
             loadState();
@@ -1103,15 +1079,6 @@ function resetWeekGrid() {
     state.weeklyClaimed = false;
     state.reward = '';
     flashWeekly = true;
-  }
-  
-  // Commit current week badges to permanent case
-  if (state.currentWeekBadges) {
-    if (!state.badgeCase) state.badgeCase = [];
-    Object.keys(state.currentWeekBadges).forEach(day => {
-      state.badgeCase.push(state.currentWeekBadges[day]);
-    });
-    state.currentWeekBadges = {};
   }
   
   state.grid = {};
@@ -1495,49 +1462,6 @@ function selectEeveeEvolution(evolvedId, evolvedName) {
   );
 }
 
-function getDateForWeekday(targetDayIndex) {
-  const today = new Date();
-  const todayIndex = today.getDay(); // 0-6
-  const diff = targetDayIndex - todayIndex;
-  const targetDate = new Date(today);
-  targetDate.setDate(today.getDate() + diff);
-  return targetDate.toISOString().split('T')[0]; // YYYY-MM-DD
-}
-
-function renderBadgeCase() {
-  if (!badgeCaseGrid || !badgeCaseCountEl) return;
-
-  badgeCaseGrid.innerHTML = '';
-
-  const permanentBadges = state.badgeCase || [];
-  const temporaryBadges = state.currentWeekBadges || {};
-
-  const totalBadgesCount = permanentBadges.length + Object.keys(temporaryBadges).length;
-  badgeCaseCountEl.textContent = totalBadgesCount;
-
-  if (totalBadgesCount === 0) {
-    badgeCaseGrid.innerHTML = '<p class="no-badges-msg">Your Badge Case is empty. Clear all tasks in a day to earn a badge!</p>';
-    return;
-  }
-
-  // Render permanent badges
-  permanentBadges.forEach(badge => {
-    const slot = document.createElement('div');
-    slot.className = 'badge-slot-case has-badge';
-    slot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${badge.partnerId}.png" alt="${badge.name}" class="badge-case-img" title="${badge.name} (${badge.date})">`;
-    badgeCaseGrid.appendChild(slot);
-  });
-
-  // Render temporary badges (current week)
-  Object.keys(temporaryBadges).forEach(day => {
-    const badge = temporaryBadges[day];
-    const slot = document.createElement('div');
-    slot.className = 'badge-slot-case has-badge temp-badge';
-    slot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${badge.partnerId}.png" alt="${badge.name}" class="badge-case-img temp" title="${badge.name} (Pending - ${badge.date})">`;
-    badgeCaseGrid.appendChild(slot);
-  });
-}
-
 // Test Mode setup
 if (location.search.includes('runTests=true')) {
   Object.defineProperty(window, '__app_state__', {
@@ -1551,8 +1475,7 @@ if (location.search.includes('runTests=true')) {
       renderState(true);
     },
     renderState: (rebuildGrid) => renderState(rebuildGrid),
-    ADMIN_PASSWORD: ADMIN_PASSWORD,
-    saveState: saveState
+    ADMIN_PASSWORD: ADMIN_PASSWORD
   };
   
   const script = document.createElement('script');

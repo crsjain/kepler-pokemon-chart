@@ -102,9 +102,9 @@ export function getStageInfo(familyId, stageId) {
   };
 }
 
-// State V9 (Dynamic Tasks, Reward History, Volume, Claimed Rewards History, Badge Case)
+// State V8 (Dynamic Tasks, Reward History, Volume, Claimed Rewards History)
 export let state = {
-  version: 9,
+  version: 8,
   partnerFamily: '25', // Default Pikachu Family
   partnersData: {
     '25': { level: 1, xp: 0, stageId: '25' },
@@ -130,8 +130,6 @@ export let state = {
   megaRewardHistory: [],
   volume: 50,
   claimedRewardsHistory: [],
-  badgeCase: [],
-  currentWeekBadges: {},
   activeDay: new Date().getDay()
 };
 
@@ -251,14 +249,6 @@ export function loadState() {
           state.version = 8;
           saveState();
         }
-
-        // Migration from V8 to V9 (Badge Case & Current Week Badges)
-        if (state.version === 8) {
-          state.badgeCase = [];
-          state.currentWeekBadges = {};
-          state.version = 9;
-          saveState();
-        }
         
         if (!state.grid || typeof state.grid !== 'object') {
           state.grid = {};
@@ -277,7 +267,7 @@ export function updateState(newState) {
 
 export function resetStateToDefault() {
   state = {
-    version: 9,
+    version: 8,
     partnerFamily: '25',
     partnersData: {
       '25': { level: 1, xp: 0, stageId: '25' },
@@ -303,8 +293,6 @@ export function resetStateToDefault() {
     megaRewardHistory: [],
     volume: 50,
     claimedRewardsHistory: [],
-    badgeCase: [],
-    currentWeekBadges: {},
     activeDay: new Date().getDay()
   };
   saveState();
@@ -447,22 +435,10 @@ export function runStateDiagnostics() {
     fixed.push("Initialized empty claimed rewards history.");
   }
 
-  if (!state.badgeCase || !Array.isArray(state.badgeCase)) {
-    state.badgeCase = [];
-    issues.push("Badge case was missing or invalid.");
-    fixed.push("Initialized empty badge case.");
-  }
-
-  if (!state.currentWeekBadges || typeof state.currentWeekBadges !== 'object') {
-    state.currentWeekBadges = {};
-    issues.push("Current week badges container was missing or invalid.");
-    fixed.push("Initialized empty current week badges container.");
-  }
-
-  if (state.version !== 9) {
-    issues.push(`State version mismatch. Current: ${state.version}, Expected: 9`);
-    state.version = 9;
-    fixed.push("Forced state version to 9.");
+  if (state.version !== 8) {
+    issues.push(`State version mismatch. Current: ${state.version}, Expected: 8`);
+    state.version = 8;
+    fixed.push("Forced state version to 8.");
   }
 
   if (fixed.length > 0) {
