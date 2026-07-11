@@ -176,7 +176,7 @@ function showCustomNotification(title, message, imageUrl = null, isMega = false,
     <div class="modal-content pixel-art-border">
       <h2>${title}</h2>
       ${imageHtml}
-      <p style="white-space: pre-line; margin: 15px 0;">${message}</p>
+      <div class="notif-body-text" style="white-space: pre-line; margin: 15px 0;">${message}</div>
       <button class="pixel-btn notif-close-btn">Awesome!</button>
     </div>
   `;
@@ -216,13 +216,13 @@ function renderClaimedRewardsHistory() {
     });
     
     itemEl.innerHTML = `
-      <div class="reward-history-info">
-        <span class="reward-history-date">${formattedDate}</span>
-        <span class="reward-history-details">Week ${item.weekNumber} • ${item.partner} (LV ${item.level})</span>
+      <div class="reward-history-name ${item.type === 'mega' ? 'mega' : ''}">
+        <span class="reward-emoji">${item.type === 'mega' ? '👑' : '🎁'}</span>
+        <span class="reward-text">${item.reward}</span>
       </div>
-      <span class="reward-history-name ${item.type === 'mega' ? 'mega' : ''}">
-        ${item.type === 'mega' ? '👑 ' : '🎁 '}${item.reward}
-      </span>
+      <div class="reward-history-meta">
+        ${formattedDate} • Week ${item.weekNumber} • ${item.partner} (LV ${item.level})
+      </div>
     `;
     listContainer.appendChild(itemEl);
   });
@@ -234,7 +234,7 @@ function renderBackupHistory() {
   
   listContainer.innerHTML = '';
   
-  const history = getBackupHistory();
+  const history = getBackupHistory().slice(0, 2);
   if (history.length === 0) {
     listContainer.innerHTML = '<p class="no-backups">No backups available yet.</p>';
     return;
@@ -244,7 +244,14 @@ function renderBackupHistory() {
     const backupEl = document.createElement('div');
     backupEl.className = 'backup-item';
     
-    const dateStr = new Date(backup.timestamp).toLocaleString();
+    const dateStr = new Date(backup.timestamp).toLocaleString(undefined, {
+      month: 'numeric',
+      day: 'numeric',
+      year: '2-digit',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
     const family = backup.state.partnerFamily || '25';
     const stats = backup.state.partnersData[family] || { level: 1 };
     const stageInfo = getStageInfo(family, stats.stageId || family);
@@ -253,8 +260,8 @@ function renderBackupHistory() {
     
     backupEl.innerHTML = `
       <div class="backup-info">
-        <span class="backup-date">${dateStr}</span>
         <span class="backup-details">${partnerName} (LV ${stats.level}) • Week ${completedWeeks + 1}</span>
+        <span class="backup-date">${dateStr}</span>
       </div>
       <button class="pixel-btn info small restore-backup-btn" data-index="${idx}">Restore</button>
     `;
@@ -664,7 +671,7 @@ function renderAdminTasksList() {
     item.dataset.index = idx;
     
     item.innerHTML = `
-      <select class="task-emoji-select" style="font-size: 1.2rem; width: 50px;">
+      <select class="task-emoji-select" style="font-size: 1.2rem; width: 68px;">
         <option value="🎹" ${task.emoji === '🎹' ? 'selected' : ''}>🎹</option>
         <option value="🧮" ${task.emoji === '🧮' ? 'selected' : ''}>🧮</option>
         <option value="📚" ${task.emoji === '📚' ? 'selected' : ''}>📚</option>
@@ -766,7 +773,7 @@ function saveAdminTasks() {
 function exportState() {
   const stateStr = JSON.stringify(state);
   navigator.clipboard.writeText(stateStr).then(() => {
-    alert("Trainer progress copied to clipboard! Save this code somewhere safe.");
+    showCustomNotification("EXPORT SUCCESS 📋", "Trainer progress copied to clipboard! Save this code somewhere safe.");
   }).catch(err => {
     prompt("Could not auto-copy. Please copy this backup code manually:", stateStr);
   });
@@ -780,32 +787,36 @@ function importState() {
     const parsed = JSON.parse(code);
     if (parsed && typeof parsed === 'object') {
       if ((parsed.level !== undefined || parsed.partnersData !== undefined) && parsed.grid !== undefined) {
-        if (confirm("Are you sure you want to restore this backup? It will overwrite current progress!")) {
-          state.partnerFamily = parsed.partnerFamily || '25';
-          state.partnersData = parsed.partnersData || state.partnersData;
-          state.grid = parsed.grid || {};
-          state.tasks = parsed.tasks || state.tasks;
-          state.reward = parsed.reward || '';
-          state.megaReward = parsed.megaReward || '';
-          state.megaWeeks = parsed.megaWeeks || 0;
-          state.weeklyClaimed = parsed.weeklyClaimed || false;
-          state.claimedRewardsHistory = parsed.claimedRewardsHistory || [];
-          
-          saveState();
-          loadState();
-          renderState(true);
-          alert("Trainer progress restored successfully!");
-          adminModal.classList.add('hidden');
-        }
+        showCustomConfirm(
+          "Restore Backup? ⚠️",
+          "Are you sure you want to restore this backup? It will overwrite current progress!",
+          () => {
+            state.partnerFamily = parsed.partnerFamily || '25';
+            state.partnersData = parsed.partnersData || state.partnersData;
+            state.grid = parsed.grid || {};
+            state.tasks = parsed.tasks || state.tasks;
+            state.reward = parsed.reward || '';
+            state.megaReward = parsed.megaReward || '';
+            state.megaWeeks = parsed.megaWeeks || 0;
+            state.weeklyClaimed = parsed.weeklyClaimed || false;
+            state.claimedRewardsHistory = parsed.claimedRewardsHistory || [];
+            
+            saveState();
+            loadState();
+            renderState(true);
+            showCustomNotification("RESTORE SUCCESS", "Trainer progress restored successfully!");
+            adminModal.classList.add('hidden');
+          }
+        );
       } else {
-        alert("Invalid backup code! Make sure you copied the entire code.");
+        showCustomNotification("IMPORT ERROR", "Invalid backup code! Make sure you copied the entire code.");
       }
     } else {
-      alert("Invalid backup code format!");
+      showCustomNotification("IMPORT ERROR", "Invalid backup code format!");
     }
   } catch (e) {
     console.error("Error importing state:", e);
-    alert("Failed to parse the backup code. Make sure it is copied correctly.");
+    showCustomNotification("IMPORT ERROR", "Failed to parse the backup code. Make sure it is copied correctly.");
   }
 }
 
@@ -974,7 +985,7 @@ function setupEventListeners() {
       () => {
         resetStateToDefault();
         renderState(true);
-        alert('System completely rebooted! Good luck, Kepler!');
+        showCustomNotification("SYSTEM REBOOTED", "System completely rebooted! Good luck, Kepler!");
         adminModal.classList.add('hidden');
       }
     );
@@ -1234,18 +1245,18 @@ function checkAndTriggerWeeklySuccess() {
     const weekDisplayNum = state.megaWeeks + 1;
     const isMegaWeek = weekDisplayNum === 4;
     
-    let successMessage = `Kepler has completed all training goals for Week ${weekDisplayNum}!\n\n`;
+    let successMessage = `Kepler has completed all training goals for <strong>Week ${weekDisplayNum}</strong>!<br><br>`;
     if (isMegaWeek) {
-      successMessage += `🏆 MEGA REWARD UNLOCKED 🏆\n"${state.megaReward || 'Mega Reward'}"\n\n`;
+      successMessage += `<div class="reward-box mega"><div class="reward-box-header">🏆 MEGA REWARD UNLOCKED 🏆</div><div class="reward-box-name">${state.megaReward || 'Mega Reward'}</div></div><br>`;
     }
-    successMessage += `🎁 WEEKLY REWARD CLAIMED 🎁\n"${state.reward || 'Weekly Reward'}"`;
+    successMessage += `<div class="reward-box"><div class="reward-box-header">🎁 WEEKLY REWARD CLAIMED 🎁</div><div class="reward-box-name">${state.reward || 'Weekly Reward'}</div></div>`;
     
     showCustomNotification(
       isMegaWeek ? "👑 MEGA MILESTONE COMPLETED! 👑" : "🎉 WEEKLY SUCCESS! 🎉",
       successMessage,
       isMegaWeek 
         ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${MEGA_POKEMON[3].id}.png`
-        : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/star-piece.png`,
+        : null,
       isMegaWeek,
       () => {
         showCustomConfirm(

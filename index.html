@@ -132,57 +132,65 @@
 
     <!-- Admin Modal -->
     <div id="admin-modal" class="modal hidden">
-      <div class="modal-content">
+      <div class="modal-content admin-modal-content">
         <h2>Parent Admin Panel</h2>
-        <div class="admin-options">
-          <button id="admin-diagnostics-btn" class="pixel-btn info">Run Diagnostics</button>
-          <button id="admin-export-btn" class="pixel-btn info">Export Backup Code</button>
-          <button id="admin-import-btn" class="pixel-btn info">Import Backup Code</button>
-          <button id="admin-wipe-btn" class="pixel-btn danger">Wipe All Progress (Reset)</button>
-        </div>
+        
+        <div class="admin-grid">
+          <!-- Quick Actions -->
+          <div class="admin-section quick-actions-section">
+            <h3>⚙️ Quick Actions</h3>
+            <div class="admin-options">
+              <button id="admin-diagnostics-btn" class="pixel-btn info">Run Diagnostics</button>
+              <button id="admin-export-btn" class="pixel-btn info">Export Backup Code</button>
+              <button id="admin-import-btn" class="pixel-btn info">Import Backup Code</button>
+              <button id="admin-wipe-btn" class="pixel-btn danger">Wipe All Progress (Reset)</button>
+            </div>
+            
+            <div class="admin-option-row">
+              <span>Enable Debug Sidebar:</span>
+              <label class="switch">
+                <input type="checkbox" id="toggle-debug-sidebar">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
 
-        <!-- Auto-Backup History -->
-        <div class="admin-section">
-          <h3>📋 Auto-Backup History</h3>
-          <div id="backup-history-list" class="backup-history-list">
-            <p class="no-backups">No backups available yet.</p>
+          <!-- FAQ (Restore Guide) -->
+          <div class="admin-section admin-faq">
+            <h3>📋 Restore Guide</h3>
+            <p><strong>Auto-Backup:</strong> Fixes accidental resets. Rolls back to last Level Up or Week Completion.</p>
+            <p><strong>Import Code:</strong> Use if browser cache is cleared (wipes Auto-Backup too!) or if moving to a new device. (Requires previously saving the Export Code).</p>
+          </div>
+
+          <!-- Customize Activities & Goals -->
+          <div class="admin-section customize-section">
+            <h3>📋 Customize Activities & Goals</h3>
+            <div id="admin-tasks-list" class="admin-tasks-list">
+              <!-- Populated dynamically via JS -->
+            </div>
+            <div class="admin-tasks-actions">
+              <button id="admin-add-task-btn" class="pixel-btn small info">Add Activity</button>
+              <button id="admin-save-tasks-btn" class="pixel-btn small warning">Save Activities</button>
+            </div>
+          </div>
+
+          <!-- Auto-Backup History -->
+          <div class="admin-section backup-section">
+            <h3>📋 Auto-Backup History</h3>
+            <div id="backup-history-list" class="backup-history-list">
+              <p class="no-backups">No backups available yet.</p>
+            </div>
+          </div>
+
+          <!-- Claimed Rewards History -->
+          <div class="admin-section claimed-rewards-section">
+            <h3>🏆 Claimed Rewards History</h3>
+            <div id="claimed-rewards-history-list" class="claimed-rewards-history-list">
+              <p class="no-rewards">No rewards claimed yet.</p>
+            </div>
           </div>
         </div>
 
-        <!-- Claimed Rewards History -->
-        <div class="admin-section">
-          <h3>🏆 Claimed Rewards History</h3>
-          <div id="claimed-rewards-history-list" class="claimed-rewards-history-list">
-            <p class="no-rewards">No rewards claimed yet.</p>
-          </div>
-        </div>
-
-        <!-- Customize Activities & Goals -->
-        <div class="admin-section">
-          <h3>📋 Customize Activities & Goals</h3>
-          <div id="admin-tasks-list" class="admin-tasks-list">
-            <!-- Populated dynamically via JS -->
-          </div>
-          <div class="admin-tasks-actions">
-            <button id="admin-add-task-btn" class="pixel-btn small info">Add Activity</button>
-            <button id="admin-save-tasks-btn" class="pixel-btn small warning">Save Activities</button>
-          </div>
-        </div>
-
-        <!-- Debug Sidebar Toggle -->
-        <div class="admin-option-row">
-          <span>Enable Debug Sidebar:</span>
-          <label class="switch">
-            <input type="checkbox" id="toggle-debug-sidebar">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <div class="admin-faq">
-          <h3>📋 Restore Guide</h3>
-          <p><strong>Auto-Backup:</strong> Fixes accidental resets. Rolls back to last Level Up or Week Completion.</p>
-          <p><strong>Import Code:</strong> Use if browser cache is cleared (wipes Auto-Backup too!) or if moving to a new device. (Requires previously saving the Export Code).</p>
-        </div>
         <button id="close-admin-modal-btn" class="pixel-btn">Close</button>
       </div>
     </div>

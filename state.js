@@ -312,8 +312,8 @@ export function saveAutoBackup() {
     };
     
     history.unshift(backupEntry);
-    if (history.length > 3) {
-      history = history.slice(0, 3);
+    if (history.length > 2) {
+      history = history.slice(0, 2);
     }
     
     localStorage.setItem(BACKUPS_KEY, JSON.stringify(history));

@@ -6,6 +6,7 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
 
 - 👾 **Retro Pokémon UI**: Immersive retro game font and pixel aesthetics.
 - 🦊 **Multi-Partner Training**: Kepler can choose to train different partners (Pikachu, Charmander, Bulbasaur, Squirtle, Eevee). XP and Levels are tracked **individually** for each Pokémon, encouraging him to train them all!
+  - **Eevee Branching Evolution**: Reaching Level 5 with Eevee unlocks a branching evolution modal allowing Kepler to choose between 8 different evolutions (Vaporeon, Jolteon, Flareon, Espeon, Umbreon, Leafeon, Glaceon, Sylveon) with individual sprites.
 - 📈 **XP & Evolution System**: 
   - Each task checked adds **5 XP**.
   - Clearing all tasks in a day unlocks the **Daily Total (⭐)** and grants a **+15 XP Bonus**.
@@ -17,11 +18,17 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - Week 2: **Kyogre Badge**
   - Week 3: **Lugia Badge**
   - Week 4: **Rayquaza Badge** (Triggers Mega Celebration!)
+- 🔊 **Audio & Sound Effects**: Game-synthesized beeps play on checkbox toggles, daily totals, and level-ups. Click on the active partner Pokémon's official sprite to play its actual game cry! Volume controls and mute toggles are available in the footer.
+- 📲 **PWA Offline Support**: Fully compatible as a Progressive Web App. Once loaded, it works entirely offline and caches PokeAPI sprite assets locally.
 - 💾 **Local Progress Saving**: Progress is saved automatically in the browser's local storage.
-- 🔒 **Parent Admin Panel**: Password-protected (`0130`) options panel in the footer allowing parents to trigger manual backups, imports, or roll back progress securely.
-- 🔄 **Milestone Auto-Backups**: Automatically captures and saves backup snapshots upon Level Up, Evolution, or Weekly Goal Completion.
+- 🔒 **Parent Admin Panel**: Password-protected (`0130`) options dashboard in the footer:
+  - **Dynamic Task Manager**: Add, edit, or delete activities, customize goal days (1-7), and save changes instantly.
+  - **Claimed Rewards History**: View a list of earned rewards with dates and partner context.
+  - **Backup & Restore**: Trigger manual backups, import/export backup codes, or restore from a rolling 2-deep list of automated milestone backups (captured on level-ups and week resets).
+  - **Diagnostics & Healing**: Click "Run Diagnostics" to auto-detect and heal any state schema inconsistency.
+  - **Developer Debug Mode**: Toggle the right-aligned Debug Sidebar to test milestones, level up instantly, or force devolution for testing.
 - 📋 **Integrated Restore Guide**: A quick FAQ inside the Admin Panel details exactly when to use Auto-Backup (accidental resets) vs. Manual Imports (cache clearance/device migration).
-- ✍️ **Reward Choice**: Dedicated drop-down options for Kepler to select his weekly and mega (4-week loop) target rewards.
+- ✍️ **Reward Choice**: Dedicated drop-down options for Kepler to select his weekly and mega (4-week loop) target rewards. "Recent Rewards" are automatically remembered and suggested in the dropdown.
 
 ---
 
