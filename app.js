@@ -69,8 +69,16 @@ const confirmMessage = document.getElementById('confirm-message');
 const confirmYesBtn = document.getElementById('confirm-yes-btn');
 const confirmNoBtn = document.getElementById('confirm-no-btn');
 
+// Password Modal Elements
+const passwordModal = document.getElementById('password-modal');
+const passwordInput = document.getElementById('password-input');
+const passwordSubmitBtn = document.getElementById('password-submit-btn');
+const passwordCancelBtn = document.getElementById('password-cancel-btn');
+const passwordError = document.getElementById('password-error');
+
 // Eevee Modal Elements
 const eeveeModal = document.getElementById('eevee-modal');
+const evolutionHelper = document.getElementById('evolution-helper');
 
 // Debug Sidebar Element
 const debugSidebar = document.getElementById('debug-sidebar');
@@ -317,36 +325,24 @@ export function renderState(rebuildGrid = false) {
     xpBarMilestones.innerHTML = ''; // Clear previous milestones
   }
 
-  let progressPercent = 0;
-  if (stageInfo.endLevel) {
-    // We have a next evolution stage
-    const stageStartLevel = stageInfo.startLevel;
-    const stageEndLevel = stageInfo.endLevel;
-    const totalStageLevels = stageEndLevel - stageStartLevel;
-    const totalStageXp = totalStageLevels * XP_LEVEL_THRESHOLD;
-    
-    const currentStageXp = Math.max(0, (stats.level - stageStartLevel) * XP_LEVEL_THRESHOLD + stats.xp);
-    progressPercent = Math.min(100, (currentStageXp / totalStageXp) * 100);
-
-    // Render milestones
-    if (xpBarMilestones) {
-      const numMilestones = totalStageLevels - 1;
-      for (let i = 1; i <= numMilestones; i++) {
-        const milestoneXp = i * XP_LEVEL_THRESHOLD;
-        const milestonePercent = (milestoneXp / totalStageXp) * 100;
-        
-        const marker = document.createElement('div');
-        marker.className = 'xp-milestone-marker';
-        marker.style.left = `${milestonePercent}%`;
-        xpBarMilestones.appendChild(marker);
-      }
-    }
-  } else {
-    // Max evolution stage reached, standard 100 XP bar
-    progressPercent = Math.min(100, (stats.xp / XP_LEVEL_THRESHOLD) * 100);
-  }
-  
+  // XP Bar always shows progress to next level (0-100%)
+  const progressPercent = Math.min(100, (stats.xp / XP_LEVEL_THRESHOLD) * 100);
   xpBarFill.style.width = `${progressPercent}%`;
+
+
+  // Update Evolution Helper text
+  if (evolutionHelper) {
+    if (stageInfo.nextStage) {
+      const levelsLeft = stageInfo.endLevel - stats.level;
+      if (family === '133') {
+        evolutionHelper.innerHTML = `✨ Evolves at LV ${stageInfo.endLevel} (${levelsLeft} ${levelsLeft === 1 ? 'level' : 'levels'} to go!)`;
+      } else {
+        evolutionHelper.innerHTML = `✨ Next Evolution: <strong>${stageInfo.nextStage.name}</strong> at LV ${stageInfo.endLevel} (${levelsLeft} ${levelsLeft === 1 ? 'level' : 'levels'} to go!)`;
+      }
+    } else {
+      evolutionHelper.innerHTML = `🏆 Fully Evolved form!`;
+    }
+  }
 
   // 4. Render Dropdowns
   renderRewardDropdowns();
@@ -671,7 +667,7 @@ function renderAdminTasksList() {
     item.dataset.index = idx;
     
     item.innerHTML = `
-      <select class="task-emoji-select" style="font-size: 1.2rem; width: 68px;">
+      <select class="task-emoji-select">
         <option value="🎹" ${task.emoji === '🎹' ? 'selected' : ''}>🎹</option>
         <option value="🧮" ${task.emoji === '🧮' ? 'selected' : ''}>🧮</option>
         <option value="📚" ${task.emoji === '📚' ? 'selected' : ''}>📚</option>
@@ -684,10 +680,10 @@ function renderAdminTasksList() {
         <option value="🥦" ${task.emoji === '🥦' ? 'selected' : ''}>🥦</option>
         <option value="📝" ${task.emoji === '📝' ? 'selected' : ''}>📝</option>
       </select>
-      <input type="text" class="task-name-input pixel-input" value="${task.name}" style="flex: 1; padding: 4px 8px;">
-      <div style="display: flex; align-items: center; gap: 5px;">
-        <span style="font-size: 0.75rem; color: #475569;">Goal:</span>
-        <input type="number" class="task-req-input pixel-input" value="${task.req || 5}" min="1" max="7" style="width: 45px; padding: 4px; text-align: center;">
+      <input type="text" class="task-name-input" value="${task.name}">
+      <div class="task-goal-container">
+        <span class="task-goal-label">Goal:</span>
+        <input type="number" class="task-req-input" value="${task.req || 5}" min="1" max="7">
       </div>
       <button class="pixel-btn danger remove-task-btn" data-index="${idx}">
         <svg class="delete-icon" viewBox="0 0 448 512" fill="white" xmlns="http://www.w3.org/2000/svg">
@@ -932,14 +928,44 @@ function setupEventListeners() {
 
   if (adminBtn) {
     adminBtn.addEventListener('click', () => {
-      const password = prompt('Enter Parent Password to open Admin Panel:');
-      if (password === ADMIN_PASSWORD) {
-        adminModal.classList.remove('hidden');
-        renderBackupHistory();
-        renderAdminTasksList();
-        renderClaimedRewardsHistory();
-      } else if (password !== null) {
-        alert('Wrong Code! Try again, Parent!');
+      passwordInput.value = '';
+      passwordError.classList.add('hidden');
+      passwordModal.classList.remove('hidden');
+      setTimeout(() => passwordInput.focus(), 50);
+    });
+  }
+
+  function handlePasswordSubmit() {
+    const password = passwordInput.value;
+    if (password === ADMIN_PASSWORD) {
+      passwordModal.classList.add('hidden');
+      adminModal.classList.remove('hidden');
+      renderBackupHistory();
+      renderAdminTasksList();
+      renderClaimedRewardsHistory();
+    } else {
+      passwordError.classList.remove('hidden');
+      passwordInput.value = '';
+      passwordInput.focus();
+    }
+  }
+
+  if (passwordSubmitBtn) {
+    passwordSubmitBtn.addEventListener('click', handlePasswordSubmit);
+  }
+
+  if (passwordCancelBtn) {
+    passwordCancelBtn.addEventListener('click', () => {
+      passwordModal.classList.add('hidden');
+    });
+  }
+
+  if (passwordInput) {
+    passwordInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        handlePasswordSubmit();
+      } else if (e.key === 'Escape') {
+        passwordModal.classList.add('hidden');
       }
     });
   }
@@ -1448,7 +1474,8 @@ if (location.search.includes('runTests=true')) {
       gridRebuildCount = 0;
       renderState(true);
     },
-    renderState: (rebuildGrid) => renderState(rebuildGrid)
+    renderState: (rebuildGrid) => renderState(rebuildGrid),
+    ADMIN_PASSWORD: ADMIN_PASSWORD
   };
   
   const script = document.createElement('script');

@@ -143,14 +143,32 @@
       let alertMsg = "";
       window.confirm = () => true; // Auto-confirm
       window.alert = (msg) => { alertMsg = msg; console.log("Mock Alert:", msg); };
-      window.prompt = () => "0130"; // Admin password bypass
       mocksActive = true;
       
-      // Click Admin Button to open
+      const adminModal = document.getElementById('admin-modal');
+      const passwordModal = document.getElementById('password-modal');
+      const passwordInput = document.getElementById('password-input');
+      const passwordSubmitBtn = document.getElementById('password-submit-btn');
+      const passwordError = document.getElementById('password-error');
+      
+      // Click Admin Button to open password modal
       const adminBtn = document.getElementById('admin-btn');
       adminBtn.click();
       
-      const adminModal = document.getElementById('admin-modal');
+      assert(!passwordModal.classList.contains('hidden'), "Password Modal should be visible");
+      
+      // Try wrong password first to test validation
+      passwordInput.value = "wrong_password";
+      passwordSubmitBtn.click();
+      
+      assert(!passwordError.classList.contains('hidden'), "Error message should be visible on wrong password");
+      assert(adminModal.classList.contains('hidden'), "Admin Modal should still be hidden");
+      
+      // Now enter correct password
+      passwordInput.value = window.__test_helpers__.ADMIN_PASSWORD;
+      passwordSubmitBtn.click();
+      
+      assert(passwordModal.classList.contains('hidden'), "Password Modal should be hidden after correct password");
       assert(!adminModal.classList.contains('hidden'), "Admin Modal should be visible");
 
       // Add task

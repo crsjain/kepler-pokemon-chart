@@ -18,10 +18,10 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - Week 2: **Kyogre Badge**
   - Week 3: **Lugia Badge**
   - Week 4: **Rayquaza Badge** (Triggers Mega Celebration!)
-- 🔊 **Audio & Sound Effects**: Game-synthesized beeps play on checkbox toggles, daily totals, and level-ups. Click on the active partner Pokémon's official sprite to play its actual game cry! Volume controls and mute toggles are available in the footer.
+- 🔊 **Audio & Sound Effects**: Game-synthesized beeps play on checkbox toggles, daily totals, and level-ups at a comfortable preset volume.
 - 📲 **PWA Offline Support**: Fully compatible as a Progressive Web App. Once loaded, it works entirely offline and caches PokeAPI sprite assets locally.
 - 💾 **Local Progress Saving**: Progress is saved automatically in the browser's local storage.
-- 🔒 **Parent Admin Panel**: Password-protected (`0130`) options dashboard in the footer:
+- 🔒 **Parent Admin Panel**: Password-protected (`zxcv`) options dashboard in the footer:
   - **Dynamic Task Manager**: Add, edit, or delete activities, customize goal days (1-7), and save changes instantly.
   - **Claimed Rewards History**: View a list of earned rewards with dates and partner context.
   - **Backup & Restore**: Trigger manual backups, import/export backup codes, or restore from a rolling 2-deep list of automated milestone backups (captured on level-ups and week resets).

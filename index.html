@@ -58,6 +58,7 @@
               <div id="xp-bar-milestones" class="xp-bar-milestones"></div>
             </div>
           </div>
+          <div id="evolution-helper" class="evolution-helper"></div>
         </div>
       </div>
       <div class="weekly-badge-card">
@@ -115,6 +116,22 @@
         <div class="confirm-actions">
           <button id="confirm-yes-btn" class="pixel-btn info">Let's Go! 🚀</button>
           <button id="confirm-no-btn" class="pixel-btn">Not Yet</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Password Prompt Modal -->
+    <div id="password-modal" class="modal hidden">
+      <div class="modal-content password-prompt-content">
+        <h2>Parent Verification</h2>
+        <div class="password-prompt-body">
+          <p>Enter Parent Password to open Admin Panel:</p>
+          <input type="password" id="password-input" class="password-prompt-input" placeholder="Password">
+          <p id="password-error" class="error-message hidden">Wrong Code! Try again, Parent!</p>
+        </div>
+        <div class="password-prompt-actions">
+          <button id="password-submit-btn" class="pixel-btn info">Submit</button>
+          <button id="password-cancel-btn" class="pixel-btn">Cancel</button>
         </div>
       </div>
     </div>

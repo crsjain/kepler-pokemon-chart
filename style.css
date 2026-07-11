@@ -20,6 +20,10 @@
   padding: 0;
 }
 
+.hidden {
+  display: none !important;
+}
+
 body {
   font-family: 'Quicksand', sans-serif;
   background-color: var(--bg-color);
@@ -199,6 +203,17 @@ body {
   z-index: 2;
 }
 
+.evolution-helper {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #718096;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* Weekly Badge Card */
 .weekly-badge-card {
   display: flex;
@@ -366,7 +381,7 @@ body {
 
 .pixel-select {
   width: 100%;
-  padding: 10px;
+  padding: 10px 35px 10px 12px;
   border: 3px solid var(--border-color);
   border-radius: 6px;
   font-family: 'Quicksand', sans-serif;
@@ -377,6 +392,15 @@ body {
   outline: none;
   box-shadow: 0 3px 0 var(--border-color);
   transition: all 0.2s;
+  
+  /* Custom arrow to allow precise right padding */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5 L6 6.5 L11 1.5' stroke='%232d3748' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 12px 8px;
 }
 
 .pixel-select:focus {
@@ -385,7 +409,7 @@ body {
 
 /* Golden highlight on earned Weekly Reward */
 .reward-select-container.earned .pixel-select {
-  background: #fffbeb;
+  background-color: #fffbeb;
   border-color: #d97706;
   box-shadow: 0 0 15px rgba(251, 191, 36, 0.5), 0 3px 0 #d97706;
   animation: pulse 1.5s infinite alternate;
@@ -393,7 +417,7 @@ body {
 
 /* Purple highlight on earned Mega Reward */
 .reward-select-container.mega-earned .pixel-select {
-  background: #faf5ff;
+  background-color: #faf5ff;
   border-color: #7c3aed;
   box-shadow: 0 0 15px rgba(124, 58, 237, 0.5), 0 3px 0 #7c3aed;
   animation: pulsePurple 1.5s infinite alternate;
@@ -536,11 +560,18 @@ body {
   vertical-align: middle;
 }
 
+.total-header {
+  width: 95px;
+  min-width: 95px;
+}
+
 .task-total-cell {
   font-family: 'Fredoka One', cursive;
   font-size: 1rem;
   color: var(--poke-dark-blue);
   vertical-align: middle;
+  width: 95px;
+  min-width: 95px;
 }
 
 .task-total-cell.completed {
@@ -1362,53 +1393,74 @@ input:checked + .slider:before {
 .admin-tasks-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   margin-top: 8px;
   margin-bottom: 15px;
   max-height: 250px;
   overflow-y: auto;
-  border: 2px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 8px;
+  border-radius: 8px;
+  padding: 6px;
   background: #f8fafc;
 }
 
 .admin-task-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
+  gap: 10px;
+  padding: 8px 12px;
   background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-.admin-task-item input[type="text"] {
+.admin-task-item input[type="text"].task-name-input {
   flex: 1;
-  padding: 6px;
+  height: 36px;
+  padding: 6px 10px;
   border: 2px solid #cbd5e1;
-  border-radius: 4px;
+  border-radius: 6px;
   font-family: 'Quicksand', sans-serif;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  box-sizing: border-box;
 }
 
 .admin-task-item select.task-emoji-select {
-  padding: 6px;
+  height: 36px;
+  width: 60px;
+  padding: 4px 8px;
+  font-size: 1.1rem;
   border: 2px solid #cbd5e1;
-  border-radius: 4px;
-  font-size: 1rem;
+  border-radius: 6px;
   background: white;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
-.admin-task-item input[type="number"] {
-  width: 55px;
-  padding: 6px;
-  border: 2px solid #cbd5e1;
-  border-radius: 4px;
-  text-align: center;
+.admin-task-item .task-goal-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+}
+
+.admin-task-item .task-goal-label {
   font-family: 'Quicksand', sans-serif;
   font-size: 0.9rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.admin-task-item input[type="number"].task-req-input {
+  width: 50px;
+  height: 36px;
+  padding: 6px;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  text-align: center;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.95rem;
+  box-sizing: border-box;
 }
 
 .admin-tasks-actions {
@@ -1423,9 +1475,10 @@ input:checked + .slider:before {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   padding: 0 !important;
+  border-radius: 6px;
 }
 
 .delete-icon {
@@ -1537,6 +1590,8 @@ input:checked + .slider:before {
   border-radius: 8px;
   padding: 15px;
   box-shadow: 0 4px 0 var(--border-color);
+  display: flex;
+  flex-direction: column;
 }
 
 .admin-section h3 {
@@ -1554,7 +1609,15 @@ input:checked + .slider:before {
   .admin-grid {
     grid-template-columns: 280px 1fr 1fr;
     gap: 20px;
-    align-items: start;
+  }
+
+  /* Align inner buttons/toggles to the bottom of stretched cards */
+  .quick-actions-section .admin-option-row {
+    margin-top: auto;
+  }
+
+  .customize-section .admin-tasks-actions {
+    margin-top: auto;
   }
 
   /* Grid placements */
@@ -1644,3 +1707,40 @@ input:checked + .slider:before {
     opacity: 1;
   }
 }
+
+/* Password Prompt Modal Styles */
+.password-prompt-content {
+  max-width: 400px;
+}
+
+.password-prompt-input {
+  width: 100%;
+  padding: 10px;
+  margin: 15px 0;
+  border: 3px solid #cbd5e1;
+  border-radius: 6px;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 1.1rem;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.password-prompt-input:focus {
+  outline: none;
+  border-color: var(--poke-blue);
+}
+
+.error-message {
+  color: #e53e3e;
+  font-size: 0.9rem;
+  margin-top: 5px;
+  font-weight: bold;
+}
+
+.password-prompt-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 15px;
+}
+

@@ -1,4 +1,4 @@
-export const ADMIN_PASSWORD = "0130";
+export const ADMIN_PASSWORD = "zxcv";
 export const DAYS = [0, 1, 2, 3, 4, 5, 6];
 export const XP_LEVEL_THRESHOLD = 100;
 export const XP_DAILY_BONUS = 15;
