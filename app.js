@@ -123,7 +123,7 @@ function preloadImages() {
   });
 }
 
-function showCustomConfirm(title, message, onYesCallback, onNoCallback) {
+function showCustomConfirm(title, message, onYesCallback, onNoCallback, yesLabel = "Let's Go! 🚀", noLabel = "Not Yet", yesClass = "pixel-btn info", noClass = "pixel-btn") {
   if (!confirmModal || !confirmTitle || !confirmMessage || !confirmYesBtn || !confirmNoBtn) {
     if (confirm(message)) {
       onYesCallback();
@@ -135,6 +135,15 @@ function showCustomConfirm(title, message, onYesCallback, onNoCallback) {
   
   confirmTitle.textContent = title;
   confirmMessage.innerHTML = message.replace(/\n/g, '<br>');
+  
+  // Set custom labels
+  confirmYesBtn.textContent = yesLabel;
+  confirmNoBtn.textContent = noLabel;
+  
+  // Apply classes
+  confirmYesBtn.className = yesClass;
+  confirmNoBtn.className = noClass;
+  
   confirmModal.classList.remove('hidden');
   
   confirmYesBtn.onclick = () => {
@@ -882,9 +891,30 @@ function setupEventListeners() {
     th.addEventListener('click', () => {
       const clickedDay = parseInt(th.dataset.day);
       if (state.activeDay !== clickedDay) {
-        state.activeDay = clickedDay;
-        saveState();
-        updateActiveColumnUI();
+        const today = new Date().getDay();
+        if (clickedDay !== today) {
+          const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+          const dayName = daysOfWeek[clickedDay];
+          showCustomConfirm(
+            "Switch Day? 📅",
+            `Are you sure you want to switch to ${dayName}?\nThis is different from today.`,
+            () => {
+              state.activeDay = clickedDay;
+              saveState();
+              updateActiveColumnUI();
+            },
+            null,
+            "Switch Anyway",
+            "Keep Today",
+            "pixel-btn greyed-out",
+            "pixel-btn info"
+          );
+        } else {
+          // Switching back to today has no friction
+          state.activeDay = clickedDay;
+          saveState();
+          updateActiveColumnUI();
+        }
       }
     });
   });

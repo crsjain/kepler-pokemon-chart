@@ -1512,3 +1512,14 @@ input:checked + .slider:before {
   background-color: rgba(241, 245, 249, 0.4);
   pointer-events: none;
 }
+
+.pixel-btn.greyed-out {
+  background: #cbd5e1;
+  color: #64748b;
+  border-color: #64748b;
+  box-shadow: 0 4px 0 #64748b;
+}
+.pixel-btn.greyed-out:active {
+  transform: translateY(4px);
+  box-shadow: none;
+}
