@@ -58,6 +58,8 @@
       assert(window.__grid_rebuild_count__ === 1, "Grid should NOT have rebuilt after selecting rewards");
 
       // 2. Test Checkbox Toggle (Partial Update Test)
+      state.activeDay = 0;
+      window.__test_helpers__.renderState(false);
       const firstCheckbox = document.querySelector('input[data-day="0"][data-task="piano"]');
       assert(firstCheckbox !== null, "Piano checkbox should exist");
       assert(firstCheckbox.checked === false, "Checkbox should be unchecked initially");
@@ -88,6 +90,7 @@
       state.partnersData['133'].stageId = '133';
       
       // Trigger render (does not rebuild grid because rebuildGrid=false)
+      state.activeDay = 3;
       window.__test_helpers__.renderState(false);
       assert(document.getElementById('partner-name').textContent === 'Eevee', "Active partner should be Eevee");
       assert(window.__grid_rebuild_count__ === 1, "Switching partner should not rebuild the grid");
@@ -185,6 +188,8 @@
       // Check the new task box
       const newCb = gridTbody.querySelector(`input[data-day="0"][data-task="${newTaskId}"]`);
       assert(newCb !== null, "New checkbox should exist");
+      state.activeDay = 0;
+      window.__test_helpers__.renderState(false);
       newCb.click();
       await sleep(100);
 
@@ -264,6 +269,65 @@
       await sleep(100);
       assert(confirmModal.classList.contains('hidden'), "Confirm Modal should close after 2nd confirmation");
       assert(state.grid['0-piano'] === undefined, "Grid should be cleared after 2nd reset");
+
+      // 7. Test Focused Active Day Column Restrictions
+      console.log("Testing Focused Active Day Column Restrictions...");
+      // Let's set active day to 3 (Wednesday)
+      state.activeDay = 3;
+      window.__test_helpers__.renderState(false);
+
+      // Verify Wednesday header is active
+      const wedHeader = document.querySelector('.day-header[data-day="3"]');
+      assert(wedHeader && wedHeader.classList.contains('active-day'), "Wednesday header should have active-day class");
+
+      // Verify Thursday header is NOT active
+      const thuHeader = document.querySelector('.day-header[data-day="4"]');
+      assert(thuHeader && !thuHeader.classList.contains('active-day'), "Thursday header should NOT have active-day class");
+
+      // Verify cells on Wednesday are active, Thursday are not
+      const wedCell = document.querySelector('.task-row[data-task="piano"] td.checkbox-cell:nth-child(5)');
+      assert(wedCell && wedCell.classList.contains('active-column'), "Wednesday cell should have active-column class");
+      
+      const thuCell = document.querySelector('.task-row[data-task="piano"] td.checkbox-cell:nth-child(6)');
+      assert(thuCell && !thuCell.classList.contains('active-column'), "Thursday cell should NOT have active-column class");
+
+      // Try checking Thursday Piano checkbox (should be blocked)
+      const thuCb = document.querySelector('input[data-day="4"][data-task="piano"]');
+      assert(thuCb !== null, "Thursday checkbox should exist");
+      thuCb.click();
+      await sleep(100);
+      assert(thuCb.checked === false, "Thursday checkbox click should be blocked (checked=false)");
+      assert(state.grid['4-piano'] === undefined, "Thursday task should NOT be in state grid");
+
+      // Try checking Wednesday Piano checkbox (should be allowed)
+      const wedCb = document.querySelector('input[data-day="3"][data-task="piano"]');
+      assert(wedCb !== null, "Wednesday checkbox should exist");
+      wedCb.click();
+      await sleep(100);
+      assert(wedCb.checked === true, "Wednesday checkbox click should be allowed (checked=true)");
+      assert(state.grid['3-piano'] === true, "Wednesday task should be saved to state grid");
+
+      // Switch active day to Thursday by clicking header
+      thuHeader.click();
+      await sleep(100);
+      assert(state.activeDay === 4, "Active day should switch to Thursday (4) on header click");
+      assert(thuHeader.classList.contains('active-day'), "Thursday header should now have active-day class");
+      assert(thuCell.classList.contains('active-column'), "Thursday cell should now have active-column class");
+      assert(!wedCell.classList.contains('active-column'), "Wednesday cell should no longer have active-column class");
+
+      // Check Thursday Piano again (should now be allowed!)
+      thuCb.click();
+      await sleep(100);
+      assert(thuCb.checked === true, "Thursday checkbox click should now be allowed (checked=true)");
+      assert(state.grid['4-piano'] === true, "Thursday task should now be saved to state grid");
+
+      // Cleanup: revert checkbox clicks
+      thuCb.click();
+      await sleep(50);
+      state.activeDay = 3;
+      window.__test_helpers__.renderState(false);
+      wedCb.click();
+      await sleep(50);
 
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");

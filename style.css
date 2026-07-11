@@ -1488,3 +1488,27 @@ input:checked + .slider:before {
     height: 65px;
   }
 }
+
+
+/* Active Day Column Highlights and Restrictions */
+.day-header {
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.day-header:hover {
+  background-color: #e2e8f0;
+}
+
+.day-header.active-day {
+  background-color: #3b82f6 !important;
+  color: white !important;
+  text-shadow: 1px 1px 0px #1d4ed8;
+}
+
+.weekly-grid td.checkbox-cell:not(.active-column),
+.weekly-grid td.day-total-cell:not(.active-column) {
+  opacity: 0.4;
+  background-color: rgba(241, 245, 249, 0.4);
+  pointer-events: none;
+}

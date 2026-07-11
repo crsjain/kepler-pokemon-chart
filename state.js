@@ -129,7 +129,8 @@ export let state = {
   rewardHistory: [],
   megaRewardHistory: [],
   volume: 50,
-  claimedRewardsHistory: []
+  claimedRewardsHistory: [],
+  activeDay: new Date().getDay()
 };
 
 // Storage Keys
@@ -152,6 +153,10 @@ export function loadState() {
       if (parsed && typeof parsed === 'object') {
         // Merge parsed state into default template to ensure keys exist
         state = { ...state, ...parsed };
+        
+        if (state.activeDay === undefined) {
+          state.activeDay = new Date().getDay();
+        }
         
         // Migration from V2 to V3
         if (!state.partnerFamily) {
@@ -287,7 +292,8 @@ export function resetStateToDefault() {
     rewardHistory: [],
     megaRewardHistory: [],
     volume: 50,
-    claimedRewardsHistory: []
+    claimedRewardsHistory: [],
+    activeDay: new Date().getDay()
   };
   saveState();
 }

@@ -344,6 +344,7 @@ export function renderState(rebuildGrid = false) {
     updateGridCheckboxes();
     renderProgress();
   }
+  updateActiveColumnUI();
 
 
   // Auto-trigger Eevee evolution if they are in inconsistent state (Level >= 5 but not evolved)
@@ -364,6 +365,49 @@ function renderDebugSidebarVisibility() {
     debugSidebar.classList.add('hidden');
     toggleDebugSidebar.checked = false;
   }
+}
+
+function updateActiveColumnUI() {
+  const activeDay = state.activeDay !== undefined ? state.activeDay : new Date().getDay();
+  
+  const headers = document.querySelectorAll('.day-header');
+  headers.forEach(th => {
+    const day = parseInt(th.dataset.day);
+    if (day === activeDay) {
+      th.classList.add('active-day');
+    } else {
+      th.classList.remove('active-day');
+    }
+  });
+
+  const tbody = document.getElementById('grid-tbody');
+  if (!tbody) return;
+
+  const rows = tbody.querySelectorAll('tr.task-row, tr.total-row');
+  rows.forEach(row => {
+    const checkCells = row.querySelectorAll('td.checkbox-cell');
+    checkCells.forEach(cell => {
+      const input = cell.querySelector('input');
+      if (input) {
+        const d = parseInt(input.dataset.day);
+        if (d === activeDay) {
+          cell.classList.add('active-column');
+        } else {
+          cell.classList.remove('active-column');
+        }
+      }
+    });
+    
+    const totalCells = row.querySelectorAll('td.day-total-cell');
+    totalCells.forEach(cell => {
+      const d = parseInt(cell.dataset.day);
+      if (d === activeDay) {
+        cell.classList.add('active-column');
+      } else {
+        cell.classList.remove('active-column');
+      }
+    });
+  });
 }
 
 function updateGridCheckboxes() {
@@ -481,6 +525,12 @@ function setupCheckboxListeners() {
 function handleCheckboxChange(e) {
   const cb = e.target;
   
+  const day = parseInt(cb.dataset.day);
+  if (day !== state.activeDay) {
+    cb.checked = !cb.checked;
+    return;
+  }
+  
   if (!state.reward || !state.megaReward) {
     cb.checked = false;
     showCustomNotification(
@@ -500,7 +550,6 @@ function handleCheckboxChange(e) {
   }
 
   const isChecked = cb.checked;
-  const day = parseInt(cb.dataset.day);
   const taskId = cb.dataset.task;
   const key = `${day}-${taskId}`;
 
@@ -826,6 +875,19 @@ function setupEventListeners() {
       partnerModal.classList.add('hidden');
     });
   }
+
+  // Header day clicks
+  const headers = document.querySelectorAll('.day-header');
+  headers.forEach(th => {
+    th.addEventListener('click', () => {
+      const clickedDay = parseInt(th.dataset.day);
+      if (state.activeDay !== clickedDay) {
+        state.activeDay = clickedDay;
+        saveState();
+        updateActiveColumnUI();
+      }
+    });
+  });
 
   if (adminBtn) {
     adminBtn.addEventListener('click', () => {
