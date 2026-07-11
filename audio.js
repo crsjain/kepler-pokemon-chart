@@ -17,7 +17,7 @@ export function playSound(type) {
     gain.connect(audioCtx.destination);
 
     const now = audioCtx.currentTime;
-    const volumeMultiplier = (state.volume !== undefined ? state.volume : 50) / 100;
+    const volumeMultiplier = 0.5; // Fixed comfortable volume
 
     if (type === 'check') {
       osc.type = 'square';
@@ -71,7 +71,7 @@ export function playActivePokemonCry() {
     if (activePokemon && activePokemon.id) {
       const cryUrl = `https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/${activePokemon.id}.ogg`;
       const audio = new Audio(cryUrl);
-      audio.volume = (state.volume !== undefined ? state.volume : 50) / 100;
+      audio.volume = 0.5; // Fixed comfortable volume
       audio.play().catch(err => {
         console.warn("Failed to play pokemon cry:", err);
       });

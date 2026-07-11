@@ -228,6 +228,43 @@
       closeAdminModalBtn.click();
       await sleep(100);
 
+      // 6. Test Reset Week Grid Button Multiple Times
+      console.log("Testing Reset Week Grid Button Multiple Times...");
+      const resetBtn = document.getElementById('reset-btn');
+      const confirmModal = document.getElementById('confirm-modal');
+      const confirmYesBtn = document.getElementById('confirm-yes-btn');
+      assert(resetBtn !== null, "Reset button should exist");
+
+      // Check a box first
+      const pianoCb = document.querySelector('input[data-day="0"][data-task="piano"]');
+      if (pianoCb && !pianoCb.checked) pianoCb.click();
+      await sleep(50);
+      assert(state.grid['0-piano'] === true, "Piano checkbox should be checked before reset");
+
+      // 1st click on Reset button
+      resetBtn.click();
+      await sleep(100);
+      assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should open on 1st Reset click");
+      confirmYesBtn.click();
+      await sleep(100);
+      assert(confirmModal.classList.contains('hidden'), "Confirm Modal should close after confirmation");
+      assert(state.grid['0-piano'] === undefined, "Grid should be cleared after 1st reset");
+
+      // Check a box again
+      const pianoCb2 = document.querySelector('input[data-day="0"][data-task="piano"]');
+      if (pianoCb2 && !pianoCb2.checked) pianoCb2.click();
+      await sleep(50);
+      assert(state.grid['0-piano'] === true, "Piano checkbox should be checked again");
+
+      // 2nd click on Reset button (Subsequent click!)
+      resetBtn.click();
+      await sleep(100);
+      assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should open on 2nd (subsequent) Reset click");
+      confirmYesBtn.click();
+      await sleep(100);
+      assert(confirmModal.classList.contains('hidden'), "Confirm Modal should close after 2nd confirmation");
+      assert(state.grid['0-piano'] === undefined, "Grid should be cleared after 2nd reset");
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

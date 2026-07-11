@@ -42,6 +42,7 @@ const changePartnerBtn = document.getElementById('change-partner-btn');
 const partnerModal = document.getElementById('partner-modal');
 const closeModalBtn = document.getElementById('close-modal-btn');
 const partnerOptionsContainer = document.getElementById('pokemon-options-container');
+const resetBtn = document.getElementById('reset-btn');
 
 const adminBtn = document.getElementById('admin-btn');
 const adminModal = document.getElementById('admin-modal');
@@ -75,7 +76,7 @@ const eeveeModal = document.getElementById('eevee-modal');
 const debugSidebar = document.getElementById('debug-sidebar');
 
 // Audio control footer elements
-const muteToggleBtn = document.getElementById('mute-toggle-btn');
+
 
 // DOM Cache for Optimization
 let domCache = {
@@ -92,7 +93,9 @@ renderState(true);
 setupEventListeners();
 
 function preloadImages() {
-  const imagesToPreload = [];
+  const imagesToPreload = [
+    'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/star-piece.png'
+  ];
   MEGA_POKEMON.forEach(p => {
     imagesToPreload.push(`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`);
   });
@@ -124,7 +127,7 @@ function showCustomConfirm(title, message, onYesCallback, onNoCallback) {
   if (!confirmModal || !confirmTitle || !confirmMessage || !confirmYesBtn || !confirmNoBtn) {
     if (confirm(message)) {
       onYesCallback();
-    } else if (onNoCallback) {
+    } else if (onNoCallback && typeof onNoCallback === 'function') {
       onNoCallback();
     }
     return;
@@ -134,24 +137,21 @@ function showCustomConfirm(title, message, onYesCallback, onNoCallback) {
   confirmMessage.innerHTML = message.replace(/\n/g, '<br>');
   confirmModal.classList.remove('hidden');
   
-  const handleYes = () => {
+  confirmYesBtn.onclick = () => {
     confirmModal.classList.add('hidden');
-    confirmYesBtn.removeEventListener('click', handleYes);
-    confirmNoBtn.removeEventListener('click', handleNo);
-    onYesCallback();
+    confirmYesBtn.onclick = null;
+    confirmNoBtn.onclick = null;
+    if (onYesCallback) onYesCallback();
   };
   
-  const handleNo = () => {
+  confirmNoBtn.onclick = () => {
     confirmModal.classList.add('hidden');
-    confirmYesBtn.removeEventListener('click', handleYes);
-    confirmNoBtn.removeEventListener('click', handleNo);
+    confirmYesBtn.onclick = null;
+    confirmNoBtn.onclick = null;
     if (onNoCallback && typeof onNoCallback === 'function') {
       onNoCallback();
     }
   };
-  
-  confirmYesBtn.addEventListener('click', handleYes);
-  confirmNoBtn.addEventListener('click', handleNo);
 }
 
 function showCustomNotification(title, message, imageUrl = null, isMega = false, callback = null) {
@@ -344,7 +344,7 @@ export function renderState(rebuildGrid = false) {
     updateGridCheckboxes();
     renderProgress();
   }
-  updateVolumeIcon();
+
 
   // Auto-trigger Eevee evolution if they are in inconsistent state (Level >= 5 but not evolved)
   if (family === '133' && stats.level >= 5 && stats.stageId === '133') {
@@ -703,18 +703,7 @@ function saveAdminTasks() {
   }
 }
 
-function updateVolumeIcon() {
-  const soundIcon = document.querySelector('.sound-icon');
-  if (!soundIcon) return;
-  const vol = state.volume !== undefined ? state.volume : 50;
-  if (vol === 0) {
-    soundIcon.textContent = '🔈';
-  } else if (vol < 50) {
-    soundIcon.textContent = '🔉';
-  } else {
-    soundIcon.textContent = '🔊';
-  }
-}
+
 
 function exportState() {
   const stateStr = JSON.stringify(state);
@@ -811,17 +800,15 @@ function setupEventListeners() {
     renderRewardDropdowns();
   });
 
-  if (muteToggleBtn) {
-    muteToggleBtn.addEventListener('click', () => {
-      if (state.volume > 0) {
-        muteToggleBtn.dataset.prevVolume = state.volume;
-        state.volume = 0;
-      } else {
-        const prev = parseInt(muteToggleBtn.dataset.prevVolume || 50);
-        state.volume = prev > 0 ? prev : 50;
-      }
-      saveState();
-      updateVolumeIcon();
+    if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      showCustomConfirm(
+        "Reset Week Grid? 📅",
+        "Are you ready to reset the training grid for this week?\nYour level, XP, and badges will not be affected.",
+        () => {
+          resetWeekGrid();
+        }
+      );
     });
   }
 
@@ -1170,7 +1157,7 @@ function checkAndTriggerWeeklySuccess() {
       successMessage,
       isMegaWeek 
         ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${MEGA_POKEMON[3].id}.png`
-        : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/badge.png`,
+        : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/star-piece.png`,
       isMegaWeek,
       () => {
         showCustomConfirm(
