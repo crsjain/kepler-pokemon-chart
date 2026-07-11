@@ -17,7 +17,7 @@ import {
   EVOLUTIONS
 } from './state.js';
 
-import { playSound, playActivePokemonCry } from './audio.js';
+import { playSound } from './audio.js';
 
 // DOM Elements
 const pokemonSprite = document.getElementById('pokemon-sprite');
@@ -812,11 +812,7 @@ function setupEventListeners() {
     });
   }
 
-  if (pokemonSprite) {
-    pokemonSprite.addEventListener('click', () => {
-      playActivePokemonCry();
-    });
-  }
+
 
   if (changePartnerBtn) {
     changePartnerBtn.addEventListener('click', () => {

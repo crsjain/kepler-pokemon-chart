@@ -61,22 +61,4 @@ export function playSound(type) {
   }
 }
 
-export function playActivePokemonCry() {
-  try {
-    const family = state.partnerFamily || '25';
-    const stats = state.partnersData[family] || { level: 1, xp: 0, stageId: family };
-    const stageInfo = getStageInfo(family, stats.stageId || family);
-    const activePokemon = stageInfo.currentStage;
-    
-    if (activePokemon && activePokemon.id) {
-      const cryUrl = `https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/${activePokemon.id}.ogg`;
-      const audio = new Audio(cryUrl);
-      audio.volume = 0.5; // Fixed comfortable volume
-      audio.play().catch(err => {
-        console.warn("Failed to play pokemon cry:", err);
-      });
-    }
-  } catch (e) {
-    console.warn("Error playing active pokemon cry:", e);
-  }
-}
+

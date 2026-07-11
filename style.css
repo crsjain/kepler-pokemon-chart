@@ -120,13 +120,9 @@ body {
   height: 90px;
   object-fit: contain;
   filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.15));
-  transition: transform 0.3s ease;
-  cursor: pointer;
 }
 
-#pokemon-sprite:hover {
-  transform: scale(1.1) rotate(5deg);
-}
+
 
 .stats-container {
   flex-grow: 1;
