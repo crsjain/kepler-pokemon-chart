@@ -309,6 +309,10 @@ function importState() {
             state.megaWeeks = parsed.megaWeeks || 0;
             state.weeklyClaimed = parsed.weeklyClaimed || false;
             state.claimedRewardsHistory = parsed.claimedRewardsHistory || [];
+            state.starVault = parsed.starVault || { earnedDates: [], totalTraded: 0 };
+            state.collectedBadges = parsed.collectedBadges || [];
+            state.badgePool = parsed.badgePool || state.badgePool;
+            state.activeWeeklyBadgeId = parsed.activeWeeklyBadgeId !== undefined ? parsed.activeWeeklyBadgeId : state.activeWeeklyBadgeId;
             
             saveState();
             loadState();

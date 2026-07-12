@@ -967,6 +967,136 @@ async function runSuite() {
         state = window.__app_state__;
       }
 
+      // 16. Test Backup Import Overlay & Notifications
+      console.log("Running Test Case 16: Backup Import Overlay & Notifications...");
+      {
+        window.__test_helpers__.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+
+        // Open Admin Panel
+        const adminBtn = document.getElementById('admin-btn');
+        assert(adminBtn !== null, "Admin button should exist");
+        adminBtn.click();
+        await sleep(100);
+
+        // Verify password modal is open
+        const passwordModal = document.getElementById('password-modal');
+        assert(passwordModal && !passwordModal.classList.contains('hidden'), "Password modal should open");
+        
+        // Enter password to open admin panel
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmitBtn = document.getElementById('password-submit-btn');
+        passwordInput.value = window.__test_helpers__.ADMIN_PASSWORD;
+        passwordSubmitBtn.click();
+        await sleep(100);
+
+        const adminModal = document.getElementById('admin-modal');
+        assert(adminModal && !adminModal.classList.contains('hidden'), "Admin Modal should be open");
+
+        // 16.1 Test importing invalid JSON (fails parse)
+        window.prompt = () => "invalid-json-backup"; // Return invalid json
+        const adminImportBtn = document.getElementById('admin-import-btn');
+        assert(adminImportBtn !== null, "Import button should exist in admin panel");
+        adminImportBtn.click();
+        await sleep(100);
+
+        // Should show "IMPORT ERROR" custom notification
+        const notifModal = document.querySelector('.notif-modal');
+        assert(notifModal !== null, "Error notification modal should be displayed on invalid JSON parse");
+        
+        // Assert that notifModal z-index is greater than adminModal z-index
+        const notifZ = parseInt(window.getComputedStyle(notifModal).zIndex);
+        const adminZ = parseInt(window.getComputedStyle(adminModal).zIndex);
+        assert(notifZ > adminZ, `Error notification z-index (${notifZ}) should be greater than admin panel z-index (${adminZ})`);
+
+        // Close notification
+        const notifCloseBtn = notifModal.querySelector('.notif-close-btn');
+        if (notifCloseBtn) notifCloseBtn.click();
+        await sleep(400); // Wait for transition and removal
+
+        // 16.2 Test importing valid JSON but invalid schema
+        window.prompt = () => JSON.stringify({ version: 9, invalidKey: "value" }); // Valid JSON, invalid backup schema
+        adminImportBtn.click();
+        await sleep(100);
+
+        const allNotifs1 = document.querySelectorAll('.notif-modal');
+        const notifModal2 = allNotifs1[allNotifs1.length - 1];
+        assert(notifModal2 && notifModal2 !== undefined, "Error notification modal should be displayed on invalid backup schema");
+        const notifZ2 = parseInt(window.getComputedStyle(notifModal2).zIndex);
+        assert(notifZ2 > adminZ, `Error notification z-index (${notifZ2}) should be greater than admin panel z-index (${adminZ})`);
+        
+        const notifCloseBtn2 = notifModal2.querySelector('.notif-close-btn');
+        if (notifCloseBtn2) notifCloseBtn2.click();
+        await sleep(400);
+
+        // 16.3 Test importing valid backup (triggers restore confirm dialog)
+        const validBackup = {
+          version: 10,
+          partnerFamily: "4",
+          partnersData: {
+            "4": { level: 3, xp: 15, stageId: "4" }
+          },
+          grid: { "0-piano": true },
+          starVault: {
+            earnedDates: ["2026-07-13", "2026-07-17", "2026-07-18"],
+            totalTraded: 0
+          }
+        };
+        window.prompt = () => JSON.stringify(validBackup);
+        adminImportBtn.click();
+        await sleep(100);
+
+        // Should open confirm modal
+        const confirmModal = document.getElementById('confirm-modal');
+        assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should be open for restore confirmation");
+        
+        // Assert that confirmModal z-index is greater than adminModal z-index
+        const confirmZ = parseInt(window.getComputedStyle(confirmModal).zIndex);
+        assert(confirmZ > adminZ, `Confirm Modal z-index (${confirmZ}) should be greater than admin panel z-index (${adminZ})`);
+
+        // Click cancel on confirm modal (should close confirm, keep admin open)
+        const confirmNoBtn = document.getElementById('confirm-no-btn');
+        if (confirmNoBtn) confirmNoBtn.click();
+        await sleep(100);
+
+        assert(confirmModal.classList.contains('hidden'), "Confirm modal should close on Cancel click");
+        assert(!adminModal.classList.contains('hidden'), "Admin Modal should remain open after Cancel click");
+
+        // 16.4 Test importing valid backup and confirming it
+        adminImportBtn.click();
+        await sleep(100);
+        assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should open again");
+
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        if (confirmYesBtn) confirmYesBtn.click();
+        await sleep(100);
+
+        // Should close admin modal, update state, and show RESTORE SUCCESS notification
+        assert(adminModal.classList.contains('hidden'), "Admin Modal should close after successful restore confirmation");
+        
+        // Assert starVault is restored
+        assert(state.starVault.earnedDates.length === 3, "Star Vault should contain 3 restored dates");
+        assert(state.starVault.earnedDates.includes("2026-07-13"), "Star Vault should contain '2026-07-13'");
+        
+        const allNotifs2 = document.querySelectorAll('.notif-modal');
+        const notifModal3 = allNotifs2[allNotifs2.length - 1];
+        assert(notifModal3 && notifModal3 !== undefined, "Success notification modal should be displayed after restore success");
+        assert(notifModal3.textContent.includes("RESTORE SUCCESS"), "Notification title should be RESTORE SUCCESS");
+
+        const notifCloseBtn3 = notifModal3.querySelector('.notif-close-btn');
+        if (notifCloseBtn3) notifCloseBtn3.click();
+        await sleep(400);
+
+        // Restore prompt mock
+        restoreMocks();
+
+        // Clean up
+        window.__test_helpers__.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
