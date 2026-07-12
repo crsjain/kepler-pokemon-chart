@@ -190,9 +190,9 @@ function showCustomConfirm(title, message, onYesCallback, onNoCallback, yesLabel
   };
 }
 
-function showCustomNotification(title, message, imageUrl = null, isMega = false, callback = null) {
+function showCustomNotification(title, message, imageUrl = null, isMega = false, callback = null, extraClass = '') {
   const notifModal = document.createElement('div');
-  notifModal.className = `modal notif-modal ${isMega ? 'mega-celebration' : ''}`;
+  notifModal.className = `modal notif-modal ${isMega ? 'mega-celebration' : ''} ${extraClass}`;
   
   let imageHtml = '';
   if (isMega) {
@@ -227,7 +227,7 @@ function showCustomNotification(title, message, imageUrl = null, isMega = false,
     });
     imageHtml += `</div>`;
   } else if (imageUrl) {
-    imageHtml = `<img src="${imageUrl}" class="notif-img ${isMega ? 'evolution-glow' : ''}">`;
+    imageHtml = `<img src="${imageUrl}" class="notif-img">`;
   }
   
   notifModal.innerHTML = `
@@ -1445,8 +1445,9 @@ function addXp(amount) {
         "✨ POKÉMON EVOLVED! ✨",
         `Amazing job! Kepler's ${getStageInfo(family, oldLevel >= 5 ? evo.stages[0].id : family).currentStage.name} evolved into ${activePokemon.name}!`,
         `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`,
-        true,
-        null
+        false,
+        null,
+        'evolution-celebration'
       );
     } else {
       triggerLevelUpAnimation();
@@ -1723,8 +1724,9 @@ function selectEeveeEvolution(evolvedId, evolvedName) {
     "✨ EEVEE EVOLVED! ✨",
     `Congratulations! Kepler's Eevee evolved into ${evolvedName}!`,
     `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${evolvedId}.png`,
-    true,
-    null
+    false,
+    null,
+    'evolution-celebration'
   );
 }
 
