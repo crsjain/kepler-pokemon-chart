@@ -205,13 +205,16 @@ body {
 
 .evolution-helper {
   font-family: 'Quicksand', sans-serif;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  color: #718096;
-  margin-top: 6px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  color: #64748b;
+  margin-top: 8px;
+  display: block; /* Flow naturally as a sentence instead of splitting into flex items */
+  line-height: 1.4;
+}
+
+.evolution-helper strong {
+  color: var(--poke-blue);
 }
 
 /* Weekly Badge Card */
