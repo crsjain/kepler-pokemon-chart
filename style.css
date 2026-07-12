@@ -2420,3 +2420,76 @@ input:checked + .slider:before {
   animation: notifModalBounceIn 0.42s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
+/* Mega Milestone Completed Badges Row styling */
+.notif-mega-badges-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 10px;
+  margin: 15px auto;
+  width: 100%;
+  max-width: 460px;
+}
+.notif-badge-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+.notif-badge-wrapper {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #f8fafc;
+  border: 3px double #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.06), 0 3px 6px rgba(0,0,0,0.05);
+  position: relative;
+  overflow: hidden;
+}
+.notif-badge-wrapper.placeholder {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.1rem;
+  color: #cbd5e1;
+}
+.notif-badge-img {
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+}
+.notif-badge-label {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.65rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* Height constraints for landscape views */
+@media (max-height: 600px) {
+  .notif-mega-badges-row {
+    margin: 8px auto;
+  }
+  .notif-badge-wrapper {
+    width: 50px;
+    height: 50px;
+    border-width: 2px;
+  }
+  .notif-badge-label {
+    font-size: 0.55rem;
+    margin-top: 2px;
+  }
+}
+
+/* Mobile Width updates */
+@media (max-width: 480px) {
+  .notif-mega-badges-row {
+    gap: 6px;
+  }
+  .notif-badge-wrapper {
+    width: 52px;
+    height: 52px;
+  }
+}
+

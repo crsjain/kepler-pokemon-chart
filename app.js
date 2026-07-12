@@ -195,7 +195,39 @@ function showCustomNotification(title, message, imageUrl = null, isMega = false,
   notifModal.className = `modal notif-modal ${isMega ? 'mega-celebration' : ''}`;
   
   let imageHtml = '';
-  if (imageUrl) {
+  if (isMega) {
+    imageHtml = `<div class="notif-mega-badges-row">`;
+    const badgeIds = [];
+    for (let i = 0; i < 3; i++) {
+      const historyIndex = state.collectedBadges.length - 3 + i;
+      const badge = state.collectedBadges[historyIndex];
+      badgeIds.push(badge ? badge.id : null);
+    }
+    badgeIds.push(state.activeWeeklyBadgeId);
+    
+    badgeIds.forEach((id, idx) => {
+      if (id) {
+        const imgUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+        const name = getPokemonName(id);
+        imageHtml += `
+          <div class="notif-badge-slot">
+            <div class="notif-badge-wrapper">
+              <img src="${imgUrl}" class="notif-badge-img" title="${name}">
+            </div>
+            <span class="notif-badge-label">Week ${idx + 1}</span>
+          </div>
+        `;
+      } else {
+        imageHtml += `
+          <div class="notif-badge-slot">
+            <div class="notif-badge-wrapper placeholder">?</div>
+            <span class="notif-badge-label">Week ${idx + 1}</span>
+          </div>
+        `;
+      }
+    });
+    imageHtml += `</div>`;
+  } else if (imageUrl) {
     imageHtml = `<img src="${imageUrl}" class="notif-img ${isMega ? 'evolution-glow' : ''}">`;
   }
   
@@ -1485,8 +1517,8 @@ function checkAndTriggerWeeklySuccess() {
       isMegaWeek ? "👑 MEGA MILESTONE COMPLETED! 👑" : "🎉 WEEKLY SUCCESS! 🎉",
       successMessage,
       isMegaWeek 
-        ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${MEGA_POKEMON[3].id}.png`
-        : null,
+        ? null 
+        : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${state.activeWeeklyBadgeId}.png`,
       isMegaWeek,
       () => {
         showCustomConfirm(
