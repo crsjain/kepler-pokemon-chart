@@ -62,6 +62,7 @@ const toggleDebugSidebar = document.getElementById('toggle-debug-sidebar');
 
 // Testing Panel Elements
 const testMilestoneMinusOneBtn = document.getElementById('test-milestone-minus-one');
+const testMegaMinusOneBtn = document.getElementById('test-mega-minus-one');
 const testNearEvolveBtn = document.getElementById('test-near-evolve');
 const testNearLevelupBtn = document.getElementById('test-near-levelup');
 const testWeek1Btn = document.getElementById('test-week-1');
@@ -1069,6 +1070,11 @@ function setupEventListeners() {
     adminModal.classList.add('hidden');
   });
 
+  testMegaMinusOneBtn.addEventListener('click', () => {
+    setMegaMilestoneMinusOne();
+    adminModal.classList.add('hidden');
+  });
+
   testNearEvolveBtn.addEventListener('click', () => {
     setNearEvolution();
     adminModal.classList.add('hidden');
@@ -1275,6 +1281,25 @@ function setMilestoneMinusOne() {
   const tasks = state.tasks || [];
   tasks.forEach((task, index) => {
     // Make only the first task short by 1 day (req - 1). Others are set to full requirement.
+    const fillCount = (index === 0) ? (task.req || 5) - 1 : (task.req || 5);
+    for (let d = 0; d < fillCount; d++) {
+      state.grid[`${d}-${task.id}`] = true;
+    }
+  });
+  
+  state.weeklyClaimed = false;
+  
+  saveState();
+  renderState(true);
+}
+
+function setMegaMilestoneMinusOne() {
+  state.megaWeeks = 3;
+  state.grid = {};
+  
+  const tasks = state.tasks || [];
+  tasks.forEach((task, index) => {
+    // Make only the first task short by 1 day. Others are set to full requirement.
     const fillCount = (index === 0) ? (task.req || 5) - 1 : (task.req || 5);
     for (let d = 0; d < fillCount; d++) {
       state.grid[`${d}-${task.id}`] = true;
