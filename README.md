@@ -13,12 +13,11 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - **Milestone XP Bar**: The XP bar displays vertical segment milestones representing levels. Leveling up triggers a bounce animation.
   - 📅 **Focused Active Day Interactions**: To prevent accidental clicks across different days, checking and unchecking tasks is restricted to the **currently active day** column. To record tasks for a different day, simply click that day's column header (e.g. MON, TUE) to activate it. The active column will light up, allowing inputs.
   - **Evolution Celebrations**: Reaching Level 5 (and Level 10 for Charmander, Bulbasaur, and Squirtle) triggers a full-screen evolution event! The Pokémon transforms into its next stage (e.g., Pikachu -> Raichu, or Charmander -> Charmeleon -> Charizard) with a custom modal.
-- 🏆 **Weekly Badges**: Reaching the weekly task goals unlocks a special legendary badge:
-  - Week 1: **Greninja Badge**
-  - Week 2: **Kyogre Badge**
-  - Week 3: **Lugia Badge**
-  - Week 4: **Rayquaza Badge** (Triggers Mega Celebration!)
-- 🔊 **Audio & Sound Effects**: Game-synthesized beeps play on checkbox toggles, daily totals, and level-ups at a comfortable preset volume.
+- 🏆 **Weekly Badges & Collection**: Reaching the weekly task goals awards Kepler the active weekly badge.
+  - **Immediate Case Award**: Badges are added to his permanent case immediately upon grid completion so he can view them without waiting to reset his week.
+  - **Badge Case Grid**: Open the Case modal to view all earned badges. Cards are scaled 50% larger for high-fidelity sprite previews, displaying in 3 columns on tablet/desktop and 2 columns on mobile.
+  - **Mega Milestone Celebrations**: Completing Week 4 triggers a grand Mega Celebration. The modal dynamically displays the **exact 4 weekly badges** Kepler earned to qualify for the milestone reward.
+- 🔊 **Audio & Bouncy Animations**: Game-synthesized audio beeps play on checkbox toggles, daily totals, and level-ups. Completing milestone events triggers a bouncy card entrance zoom-in transition and plays a triumphant 6-note 8-bit RPG-style victory fanfare (`megaSuccess`).
 - 📲 **PWA Offline Support**: Fully compatible as a Progressive Web App. Once loaded, it works entirely offline and caches PokeAPI sprite assets locally.
 - 💾 **Local Progress Saving**: Progress is saved automatically in the browser's local storage.
 - 🔒 **Parent Admin Panel**: Password-protected (`zxcv`) options dashboard in the footer:
