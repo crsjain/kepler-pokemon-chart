@@ -202,7 +202,7 @@ function showCustomNotification(title, message, imageUrl = null, isMega = false,
     <div class="modal-content pixel-art-border">
       <h2>${title}</h2>
       ${imageHtml}
-      <div class="notif-body-text" style="white-space: pre-line; margin: 15px 0;">${message}</div>
+      <div class="notif-body-text">${message}</div>
       <button class="pixel-btn notif-close-btn">Awesome!</button>
     </div>
   `;
@@ -1447,11 +1447,13 @@ function checkAndTriggerWeeklySuccess() {
     const weekDisplayNum = state.megaWeeks + 1;
     const isMegaWeek = weekDisplayNum === 4;
     
-    let successMessage = `Kepler has completed all training goals for <strong>Week ${weekDisplayNum}</strong>!<br><br>`;
+    let successMessage = `<p class="notif-desc">Kepler has completed all training goals for <strong>Week ${weekDisplayNum}</strong>!</p>`;
+    successMessage += `<div class="notif-rewards-container">`;
     if (isMegaWeek) {
-      successMessage += `<div class="reward-box mega"><div class="reward-box-header">🏆 MEGA REWARD UNLOCKED 🏆</div><div class="reward-box-name">${state.megaReward || 'Mega Reward'}</div></div><br>`;
+      successMessage += `<div class="reward-box mega"><div class="reward-box-header">🏆 MEGA REWARD 🏆</div><div class="reward-box-name">${state.megaReward || 'Mega Reward'}</div></div>`;
     }
-    successMessage += `<div class="reward-box"><div class="reward-box-header">🎁 WEEKLY REWARD CLAIMED 🎁</div><div class="reward-box-name">${state.reward || 'Weekly Reward'}</div></div>`;
+    successMessage += `<div class="reward-box"><div class="reward-box-header">🎁 WEEKLY REWARD 🎁</div><div class="reward-box-name">${state.reward || 'Weekly Reward'}</div></div>`;
+    successMessage += `</div>`;
     
     showCustomNotification(
       isMegaWeek ? "👑 MEGA MILESTONE COMPLETED! 👑" : "🎉 WEEKLY SUCCESS! 🎉",

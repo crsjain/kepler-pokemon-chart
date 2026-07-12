@@ -2291,3 +2291,110 @@ input:checked + .slider:before {
   color: #718096;
 }
 
+/* success custom notifications responsive design overrides */
+.notif-modal {
+  z-index: 110000;
+}
+.notif-modal .modal-content {
+  max-width: 520px;
+  width: 90%;
+  max-height: 85vh;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+.notif-modal h2 {
+  font-size: clamp(1rem, 3.8vw, 1.4rem);
+  white-space: nowrap;
+  margin-top: 0;
+  margin-bottom: 10px;
+  word-break: keep-all;
+}
+.notif-img {
+  max-height: 140px;
+  max-width: 140px;
+  width: auto;
+  object-fit: contain;
+  margin: 5px auto;
+  display: block;
+}
+.notif-body-text {
+  margin: 10px 0;
+  width: 100%;
+}
+.notif-desc {
+  font-size: clamp(0.8rem, 2.5vw, 0.95rem);
+  color: #4a5568;
+  margin: 5px 0;
+}
+.notif-rewards-container {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 10px 0;
+  width: 100%;
+}
+.notif-rewards-container .reward-box {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  box-sizing: border-box;
+}
+.notif-rewards-container .reward-box-header {
+  font-size: clamp(0.65rem, 2vw, 0.75rem);
+  margin-bottom: 4px;
+}
+.notif-rewards-container .reward-box-name {
+  font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+}
+.notif-close-btn {
+  align-self: center;
+  margin-top: 10px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+}
+
+/* Height specific media query for landscape phones/small tablets */
+@media (max-height: 600px) {
+  .notif-modal .modal-content {
+    padding: 12px;
+    max-height: 90vh;
+  }
+  .notif-img {
+    max-height: 90px;
+    max-width: 90px;
+  }
+  .notif-modal h2 {
+    margin-bottom: 5px;
+    font-size: clamp(0.9rem, 3vw, 1.2rem);
+  }
+  .notif-rewards-container {
+    margin: 5px 0;
+    gap: 8px;
+  }
+  .notif-rewards-container .reward-box {
+    padding: 6px 8px;
+  }
+  .notif-rewards-container .reward-box-name {
+    font-size: clamp(0.8rem, 2vw, 0.95rem);
+  }
+  .notif-close-btn {
+    margin-top: 5px;
+    padding: 6px 12px;
+  }
+}
+
+/* Width specific media query for small mobile devices */
+@media (max-width: 480px) {
+  .notif-rewards-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .notif-rewards-container .reward-box {
+    width: 100%;
+  }
+}
+
