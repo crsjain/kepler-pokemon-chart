@@ -102,9 +102,18 @@ export function getStageInfo(familyId, stageId) {
   };
 }
 
-// State V8 (Dynamic Tasks, Reward History, Volume, Claimed Rewards History)
+export function getSunday(d) {
+  const copy = new Date(d.getTime());
+  const day = copy.getDay();
+  const diff = copy.getDate() - day;
+  const sunday = new Date(copy.setDate(diff));
+  sunday.setHours(0,0,0,0);
+  return sunday;
+}
+
+// State V9 (Dynamic Tasks, Reward History, Volume, Claimed Rewards History, weekStartDate, starVault)
 export let state = {
-  version: 8,
+  version: 9,
   partnerFamily: '25', // Default Pikachu Family
   partnersData: {
     '25': { level: 1, xp: 0, stageId: '25' },
@@ -130,7 +139,12 @@ export let state = {
   megaRewardHistory: [],
   volume: 50,
   claimedRewardsHistory: [],
-  activeDay: new Date().getDay()
+  activeDay: new Date().getDay(),
+  weekStartDate: getSunday(new Date()).toISOString().split('T')[0],
+  starVault: {
+    earnedDates: [],
+    totalTraded: 0
+  }
 };
 
 // Storage Keys
@@ -249,6 +263,17 @@ export function loadState() {
           state.version = 8;
           saveState();
         }
+
+        // Migration from V8 to V9 (Week Start Date, Star Vault)
+        if (state.version === 8) {
+          state.weekStartDate = getSunday(new Date()).toISOString().split('T')[0];
+          state.starVault = {
+            earnedDates: [],
+            totalTraded: 0
+          };
+          state.version = 9;
+          saveState();
+        }
         
         if (!state.grid || typeof state.grid !== 'object') {
           state.grid = {};
@@ -267,7 +292,7 @@ export function updateState(newState) {
 
 export function resetStateToDefault() {
   state = {
-    version: 8,
+    version: 9,
     partnerFamily: '25',
     partnersData: {
       '25': { level: 1, xp: 0, stageId: '25' },
@@ -293,7 +318,12 @@ export function resetStateToDefault() {
     megaRewardHistory: [],
     volume: 50,
     claimedRewardsHistory: [],
-    activeDay: new Date().getDay()
+    activeDay: new Date().getDay(),
+    weekStartDate: getSunday(new Date()).toISOString().split('T')[0],
+    starVault: {
+      earnedDates: [],
+      totalTraded: 0
+    }
   };
   saveState();
 }
@@ -435,10 +465,33 @@ export function runStateDiagnostics() {
     fixed.push("Initialized empty claimed rewards history.");
   }
 
-  if (state.version !== 8) {
-    issues.push(`State version mismatch. Current: ${state.version}, Expected: 8`);
-    state.version = 8;
-    fixed.push("Forced state version to 8.");
+  if (!state.weekStartDate) {
+    state.weekStartDate = getSunday(new Date()).toISOString().split('T')[0];
+    issues.push("Missing weekStartDate.");
+    fixed.push(`Initialized weekStartDate to ${state.weekStartDate}.`);
+  }
+
+  if (!state.starVault || typeof state.starVault !== 'object') {
+    state.starVault = { earnedDates: [], totalTraded: 0 };
+    issues.push("Missing or invalid starVault structure.");
+    fixed.push("Initialized default starVault.");
+  } else {
+    if (!Array.isArray(state.starVault.earnedDates)) {
+      state.starVault.earnedDates = [];
+      issues.push("Invalid starVault.earnedDates (not an array).");
+      fixed.push("Reset starVault.earnedDates to empty array.");
+    }
+    if (typeof state.starVault.totalTraded !== 'number') {
+      state.starVault.totalTraded = 0;
+      issues.push("Invalid starVault.totalTraded (not a number).");
+      fixed.push("Reset starVault.totalTraded to 0.");
+    }
+  }
+
+  if (state.version !== 9) {
+    issues.push(`State version mismatch. Current: ${state.version}, Expected: 9`);
+    state.version = 9;
+    fixed.push("Forced state version to 9.");
   }
 
   if (fixed.length > 0) {

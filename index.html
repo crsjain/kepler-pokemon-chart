@@ -147,6 +147,108 @@
       </div>
     </div>
 
+    <!-- Star Vault Modal -->
+    <div id="vault-modal" class="modal hidden">
+      <div class="modal-content vault-modal-content">
+        <h2>Kepler's Star Vault 🏆</h2>
+        <button id="close-vault-modal-btn" class="modal-close-btn">&times;</button>
+        
+        <div class="vault-stats" style="display: flex; gap: 10px; margin-bottom: 15px; width: 100%;">
+          <div class="vault-stat-card stat-all-time" style="flex: 1; text-align: center; border: 3px solid var(--border-color); border-radius: 8px; padding: 10px; background: #f8fafc;">
+            <span class="stat-label" style="font-family: 'Fredoka One', cursive; font-size: 0.85rem; color: #64748b;">🏆 Total Collected</span>
+            <span id="vault-stat-earned" class="stat-value" style="display: block; font-family: 'Fredoka One', cursive; font-size: 1.8rem; color: var(--text-color); margin-top: 4px;">0</span>
+          </div>
+          <div class="vault-stat-card stat-spendable" style="flex: 1.2; text-align: center; border: 3px solid #10b981; border-radius: 8px; padding: 10px; background: #ecfdf5; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1);">
+            <span class="stat-label" style="font-family: 'Fredoka One', cursive; font-size: 0.9rem; color: #047857;">⭐ Stars to Spend</span>
+            <span id="vault-stat-remaining" class="stat-value" style="display: block; font-family: 'Fredoka One', cursive; font-size: 2.1rem; color: #10b981; margin-top: 4px;">0</span>
+          </div>
+          <div class="vault-stat-card stat-spent" style="flex: 1; text-align: center; border: 3px solid var(--border-color); border-radius: 8px; padding: 10px; background: #f8fafc;">
+            <span class="stat-label" style="font-family: 'Fredoka One', cursive; font-size: 0.85rem; color: #64748b;">🎁 Spent on Prizes</span>
+            <span id="vault-stat-traded" class="stat-value" style="display: block; font-family: 'Fredoka One', cursive; font-size: 1.8rem; color: #64748b; margin-top: 4px;">0</span>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 20px; display: flex; justify-content: center; width: 100%;">
+          <button id="vault-trade-open-btn" class="pixel-btn warning" style="width: 100%; padding: 12px; font-size: 1.1rem; font-family: 'Fredoka One', cursive; text-shadow: 1px 1px 0 rgba(0,0,0,0.2); box-shadow: 0 4px 0 #d97706, 0 6px 10px rgba(0,0,0,0.15);">
+            ✨ Spend Stars for a Reward! ✨
+          </button>
+        </div>
+
+        <div class="vault-grid-container">
+          <div id="vault-grid" class="vault-grid">
+            <!-- Stars rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div id="vault-pagination" class="vault-pagination hidden" style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; width: 100%;">
+          <button id="vault-page-prev" class="pixel-btn small info" disabled>◀ Prev</button>
+          <span id="vault-page-info" class="page-info" style="font-family: 'Fredoka One', cursive; font-size: 1rem; color: var(--poke-blue);">Page 1 of 1</span>
+          <button id="vault-page-next" class="pixel-btn small info" disabled>Next ▶</button>
+        </div>
+
+        <!-- Star Vault Debug Panel (only visible when debug sidebar is enabled) -->
+        <div id="vault-debug-panel" class="vault-debug-panel hidden" style="border-top: 2px dashed var(--border-color); margin-top: 15px; padding-top: 15px; width: 100%;">
+          <h4 style="font-family:'Fredoka One', cursive; margin: 0 0 10px 0; font-size: 0.95rem; color: var(--poke-blue); text-align: left;">🧪 Vault Debug Tools</h4>
+          <div class="testing-buttons" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+            <button id="debug-vault-add-today" class="pixel-btn info small">Add 1 Star (Streak)</button>
+            <button id="debug-vault-add-yesterday" class="pixel-btn info small">Add 1 Star (Non-Streak)</button>
+            <button id="debug-vault-inject-streak" class="pixel-btn info small">Add 10 Stars</button>
+            <button id="debug-vault-clear" class="pixel-btn danger small">Clear Stars</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Star Vault Trade Modal -->
+    <div id="vault-trade-modal" class="modal hidden" style="z-index: 110000; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.6);">
+      <div class="modal-content pixel-card" style="max-width: 380px; text-align: center; background: white; border: var(--pixel-border); border-radius: 12px; padding: 25px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.25); margin: auto;">
+        <button id="close-trade-modal-btn" class="modal-close-btn" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 2rem; cursor: pointer; color: #64748b;">&times;</button>
+        
+        <!-- Screen 1: Parent Gate -->
+        <div id="trade-screen-gate" class="trade-screen">
+          <h3 style="font-family: 'Fredoka One', cursive; color: var(--poke-red); margin-top: 10px; font-size: 1.4rem;">Parent Check 🔒</h3>
+          <p style="font-size: 0.95rem; color: #475569; margin: 15px 0; font-family: 'Fredoka One', cursive;">Parents: Please enter password to unlock trading:</p>
+          <input type="password" id="trade-gate-password" class="pixel-input" placeholder="Password" style="width: 85%; padding: 10px; font-size: 1.1rem; margin-bottom: 12px; text-align: center; border: 3px solid var(--border-color); border-radius: 6px;">
+          <div id="trade-gate-error" class="error-msg hidden" style="color: var(--poke-red); font-size: 0.9rem; margin-bottom: 10px; font-family: 'Fredoka One', cursive;">Incorrect password!</div>
+          <button id="trade-gate-submit-btn" class="pixel-btn warning small" style="width: 85%; padding: 10px; font-family: 'Fredoka One', cursive;">Unlock 🔑</button>
+        </div>
+
+        <!-- Screen 2: Trading Panel -->
+        <div id="trade-screen-panel" class="trade-screen hidden">
+          <h3 style="font-family: 'Fredoka One', cursive; color: var(--poke-blue); margin-top: 10px; font-size: 1.4rem;">Spend Kepler's Stars!</h3>
+          <p style="font-size: 0.95rem; color: #475569; margin: 15px 0;">You have <strong id="trade-available-count" style="color: #10b981; font-size: 1.25rem;">0</strong> stars available to spend.</p>
+          
+          <div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin: 25px 0;">
+            <button id="trade-count-minus" class="pixel-btn danger small" style="font-size: 1.6rem; padding: 4px 16px;">-</button>
+            <span id="trade-count-value" style="font-family: 'Fredoka One', cursive; font-size: 2.5rem; min-width: 60px; color: var(--text-color);">1</span>
+            <button id="trade-count-plus" class="pixel-btn success small" style="font-size: 1.6rem; padding: 4px 16px;">+</button>
+          </div>
+          
+          <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 25px;">Choose how many stars to trade for your reward!</p>
+          
+          <div style="display: flex; gap: 12px; justify-content: center;">
+            <button id="trade-cancel-btn" class="pixel-btn danger small" style="flex: 1; padding: 8px 0; font-family: 'Fredoka One', cursive;">Cancel</button>
+            <button id="trade-confirm-btn" class="pixel-btn success small" style="flex: 1; padding: 8px 0; font-family: 'Fredoka One', cursive;">Confirm Trade! 🎉</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SVG Definitions for Prism Gradients -->
+    <svg width="0" height="0" style="position:absolute">
+      <defs>
+        <linearGradient id="prism-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#ff3c3c" />
+          <stop offset="20%" stop-color="#ffa500" />
+          <stop offset="40%" stop-color="#ffea00" />
+          <stop offset="60%" stop-color="#00fa9a" />
+          <stop offset="80%" stop-color="#00bfff" />
+          <stop offset="100%" stop-color="#ba55d3" />
+        </linearGradient>
+      </defs>
+    </svg>
+
     <!-- Admin Modal -->
     <div id="admin-modal" class="modal hidden">
       <div class="modal-content admin-modal-content">
@@ -205,6 +307,27 @@
             <div id="claimed-rewards-history-list" class="claimed-rewards-history-list">
               <p class="no-rewards">No rewards claimed yet.</p>
             </div>
+          </div>
+
+          <!-- Star Vault Settings -->
+          <div class="admin-section star-vault-admin">
+            <h3>⭐ Star Vault Settings</h3>
+            <p>Deduct Kepler's traded stars here when rewards are claimed in the real world.</p>
+            <div class="admin-option-row">
+              <span>Total Earned: <strong id="admin-vault-earned">0</strong></span>
+            </div>
+            <div class="admin-option-row">
+              <span>Total Traded:</span>
+              <div class="number-adjuster">
+                <button id="admin-vault-traded-minus" class="pixel-btn small warning">-</button>
+                <input type="number" id="admin-vault-traded-input" value="0" min="0" style="width: 70px; text-align: center;" class="pixel-input">
+                <button id="admin-vault-traded-plus" class="pixel-btn small warning">+</button>
+              </div>
+            </div>
+            <div class="admin-option-row">
+              <span>Remaining: <strong id="admin-vault-remaining">0</strong></span>
+            </div>
+            <button id="admin-save-vault-btn" class="pixel-btn small warning" style="margin-top: auto;">Save Vault Settings</button>
           </div>
         </div>
 
@@ -302,11 +425,14 @@
           <button id="test-week-3" class="pixel-btn info small">W3</button>
           <button id="test-week-4" class="pixel-btn info small">W4</button>
         </div>
+
       </div>
     </div>
   </div>
 
   <script src="particles.js?v=5.2"></script>
   <script type="module" src="app.js?v=5.2"></script>
+  <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
+  <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 </body>
 </html>

@@ -14,10 +14,12 @@ import {
   XP_DAILY_BONUS,
   XP_PER_TASK,
   MEGA_POKEMON,
-  EVOLUTIONS
+  EVOLUTIONS,
+  getSunday
 } from './state.js';
 
 import { playSound } from './audio.js';
+import { initVault, openVault, checkDayCompleted, updateAdminVaultStats, renderVault } from './vault.js';
 
 // DOM Elements
 const pokemonSprite = document.getElementById('pokemon-sprite');
@@ -96,6 +98,7 @@ let gridRebuildCount = 0;
 
 // Initialize
 loadState();
+initVault();
 preloadImages();
 renderState(true);
 setupEventListeners();
@@ -364,17 +367,23 @@ export function renderState(rebuildGrid = false) {
     showEeveeEvolutionDialog();
   }
 
+  // Render Star Vault
+  renderVault();
+
   // Render Debug Sidebar Visibility
   renderDebugSidebarVisibility();
 }
 
 function renderDebugSidebarVisibility() {
   if (!debugSidebar || !toggleDebugSidebar) return;
+  const vaultDebug = document.getElementById('vault-debug-panel');
   if (state.debugSidebarEnabled) {
     debugSidebar.classList.remove('hidden');
+    if (vaultDebug) vaultDebug.classList.remove('hidden');
     toggleDebugSidebar.checked = true;
   } else {
     debugSidebar.classList.add('hidden');
+    if (vaultDebug) vaultDebug.classList.add('hidden');
     toggleDebugSidebar.checked = false;
   }
 }
@@ -501,7 +510,7 @@ function renderGridTable() {
     totalHtml += `<td class="day-total-cell" data-day="${d}"><div class="badge-indicator locked">❌</div></td>`;
   }
   
-  totalHtml += `<td class="empty-cell"></td>`;
+  totalHtml += `<td class="vault-cell"><button id="open-vault-btn" class="pixel-btn small warning">⭐ Vault</button></td>`;
   totalRow.innerHTML = totalHtml;
   tbody.appendChild(totalRow);
   
@@ -524,6 +533,12 @@ function renderGridTable() {
   });
   
   setupCheckboxListeners();
+
+  const openVaultBtn = tbody.querySelector('#open-vault-btn');
+  if (openVaultBtn) {
+    openVaultBtn.addEventListener('click', openVault);
+  }
+
   renderProgress();
 }
 
@@ -566,10 +581,7 @@ function handleCheckboxChange(e) {
   const key = `${day}-${taskId}`;
 
   const tasks = state.tasks || [];
-  const wasDayFullyChecked = tasks.length > 0 && tasks.every(task => {
-    if (task.id === taskId) return isChecked;
-    return !!state.grid[`${day}-${task.id}`];
-  });
+  const wasDayFullyChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${day}-${task.id}`]);
 
   state.grid[key] = isChecked;
 
@@ -597,8 +609,10 @@ function handleCheckboxChange(e) {
       const y = rect.top + rect.height / 2;
       CelebrationEngine.triggerDailyCelebration(day, x, y);
     }
+    checkDayCompleted(day, true);
   } else if (!isDayFullyChecked && wasDayFullyChecked) {
     xpGained -= XP_DAILY_BONUS;
+    checkDayCompleted(day, false);
   }
 
   addXp(xpGained);
@@ -943,6 +957,7 @@ function setupEventListeners() {
       renderBackupHistory();
       renderAdminTasksList();
       renderClaimedRewardsHistory();
+      updateAdminVaultStats();
     } else {
       passwordError.classList.remove('hidden');
       passwordInput.value = '';
@@ -1046,6 +1061,93 @@ function setupEventListeners() {
   testWeek3Btn.addEventListener('click', () => { setWeek(3); adminModal.classList.add('hidden'); });
   testWeek4Btn.addEventListener('click', () => { setWeek(4); adminModal.classList.add('hidden'); });
 
+  const formatLocalDate = (date) => {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const addTodayBtn = document.getElementById('debug-vault-add-today');
+  if (addTodayBtn) {
+    addTodayBtn.addEventListener('click', () => {
+      const dates = state.starVault.earnedDates;
+      let nextDateStr;
+      if (dates.length === 0) {
+        nextDateStr = formatLocalDate(new Date());
+      } else {
+        const sorted = [...dates].sort((a, b) => new Date(a) - new Date(b));
+        const lastDate = new Date(sorted[sorted.length - 1] + 'T00:00:00');
+        lastDate.setDate(lastDate.getDate() + 1);
+        nextDateStr = formatLocalDate(lastDate);
+      }
+      if (!dates.includes(nextDateStr)) {
+        dates.push(nextDateStr);
+        saveState();
+        renderState(false);
+      }
+    });
+  }
+
+  const addYesterdayBtn = document.getElementById('debug-vault-add-yesterday');
+  if (addYesterdayBtn) {
+    addYesterdayBtn.addEventListener('click', () => {
+      const dates = state.starVault.earnedDates;
+      let nextDateStr;
+      if (dates.length === 0) {
+        nextDateStr = formatLocalDate(new Date());
+      } else {
+        const sorted = [...dates].sort((a, b) => new Date(a) - new Date(b));
+        const lastDate = new Date(sorted[sorted.length - 1] + 'T00:00:00');
+        // Add 2 days to create a 1-day gap, breaking the streak
+        lastDate.setDate(lastDate.getDate() + 2);
+        nextDateStr = formatLocalDate(lastDate);
+      }
+      if (!dates.includes(nextDateStr)) {
+        dates.push(nextDateStr);
+        saveState();
+        renderState(false);
+      }
+    });
+  }
+
+  const injectStreakBtn = document.getElementById('debug-vault-inject-streak');
+  if (injectStreakBtn) {
+    injectStreakBtn.addEventListener('click', () => {
+      const dates = state.starVault.earnedDates;
+      let baseDate;
+      if (dates.length === 0) {
+        baseDate = new Date();
+        baseDate.setDate(baseDate.getDate() - 9); // start 9 days ago
+      } else {
+        const sorted = [...dates].sort((a, b) => new Date(a) - new Date(b));
+        baseDate = new Date(sorted[sorted.length - 1] + 'T00:00:00');
+        baseDate.setDate(baseDate.getDate() + 1); // start consecutive sequence
+      }
+      
+      for (let i = 0; i < 10; i++) {
+        const nextDate = new Date(baseDate.getTime());
+        nextDate.setDate(nextDate.getDate() + i);
+        const nextDateStr = formatLocalDate(nextDate);
+        if (!dates.includes(nextDateStr)) {
+          dates.push(nextDateStr);
+        }
+      }
+      saveState();
+      renderState(false);
+    });
+  }
+
+  const clearVaultBtn = document.getElementById('debug-vault-clear');
+  if (clearVaultBtn) {
+    clearVaultBtn.addEventListener('click', () => {
+      state.starVault.earnedDates = [];
+      state.starVault.totalTraded = 0;
+      saveState();
+      renderState(false);
+    });
+  }
+
   if (toggleDebugSidebar) {
     toggleDebugSidebar.addEventListener('change', () => {
       state.debugSidebarEnabled = toggleDebugSidebar.checked;
@@ -1082,6 +1184,7 @@ function resetWeekGrid() {
   }
   
   state.grid = {};
+  state.weekStartDate = getSunday(new Date()).toISOString().split('T')[0];
   saveState();
   renderState(true);
   

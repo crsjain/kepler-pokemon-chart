@@ -1,44 +1,46 @@
-(function() {
-  console.log("🚀 Starting Kepler Chart Regression Tests...");
+import { getStarsFromDates, getDateOfColumn } from './vault.js';
+import { saveState } from './state.js';
 
-  function assert(condition, message) {
-    if (!condition) {
-      console.error("❌ Assert Failed: " + message);
-      throw new Error(message);
+console.log("🚀 Starting Kepler Chart Regression Tests...");
+
+function assert(condition, message) {
+  if (!condition) {
+    console.error("❌ Assert Failed: " + message);
+    throw new Error(message);
+  } else {
+    console.log("✅ Passed: " + message);
+  }
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function runSuite() {
+  const originalConfirm = window.confirm;
+  const originalAlert = window.alert;
+  const originalPrompt = window.prompt;
+  let mocksActive = false;
+
+  function restoreMocks() {
+    window.confirm = originalConfirm;
+    window.alert = originalAlert;
+    window.prompt = originalPrompt;
+    mocksActive = false;
+  }
+
+  try {
+    // 1. Reset state to clean V9 default
+    if (window.__test_helpers__ && window.__test_helpers__.resetState) {
+      window.__test_helpers__.resetState();
     } else {
-      console.log("✅ Passed: " + message);
-    }
-  }
-
-  function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  async function runSuite() {
-    const originalConfirm = window.confirm;
-    const originalAlert = window.alert;
-    const originalPrompt = window.prompt;
-    let mocksActive = false;
-
-    function restoreMocks() {
-      window.confirm = originalConfirm;
-      window.alert = originalAlert;
-      window.prompt = originalPrompt;
-      mocksActive = false;
+      throw new Error("Test helpers not available");
     }
 
-    try {
-      // 1. Reset state to clean V8 default
-      if (window.__test_helpers__ && window.__test_helpers__.resetState) {
-        window.__test_helpers__.resetState();
-      } else {
-        throw new Error("Test helpers not available");
-      }
-
-      const state = window.__app_state__;
-      assert(state.version === 8, "State version should be 8");
-      assert(state.weeklyClaimed === false, "Weekly claimed should be false");
-      assert(window.__grid_rebuild_count__ === 1, `Grid should have been built exactly once on reset (actual: ${window.__grid_rebuild_count__})`);
+    let state = window.__app_state__;
+    assert(state.version === 9, "State version should be 9");
+    assert(state.weeklyClaimed === false, "Weekly claimed should be false");
+    assert(window.__grid_rebuild_count__ === 1, `Grid should have been built exactly once on reset (actual: ${window.__grid_rebuild_count__})`);
 
       // Verify initial UI state
       const xpText = document.getElementById('current-xp').textContent;
@@ -380,6 +382,242 @@
         window.__test_helpers__.renderState(false);
       }
 
+      // 8. Test Star Vault Streak Logic (Unit Tests)
+      {
+        console.log("Testing Star Vault Streak Logic (Unit Tests)...");
+        // Test empty
+        let stars = getStarsFromDates([]);
+        assert(stars.length === 0, "Empty dates should return empty stars");
+
+        // Test single day
+        stars = getStarsFromDates(['2026-07-01']);
+        assert(stars.length === 1, "Single date should return 1 star");
+        assert(stars[0].color === 'yellow' && stars[0].streakDay === 1, "Single star should be yellow, streak 1");
+
+        // Test 2 days streak
+        stars = getStarsFromDates(['2026-07-01', '2026-07-02']);
+        assert(stars.length === 2, "2 consecutive dates should return 2 stars");
+        assert(stars[0].color === 'yellow' && stars[0].streakDay === 1, "Day 1 should be yellow");
+        assert(stars[1].color === 'yellow' && stars[1].streakDay === 2, "Day 2 should be yellow");
+
+        // Test 3 days streak (Silver transition)
+        stars = getStarsFromDates(['2026-07-01', '2026-07-02', '2026-07-03']);
+        assert(stars.length === 3, "3 consecutive dates should return 3 stars");
+        assert(stars[0].color === 'yellow' && stars[0].streakDay === 1, "Day 1 should be yellow");
+        assert(stars[1].color === 'yellow' && stars[1].streakDay === 2, "Day 2 should be yellow");
+        assert(stars[2].color === 'silver' && stars[2].streakDay === 3, "Day 3 should be silver");
+
+        // Test 5 days streak (Blue transition)
+        stars = getStarsFromDates(['2026-07-01', '2026-07-02', '2026-07-03', '2026-07-04', '2026-07-05']);
+        assert(stars.length === 5, "5 consecutive dates should return 5 stars");
+        assert(stars[2].color === 'silver' && stars[2].streakDay === 3, "Day 3 silver");
+        assert(stars[3].color === 'silver' && stars[3].streakDay === 4, "Day 4 silver");
+        assert(stars[4].color === 'blue' && stars[4].streakDay === 5, "Day 5 blue");
+
+        // Test 10 days streak (Prism transition)
+        const streak10 = [];
+        for (let i = 1; i <= 10; i++) {
+          const d = new Date('2026-07-01T00:00:00');
+          d.setDate(d.getDate() + (i - 1));
+          streak10.push(d.toISOString().split('T')[0]);
+        }
+        stars = getStarsFromDates(streak10);
+        assert(stars.length === 10, "10 consecutive dates should return 10 stars");
+        assert(stars[8].color === 'blue' && stars[8].streakDay === 9, "Day 9 blue");
+        assert(stars[9].color === 'prism' && stars[9].streakDay === 10, "Day 10 prism");
+
+        // Test streak break
+        stars = getStarsFromDates(['2026-07-01', '2026-07-02', '2026-07-04']);
+        assert(stars.length === 3, "3 dates with gap should return 3 stars");
+        assert(stars[0].color === 'yellow' && stars[0].streakDay === 1, "Day 1 yellow");
+        assert(stars[1].color === 'yellow' && stars[1].streakDay === 2, "Day 2 yellow");
+        assert(stars[2].color === 'yellow' && stars[2].streakDay === 1, "Day 4 should reset to yellow (streak 1)");
+      }
+
+      // 9. Test Logging Star to Vault on Day Completion
+      {
+        console.log("Testing Logging Star to Vault on Day Completion...");
+        // Reset state
+        window.__test_helpers__.resetState();
+        state = window.__app_state__;
+        
+        // Setup rewards so we can check boxes
+        const rewardSelect = document.getElementById('reward-select');
+        rewardSelect.value = "Bonus Tablet Time";
+        rewardSelect.dispatchEvent(new Event('change'));
+        const megaRewardSelect = document.getElementById('mega-reward-select');
+        megaRewardSelect.value = "Booster Pack";
+        megaRewardSelect.dispatchEvent(new Event('change'));
+
+        const today = new Date().getDay();
+        state.activeDay = today;
+        window.__test_helpers__.renderState(false);
+
+        // Verify vault is empty initially
+        assert(state.starVault.earnedDates.length === 0, "Star vault should be empty initially");
+
+        // Check all tasks for today
+        const tasks = state.tasks || [];
+        for (const task of tasks) {
+          const cb = document.querySelector(`input[data-day="${today}"][data-task="${task.id}"]`);
+          if (cb && !cb.checked) {
+            cb.click();
+          }
+        }
+        await sleep(100);
+
+        // Verify star is logged in vault
+        const todayDateStr = new Date().toISOString().split('T')[0];
+        assert(state.starVault.earnedDates.includes(todayDateStr), "Today's star should be logged in vault");
+        assert(state.starVault.earnedDates.length === 1, "Vault should contain exactly 1 star");
+
+        // Verify Daily Total UI indicator is a star
+        const dailyTotalCell = document.querySelector(`.day-total-cell[data-day="${today}"]`);
+        assert(dailyTotalCell.querySelector('.badge-indicator').textContent === '🌟', "Daily indicator should show 🌟");
+
+        // Uncheck one task
+        const firstTaskCb = document.querySelector(`input[data-day="${today}"][data-task="${tasks[0].id}"]`);
+        if (firstTaskCb && firstTaskCb.checked) {
+          firstTaskCb.click();
+        }
+        await sleep(100);
+
+        // Verify star is removed from vault
+        assert(!state.starVault.earnedDates.includes(todayDateStr), "Today's star should be removed from vault");
+        assert(state.starVault.earnedDates.length === 0, "Vault should be empty again");
+        assert(dailyTotalCell.querySelector('.badge-indicator').textContent === '❌', "Daily indicator should show ❌");
+      }
+
+      // 10. Test Parent Vault Settings
+      {
+        console.log("Testing Parent Vault Settings in Admin Modal...");
+        window.__test_helpers__.resetState();
+        state = window.__app_state__;
+        
+        // Inject some stars
+        state.starVault.earnedDates = ['2026-07-01', '2026-07-02', '2026-07-03'];
+        saveState();
+
+        // Open Admin Panel
+        const adminBtn = document.getElementById('admin-btn');
+        adminBtn.click();
+        await sleep(50);
+        
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmitBtn = document.getElementById('password-submit-btn');
+        passwordInput.value = window.__test_helpers__.ADMIN_PASSWORD;
+        passwordSubmitBtn.click();
+        await sleep(100);
+
+        // Verify Admin Vault Stats
+        const adminEarned = document.getElementById('admin-vault-earned');
+        const adminTradedInput = document.getElementById('admin-vault-traded-input');
+        const adminRemaining = document.getElementById('admin-vault-remaining');
+
+        assert(adminEarned.textContent === '3', "Admin panel should show 3 earned stars");
+        assert(adminTradedInput.value === '0', "Admin panel should show 0 traded stars initially");
+        assert(adminRemaining.textContent === '3', "Admin panel should show 3 remaining stars");
+
+        // Increment Traded stars
+        const plusBtn = document.getElementById('admin-vault-traded-plus');
+        plusBtn.click(); // Traded becomes 1
+        plusBtn.click(); // Traded becomes 2
+        await sleep(50);
+
+        assert(adminTradedInput.value === '2', "Admin panel input should show 2 traded stars");
+        assert(adminRemaining.textContent === '1', "Remaining label should update to 1 in real time");
+
+        // Save Vault Settings
+        const saveVaultBtn = document.getElementById('admin-save-vault-btn');
+        saveVaultBtn.click();
+        await sleep(100);
+
+        // Verify state is updated
+        assert(state.starVault.totalTraded === 2, "State totalTraded should be saved as 2");
+
+        // Close Admin Modal
+        const closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
+        closeAdminModalBtn.click();
+        await sleep(100);
+
+        // Open Vault Modal
+        const openVaultBtn = document.getElementById('open-vault-btn');
+        assert(openVaultBtn !== null, "Vault button should exist in total row");
+        openVaultBtn.click();
+        await sleep(100);
+
+        // Verify Vault Modal Stats
+        const vaultEarned = document.getElementById('vault-stat-earned');
+        const vaultTraded = document.getElementById('vault-stat-traded');
+        const vaultRemaining = document.getElementById('vault-stat-remaining');
+
+        assert(vaultEarned.textContent === '3', "Vault modal should show 3 earned");
+        assert(vaultTraded.textContent === '2', "Vault modal should show 2 traded");
+        assert(vaultRemaining.textContent === '1', "Vault modal should show 1 remaining");
+
+        // Case 11: Testing Inline Vault Trading Flow
+        console.log("Testing Inline Vault Trading Flow...");
+        
+        const vaultTradeOpenBtn = document.getElementById('vault-trade-open-btn');
+        assert(vaultTradeOpenBtn !== null, "Inline Spend button should exist in Vault Modal");
+        assert(!vaultTradeOpenBtn.disabled, "Spend button should be enabled since remaining count is 1");
+        
+        vaultTradeOpenBtn.click();
+        await sleep(50);
+        
+        const tradeModal = document.getElementById('vault-trade-modal');
+        const gateScreen = document.getElementById('trade-screen-gate');
+        const panelScreen = document.getElementById('trade-screen-panel');
+        
+        assert(tradeModal && !tradeModal.classList.contains('hidden'), "Trade Modal should be visible");
+        assert(gateScreen && !gateScreen.classList.contains('hidden'), "Parent Gate should be visible initially");
+        assert(panelScreen && panelScreen.classList.contains('hidden'), "Trading Panel should be hidden initially");
+        
+        const tradePasswordInput = document.getElementById('trade-gate-password');
+        const tradePasswordSubmitBtn = document.getElementById('trade-gate-submit-btn');
+        const tradePasswordError = document.getElementById('trade-gate-error');
+        
+        tradePasswordInput.value = 'wrong_password';
+        tradePasswordSubmitBtn.click();
+        await sleep(50);
+        assert(!tradePasswordError.classList.contains('hidden'), "Password error should show on wrong password");
+        
+        tradePasswordInput.value = 'zxcv';
+        tradePasswordSubmitBtn.click();
+        await sleep(50);
+        
+        assert(gateScreen.classList.contains('hidden'), "Parent Gate should be hidden after correct password");
+        assert(!panelScreen.classList.contains('hidden'), "Trading Panel should be visible after correct password");
+        
+        const tradeAvailableCount = document.getElementById('trade-available-count');
+        assert(tradeAvailableCount.textContent === '1', "Trade panel should report 1 available star");
+        
+        const tradeCountMinusBtn = document.getElementById('trade-count-minus');
+        const tradeCountPlusBtn = document.getElementById('trade-count-plus');
+        const tradeCountValue = document.getElementById('trade-count-value');
+        
+        assert(tradeCountValue.textContent === '1', "Selected count should default to 1");
+        assert(tradeCountMinusBtn.disabled, "Minus button should be disabled for count 1");
+        assert(tradeCountPlusBtn.disabled, "Plus button should be disabled since max available is 1");
+        
+        const tradeConfirmBtn = document.getElementById('trade-confirm-btn');
+        tradeConfirmBtn.click();
+        await sleep(50);
+        
+        assert(tradeModal.classList.contains('hidden'), "Trade modal should close after confirm");
+        
+        assert(state.starVault.totalTraded === 3, "State totalTraded should increment to 3");
+        assert(vaultEarned.textContent === '3', "Earned count remains 3");
+        assert(vaultTraded.textContent === '3', "Traded count updates to 3");
+        assert(vaultRemaining.textContent === '0', "Remaining count drops to 0");
+        assert(vaultTradeOpenBtn.disabled, "Spend button should become disabled when remaining stars count is 0");
+
+        // Close Vault Modal
+        const closeVaultModalBtn = document.getElementById('close-vault-modal-btn');
+        closeVaultModalBtn.click();
+        await sleep(100);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
@@ -390,4 +628,3 @@
   }
 
   setTimeout(runSuite, 1000);
-})();
