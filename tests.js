@@ -890,6 +890,83 @@ async function runSuite() {
         state = window.__app_state__;
       }
 
+      // 15. Test Week Rollover & Debug Milestone Syncing (vault count mismatch fix)
+      console.log("Running Test Case 15: Week Rollover & Debug Milestone Syncing...");
+      {
+        window.__test_helpers__.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+
+        // Select rewards so tasks can be checked
+        const rewardSelect = document.getElementById('reward-select');
+        rewardSelect.value = "Bonus Tablet Time";
+        rewardSelect.dispatchEvent(new Event('change'));
+        const megaRewardSelect = document.getElementById('mega-reward-select');
+        megaRewardSelect.value = "Booster Pack";
+        megaRewardSelect.dispatchEvent(new Event('change'));
+
+        // Complete 5 columns (Days 0 to 4) of the first week
+        const tasks = state.tasks || [];
+        for (let d = 0; d < 5; d++) {
+          tasks.forEach(task => {
+            state.grid[`${d}-${task.id}`] = true;
+          });
+        }
+        
+        // Render and sync
+        window.__test_helpers__.syncVaultStarsWithGrid();
+        window.__test_helpers__.renderState(true);
+        await sleep(100);
+
+        // Verify we got 5 earned dates in vault
+        const originalSunday = state.weekStartDate;
+        assert(state.starVault.earnedDates.length === 5, `Initial week should have earned 5 stars (actual: ${state.starVault.earnedDates.length})`);
+
+        // Set weekly claimed to true (simulating badge claim / week completion success)
+        state.weeklyClaimed = true;
+        saveState();
+
+        // Call resetWeekGrid
+        window.__test_helpers__.resetWeekGrid();
+        await sleep(100);
+        state = window.__app_state__;
+
+        // Verify weekStartDate has advanced by 7 days
+        const expectedNextSunday = new Date(originalSunday + 'T00:00:00');
+        expectedNextSunday.setDate(expectedNextSunday.getDate() + 7);
+        const expectedNextSundayStr = expectedNextSunday.toISOString().split('T')[0];
+        
+        assert(state.weekStartDate === expectedNextSundayStr, `weekStartDate should have advanced to ${expectedNextSundayStr} (actual: ${state.weekStartDate})`);
+        
+        // Grid should be empty
+        assert(Object.keys(state.grid).length === 0, "Grid should be cleared after week reset");
+        
+        // Vault should still have 5 historical stars from last week
+        assert(state.starVault.earnedDates.length === 5, `Vault should retain 5 historical stars (actual: ${state.starVault.earnedDates.length})`);
+
+        // Click Milestone -1 ball button (populates Days 0 to 4 in new week)
+        const testMilestoneBtn = document.getElementById('test-milestone-minus-one');
+        assert(testMilestoneBtn !== null, "Milestone -1 Ball button should exist");
+        testMilestoneBtn.click();
+        await sleep(100);
+        state = window.__app_state__;
+
+        // Verify vault has 10 stars! (5 from previous week, 5 from current week)
+        assert(state.starVault.earnedDates.length === 10, `Vault should now contain exactly 10 stars (actual: ${state.starVault.earnedDates.length})`);
+
+        // Open vault modal and check UI counters
+        window.__test_helpers__.renderVault();
+        const statEarned = document.getElementById('vault-stat-earned');
+        const statRemaining = document.getElementById('vault-stat-remaining');
+        assert(statEarned && statEarned.textContent === '10', "Vault UI Earned should display 10");
+        assert(statRemaining && statRemaining.textContent === '10', "Vault UI Remaining should display 10");
+
+        // Clean up
+        window.__test_helpers__.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

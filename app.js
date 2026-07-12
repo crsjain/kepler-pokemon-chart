@@ -938,13 +938,20 @@ function resetWeekGrid() {
       state.megaReward = '';
       flashMega = true;
     }
+    
+    // Advance weekStartDate by 7 days to start the next week cycle
+    const currentSunday = new Date(state.weekStartDate + 'T00:00:00');
+    currentSunday.setDate(currentSunday.getDate() + 7);
+    state.weekStartDate = currentSunday.toISOString().split('T')[0];
+
     state.weeklyClaimed = false;
     state.reward = '';
     flashWeekly = true;
+  } else {
+    state.weekStartDate = getSunday(new Date()).toISOString().split('T')[0];
   }
   
   state.grid = {};
-  state.weekStartDate = getSunday(new Date()).toISOString().split('T')[0];
   saveState();
   renderState(true);
   
@@ -1404,7 +1411,8 @@ if (location.search.includes('runTests=true')) {
     resetWeekGrid: () => resetWeekGrid(),
     renderBadgeCaseGrid: () => renderBadgeCaseGrid(),
     loadState: () => loadState(),
-    renderVault: () => renderVault()
+    renderVault: () => renderVault(),
+    syncVaultStarsWithGrid: () => syncVaultStarsWithGrid()
   };
   
   const script = document.createElement('script');
