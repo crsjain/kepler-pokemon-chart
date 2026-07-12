@@ -2109,3 +2109,38 @@ input:checked + .slider:before {
     transform: translateY(-50%);
   }
 }
+
+/* Star Vault Legend */
+.vault-legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 10px;
+  background-color: rgba(241, 245, 249, 0.6);
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  margin-bottom: 18px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vault-star-wrapper.mini {
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  cursor: default;
+}
+
+.legend-label {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.72rem;
+  color: #64748b;
+  user-select: none;
+}

@@ -18,7 +18,7 @@ import {
   getSunday
 } from './state.js';
 
-const APP_VERSION = 'v1.2.0 (v16)';
+const APP_VERSION = 'v1.2.0 (v17)';
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault } from './vault.js';
