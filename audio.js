@@ -55,6 +55,20 @@ export function playSound(type) {
       gain.gain.exponentialRampToValueAtTime(0.01 * volumeMultiplier, now + 0.5);
       osc.start(now);
       osc.stop(now + 0.5);
+    } else if (type === 'megaSuccess') {
+      osc.type = 'square';
+      // Triumphant fanfare: C5 -> G5 -> E5 -> A5 -> B5 -> C6
+      const notes = [523.25, 783.99, 659.25, 880.00, 987.77, 1046.50];
+      const durations = [0.08, 0.08, 0.08, 0.08, 0.08, 0.25];
+      let currentOffset = 0;
+      notes.forEach((freq, idx) => {
+        osc.frequency.setValueAtTime(freq, now + currentOffset);
+        currentOffset += durations[idx];
+      });
+      gain.gain.setValueAtTime(0.08 * volumeMultiplier, now);
+      gain.gain.exponentialRampToValueAtTime(0.01 * volumeMultiplier, now + 0.75);
+      osc.start(now);
+      osc.stop(now + 0.75);
     }
   } catch (e) {
     console.warn('Audio playback failed or blocked:', e);

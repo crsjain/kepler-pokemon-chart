@@ -1442,11 +1442,11 @@ function checkAndTriggerWeeklySuccess() {
     saveAutoBackup();
     renderProgress();
     
-    CelebrationEngine.triggerCelebration(false);
-    playSound('badge');
-    
     const weekDisplayNum = state.megaWeeks + 1;
     const isMegaWeek = weekDisplayNum === 4;
+    
+    CelebrationEngine.triggerCelebration(isMegaWeek);
+    playSound(isMegaWeek ? 'megaSuccess' : 'badge');
     
     let successMessage = `<p class="notif-desc">Kepler has completed all training goals for <strong>Week ${weekDisplayNum}</strong>!</p>`;
     successMessage += `<div class="notif-rewards-container">`;
