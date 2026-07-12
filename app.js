@@ -997,6 +997,14 @@ function setupEventListeners() {
     adminModal.classList.add('hidden');
   });
 
+  if (adminModal) {
+    adminModal.addEventListener('click', (e) => {
+      if (e.target === adminModal) {
+        adminModal.classList.add('hidden');
+      }
+    });
+  }
+
   if (adminDiagnosticsBtn) {
     adminDiagnosticsBtn.addEventListener('click', () => {
       const { issues, fixed } = runStateDiagnostics();

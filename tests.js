@@ -253,10 +253,10 @@ async function runSuite() {
 
       restoreMocks();
 
-      // Close admin modal
-      const closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
-      closeAdminModalBtn.click();
+      // Close admin modal by clicking backdrop
+      adminModal.click();
       await sleep(100);
+      assert(adminModal.classList.contains('hidden'), "Admin Modal should be hidden after backdrop click");
 
       // 6. Test Reset Week Grid Button Multiple Times
       console.log("Testing Reset Week Grid Button Multiple Times...");
