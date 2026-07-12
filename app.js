@@ -21,7 +21,7 @@ import {
 const APP_VERSION = 'v1.2.0 (v16)';
 
 import { playSound } from './audio.js';
-import { initVault, openVault, checkDayCompleted, updateAdminVaultStats, renderVault } from './vault.js';
+import { initVault, openVault, checkDayCompleted, renderVault } from './vault.js';
 
 // DOM Elements
 const pokemonSprite = document.getElementById('pokemon-sprite');
@@ -965,7 +965,7 @@ function setupEventListeners() {
       renderBackupHistory();
       renderAdminTasksList();
       renderClaimedRewardsHistory();
-      updateAdminVaultStats();
+
     } else {
       passwordError.classList.remove('hidden');
       passwordInput.value = '';

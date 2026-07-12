@@ -493,57 +493,16 @@ async function runSuite() {
         assert(dailyTotalCell.querySelector('.badge-indicator').textContent === '❌', "Daily indicator should show ❌");
       }
 
-      // 10. Test Parent Vault Settings
+      // 10. Test Inline Vault Trading Flow
       {
-        console.log("Testing Parent Vault Settings in Admin Modal...");
+        console.log("Testing Inline Vault Trading Flow...");
         window.__test_helpers__.resetState();
         state = window.__app_state__;
         
         // Inject some stars
         state.starVault.earnedDates = ['2026-07-01', '2026-07-02', '2026-07-03'];
+        state.starVault.totalTraded = 2; // leaving 1 remaining star
         saveState();
-
-        // Open Admin Panel
-        const adminBtn = document.getElementById('admin-btn');
-        adminBtn.click();
-        await sleep(50);
-        
-        const passwordInput = document.getElementById('password-input');
-        const passwordSubmitBtn = document.getElementById('password-submit-btn');
-        passwordInput.value = window.__test_helpers__.ADMIN_PASSWORD;
-        passwordSubmitBtn.click();
-        await sleep(100);
-
-        // Verify Admin Vault Stats
-        const adminEarned = document.getElementById('admin-vault-earned');
-        const adminTradedInput = document.getElementById('admin-vault-traded-input');
-        const adminRemaining = document.getElementById('admin-vault-remaining');
-
-        assert(adminEarned.textContent === '3', "Admin panel should show 3 earned stars");
-        assert(adminTradedInput.value === '0', "Admin panel should show 0 traded stars initially");
-        assert(adminRemaining.textContent === '3', "Admin panel should show 3 remaining stars");
-
-        // Increment Traded stars
-        const plusBtn = document.getElementById('admin-vault-traded-plus');
-        plusBtn.click(); // Traded becomes 1
-        plusBtn.click(); // Traded becomes 2
-        await sleep(50);
-
-        assert(adminTradedInput.value === '2', "Admin panel input should show 2 traded stars");
-        assert(adminRemaining.textContent === '1', "Remaining label should update to 1 in real time");
-
-        // Save Vault Settings
-        const saveVaultBtn = document.getElementById('admin-save-vault-btn');
-        saveVaultBtn.click();
-        await sleep(100);
-
-        // Verify state is updated
-        assert(state.starVault.totalTraded === 2, "State totalTraded should be saved as 2");
-
-        // Close Admin Modal
-        const closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
-        closeAdminModalBtn.click();
-        await sleep(100);
 
         // Open Vault Modal
         const openVaultBtn = document.getElementById('open-vault-btn');
@@ -560,9 +519,6 @@ async function runSuite() {
         assert(vaultTraded.textContent === '2', "Vault modal should show 2 traded");
         assert(vaultRemaining.textContent === '1', "Vault modal should show 1 remaining");
 
-        // Case 11: Testing Inline Vault Trading Flow
-        console.log("Testing Inline Vault Trading Flow...");
-        
         const vaultTradeOpenBtn = document.getElementById('vault-trade-open-btn');
         assert(vaultTradeOpenBtn !== null, "Inline Spend button should exist in Vault Modal");
         assert(!vaultTradeOpenBtn.disabled, "Spend button should be enabled since remaining count is 1");

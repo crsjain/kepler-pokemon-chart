@@ -309,26 +309,7 @@
             </div>
           </div>
 
-          <!-- Star Vault Settings -->
-          <div class="admin-section star-vault-admin">
-            <h3>⭐ Star Vault Settings</h3>
-            <p>Deduct Kepler's traded stars here when rewards are claimed in the real world.</p>
-            <div class="admin-option-row">
-              <span>Total Earned: <strong id="admin-vault-earned">0</strong></span>
-            </div>
-            <div class="admin-option-row">
-              <span>Total Traded:</span>
-              <div class="number-adjuster">
-                <button id="admin-vault-traded-minus" class="pixel-btn small warning">-</button>
-                <input type="number" id="admin-vault-traded-input" value="0" min="0" style="width: 70px; text-align: center;" class="pixel-input">
-                <button id="admin-vault-traded-plus" class="pixel-btn small warning">+</button>
-              </div>
-            </div>
-            <div class="admin-option-row">
-              <span>Remaining: <strong id="admin-vault-remaining">0</strong></span>
-            </div>
-            <button id="admin-save-vault-btn" class="pixel-btn small warning" style="margin-top: auto;">Save Vault Settings</button>
-          </div>
+
         </div>
 
         <button id="close-admin-modal-btn" class="pixel-btn">Close</button>
@@ -404,12 +385,14 @@
       <div class="actions">
         <button id="reset-btn" class="pixel-btn warning">Reset Week Grid</button>
         <button id="admin-btn" class="pixel-btn info small">Parent Admin</button>
+        
+        <!-- App Version Info -->
+        <div class="app-version-container">
+          version <span id="app-version-label">v0.0.0</span>
+        </div>
       </div>
 
-      <!-- App Version Info -->
-      <div class="app-version-container">
-        version <span id="app-version-label">v0.0.0</span>
-      </div>
+
     </footer>
     </div>
 

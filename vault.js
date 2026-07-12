@@ -150,7 +150,7 @@ export function initVault() {
       
       closeTradeFlow();
       renderVault();
-      updateAdminVaultStats();
+
     });
   }
 
@@ -258,7 +258,7 @@ function bindAdminElements() {
       const tradedVal = parseInt(adminTradedInput.value || 0);
       state.starVault.totalTraded = tradedVal;
       saveState();
-      updateAdminVaultStats();
+
       if (window.__test_helpers__) {
         console.log('Saved vault settings:', state.starVault);
       }

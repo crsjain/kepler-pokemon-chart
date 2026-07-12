@@ -733,6 +733,7 @@ button:disabled,
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+  position: relative; /* Enabled for absolute version child layout */
 }
 
 /* Modal Styling */
@@ -2093,10 +2094,18 @@ input:checked + .slider:before {
   font-family: 'Fredoka One', cursive;
   font-size: 0.65rem;
   color: #a0aec0;
-  text-align: center;
-  margin-top: 16px;
   letter-spacing: 0.05em;
   opacity: 0.7;
   pointer-events: none;
   user-select: none;
+}
+
+/* On desktop, absolute align to the far right of the actions bar */
+@media (min-width: 768px) {
+  .app-version-container {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+  }
 }
