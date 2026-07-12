@@ -1,5 +1,5 @@
 import { getStarsFromDates, getDateOfColumn } from './vault.js';
-import { saveState, rollNewWeeklyBadge } from './state.js';
+import { saveState, rollNewWeeklyBadge, getSunday } from './state.js';
 
 console.log("🚀 Starting Kepler Chart Regression Tests...");
 
@@ -821,6 +821,73 @@ async function runSuite() {
         // Clean up
         window.__test_helpers__.resetState();
         await sleep(100);
+      }
+
+      // 14. Test Vault Self-Healing Diagnostics
+      console.log("Running Test Case 14: Vault Self-Healing Diagnostics...");
+      {
+        // Setup a corrupted local storage state
+        const todayStr = new Date().toISOString().split('T')[0];
+        const sundayStr = getSunday(new Date()).toISOString().split('T')[0];
+        
+        const corruptedState = {
+          version: 10,
+          partnerFamily: '25',
+          partnersData: {
+            '25': { level: 1, xp: 0, stageId: '25' }
+          },
+          weekStartDate: sundayStr,
+          grid: {
+            // Day 0 is completed in grid, so it should be synced into the vault!
+            '0-piano': true,
+            '0-math': true,
+            '0-reading': true,
+            '0-writing': true,
+            '0-chinese': true,
+            // Day 1 is NOT completed (piano is missing)
+            '1-math': true,
+            '1-reading': true,
+            '1-writing': true,
+            '1-chinese': true
+          },
+          tasks: [
+            { id: 'piano', name: 'Piano Practice', req: 7 },
+            { id: 'math', name: 'Math Practice', req: 7 },
+            { id: 'reading', name: 'Reading Time', req: 7 },
+            { id: 'writing', name: 'Writing', req: 5 },
+            { id: 'chinese', name: 'Chinese', req: 5 }
+          ],
+          starVault: {
+            earnedDates: [
+              "invalid-date-format", // Should be removed
+              sundayStr,             // Sunday (Day 0) - is completed in grid, so it should be kept
+              sundayStr,             // Duplicate of Sunday - should be deduplicated!
+              "2026-07-10",          // Historical date (outside current week) - should be kept
+              // Day 1's date is NOT completed in grid, but let's assume it was present in vault.
+              // Since it is inside the current week, it should be auto-removed!
+              getDateOfColumn(sundayStr, 1) 
+            ],
+            totalTraded: -5 // Negative - should be reset to 0 (or clamped)
+          }
+        };
+
+        localStorage.setItem('kepler_pokemon_training_v2', JSON.stringify(corruptedState));
+        
+        // Trigger loadState
+        window.__test_helpers__.loadState();
+        state = window.__app_state__; // Refresh reference
+
+        // Assert on the healed state
+        const expectedDates = ["2026-07-10", sundayStr].sort((a, b) => new Date(a) - new Date(b));
+        assert(JSON.stringify(state.starVault.earnedDates) === JSON.stringify(expectedDates), 
+          `Star Vault earned dates should be healed to ${JSON.stringify(expectedDates)} (actual: ${JSON.stringify(state.starVault.earnedDates)})`);
+
+        assert(state.starVault.totalTraded === 0, `totalTraded should be healed to 0 (actual: ${state.starVault.totalTraded})`);
+
+        // Clean up: Reset state back to default
+        window.__test_helpers__.resetState();
+        await sleep(100);
+        state = window.__app_state__;
       }
 
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");

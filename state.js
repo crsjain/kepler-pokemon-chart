@@ -451,6 +451,12 @@ export function applyBackup(index) {
   return false;
 }
 
+function getColumnDateStr(weekStartDateStr, dayIndex) {
+  const baseDate = new Date(weekStartDateStr + 'T00:00:00');
+  baseDate.setDate(baseDate.getDate() + dayIndex);
+  return baseDate.toISOString().split('T')[0];
+}
+
 export function runStateDiagnostics() {
   let issues = [];
   let fixed = [];
@@ -556,11 +562,71 @@ export function runStateDiagnostics() {
       state.starVault.earnedDates = [];
       issues.push("Invalid starVault.earnedDates (not an array).");
       fixed.push("Reset starVault.earnedDates to empty array.");
+    } else {
+      // Deduplicate and filter invalid formats
+      const seen = new Set();
+      const validDates = [];
+      let hadDuplicatesOrInvalid = false;
+      
+      state.starVault.earnedDates.forEach(dStr => {
+        if (typeof dStr !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dStr)) {
+          hadDuplicatesOrInvalid = true;
+          issues.push(`Invalid date format in starVault.earnedDates: ${dStr}`);
+        } else if (seen.has(dStr)) {
+          hadDuplicatesOrInvalid = true;
+          issues.push(`Duplicate date in starVault.earnedDates: ${dStr}`);
+        } else {
+          seen.add(dStr);
+          validDates.push(dStr);
+        }
+      });
+      
+      if (hadDuplicatesOrInvalid) {
+        state.starVault.earnedDates = validDates;
+        fixed.push("Cleaned up duplicates and invalid dates in starVault.earnedDates.");
+      }
     }
+    
     if (typeof state.starVault.totalTraded !== 'number') {
       state.starVault.totalTraded = 0;
       issues.push("Invalid starVault.totalTraded (not a number).");
       fixed.push("Reset starVault.totalTraded to 0.");
+    } else if (state.starVault.totalTraded < 0) {
+      state.starVault.totalTraded = 0;
+      issues.push("Negative starVault.totalTraded.");
+      fixed.push("Reset starVault.totalTraded to 0.");
+    } else if (state.starVault.totalTraded > state.starVault.earnedDates.length) {
+      issues.push(`totalTraded (${state.starVault.totalTraded}) exceeds total earned stars (${state.starVault.earnedDates.length}).`);
+      state.starVault.totalTraded = state.starVault.earnedDates.length;
+      fixed.push(`Clamped totalTraded to match earned stars count.`);
+    }
+  }
+
+  // Sync current week's completed days from grid to starVault.earnedDates
+  if (state.weekStartDate && state.grid && state.tasks && state.tasks.length > 0) {
+    let syncedAny = false;
+    const currentWeekDates = DAYS.map(day => getColumnDateStr(state.weekStartDate, day));
+    
+    DAYS.forEach(day => {
+      const allChecked = state.tasks.every(task => !!state.grid[`${day}-${task.id}`]);
+      const dateStr = currentWeekDates[day];
+      const index = state.starVault.earnedDates.indexOf(dateStr);
+      
+      if (allChecked && index === -1) {
+        state.starVault.earnedDates.push(dateStr);
+        issues.push(`Completed day ${day} (${dateStr}) was missing from starVault.earnedDates.`);
+        fixed.push(`Added ${dateStr} to starVault.earnedDates.`);
+        syncedAny = true;
+      } else if (!allChecked && index !== -1) {
+        state.starVault.earnedDates.splice(index, 1);
+        issues.push(`Uncompleted day ${day} (${dateStr}) was present in starVault.earnedDates.`);
+        fixed.push(`Removed ${dateStr} from starVault.earnedDates.`);
+        syncedAny = true;
+      }
+    });
+    
+    if (syncedAny) {
+      state.starVault.earnedDates.sort((a, b) => new Date(a) - new Date(b));
     }
   }
 
