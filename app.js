@@ -338,9 +338,9 @@ export function renderState(rebuildGrid = false) {
     if (stageInfo.nextStage) {
       const levelsLeft = stageInfo.endLevel - stats.level;
       if (family === '133') {
-        evolutionHelper.innerHTML = `✨ Evolves at LV ${stageInfo.endLevel} (${levelsLeft} ${levelsLeft === 1 ? 'level' : 'levels'} to go!)`;
+        evolutionHelper.innerHTML = `✨ Evolves at LV&nbsp;${stageInfo.endLevel} (${levelsLeft} ${levelsLeft === 1 ? 'level' : 'levels'} to go!)`;
       } else {
-        evolutionHelper.innerHTML = `✨ Next Evolution: <strong>${stageInfo.nextStage.name}</strong> at LV ${stageInfo.endLevel} (${levelsLeft} ${levelsLeft === 1 ? 'level' : 'levels'} to go!)`;
+        evolutionHelper.innerHTML = `✨ Next Evolution: <strong>${stageInfo.nextStage.name}</strong> at LV&nbsp;${stageInfo.endLevel} (${levelsLeft} ${levelsLeft === 1 ? 'level' : 'levels'} to go!)`;
       }
     } else {
       evolutionHelper.innerHTML = `🏆 Fully Evolved form!`;
