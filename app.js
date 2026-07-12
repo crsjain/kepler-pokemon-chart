@@ -198,12 +198,11 @@ function showCustomNotification(title, message, imageUrl = null, isMega = false,
   if (isMega) {
     imageHtml = `<div class="notif-mega-badges-row">`;
     const badgeIds = [];
-    for (let i = 0; i < 3; i++) {
-      const historyIndex = state.collectedBadges.length - 3 + i;
+    for (let i = 0; i < 4; i++) {
+      const historyIndex = state.collectedBadges.length - 4 + i;
       const badge = state.collectedBadges[historyIndex];
       badgeIds.push(badge ? badge.id : null);
     }
-    badgeIds.push(state.activeWeeklyBadgeId);
     
     badgeIds.forEach((id, idx) => {
       if (id) {
@@ -1282,7 +1281,11 @@ function resetWeekGrid() {
   let flashMega = false;
   
   if (state.weeklyClaimed) {
-    awardCurrentWeeklyBadge();
+    const alreadyAwarded = state.collectedBadges.some(b => b.id === state.activeWeeklyBadgeId);
+    if (!alreadyAwarded) {
+      awardCurrentWeeklyBadge();
+    }
+    rollNewWeeklyBadge();
     state.megaWeeks += 1;
     if (state.megaWeeks >= 4) {
       state.megaWeeks = 0;
@@ -1468,6 +1471,7 @@ function checkAndTriggerWeeklySuccess() {
   
   if (weeklySuccess && !state.weeklyClaimed) {
     state.weeklyClaimed = true;
+    awardCurrentWeeklyBadge();
     
     const family = state.partnerFamily;
     const stats = state.partnersData[family];
@@ -1640,7 +1644,10 @@ function renderProgress() {
       let badgeName;
       
       if (index < state.megaWeeks) {
-        const historyIndex = state.collectedBadges.length - state.megaWeeks + index;
+        const isCurrentCollected = state.weeklyClaimed && 
+          state.collectedBadges.length > 0 && 
+          state.collectedBadges[state.collectedBadges.length - 1].id === state.activeWeeklyBadgeId;
+        const historyIndex = state.collectedBadges.length - (isCurrentCollected ? 1 : 0) - state.megaWeeks + index;
         const badge = state.collectedBadges[historyIndex];
         badgeId = badge ? badge.id : null;
         badgeName = badge ? badge.name : '';

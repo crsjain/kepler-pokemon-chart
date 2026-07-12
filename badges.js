@@ -138,20 +138,16 @@ function bindTooltipEvents(card) {
 
 // Function to award the current badge and roll the next
 export function awardCurrentWeeklyBadge() {
-  if (state.weeklyClaimed) {
-    const id = state.activeWeeklyBadgeId;
-    const name = getPokemonName(id);
-    const dateEarned = new Date().toISOString();
-    
-    if (!state.collectedBadges) state.collectedBadges = [];
-    
-    // Avoid double adding
-    const exists = state.collectedBadges.some(b => b.id === id);
-    if (!exists) {
-      state.collectedBadges.push({ id, name, dateEarned });
-      console.log(`Awarded badge: ${name} (#${id})`);
-    }
-    
-    rollNewWeeklyBadge();
+  const id = state.activeWeeklyBadgeId;
+  const name = getPokemonName(id);
+  const dateEarned = new Date().toISOString();
+  
+  if (!state.collectedBadges) state.collectedBadges = [];
+  
+  const exists = state.collectedBadges.some(b => b.id === id);
+  if (!exists) {
+    state.collectedBadges.push({ id, name, dateEarned });
+    console.log(`Awarded badge: ${name} (#${id})`);
+    saveState();
   }
 }
