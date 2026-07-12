@@ -1051,6 +1051,9 @@ async function runSuite() {
         const confirmModal = document.getElementById('confirm-modal');
         assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should be open for restore confirmation");
         
+        console.log("SCREENSHOT_NOW");
+        await sleep(2000); // Give Chrome a moment before continuing (though process will terminate in wrapper)
+        
         // Assert that confirmModal z-index is greater than adminModal z-index
         const confirmZ = parseInt(window.getComputedStyle(confirmModal).zIndex);
         assert(confirmZ > adminZ, `Confirm Modal z-index (${confirmZ}) should be greater than admin panel z-index (${adminZ})`);
