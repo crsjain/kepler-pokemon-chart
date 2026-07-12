@@ -45,6 +45,11 @@ async function runSuite() {
       // Verify initial UI state
       const xpText = document.getElementById('current-xp').textContent;
       assert(xpText === '0', "Initial XP should be 0");
+
+      // Verify Version Indicator
+      const versionLabel = document.getElementById('app-version-label');
+      assert(versionLabel !== null, "App version indicator should exist");
+      assert(versionLabel.textContent.includes('v1.2.0'), "App version label should display v1.2.0");
       
       // Select rewards (needed to check boxes)
       const rewardSelect = document.getElementById('reward-select');

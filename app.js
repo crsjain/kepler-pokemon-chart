@@ -18,6 +18,8 @@ import {
   getSunday
 } from './state.js';
 
+const APP_VERSION = 'v1.2.0 (v16)';
+
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, updateAdminVaultStats, renderVault } from './vault.js';
 
@@ -102,6 +104,12 @@ initVault();
 preloadImages();
 renderState(true);
 setupEventListeners();
+
+// Render App Version
+const versionLabel = document.getElementById('app-version-label');
+if (versionLabel) {
+  versionLabel.textContent = APP_VERSION;
+}
 
 function preloadImages() {
   const imagesToPreload = [
