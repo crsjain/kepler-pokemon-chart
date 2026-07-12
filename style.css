@@ -2229,7 +2229,7 @@ input:checked + .slider:before {
 
 .badges-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 12px;
   width: 100%;
   padding: 10px 5px;
@@ -2241,7 +2241,7 @@ input:checked + .slider:before {
   background: white;
   border: 3px solid #8b5a2b;
   border-radius: 8px;
-  padding: 8px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2257,19 +2257,19 @@ input:checked + .slider:before {
 }
 
 .badge-case-img-container {
-  width: 60px;
-  height: 60px;
+  width: 85px;
+  height: 85px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   background: #f7fafc;
   border-radius: 50%;
   border: 2px solid #e2e8f0;
 }
 .badge-case-img {
-  width: 50px;
-  height: 50px;
+  width: 75px;
+  height: 75px;
   object-fit: contain;
 }
 
@@ -2278,7 +2278,7 @@ input:checked + .slider:before {
 }
 .badge-case-name {
   font-family: 'Fredoka One', cursive;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   color: #2d3748;
   white-space: nowrap;
   overflow: hidden;
@@ -2287,7 +2287,7 @@ input:checked + .slider:before {
 }
 .badge-case-dex {
   font-family: 'Press Start 2P', cursive;
-  font-size: 0.5rem;
+  font-size: 0.55rem;
   color: #718096;
 }
 
