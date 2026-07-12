@@ -2305,16 +2305,16 @@ input:checked + .slider:before {
   box-sizing: border-box;
   overflow-y: auto;
 }
-.notif-modal h2 {
-  font-size: clamp(1rem, 3.8vw, 1.4rem);
+.notif-modal .modal-content h2 {
+  font-size: clamp(0.85rem, 3vw, 1.25rem);
   white-space: nowrap;
   margin-top: 0;
   margin-bottom: 10px;
   word-break: keep-all;
 }
 .notif-img {
-  max-height: 140px;
-  max-width: 140px;
+  max-height: 110px;
+  max-width: 110px;
   width: auto;
   object-fit: contain;
   margin: 5px auto;
@@ -2367,9 +2367,9 @@ input:checked + .slider:before {
     max-height: 90px;
     max-width: 90px;
   }
-  .notif-modal h2 {
+  .notif-modal .modal-content h2 {
     margin-bottom: 5px;
-    font-size: clamp(0.9rem, 3vw, 1.2rem);
+    font-size: clamp(0.8rem, 3vw, 1.1rem);
   }
   .notif-rewards-container {
     margin: 5px 0;

@@ -1273,8 +1273,9 @@ function setMilestoneMinusOne() {
   state.grid = {};
   
   const tasks = state.tasks || [];
-  tasks.forEach(task => {
-    const fillCount = (task.req || 5) - 1;
+  tasks.forEach((task, index) => {
+    // Make only the first task short by 1 day (req - 1). Others are set to full requirement.
+    const fillCount = (index === 0) ? (task.req || 5) - 1 : (task.req || 5);
     for (let d = 0; d < fillCount; d++) {
       state.grid[`${d}-${task.id}`] = true;
     }
