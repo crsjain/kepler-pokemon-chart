@@ -1,5 +1,5 @@
 import { getStarsFromDates, getDateOfColumn } from './vault.js';
-import { saveState } from './state.js';
+import { saveState, rollNewWeeklyBadge } from './state.js';
 
 console.log("🚀 Starting Kepler Chart Regression Tests...");
 
@@ -38,7 +38,7 @@ async function runSuite() {
     }
 
     let state = window.__app_state__;
-    assert(state.version === 9, "State version should be 9");
+    assert(state.version === 10, "State version should be 10");
     assert(state.weeklyClaimed === false, "Weekly claimed should be false");
     assert(window.__grid_rebuild_count__ === 1, `Grid should have been built exactly once on reset (actual: ${window.__grid_rebuild_count__})`);
 
@@ -49,7 +49,7 @@ async function runSuite() {
       // Verify Version Indicator
       const versionLabel = document.getElementById('app-version-label');
       assert(versionLabel !== null, "App version indicator should exist");
-      assert(versionLabel.textContent.includes('v1.2.0'), "App version label should display v1.2.0");
+      assert(versionLabel.textContent.includes('v1.3.0'), "App version label should display v1.3.0");
       
       // Select rewards (needed to check boxes)
       const rewardSelect = document.getElementById('reward-select');
@@ -576,6 +576,187 @@ async function runSuite() {
         // Close Vault Modal
         const closeVaultModalBtn = document.getElementById('close-vault-modal-btn');
         closeVaultModalBtn.click();
+        await sleep(100);
+
+        // 11. Test Case 11: Badge Case & Collection
+        console.log("Running Test Case 11: Badge Case & Collection...");
+        
+        // Verify state initial V10 fields
+        assert(state.version === 10, "State version should be 10");
+        assert(Array.isArray(state.collectedBadges), "collectedBadges should be an array");
+        assert(state.collectedBadges.length === 0, "Initially collected badges should be empty");
+        assert(Array.isArray(state.badgePool), "badgePool should be an array");
+        assert(state.activeWeeklyBadgeId !== null, "activeWeeklyBadgeId should be rolled");
+        
+        // Test UI Open
+        const openBadgesBtn = document.getElementById('open-badges-btn');
+        assert(openBadgesBtn !== null, "Open Badge Case button should exist");
+        
+        const badgesModal = document.getElementById('badges-modal');
+        assert(badgesModal.classList.contains('hidden'), "Badges modal should be hidden initially");
+        
+        openBadgesBtn.click();
+        await sleep(100);
+        assert(!badgesModal.classList.contains('hidden'), "Badges modal should be open after click");
+        
+        // Verify empty grid message
+        const badgesGrid = document.getElementById('badges-grid');
+        assert(badgesGrid.querySelector('.no-badges') !== null, "Should show 'No badges collected yet' message");
+        
+        // Close modal
+        const closeBadgesBtn = document.getElementById('close-badges-modal-btn');
+        closeBadgesBtn.click();
+        await sleep(100);
+        assert(badgesModal.classList.contains('hidden'), "Badges modal should be hidden after close");
+        
+        // Test Earning Badge
+        console.log("Testing earning weekly badge on reset...");
+        
+        // Setup state to simulate claimed weekly success
+        state.weeklyClaimed = true;
+        const initialActiveBadge = state.activeWeeklyBadgeId;
+        const initialPoolSize = state.badgePool.length;
+        
+        // Trigger week reset
+        window.__test_helpers__.resetWeekGrid();
+        await sleep(100);
+        
+        // Verify badge was added
+        assert(state.collectedBadges.length === 1, "Should have collected 1 badge");
+        assert(state.collectedBadges[0].id === initialActiveBadge, "Collected badge should match the active weekly target");
+        assert(state.weeklyClaimed === false, "weeklyClaimed should reset to false");
+        
+        // Verify next badge was rolled
+        assert(state.activeWeeklyBadgeId !== initialActiveBadge, "New active weekly badge should be rolled");
+        assert(state.badgePool.length === initialPoolSize - 1, "Badge pool size should decrease by 1");
+        
+        // Test Sorting in UI
+        openBadgesBtn.click();
+        await sleep(100);
+        
+        // Add one more badge programmatically to test sorting
+        const secondBadgeId = state.badgePool[0];
+        state.collectedBadges.push({
+          id: secondBadgeId,
+          name: "Test Pokemon",
+          dateEarned: new Date(Date.now() + 10000).toISOString()
+        });
+        
+        // Trigger render
+        window.__test_helpers__.renderBadgeCaseGrid();
+        
+        const cards = badgesGrid.querySelectorAll('.badge-case-card');
+        assert(cards.length === 2, "Should show 2 badge cards");
+        
+        // Sort by Dex
+        const sortDexBtn = document.getElementById('sort-badges-dex');
+        sortDexBtn.click();
+        await sleep(50);
+        
+        const sortedIds = Array.from(badgesGrid.querySelectorAll('.badge-case-card')).map(card => {
+          const dexText = card.querySelector('.badge-case-dex').textContent;
+          return parseInt(dexText.replace('#', ''), 10);
+        });
+        
+        assert(sortedIds[0] < sortedIds[1], "Badges should be sorted numerically by Dex #");
+        
+        // Sort by Date
+        const sortDateBtn = document.getElementById('sort-badges-date');
+        sortDateBtn.click();
+        await sleep(50);
+        
+        const sortedCards = badgesGrid.querySelectorAll('.badge-case-card');
+        const firstCardName = sortedCards[0].querySelector('.badge-case-name').textContent;
+        assert(firstCardName === "Test Pokemon", "Badges should be sorted by date (newest first)");
+        
+        // Test Auto-Expansion
+        console.log("Testing Auto-Expansion trigger...");
+        state.badgePool = state.badgePool.slice(0, 4);
+        const preRollPoolSize = state.badgePool.length;
+        
+        rollNewWeeklyBadge();
+        
+        assert(state.badgePool.length > preRollPoolSize, "Badge pool should have expanded");
+        
+        // Clean up
+        closeBadgesBtn.click();
+        await sleep(100);
+
+        // 12. Test Case 12: V9 to V10 Migration
+        console.log("Running Test Case 12: V9 to V10 Migration (current cycle)...");
+        
+        const v9State = {
+          version: 9,
+          megaWeeks: 2,
+          weeklyClaimed: false,
+          activeDay: 0,
+          weekStartDate: "2026-07-05",
+          grid: {},
+          partnersData: {
+            '25': { level: 1, xp: 0 },
+            '4': { level: 1, xp: 0 },
+            '1': { level: 1, xp: 0 },
+            '7': { level: 1, xp: 0 },
+            '133': { level: 1, xp: 0 }
+          },
+          starVault: {
+            earnedDates: [],
+            totalTraded: 0
+          },
+          claimedRewardsHistory: []
+        };
+        
+        localStorage.setItem('kepler_pokemon_training_v2', JSON.stringify(v9State));
+        window.__test_helpers__.loadState();
+        let migratedState = window.__app_state__;
+        
+        assert(migratedState.version === 10, "Migrated state version should be 10");
+        assert(Array.isArray(migratedState.collectedBadges), "collectedBadges should be created");
+        assert(migratedState.collectedBadges.length === 2, "Should have retroactively awarded 2 badges based on megaWeeks=2");
+        assert(migratedState.collectedBadges[0].id === 658, "1st migrated badge should be Greninja (658)");
+        assert(migratedState.collectedBadges[1].id === 382, "2nd migrated badge should be Kyogre (382)");
+        assert(!migratedState.badgePool.includes(382), "Kyogre should be filtered from pool");
+
+        console.log("Running Test Case 12 part 2: V9 to V10 Migration (past history)...");
+        window.__test_helpers__.resetState();
+        await sleep(50);
+        
+        const v9StateWithHistory = {
+          version: 9,
+          megaWeeks: 0,
+          weeklyClaimed: false,
+          activeDay: 0,
+          weekStartDate: "2026-07-05",
+          grid: {},
+          partnersData: {
+            '25': { level: 1, xp: 0 },
+            '4': { level: 1, xp: 0 },
+            '1': { level: 1, xp: 0 },
+            '7': { level: 1, xp: 0 },
+            '133': { level: 1, xp: 0 }
+          },
+          starVault: {
+            earnedDates: [],
+            totalTraded: 0
+          },
+          claimedRewardsHistory: [
+            { type: 'weekly', weekNumber: 1, partner: "Pikachu" },
+            { type: 'weekly', weekNumber: 2, partner: "Eevee" }
+          ]
+        };
+        
+        localStorage.setItem('kepler_pokemon_training_v2', JSON.stringify(v9StateWithHistory));
+        window.__test_helpers__.loadState();
+        migratedState = window.__app_state__;
+        
+        assert(migratedState.version === 10, "Migrated state version should be 10");
+        assert(migratedState.collectedBadges.length === 2, "Should award 2 badges based on history");
+        assert(migratedState.collectedBadges[0].id === 658, "1st badge is Greninja");
+        assert(migratedState.collectedBadges[1].id === 382, "2nd badge is Kyogre");
+        assert(!migratedState.badgePool.includes(382), "Kyogre filtered from pool");
+        
+        // Clean up: Reset state back to default V10
+        window.__test_helpers__.resetState();
         await sleep(100);
       }
 

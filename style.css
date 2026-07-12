@@ -375,6 +375,10 @@ body {
   filter: grayscale(1) opacity(0.5);
 }
 
+.mega-slot-img.silhouette {
+  filter: brightness(0) opacity(0.4);
+}
+
 /* Dropdowns Style */
 .reward-select-container {
   display: flex;
@@ -2144,3 +2148,146 @@ input:checked + .slider:before {
   color: #64748b;
   user-select: none;
 }
+
+/* ==========================================================================
+   POKEMON BADGE CASE SYSTEM
+   ========================================================================== */
+
+/* Weekly Badge Header */
+.weekly-badge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+.weekly-badge-header .badge-title {
+  margin-bottom: 0;
+}
+.weekly-badge-header #open-badges-btn {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  font-family: 'Fredoka One', cursive;
+  white-space: nowrap;
+}
+
+/* Badge Case Modal */
+.badges-modal-content {
+  max-width: 550px;
+  width: 90%;
+  background: #fdf6e2; /* Warm paper/wood tone */
+  border: var(--pixel-border);
+  border-color: #8b5a2b; /* Brown border */
+  box-shadow: 0 10px 0px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 25px;
+  max-height: 80vh;
+  box-sizing: border-box;
+}
+
+.badge-case-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+  width: 100%;
+  justify-content: center;
+  font-family: 'Fredoka One', cursive;
+}
+.badge-case-controls .controls-label {
+  font-size: 0.9rem;
+  color: #5c3a21;
+}
+.badge-case-controls .pixel-btn.active {
+  background-color: var(--poke-blue);
+  color: white;
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2);
+}
+
+.badges-grid-container {
+  width: 100%;
+  overflow-y: auto;
+  flex-grow: 1;
+  padding-right: 5px;
+  box-sizing: border-box;
+}
+.badges-grid-container::-webkit-scrollbar {
+  width: 10px;
+}
+.badges-grid-container::-webkit-scrollbar-track {
+  background: #e2d4b7;
+  border-radius: 4px;
+}
+.badges-grid-container::-webkit-scrollbar-thumb {
+  background: #8b5a2b;
+  border-radius: 4px;
+  border: 2px solid #e2d4b7;
+}
+
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 12px;
+  width: 100%;
+  padding: 10px 5px;
+  box-sizing: border-box;
+}
+
+/* Badge Card */
+.badge-case-card {
+  background: white;
+  border: 3px solid #8b5a2b;
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  transition: transform 0.1s ease;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.badge-case-card:hover {
+  transform: translateY(-2px);
+  background: #fffdf5;
+}
+
+.badge-case-img-container {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+  background: #f7fafc;
+  border-radius: 50%;
+  border: 2px solid #e2e8f0;
+}
+.badge-case-img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.badge-case-info {
+  width: 100%;
+}
+.badge-case-name {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.75rem;
+  color: #2d3748;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.badge-case-dex {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.5rem;
+  color: #718096;
+}
+

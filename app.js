@@ -15,13 +15,16 @@ import {
   XP_PER_TASK,
   MEGA_POKEMON,
   EVOLUTIONS,
-  getSunday
+  getSunday,
+  rollNewWeeklyBadge
 } from './state.js';
 
-const APP_VERSION = 'v1.2.0 (v17)';
+const APP_VERSION = 'v1.3.0 (v18)';
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault } from './vault.js';
+import { getPokemonName, TIER_1_IDS, TIER_2_IDS } from './pokemon_data.js';
+import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
 
 // DOM Elements
 const pokemonSprite = document.getElementById('pokemon-sprite');
@@ -101,6 +104,7 @@ let gridRebuildCount = 0;
 // Initialize
 loadState();
 initVault();
+initBadgeCase();
 preloadImages();
 renderState(true);
 setupEventListeners();
@@ -115,6 +119,9 @@ function preloadImages() {
   const imagesToPreload = [
     'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/star-piece.png'
   ];
+  if (state.activeWeeklyBadgeId) {
+    imagesToPreload.push(`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${state.activeWeeklyBadgeId}.png`);
+  }
   MEGA_POKEMON.forEach(p => {
     imagesToPreload.push(`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`);
   });
@@ -1164,6 +1171,55 @@ function setupEventListeners() {
     });
   }
 
+  // Badge Debug Buttons
+  const addBadgeBtn = document.getElementById('debug-badge-add-random');
+  if (addBadgeBtn) {
+    addBadgeBtn.addEventListener('click', () => {
+      const collectedIds = new Set((state.collectedBadges || []).map(b => b.id));
+      const availableIds = TIER_1_IDS.concat(TIER_2_IDS).filter(id => !collectedIds.has(id));
+      if (availableIds.length > 0) {
+        const randomId = availableIds[Math.floor(Math.random() * availableIds.length)];
+        const name = getPokemonName(randomId);
+        if (!state.collectedBadges) state.collectedBadges = [];
+        state.collectedBadges.push({
+          id: randomId,
+          name: name,
+          dateEarned: new Date().toISOString()
+        });
+        saveState();
+        renderState(false);
+        const badgesModal = document.getElementById('badges-modal');
+        if (badgesModal && !badgesModal.classList.contains('hidden')) {
+          renderBadgeCaseGrid();
+        }
+      } else {
+        alert("All curated badges collected!");
+      }
+    });
+  }
+
+  const rollBadgeBtn = document.getElementById('debug-badge-roll');
+  if (rollBadgeBtn) {
+    rollBadgeBtn.addEventListener('click', () => {
+      rollNewWeeklyBadge();
+      renderState(false);
+    });
+  }
+
+  const clearBadgesBtn = document.getElementById('debug-badge-clear');
+  if (clearBadgesBtn) {
+    clearBadgesBtn.addEventListener('click', () => {
+      state.collectedBadges = [];
+      state.badgePool = TIER_1_IDS.filter(id => id !== state.activeWeeklyBadgeId);
+      saveState();
+      renderState(false);
+      const badgesModal = document.getElementById('badges-modal');
+      if (badgesModal && !badgesModal.classList.contains('hidden')) {
+        renderBadgeCaseGrid();
+      }
+    });
+  }
+
   if (toggleDebugSidebar) {
     toggleDebugSidebar.addEventListener('change', () => {
       state.debugSidebarEnabled = toggleDebugSidebar.checked;
@@ -1188,6 +1244,7 @@ function resetWeekGrid() {
   let flashMega = false;
   
   if (state.weeklyClaimed) {
+    awardCurrentWeeklyBadge();
     state.megaWeeks += 1;
     if (state.megaWeeks >= 4) {
       state.megaWeeks = 0;
@@ -1468,17 +1525,24 @@ function renderProgress() {
   }
 
   if (state.weeklyClaimed) {
-    const currentBadge = MEGA_POKEMON[state.megaWeeks];
-    if (currentBadge) {
-      weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${currentBadge.id}.png" alt="${currentBadge.name}" class="mega-slot-img">`;
-      badgeStatusEl.textContent = `${currentBadge.name} Badge Earned!`;
+    const badgeId = state.activeWeeklyBadgeId;
+    const badgeName = getPokemonName(badgeId);
+    if (badgeId) {
+      weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="${badgeName}" class="mega-slot-img">`;
+      badgeStatusEl.textContent = `${badgeName} Badge Earned!`;
     }
     weeklyBadgeSlot.classList.remove('locked');
     weeklyBadgeSlot.classList.add('unlocked');
     weeklyBadgeSlot.classList.add(`badge-theme-${state.megaWeeks + 1}`);
     rewardSelectContainer.classList.add('earned');
   } else {
-    weeklyBadgeSlot.innerHTML = `<div class="badge-placeholder">?</div>`;
+    const badgeId = state.activeWeeklyBadgeId;
+    const badgeName = getPokemonName(badgeId);
+    if (badgeId) {
+      weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="Who's that Pokémon?" class="mega-slot-img silhouette">`;
+    } else {
+      weeklyBadgeSlot.innerHTML = `<div class="badge-placeholder">?</div>`;
+    }
     weeklyBadgeSlot.classList.remove('unlocked');
     weeklyBadgeSlot.classList.add('locked');
     rewardSelectContainer.classList.remove('earned');
@@ -1507,13 +1571,29 @@ function renderProgress() {
 
   megaWeeksCountEl.textContent = `${state.weeklyClaimed ? Math.min(4, state.megaWeeks + 1) : state.megaWeeks}`;
   megaSlots.forEach((slot, index) => {
-    const pkmn = MEGA_POKEMON[index];
     const isUnlocked = index < state.megaWeeks || (index === state.megaWeeks && state.weeklyClaimed);
     
     slot.classList.remove(`badge-theme-${index + 1}`);
     
     if (isUnlocked) {
-      slot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png" alt="${pkmn.name}" class="mega-slot-img ${index === state.megaWeeks && state.weeklyClaimed ? 'animate-pop' : ''}">`;
+      let badgeId;
+      let badgeName;
+      
+      if (index < state.megaWeeks) {
+        const historyIndex = state.collectedBadges.length - state.megaWeeks + index;
+        const badge = state.collectedBadges[historyIndex];
+        badgeId = badge ? badge.id : null;
+        badgeName = badge ? badge.name : '';
+      } else {
+        badgeId = state.activeWeeklyBadgeId;
+        badgeName = getPokemonName(badgeId);
+      }
+      
+      if (badgeId) {
+        slot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="${badgeName}" class="mega-slot-img ${index === state.megaWeeks && state.weeklyClaimed ? 'animate-pop' : ''}">`;
+      } else {
+        slot.innerHTML = `<div class="badge-placeholder">?</div>`;
+      }
       slot.classList.add('unlocked');
       slot.classList.add(`badge-theme-${index + 1}`);
     } else {
@@ -1594,16 +1674,19 @@ if (location.search.includes('runTests=true')) {
       renderState(true);
     },
     renderState: (rebuildGrid) => renderState(rebuildGrid),
-    ADMIN_PASSWORD: ADMIN_PASSWORD
+    ADMIN_PASSWORD: ADMIN_PASSWORD,
+    resetWeekGrid: () => resetWeekGrid(),
+    renderBadgeCaseGrid: () => renderBadgeCaseGrid(),
+    loadState: () => loadState()
   };
   
   const script = document.createElement('script');
   script.type = 'module';
-  script.src = 'tests.js';
+  script.src = 'tests.js?v=' + Date.now();
   document.body.appendChild(script);
 }
 
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && !location.search.includes('headless=true')) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./service-worker.js')
       .then(reg => console.log('Service Worker registered successfully.', reg.scope))

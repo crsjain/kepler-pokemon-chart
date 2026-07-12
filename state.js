@@ -1,3 +1,5 @@
+import { TIER_1_IDS, TIER_2_IDS, getPokemonName } from './pokemon_data.js';
+
 export const ADMIN_PASSWORD = "zxcv";
 export const DAYS = [0, 1, 2, 3, 4, 5, 6];
 export const XP_LEVEL_THRESHOLD = 100;
@@ -111,9 +113,9 @@ export function getSunday(d) {
   return sunday;
 }
 
-// State V9 (Dynamic Tasks, Reward History, Volume, Claimed Rewards History, weekStartDate, starVault)
+// State V10 (Badge Collection)
 export let state = {
-  version: 9,
+  version: 10,
   partnerFamily: '25', // Default Pikachu Family
   partnersData: {
     '25': { level: 1, xp: 0, stageId: '25' },
@@ -144,7 +146,10 @@ export let state = {
   starVault: {
     earnedDates: [],
     totalTraded: 0
-  }
+  },
+  collectedBadges: [],
+  badgePool: TIER_1_IDS.filter(id => id !== 25),
+  activeWeeklyBadgeId: 25
 };
 
 // Storage Keys
@@ -274,6 +279,47 @@ export function loadState() {
           state.version = 9;
           saveState();
         }
+
+        // Migration from V9 to V10 (Badge Collection)
+        if (state.version === 9) {
+          console.log("MIGRATING V9 to V10: megaWeeks =", state.megaWeeks);
+          state.collectedBadges = [];
+          state.badgePool = [...TIER_1_IDS];
+          
+          // Migrate previously completed weeks in current or past cycles to actual badges
+          const historicalMegaPokemon = [
+            { id: 658, name: "Greninja", weekNum: 1 },
+            { id: 382, name: "Kyogre", weekNum: 2 },
+            { id: 249, name: "Lugia", weekNum: 3 },
+            { id: 384, name: "Rayquaza", weekNum: 4 }
+          ];
+          
+          const history = state.claimedRewardsHistory || [];
+          const wasWeekCompleted = (weekNum) => {
+            if (state.megaWeeks >= weekNum) return true;
+            return history.some(h => h.type === 'weekly' && h.weekNumber === weekNum);
+          };
+          
+          historicalMegaPokemon.forEach(pkmn => {
+            if (wasWeekCompleted(pkmn.weekNum)) {
+              const alreadyEarned = state.collectedBadges.some(b => b.id === pkmn.id);
+              if (!alreadyEarned) {
+                state.collectedBadges.push({
+                  id: pkmn.id,
+                  name: pkmn.name,
+                  dateEarned: new Date().toISOString()
+                });
+              }
+              state.badgePool = state.badgePool.filter(id => id !== pkmn.id);
+            }
+          });
+          
+          // Roll initial badge
+          const randomIndex = Math.floor(Math.random() * state.badgePool.length);
+          state.activeWeeklyBadgeId = state.badgePool.splice(randomIndex, 1)[0];
+          state.version = 10;
+          saveState();
+        }
         
         if (!state.grid || typeof state.grid !== 'object') {
           state.grid = {};
@@ -292,7 +338,7 @@ export function updateState(newState) {
 
 export function resetStateToDefault() {
   state = {
-    version: 9,
+    version: 10,
     partnerFamily: '25',
     partnersData: {
       '25': { level: 1, xp: 0, stageId: '25' },
@@ -323,8 +369,14 @@ export function resetStateToDefault() {
     starVault: {
       earnedDates: [],
       totalTraded: 0
-    }
+    },
+    collectedBadges: [],
+    badgePool: [...TIER_1_IDS],
+    activeWeeklyBadgeId: null
   };
+  // Roll initial badge
+  const randomIndex = Math.floor(Math.random() * state.badgePool.length);
+  state.activeWeeklyBadgeId = state.badgePool.splice(randomIndex, 1)[0];
   saveState();
 }
 
@@ -488,10 +540,27 @@ export function runStateDiagnostics() {
     }
   }
 
-  if (state.version !== 9) {
-    issues.push(`State version mismatch. Current: ${state.version}, Expected: 9`);
-    state.version = 9;
-    fixed.push("Forced state version to 9.");
+  // V10 Badge Validation
+  if (!state.collectedBadges || !Array.isArray(state.collectedBadges)) {
+    state.collectedBadges = [];
+    issues.push("Missing or invalid collectedBadges.");
+    fixed.push("Initialized empty collectedBadges.");
+  }
+  if (!state.badgePool || !Array.isArray(state.badgePool)) {
+    state.badgePool = [...TIER_1_IDS];
+    issues.push("Missing or invalid badgePool.");
+    fixed.push("Reset badgePool to Tier 1 IDs.");
+  }
+  if (state.activeWeeklyBadgeId === undefined || state.activeWeeklyBadgeId === null) {
+    state.activeWeeklyBadgeId = 25; // Default Pikachu
+    issues.push("Missing activeWeeklyBadgeId.");
+    fixed.push("Set activeWeeklyBadgeId to default 25.");
+  }
+
+  if (state.version !== 10) {
+    issues.push(`State version mismatch. Current: ${state.version}, Expected: 10`);
+    state.version = 10;
+    fixed.push("Forced state version to 10.");
   }
 
   if (fixed.length > 0) {
@@ -500,3 +569,48 @@ export function runStateDiagnostics() {
 
   return { issues, fixed };
 }
+
+// Badge Roller and Pool Expansion Logic
+export function rollNewWeeklyBadge() {
+  if (!state.badgePool || state.badgePool.length < 5) {
+    expandBadgePool();
+  }
+  if (state.badgePool.length === 0) {
+    // Fallback if somehow still empty
+    state.activeWeeklyBadgeId = 25; // Default back to Pikachu
+    saveState();
+    return;
+  }
+  const randomIndex = Math.floor(Math.random() * state.badgePool.length);
+  state.activeWeeklyBadgeId = state.badgePool.splice(randomIndex, 1)[0];
+  saveState();
+}
+
+function expandBadgePool() {
+  const collectedIds = new Set((state.collectedBadges || []).map(b => b.id));
+  
+  // Try Tier 2 first
+  const tier2Available = TIER_2_IDS.filter(id => !collectedIds.has(id));
+  
+  if (tier2Available.length > 0) {
+    state.badgePool = [...(state.badgePool || []), ...tier2Available];
+    console.log(`Expanded badge pool with ${tier2Available.length} Tier 2 Pokémon.`);
+  } else {
+    // Fallback to random Gen 1-8 (1 to 898)
+    const newBatch = [];
+    while (newBatch.length < 50) {
+      const randomId = Math.floor(Math.random() * 898) + 1;
+      if (!collectedIds.has(randomId) && !newBatch.includes(randomId)) {
+        newBatch.push(randomId);
+      }
+      // Infinite loop guard (if they collected almost all 898)
+      if (collectedIds.size + newBatch.length >= 898) {
+        break;
+      }
+    }
+    state.badgePool = [...(state.badgePool || []), ...newBatch];
+    console.log(`Expanded badge pool with ${newBatch.length} random Pokémon.`);
+  }
+  saveState();
+}
+
