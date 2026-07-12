@@ -164,161 +164,185 @@ export function saveState() {
   }
 }
 
+const MIGRATIONS = [
+  {
+    version: 3,
+    migrate: (s) => {
+      s.partnerFamily = s.partnerId || '25';
+      s.partnersData = {
+        '25': { level: 1, xp: 0 },
+        '4': { level: 1, xp: 0 },
+        '1': { level: 1, xp: 0 },
+        '7': { level: 1, xp: 0 },
+        '133': { level: 1, xp: 0 }
+      };
+      if (s.partnersData[s.partnerFamily]) {
+        s.partnersData[s.partnerFamily].level = s.level || 1;
+        s.partnersData[s.partnerFamily].xp = s.xp || 0;
+      }
+      delete s.level;
+      delete s.xp;
+      delete s.partnerId;
+      delete s.partnerName;
+      return s;
+    }
+  },
+  {
+    version: 4,
+    migrate: (s) => {
+      if (s.partnersData && s.partnersData['133']) {
+        s.partnersData['133'].evolvedId = null;
+      }
+      return s;
+    }
+  },
+  {
+    version: 5,
+    migrate: (s) => {
+      const families = ['25', '4', '1', '7', '133'];
+      families.forEach(fid => {
+        if (s.partnersData && s.partnersData[fid]) {
+          if (fid === '133') {
+            s.partnersData[fid].stageId = s.partnersData[fid].evolvedId || '133';
+            delete s.partnersData[fid].evolvedId;
+          } else {
+            const lvl = s.partnersData[fid].level || 1;
+            const evo = EVOLUTIONS[fid];
+            let index = 0;
+            if (evo) {
+              for (let i = 1; i < evo.stages.length; i++) {
+                if (lvl >= evo.stages[i].level) {
+                  index = i;
+                } else {
+                  break;
+                }
+              }
+            }
+            s.partnersData[fid].stageId = evo ? evo.stages[index].id : fid;
+          }
+        }
+      });
+      return s;
+    }
+  },
+  {
+    version: 6,
+    migrate: (s) => {
+      s.debugSidebarEnabled = false;
+      return s;
+    }
+  },
+  {
+    version: 7,
+    migrate: (s) => {
+      s.tasks = [
+        { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!' },
+        { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1' },
+        { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!' },
+        { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery' },
+        { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!' }
+      ];
+      s.rewardHistory = [];
+      s.megaRewardHistory = [];
+      s.volume = 50;
+      return s;
+    }
+  },
+  {
+    version: 8,
+    migrate: (s) => {
+      s.claimedRewardsHistory = [];
+      return s;
+    }
+  },
+  {
+    version: 9,
+    migrate: (s) => {
+      s.weekStartDate = getSunday(new Date()).toISOString().split('T')[0];
+      s.starVault = {
+        earnedDates: [],
+        totalTraded: 0
+      };
+      return s;
+    }
+  },
+  {
+    version: 10,
+    migrate: (s) => {
+      console.log("MIGRATING V9 to V10: megaWeeks =", s.megaWeeks);
+      s.collectedBadges = [];
+      s.badgePool = [...TIER_1_IDS];
+      
+      const historicalMegaPokemon = [
+        { id: 658, name: "Greninja", weekNum: 1 },
+        { id: 382, name: "Kyogre", weekNum: 2 },
+        { id: 249, name: "Lugia", weekNum: 3 },
+        { id: 384, name: "Rayquaza", weekNum: 4 }
+      ];
+      
+      const history = s.claimedRewardsHistory || [];
+      const wasWeekCompleted = (weekNum) => {
+        if (s.megaWeeks >= weekNum) return true;
+        return history.some(h => h.type === 'weekly' && h.weekNumber === weekNum);
+      };
+      
+      historicalMegaPokemon.forEach(pkmn => {
+        if (wasWeekCompleted(pkmn.weekNum)) {
+          const alreadyEarned = s.collectedBadges.some(b => b.id === pkmn.id);
+          if (!alreadyEarned) {
+            s.collectedBadges.push({
+              id: pkmn.id,
+              name: pkmn.name,
+              dateEarned: new Date().toISOString()
+            });
+          }
+          s.badgePool = s.badgePool.filter(id => id !== pkmn.id);
+        }
+      });
+      
+      const randomIndex = Math.floor(Math.random() * s.badgePool.length);
+      s.activeWeeklyBadgeId = s.badgePool.splice(randomIndex, 1)[0];
+      return s;
+    }
+  }
+];
+
 export function loadState() {
   try {
     const savedState = localStorage.getItem(STATE_KEY);
     if (savedState) {
       const parsed = JSON.parse(savedState);
       if (parsed && typeof parsed === 'object') {
-        // Merge parsed state into default template to ensure keys exist
-        state = { ...state, ...parsed };
+        let currentVersion = parsed.version;
+        if (currentVersion === undefined) {
+          currentVersion = parsed.partnerFamily ? 3 : 2;
+        }
+
+        let migratedState = { ...parsed };
         
+        MIGRATIONS.forEach(m => {
+          if (currentVersion < m.version) {
+            console.log(`Migrating state from v${currentVersion} to v${m.version}...`);
+            migratedState = m.migrate(migratedState);
+            migratedState.version = m.version;
+            currentVersion = m.version;
+          }
+        });
+
+        // Merge migrated state into template default to guarantee key structure
+        state = { ...state, ...migratedState };
+
         if (state.activeDay === undefined) {
           state.activeDay = new Date().getDay();
         }
         
-        // Migration from V2 to V3
-        if (!state.partnerFamily) {
-          state.partnerFamily = state.partnerId || '25';
-          state.partnersData = {
-            '25': { level: 1, xp: 0 },
-            '4': { level: 1, xp: 0 },
-            '1': { level: 1, xp: 0 },
-            '7': { level: 1, xp: 0 },
-            '133': { level: 1, xp: 0 }
-          };
-          // Transfer old level and xp to current family
-          if (state.partnersData[state.partnerFamily]) {
-            state.partnersData[state.partnerFamily].level = state.level || 1;
-            state.partnersData[state.partnerFamily].xp = state.xp || 0;
-          }
-          // Clean up old values
-          delete state.level;
-          delete state.xp;
-          delete state.partnerId;
-          delete state.partnerName;
-          state.version = 3;
-          saveState(); // Save migrated state immediately
-        }
-
-        // Migration from V3 to V4 (Eevee evolvedId)
-        if (state.version === 3) {
-          if (state.partnersData['133']) {
-            state.partnersData['133'].evolvedId = null;
-          }
-          state.version = 4;
-          saveState();
-        }
-
-        // Migration from V4 to V5 (stageId for all, no devolution)
-        if (state.version === 4) {
-          const families = ['25', '4', '1', '7', '133'];
-          families.forEach(fid => {
-            if (state.partnersData[fid]) {
-              if (fid === '133') {
-                state.partnersData[fid].stageId = state.partnersData[fid].evolvedId || '133';
-                delete state.partnersData[fid].evolvedId;
-              } else {
-                const lvl = state.partnersData[fid].level || 1;
-                const evo = EVOLUTIONS[fid];
-                let index = 0;
-                if (evo) {
-                  for (let i = 1; i < evo.stages.length; i++) {
-                    if (lvl >= evo.stages[i].level) {
-                      index = i;
-                    } else {
-                      break;
-                    }
-                  }
-                }
-                state.partnersData[fid].stageId = evo ? evo.stages[index].id : fid;
-              }
-            }
-          });
-          state.version = 5;
-          saveState();
-        }
-
-        // Migration from V5 to V6 (Debug Sidebar Toggle)
-        if (state.version === 5) {
-          state.debugSidebarEnabled = false;
-          state.version = 6;
-          saveState();
-        }
-
-        // Migration from V6 to V7 (Dynamic Tasks, Reward History, Volume)
-        if (state.version === 6) {
-          state.tasks = [
-            { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!' },
-            { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1' },
-            { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!' },
-            { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery' },
-            { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!' }
-          ];
-          state.rewardHistory = [];
-          state.megaRewardHistory = [];
-          state.volume = 50;
-          state.version = 7;
-          saveState();
-        }
+        const versionChanged = (migratedState.version !== parsed.version);
         
-        // Migration from V7 to V8 (Claimed Rewards History)
-        if (state.version === 7) {
-          state.claimedRewardsHistory = [];
-          state.version = 8;
+        // Auto-diagnostics and self-healing on load
+        const { fixed } = runStateDiagnostics();
+        if (fixed.length > 0 || versionChanged) {
           saveState();
-        }
-
-        // Migration from V8 to V9 (Week Start Date, Star Vault)
-        if (state.version === 8) {
-          state.weekStartDate = getSunday(new Date()).toISOString().split('T')[0];
-          state.starVault = {
-            earnedDates: [],
-            totalTraded: 0
-          };
-          state.version = 9;
-          saveState();
-        }
-
-        // Migration from V9 to V10 (Badge Collection)
-        if (state.version === 9) {
-          console.log("MIGRATING V9 to V10: megaWeeks =", state.megaWeeks);
-          state.collectedBadges = [];
-          state.badgePool = [...TIER_1_IDS];
-          
-          // Migrate previously completed weeks in current or past cycles to actual badges
-          const historicalMegaPokemon = [
-            { id: 658, name: "Greninja", weekNum: 1 },
-            { id: 382, name: "Kyogre", weekNum: 2 },
-            { id: 249, name: "Lugia", weekNum: 3 },
-            { id: 384, name: "Rayquaza", weekNum: 4 }
-          ];
-          
-          const history = state.claimedRewardsHistory || [];
-          const wasWeekCompleted = (weekNum) => {
-            if (state.megaWeeks >= weekNum) return true;
-            return history.some(h => h.type === 'weekly' && h.weekNumber === weekNum);
-          };
-          
-          historicalMegaPokemon.forEach(pkmn => {
-            if (wasWeekCompleted(pkmn.weekNum)) {
-              const alreadyEarned = state.collectedBadges.some(b => b.id === pkmn.id);
-              if (!alreadyEarned) {
-                state.collectedBadges.push({
-                  id: pkmn.id,
-                  name: pkmn.name,
-                  dateEarned: new Date().toISOString()
-                });
-              }
-              state.badgePool = state.badgePool.filter(id => id !== pkmn.id);
-            }
-          });
-          
-          // Roll initial badge
-          const randomIndex = Math.floor(Math.random() * state.badgePool.length);
-          state.activeWeeklyBadgeId = state.badgePool.splice(randomIndex, 1)[0];
-          state.version = 10;
-          saveState();
+          console.log(`Auto-saved migrated/healed state. Fixed issues: ${fixed.length}`);
         }
         
         if (!state.grid || typeof state.grid !== 'object') {

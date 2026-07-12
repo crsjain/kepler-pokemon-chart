@@ -1149,6 +1149,10 @@ input:checked + .slider:before {
 }
 
 /* Confirm Modal Styles */
+#confirm-modal {
+  z-index: 120000;
+}
+
 .confirm-content {
   border: 4px solid var(--poke-blue);
   background: radial-gradient(circle, #ffffff 0%, #f0f4ff 100%);

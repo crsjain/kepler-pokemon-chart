@@ -19,12 +19,13 @@ import {
   rollNewWeeklyBadge
 } from './state.js';
 
-const APP_VERSION = 'v1.3.0 (v18)';
+const APP_VERSION = 'v1.3.1 (v20)';
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault } from './vault.js';
 import { getPokemonName, TIER_1_IDS, TIER_2_IDS } from './pokemon_data.js';
 import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
+import { initAdmin } from './admin.js';
 
 // DOM Elements
 const pokemonSprite = document.getElementById('pokemon-sprite');
@@ -106,6 +107,11 @@ let gridRebuildCount = 0;
 loadState();
 initVault();
 initBadgeCase();
+initAdmin({
+  renderState,
+  showCustomConfirm,
+  showCustomNotification
+});
 preloadImages();
 renderState(true);
 setupEventListeners();
@@ -150,7 +156,7 @@ function preloadImages() {
   });
 }
 
-function showCustomConfirm(title, message, onYesCallback, onNoCallback, yesLabel = "Let's Go! 🚀", noLabel = "Not Yet", yesClass = "pixel-btn info", noClass = "pixel-btn") {
+export function showCustomConfirm(title, message, onYesCallback, onNoCallback, yesLabel = "Let's Go! 🚀", noLabel = "Not Yet", yesClass = "pixel-btn info", noClass = "pixel-btn") {
   if (!confirmModal || !confirmTitle || !confirmMessage || !confirmYesBtn || !confirmNoBtn) {
     if (confirm(message)) {
       onYesCallback();
@@ -173,24 +179,38 @@ function showCustomConfirm(title, message, onYesCallback, onNoCallback, yesLabel
   
   confirmModal.classList.remove('hidden');
   
-  confirmYesBtn.onclick = () => {
-    confirmModal.classList.add('hidden');
+  const cleanUpConfirm = () => {
     confirmYesBtn.onclick = null;
     confirmNoBtn.onclick = null;
+    confirmModal.onclick = null;
+  };
+  
+  confirmYesBtn.onclick = () => {
+    confirmModal.classList.add('hidden');
+    cleanUpConfirm();
     if (onYesCallback) onYesCallback();
   };
   
   confirmNoBtn.onclick = () => {
     confirmModal.classList.add('hidden');
-    confirmYesBtn.onclick = null;
-    confirmNoBtn.onclick = null;
+    cleanUpConfirm();
     if (onNoCallback && typeof onNoCallback === 'function') {
       onNoCallback();
     }
   };
+  
+  confirmModal.onclick = (e) => {
+    if (e.target === confirmModal) {
+      confirmModal.classList.add('hidden');
+      cleanUpConfirm();
+      if (onNoCallback && typeof onNoCallback === 'function') {
+        onNoCallback();
+      }
+    }
+  };
 }
 
-function showCustomNotification(title, message, imageUrl = null, isMega = false, callback = null, extraClass = '') {
+export function showCustomNotification(title, message, imageUrl = null, isMega = false, callback = null, extraClass = '') {
   const notifModal = document.createElement('div');
   notifModal.className = `modal notif-modal ${isMega ? 'mega-celebration' : ''} ${extraClass}`;
   
@@ -251,108 +271,7 @@ function showCustomNotification(title, message, imageUrl = null, isMega = false,
   });
 }
 
-function renderClaimedRewardsHistory() {
-  const listContainer = document.getElementById('claimed-rewards-history-list');
-  if (!listContainer) return;
-  
-  listContainer.innerHTML = '';
-  const history = state.claimedRewardsHistory || [];
-  
-  if (history.length === 0) {
-    listContainer.innerHTML = '<p class="no-rewards">No rewards claimed yet.</p>';
-    return;
-  }
-  
-  history.forEach(item => {
-    const itemEl = document.createElement('div');
-    itemEl.className = 'reward-history-item';
-    
-    const formattedDate = new Date(item.date).toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-    
-    itemEl.innerHTML = `
-      <div class="reward-history-name ${item.type === 'mega' ? 'mega' : ''}">
-        <span class="reward-emoji">${item.type === 'mega' ? '👑' : '🎁'}</span>
-        <span class="reward-text">${item.reward}</span>
-      </div>
-      <div class="reward-history-meta">
-        ${formattedDate} • Week ${item.weekNumber} • ${item.partner} (LV ${item.level})
-      </div>
-    `;
-    listContainer.appendChild(itemEl);
-  });
-}
-
-function renderBackupHistory() {
-  const listContainer = document.getElementById('backup-history-list');
-  if (!listContainer) return;
-  
-  listContainer.innerHTML = '';
-  
-  const history = getBackupHistory().slice(0, 2);
-  if (history.length === 0) {
-    listContainer.innerHTML = '<p class="no-backups">No backups available yet.</p>';
-    return;
-  }
-  
-  history.forEach((backup, idx) => {
-    const backupEl = document.createElement('div');
-    backupEl.className = 'backup-item';
-    
-    const dateStr = new Date(backup.timestamp).toLocaleString(undefined, {
-      month: 'numeric',
-      day: 'numeric',
-      year: '2-digit',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-    const family = backup.state.partnerFamily || '25';
-    const stats = backup.state.partnersData[family] || { level: 1 };
-    const stageInfo = getStageInfo(family, stats.stageId || family);
-    const partnerName = stageInfo.currentStage.name;
-    const completedWeeks = backup.state.megaWeeks || 0;
-    
-    backupEl.innerHTML = `
-      <div class="backup-info">
-        <span class="backup-details">${partnerName} (LV ${stats.level}) • Week ${completedWeeks + 1}</span>
-        <span class="backup-date">${dateStr}</span>
-      </div>
-      <button class="pixel-btn info small restore-backup-btn" data-index="${idx}">Restore</button>
-    `;
-    listContainer.appendChild(backupEl);
-  });
-  
-  // Attach listeners
-  listContainer.querySelectorAll('.restore-backup-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const idx = parseInt(e.currentTarget.dataset.index);
-      restoreBackupFromHistory(idx);
-    });
-  });
-}
-
-function restoreBackupFromHistory(index) {
-  const history = getBackupHistory();
-  const backup = history[index];
-  
-  if (backup) {
-    showCustomConfirm(
-      "Restore Backup? 📋",
-      `Restore progress from ${new Date(backup.timestamp).toLocaleString()}? Current progress will be overwritten.`,
-      () => {
-        if (applyBackup(index)) {
-          renderState(true);
-          alert("Restored successfully!");
-          adminModal.classList.add('hidden');
-        }
-      }
-    );
-  }
-}
+// Admin panel rendering methods moved to admin.js
 
 export function renderState(rebuildGrid = false) {
   const family = state.partnerFamily || '25';
@@ -578,8 +497,6 @@ function renderGridTable() {
     const key = `${input.dataset.day}-${input.dataset.task}`;
     domCache.checkboxes[key] = input;
   });
-  
-  setupCheckboxListeners();
 
   const openVaultBtn = tbody.querySelector('#open-vault-btn');
   if (openVaultBtn) {
@@ -587,13 +504,6 @@ function renderGridTable() {
   }
 
   renderProgress();
-}
-
-function setupCheckboxListeners() {
-  const cbs = document.querySelectorAll('.pokeball-checkbox input');
-  cbs.forEach(cb => {
-    cb.addEventListener('change', handleCheckboxChange);
-  });
 }
 
 function handleCheckboxChange(e) {
@@ -669,7 +579,7 @@ function handleCheckboxChange(e) {
   renderState(false);
 }
 
-function renderRewardDropdowns() {
+export function renderRewardDropdowns() {
   const weeklyGroup = rewardSelect.querySelector('.recent-rewards-group');
   if (weeklyGroup) {
     weeklyGroup.innerHTML = '';
@@ -715,168 +625,6 @@ function addRewardToHistory(reward, type) {
   }
 }
 
-function renderAdminTasksList() {
-  const container = document.getElementById('admin-tasks-list');
-  if (!container) return;
-  
-  container.innerHTML = '';
-  const tasks = state.tasks || [];
-  
-  tasks.forEach((task, idx) => {
-    const item = document.createElement('div');
-    item.className = 'admin-task-item';
-    item.dataset.index = idx;
-    
-    item.innerHTML = `
-      <select class="task-emoji-select">
-        <option value="🎹" ${task.emoji === '🎹' ? 'selected' : ''}>🎹</option>
-        <option value="🧮" ${task.emoji === '🧮' ? 'selected' : ''}>🧮</option>
-        <option value="📚" ${task.emoji === '📚' ? 'selected' : ''}>📚</option>
-        <option value="✏️" ${task.emoji === '✏️' ? 'selected' : ''}>✏️</option>
-        <option value="💮" ${task.emoji === '💮' ? 'selected' : ''}>💮</option>
-        <option value="🧪" ${task.emoji === '🧪' ? 'selected' : ''}>🧪</option>
-        <option value="🎨" ${task.emoji === '🎨' ? 'selected' : ''}>🎨</option>
-        <option value="🏃" ${task.emoji === '🏃' ? 'selected' : ''}>🏃</option>
-        <option value="🧹" ${task.emoji === '🧹' ? 'selected' : ''}>🧹</option>
-        <option value="🥦" ${task.emoji === '🥦' ? 'selected' : ''}>🥦</option>
-        <option value="📝" ${task.emoji === '📝' ? 'selected' : ''}>📝</option>
-      </select>
-      <input type="text" class="task-name-input" value="${task.name}">
-      <div class="task-goal-container">
-        <span class="task-goal-label">Goal:</span>
-        <input type="number" class="task-req-input" value="${task.req || 5}" min="1" max="7">
-      </div>
-      <button class="pixel-btn danger remove-task-btn" data-index="${idx}">
-        <svg class="delete-icon" viewBox="0 0 448 512" fill="white" xmlns="http://www.w3.org/2000/svg">
-          <path d="M135.2 17.7C140.6 6.8 151.7 0 163.8 0H284.2C296.3 0 307.4 6.8 312.8 17.7L320 32H384C401.7 32 416 46.3 416 64C416 81.7 401.7 96 384 96H64C46.3 96 32 81.7 32 64C32 46.3 46.3 32 64 32H128L135.2 17.7zM32 128H416V448C416 483.3 387.3 512 352 512H96C60.7 512 32 483.3 32 448V128zM96 176C96 162.7 85.3 152 72 152C58.7 152 48 162.7 48 176V408C48 421.3 58.7 432 72 432C85.3 432 96 421.3 96 408V176z"/>
-        </svg>
-      </button>
-    `;
-    container.appendChild(item);
-  });
-  
-  container.querySelectorAll('.remove-task-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const idx = parseInt(e.currentTarget.dataset.index);
-      removeTask(idx);
-    });
-  });
-}
-
-function removeTask(index) {
-  if (!state.tasks) return;
-  const taskToRemove = state.tasks[index];
-  if (confirm(`Remove task "${taskToRemove.name}"? This will delete all checked history for this task.`)) {
-    DAYS.forEach(day => {
-      delete state.grid[`${day}-${taskToRemove.id}`];
-    });
-    state.tasks.splice(index, 1);
-    renderAdminTasksList();
-  }
-}
-
-function addNewTask() {
-  if (!state.tasks) state.tasks = [];
-  const newId = `task_${Date.now()}`;
-  state.tasks.push({
-    id: newId,
-    name: 'New Activity',
-    req: 5,
-    emoji: '📝',
-    concept: 'Keep practicing!'
-  });
-  renderAdminTasksList();
-}
-
-function saveAdminTasks() {
-  const container = document.getElementById('admin-tasks-list');
-  if (!container) return;
-  
-  const items = container.querySelectorAll('.admin-task-item');
-  let hasError = false;
-  
-  items.forEach(item => {
-    const idx = parseInt(item.dataset.index);
-    const emoji = item.querySelector('.task-emoji-select').value;
-    const name = item.querySelector('.task-name-input').value.trim();
-    const req = parseInt(item.querySelector('.task-req-input').value);
-    
-    if (!name) {
-      alert("Activity name cannot be empty!");
-      hasError = true;
-      return;
-    }
-    
-    if (isNaN(req) || req < 1 || req > 7) {
-      alert("Goal days must be between 1 and 7!");
-      hasError = true;
-      return;
-    }
-    
-    state.tasks[idx].emoji = emoji;
-    state.tasks[idx].name = name;
-    state.tasks[idx].req = req;
-  });
-  
-  if (!hasError) {
-    saveState();
-    renderState(true);
-    alert("Activities saved successfully!");
-  }
-}
-
-
-
-function exportState() {
-  const stateStr = JSON.stringify(state);
-  navigator.clipboard.writeText(stateStr).then(() => {
-    showCustomNotification("EXPORT SUCCESS 📋", "Trainer progress copied to clipboard! Save this code somewhere safe.");
-  }).catch(err => {
-    prompt("Could not auto-copy. Please copy this backup code manually:", stateStr);
-  });
-}
-
-function importState() {
-  const code = prompt("Paste your Trainer backup code here:");
-  if (!code) return;
-
-  try {
-    const parsed = JSON.parse(code);
-    if (parsed && typeof parsed === 'object') {
-      if ((parsed.level !== undefined || parsed.partnersData !== undefined) && parsed.grid !== undefined) {
-        showCustomConfirm(
-          "Restore Backup? ⚠️",
-          "Are you sure you want to restore this backup? It will overwrite current progress!",
-          () => {
-            state.partnerFamily = parsed.partnerFamily || '25';
-            state.partnersData = parsed.partnersData || state.partnersData;
-            state.grid = parsed.grid || {};
-            state.tasks = parsed.tasks || state.tasks;
-            state.reward = parsed.reward || '';
-            state.megaReward = parsed.megaReward || '';
-            state.megaWeeks = parsed.megaWeeks || 0;
-            state.weeklyClaimed = parsed.weeklyClaimed || false;
-            state.claimedRewardsHistory = parsed.claimedRewardsHistory || [];
-            
-            saveState();
-            loadState();
-            renderState(true);
-            showCustomNotification("RESTORE SUCCESS", "Trainer progress restored successfully!");
-            adminModal.classList.add('hidden');
-          }
-        );
-      } else {
-        showCustomNotification("IMPORT ERROR", "Invalid backup code! Make sure you copied the entire code.");
-      }
-    } else {
-      showCustomNotification("IMPORT ERROR", "Invalid backup code format!");
-    }
-  } catch (e) {
-    console.error("Error importing state:", e);
-    showCustomNotification("IMPORT ERROR", "Failed to parse the backup code. Make sure it is copied correctly.");
-  }
-}
-
 function renderPartnerSelector() {
   const container = partnerOptionsContainer;
   if (!container) return;
@@ -912,6 +660,15 @@ function renderPartnerSelector() {
 }
 
 function setupEventListeners() {
+  const tbody = document.getElementById('grid-tbody');
+  if (tbody) {
+    tbody.addEventListener('change', (e) => {
+      if (e.target.matches('.pokeball-checkbox input')) {
+        handleCheckboxChange(e);
+      }
+    });
+  }
+
   rewardSelect.addEventListener('change', () => {
     state.reward = rewardSelect.value;
     addRewardToHistory(state.reward, 'weekly');
@@ -987,139 +744,28 @@ function setupEventListeners() {
     });
   });
 
-  if (adminBtn) {
-    adminBtn.addEventListener('click', () => {
-      passwordInput.value = '';
-      passwordError.classList.add('hidden');
-      passwordModal.classList.remove('hidden');
-      setTimeout(() => passwordInput.focus(), 50);
-    });
-  }
-
-  function handlePasswordSubmit() {
-    const password = passwordInput.value;
-    if (password === ADMIN_PASSWORD) {
-      passwordModal.classList.add('hidden');
-      adminModal.classList.remove('hidden');
-      renderBackupHistory();
-      renderAdminTasksList();
-      renderClaimedRewardsHistory();
-
-    } else {
-      passwordError.classList.remove('hidden');
-      passwordInput.value = '';
-      passwordInput.focus();
-    }
-  }
-
-  if (passwordSubmitBtn) {
-    passwordSubmitBtn.addEventListener('click', handlePasswordSubmit);
-  }
-
-  if (passwordCancelBtn) {
-    passwordCancelBtn.addEventListener('click', () => {
-      passwordModal.classList.add('hidden');
-    });
-  }
-
-  if (passwordInput) {
-    passwordInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        handlePasswordSubmit();
-      } else if (e.key === 'Escape') {
-        passwordModal.classList.add('hidden');
-      }
-    });
-  }
-
-  closeAdminModalBtn.addEventListener('click', () => {
-    adminModal.classList.add('hidden');
-  });
-
-  if (adminModal) {
-    adminModal.addEventListener('click', (e) => {
-      if (e.target === adminModal) {
-        adminModal.classList.add('hidden');
-      }
-    });
-  }
-
-  if (adminDiagnosticsBtn) {
-    adminDiagnosticsBtn.addEventListener('click', () => {
-      const { issues, fixed } = runStateDiagnostics();
-      if (fixed.length > 0) {
-        renderState(true);
-      }
-      
-      const issueList = issues.map(i => `• ${i}`).join('\n');
-      const fixList = fixed.map(f => `• ${f}`).join('\n');
-      
-      showCustomNotification(
-        "🛠️ DIAGNOSTICS COMPLETE 🛠️",
-        fixed.length > 0 
-          ? `Diagnostics found and fixed ${fixed.length} issues:\n\nISSUES:\n${issueList}\n\nFIXES:\n${fixList}`
-          : `Diagnostics run successfully! State schema is healthy.`,
-        null,
-        false,
-        null
-      );
-    });
-  }
-
-  adminExportBtn.addEventListener('click', () => {
-    exportState();
-  });
-
-  adminImportBtn.addEventListener('click', () => {
-    importState();
-  });
-
-  adminWipeBtn.addEventListener('click', () => {
-    showCustomConfirm(
-      "Wipe Trainer Progress? ⚠️",
-      "Are you sure you want to completely erase Kepler's level, XP, achievements, and rewards?\nThis action cannot be undone!",
-      () => {
-        resetStateToDefault();
-        renderState(true);
-        showCustomNotification("SYSTEM REBOOTED", "System completely rebooted! Good luck, Kepler!");
-        adminModal.classList.add('hidden');
-      }
-    );
-  });
-
-  const adminAddTaskBtn = document.getElementById('admin-add-task-btn');
-  const adminSaveTasksBtn = document.getElementById('admin-save-tasks-btn');
-  if (adminAddTaskBtn) {
-    adminAddTaskBtn.addEventListener('click', addNewTask);
-  }
-  if (adminSaveTasksBtn) {
-    adminSaveTasksBtn.addEventListener('click', saveAdminTasks);
-  }
+  // Admin Panel modal events are handled inside admin.js
 
   testMilestoneMinusOneBtn.addEventListener('click', () => {
     setMilestoneMinusOne();
-    adminModal.classList.add('hidden');
   });
 
   testMegaMinusOneBtn.addEventListener('click', () => {
     setMegaMilestoneMinusOne();
-    adminModal.classList.add('hidden');
   });
 
   testNearEvolveBtn.addEventListener('click', () => {
     setNearEvolution();
-    adminModal.classList.add('hidden');
   });
 
   testNearLevelupBtn.addEventListener('click', () => {
     setNearLevelUp();
-    adminModal.classList.add('hidden');
   });
 
-  testWeek1Btn.addEventListener('click', () => { setWeek(1); adminModal.classList.add('hidden'); });
-  testWeek2Btn.addEventListener('click', () => { setWeek(2); adminModal.classList.add('hidden'); });
-  testWeek3Btn.addEventListener('click', () => { setWeek(3); adminModal.classList.add('hidden'); });
-  testWeek4Btn.addEventListener('click', () => { setWeek(4); adminModal.classList.add('hidden'); });
+  testWeek1Btn.addEventListener('click', () => { setWeek(1); });
+  testWeek2Btn.addEventListener('click', () => { setWeek(2); });
+  testWeek3Btn.addEventListener('click', () => { setWeek(3); });
+  testWeek4Btn.addEventListener('click', () => { setWeek(4); });
 
   const formatLocalDate = (date) => {
     const yyyy = date.getFullYear();
@@ -1310,6 +956,14 @@ function resetWeekGrid() {
   }
 }
 
+function syncVaultStarsWithGrid() {
+  const tasks = state.tasks || [];
+  DAYS.forEach(day => {
+    const allChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${day}-${task.id}`]);
+    checkDayCompleted(day, allChecked);
+  });
+}
+
 function setMilestoneMinusOne() {
   state.grid = {};
   
@@ -1324,6 +978,7 @@ function setMilestoneMinusOne() {
   
   state.weeklyClaimed = false;
   
+  syncVaultStarsWithGrid();
   saveState();
   renderState(true);
 }
@@ -1343,6 +998,7 @@ function setMegaMilestoneMinusOne() {
   
   state.weeklyClaimed = false;
   
+  syncVaultStarsWithGrid();
   saveState();
   renderState(true);
 }
@@ -1387,6 +1043,7 @@ function setWeek(weekNum) {
   if (!state.reward) state.reward = `Week ${weekNum} Reward`;
   if (!state.megaReward) state.megaReward = "Mega Reward";
   
+  syncVaultStarsWithGrid();
   saveState();
   renderState(true);
 }
@@ -1746,7 +1403,8 @@ if (location.search.includes('runTests=true')) {
     ADMIN_PASSWORD: ADMIN_PASSWORD,
     resetWeekGrid: () => resetWeekGrid(),
     renderBadgeCaseGrid: () => renderBadgeCaseGrid(),
-    loadState: () => loadState()
+    loadState: () => loadState(),
+    renderVault: () => renderVault()
   };
   
   const script = document.createElement('script');

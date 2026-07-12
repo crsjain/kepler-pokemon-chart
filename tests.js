@@ -49,7 +49,7 @@ async function runSuite() {
       // Verify Version Indicator
       const versionLabel = document.getElementById('app-version-label');
       assert(versionLabel !== null, "App version indicator should exist");
-      assert(versionLabel.textContent.includes('v1.3.0'), "App version label should display v1.3.0");
+      assert(versionLabel.textContent.includes('v1.3.1'), "App version label should display v1.3.1");
       
       // Select rewards (needed to check boxes)
       const rewardSelect = document.getElementById('reward-select');
@@ -353,6 +353,16 @@ async function runSuite() {
           assert(confirmYesBtn.classList.contains('greyed-out'), "Yes button should have greyed-out class");
           assert(confirmNoBtn.classList.contains('info'), "No button should have primary info class");
           
+          // Test click-outside to dismiss modal with default Keep Today callback
+          confirmModal.click();
+          await sleep(100);
+          assert(confirmModal.classList.contains('hidden'), "Confirm Modal should close on clicking outside overlay");
+          assert(state.activeDay === otherDay1, "Active day should NOT change on clicking outside confirm modal");
+
+          // Re-trigger the modal to continue test
+          header2.click();
+          await sleep(100);
+
           // Confirm switch
           confirmYesBtn.click();
           await sleep(100);
@@ -756,6 +766,59 @@ async function runSuite() {
         assert(!migratedState.badgePool.includes(382), "Kyogre filtered from pool");
         
         // Clean up: Reset state back to default V10
+        window.__test_helpers__.resetState();
+        await sleep(100);
+      }
+
+      // 13. Test Vault Debug Syncing
+      console.log("Running Test Case 13: Vault Debug Syncing...");
+      {
+        // Start with clean default state
+        window.__test_helpers__.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+
+        // Click Milestone -1 Ball button (sets up grid and should sync stars!)
+        const testMilestoneBtn = document.getElementById('test-milestone-minus-one');
+        assert(testMilestoneBtn !== null, "Milestone -1 Ball debug button should exist");
+        testMilestoneBtn.click();
+        await sleep(100);
+
+        // Verify grid has completed columns
+        const tasks = state.tasks || [];
+        // Day 0, 1, 2, 3, 4 should be completed
+        for (let d = 0; d < 5; d++) {
+          const allChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${d}-${task.id}`]);
+          assert(allChecked === true, `Day ${d} should be fully checked after Milestone -1 Ball`);
+          
+          // Total cell should show 🌟
+          const totalCell = document.querySelector(`.day-total-cell[data-day="${d}"] .badge-indicator`);
+          assert(totalCell && totalCell.textContent === '🌟', `Day ${d} total cell should show 🌟`);
+        }
+
+        // Verify stars in vault matches!
+        assert(state.starVault.earnedDates.length === 5, "Star Vault should have 5 earned dates after Milestone -1 click");
+
+        // Verify UI stats in Vault Modal match
+        window.__test_helpers__.renderVault();
+        const statEarned = document.getElementById('vault-stat-earned');
+        const statRemaining = document.getElementById('vault-stat-remaining');
+        assert(statEarned && statEarned.textContent === '5', "Vault stats Earned should show 5");
+        assert(statRemaining && statRemaining.textContent === '5', "Vault stats Remaining should show 5");
+
+        // Now test Set Week W4 button (clears grid, should sync stars to 0 for current week)
+        const testWeek4Btn = document.getElementById('test-week-4');
+        assert(testWeek4Btn !== null, "W4 debug button should exist");
+        testWeek4Btn.click();
+        await sleep(100);
+
+        // Verify grid is empty and no stars for current week are in vault
+        assert(state.starVault.earnedDates.length === 0, "Star Vault should have 0 earned dates after clearing grid");
+        
+        window.__test_helpers__.renderVault();
+        assert(statEarned && statEarned.textContent === '0', "Vault stats Earned should show 0");
+
+        // Clean up
         window.__test_helpers__.resetState();
         await sleep(100);
       }
