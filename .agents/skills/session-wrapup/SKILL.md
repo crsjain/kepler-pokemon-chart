@@ -24,11 +24,16 @@ Review the changes made during the session and update the `README.md` if:
 *   Deprecated features were removed (ensure outdated instructions are cleaned up).
 
 ### 3. Publish to GitHub
-Commit and push all verified changes to the remote repository:
+Commit and push all verified changes to the remote repository, and merge to `main` if the app is hosted on GitHub Pages:
 1. Run `git status` to identify modified and untracked files.
 2. Stage changes: `git add .` (exclude temporary files if any).
 3. Commit with a descriptive message summarizing the session's work: `git commit -m "feat: <summary of work>"`
-4. Push to the active branch (usually `main`): `git push origin <branch>`
+4. Push to the active development branch: `git push origin <branch-name>`
+5. If using GitHub Pages for live hosting, perform the deployment sequence:
+   a. Switch to the main branch: `git checkout main`
+   b. Merge the development branch: `git merge <branch-name>`
+   c. Push the merged main branch: `git push origin main`
+   d. Switch back to the development branch: `git checkout <branch-name>`
 
 ### 4. Create a Progress Checkpoint
 Generate a new checkpoint markdown file to allow the next session to initialize from this exact state.
