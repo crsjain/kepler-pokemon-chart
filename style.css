@@ -2579,13 +2579,13 @@ input:checked + .slider:before {
 /* Unchecked Bonus Pokeball Circle */
 .checkbox-cell.excused-cell input:not(:checked) + .pokeball {
   border: 3px solid #64748b !important; /* Grey border */
-  background: #1e293b !important; /* Dark Slate background */
+  background: white !important;
 }
 
 /* Checked Bonus Pokeball Circle */
 .checkbox-cell.excused-cell input:checked + .pokeball {
   border: 3px solid #eab308 !important; /* Gold border (Yellow 500) */
-  background: #0f172a !important; /* Very dark background */
+  background: white !important;
   box-shadow: 0 0 8px rgba(234, 179, 8, 0.4);
   animation: wiggle 0.4s ease;
 }
