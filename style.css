@@ -2518,3 +2518,56 @@ input:checked + .slider:before {
   }
 }
 
+/* ==========================================================================
+   EXCEPTION EDIT MODE STYLING (V11)
+   ========================================================================== */
+
+/* Exceptions Banner */
+.exceptions-banner {
+  background-color: var(--poke-red);
+  color: white;
+  padding: 10px;
+  text-align: center;
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.9rem;
+  border-bottom: var(--pixel-border);
+  box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: bannerSlideDown 0.3s ease-out;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  border: var(--pixel-border);
+}
+
+@keyframes bannerSlideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Exception Mode Grid State */
+.layout-container.exception-mode .pokeball-checkbox input[type="checkbox"] {
+  pointer-events: none; /* Disable standard checkbox clicking */
+}
+
+/* Excused Cell representation */
+.checkbox-cell.excused-cell {
+  background-color: rgba(226, 232, 240, 0.6); /* Light gray overlay */
+  background-image: linear-gradient(45deg, #cbd5e1 25%, transparent 25%, transparent 75%, #cbd5e1 75%, #cbd5e1),
+                    linear-gradient(45deg, #cbd5e1 25%, transparent 25%, transparent 75%, #cbd5e1 75%, #cbd5e1);
+  background-size: 12px 12px;
+  background-position: 0 0, 6px 6px;
+}
+
+.checkbox-cell.excused-cell .pokeball {
+  filter: grayscale(100%) opacity(40%);
+  border-style: dashed !important;
+}
+
+/* Highlight button active state */
+.pixel-btn.danger.active {
+  background-color: #b91c1c;
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,0.4);
+}
+

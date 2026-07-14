@@ -115,8 +115,9 @@ export function getSunday(d) {
 
 // State V10 (Badge Collection)
 export let state = {
-  version: 10,
+  version: 11,
   partnerFamily: '25', // Default Pikachu Family
+  excused: {}, // key format: "day-task" -> boolean
   partnersData: {
     '25': { level: 1, xp: 0, stageId: '25' },
     '4': { level: 1, xp: 0, stageId: '4' },
@@ -304,6 +305,13 @@ const MIGRATIONS = [
       s.activeWeeklyBadgeId = s.badgePool.splice(randomIndex, 1)[0];
       return s;
     }
+  },
+  {
+    version: 11,
+    migrate: (s) => {
+      s.excused = s.excused || {};
+      return s;
+    }
   }
 ];
 
@@ -362,7 +370,7 @@ export function updateState(newState) {
 
 export function resetStateToDefault() {
   state = {
-    version: 10,
+    version: 11,
     partnerFamily: '25',
     partnersData: {
       '25': { level: 1, xp: 0, stageId: '25' },
@@ -377,6 +385,7 @@ export function resetStateToDefault() {
     weeklyClaimed: false,
     debugSidebarEnabled: false,
     grid: {},
+    excused: {},
     tasks: [
       { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!' },
       { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1' },
@@ -529,6 +538,12 @@ export function runStateDiagnostics() {
     fixed.push("Reset grid to empty.");
   }
 
+  if (!state.excused || typeof state.excused !== 'object') {
+    state.excused = {};
+    issues.push("Excused exceptions was missing or invalid.");
+    fixed.push("Reset excused to empty.");
+  }
+
   if (!state.tasks || !Array.isArray(state.tasks) || state.tasks.length === 0) {
     state.tasks = [
       { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!' },
@@ -608,7 +623,7 @@ export function runStateDiagnostics() {
     const currentWeekDates = DAYS.map(day => getColumnDateStr(state.weekStartDate, day));
     
     DAYS.forEach(day => {
-      const allChecked = state.tasks.every(task => !!state.grid[`${day}-${task.id}`]);
+      const allChecked = state.tasks.every(task => !!state.grid[`${day}-${task.id}`] || !!state.excused[`${day}-${task.id}`]);
       const dateStr = currentWeekDates[day];
       const index = state.starVault.earnedDates.indexOf(dateStr);
       
@@ -647,10 +662,10 @@ export function runStateDiagnostics() {
     fixed.push("Set activeWeeklyBadgeId to default 25.");
   }
 
-  if (state.version !== 10) {
-    issues.push(`State version mismatch. Current: ${state.version}, Expected: 10`);
-    state.version = 10;
-    fixed.push("Forced state version to 10.");
+  if (state.version !== 11) {
+    issues.push(`State version mismatch. Current: ${state.version}, Expected: 11`);
+    state.version = 11;
+    fixed.push("Forced state version to 11.");
   }
 
   if (fixed.length > 0) {

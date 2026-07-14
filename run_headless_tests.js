@@ -18,12 +18,9 @@ async function main() {
     if (fs.existsSync(authFile)) fs.unlinkSync(authFile);
   } catch(e){}
 
-  console.log("Starting Chrome in virtual Xvfb display with fresh profile...");
-  const chrome = spawn('xvfb-run', [
-    '--auth-file=' + authFile,
-    '--server-num=99',
-    '--server-args=-screen 0 1024x768x24',
-    'google-chrome',
+  console.log("Starting Chrome in headless mode with fresh profile...");
+  const chrome = spawn('google-chrome', [
+    '--headless=new',
     '--remote-debugging-port=9223',
     `--user-data-dir=${profileDir}`,
     '--disable-gpu',
@@ -31,10 +28,13 @@ async function main() {
     '--ignore-certificate-errors',
     '--allow-insecure-localhost',
     '--disable-extensions',
-    '--disable-features=HttpsUpgrades',
+    '--incognito',
+    '--disable-features=HttpsUpgrades,NetworkChangeNotifier',
+    '--disable-background-networking',
     '--no-first-run',
     '--no-default-browser-check',
-    'about:blank'
+    '--no-proxy-server',
+    'http://127.0.0.1:8085/index.html?runTests=true&headless=true'
   ]);
 
   chrome.on('error', (err) => {
@@ -89,21 +89,34 @@ async function main() {
     ws.send(payload);
   }
 
+  let screenshotCmdId = -1;
+  let screenshotPathToSave = '';
+
   let testTimeout = setTimeout(() => {
-    console.error("❌ Test suite timed out after 30 seconds!");
-    ws.close();
-    chrome.kill();
-    process.exit(1);
+    console.error("❌ Test suite timed out after 30 seconds! Capturing CDP screenshot...");
+    screenshotPathToSave = '/usr/local/google/home/crsjain/kepler-pokemon-chart/screenshot_timeout.png';
+    screenshotCmdId = commandId;
+    send('Page.captureScreenshot');
+
+    // Safety timeout: if screenshot doesn't return in 5s, kill and exit anyway
+    setTimeout(() => {
+      console.error("❌ CDP screenshot capture timed out. Force exiting.");
+      try { ws.close(); } catch(e){}
+      chrome.kill();
+      process.exit(1);
+    }, 5000);
   }, 30000);
 
   let initialized = false;
   let runtimeEnabled = false;
   let pageEnabled = false;
+  let networkEnabled = false;
 
   ws.onopen = () => {
     console.log("WebSocket connected. Enabling events...");
     send('Runtime.enable'); // Will have ID 1
     send('Page.enable');    // Will have ID 2
+    send('Network.enable'); // Will have ID 3
   };
 
   ws.onmessage = (event) => {
@@ -112,43 +125,51 @@ async function main() {
     // Log important events
     if (msg.method) {
       console.log(`[CDP Event] ${msg.method}`);
+      if (msg.method === 'Network.requestWillBeSent') {
+        console.log(`[CDP Network Request] URL: ${msg.params.request.url}`);
+      }
+      if (msg.method === 'Network.loadingFailed') {
+        console.error(`[CDP Network Failed] Request ID: ${msg.params.requestId}, Error: ${msg.params.errorText}, Canceled: ${msg.params.canceled}`);
+      }
+      if (msg.method === 'Network.responseReceived') {
+        console.log(`[CDP Network Response] URL: ${msg.params.response.url}, Status: ${msg.params.response.status}`);
+      }
     } else if (msg.id) {
       console.log(`[CDP Response] id=${msg.id}`, JSON.stringify(msg.result || msg.error || {}));
       
+      if (msg.id === screenshotCmdId) {
+        if (msg.result && msg.result.data) {
+          try {
+            const buffer = Buffer.from(msg.result.data, 'base64');
+            fs.writeFileSync(screenshotPathToSave, buffer);
+            console.log(`Screenshot saved to ${screenshotPathToSave}`);
+          } catch (e) {
+            console.error("Failed to save screenshot file:", e.message);
+          }
+        } else {
+          console.error("Failed to capture screenshot via CDP:", msg.error);
+        }
+        ws.close();
+        chrome.kill();
+        process.exit(1);
+      }
+
       if (msg.id === 1) runtimeEnabled = true;
       if (msg.id === 2) pageEnabled = true;
+      if (msg.id === 3) networkEnabled = true;
       
-      if (runtimeEnabled && pageEnabled && !initialized) {
+      if (runtimeEnabled && pageEnabled && networkEnabled && !initialized) {
         initialized = true;
         console.log("CDP initialized. Navigating to test page...");
-        send('Page.navigate', { url: 'http://127.0.0.1:8080/index.html?runTests=true&headless=true' });
+        send('Page.navigate', { url: 'http://127.0.0.1:8085/index.html?runTests=true&headless=true' }); // Will have ID 4
       }
       
-      // Capture screenshot if navigation fails
-      if (msg.id === 3 && (msg.error || (msg.result && msg.result.errorText))) {
-        console.log("Navigation failed. Capturing screenshot in 2s...");
-        setTimeout(() => {
-          try {
-            console.log("Capturing screenshot of virtual display :99...");
-            const screenshotPath = '/usr/local/google/home/crsjain/kepler-pokemon-chart/screenshot.png';
-            const capturer = spawn('import', ['-display', ':99', '-window', 'root', screenshotPath], {
-              env: { ...process.env, XAUTHORITY: authFile, DISPLAY: ':99' }
-            });
-            capturer.stdout.on('data', (d) => console.log(`[Import STDOUT] ${d}`));
-            capturer.stderr.on('data', (d) => console.error(`[Import STDERR] ${d}`));
-            capturer.on('close', (code) => {
-              console.log(`Screenshot capture completed with exit code ${code}. Saved to ${screenshotPath}`);
-              ws.close();
-              chrome.kill();
-              process.exit(1);
-            });
-          } catch (e) {
-            console.error("Failed to capture screenshot:", e.message);
-            ws.close();
-            chrome.kill();
-            process.exit(1);
-          }
-        }, 2000);
+      // Capture screenshot if navigation fails (now ID 4)
+      if (msg.id === 4 && (msg.error || (msg.result && msg.result.errorText))) {
+        console.log("Navigation failed. Capturing CDP screenshot...");
+        screenshotPathToSave = '/usr/local/google/home/crsjain/kepler-pokemon-chart/screenshot.png';
+        screenshotCmdId = commandId;
+        send('Page.captureScreenshot');
       }
     }
 

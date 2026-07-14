@@ -19,7 +19,7 @@ import {
   rollNewWeeklyBadge
 } from './state.js';
 
-const APP_VERSION = 'v1.3.1 (v20)';
+const APP_VERSION = 'v1.4.0 (v21)';
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault } from './vault.js';
@@ -51,6 +51,9 @@ const partnerModal = document.getElementById('partner-modal');
 const closeModalBtn = document.getElementById('close-modal-btn');
 const partnerOptionsContainer = document.getElementById('pokemon-options-container');
 const resetBtn = document.getElementById('reset-btn');
+const exceptionsBtn = document.getElementById('exceptions-btn');
+const exceptionsBanner = document.getElementById('exceptions-banner');
+const layoutContainer = document.querySelector('.layout-container');
 
 const adminBtn = document.getElementById('admin-btn');
 const adminModal = document.getElementById('admin-modal');
@@ -77,6 +80,9 @@ const confirmTitle = document.getElementById('confirm-title');
 const confirmMessage = document.getElementById('confirm-message');
 const confirmYesBtn = document.getElementById('confirm-yes-btn');
 const confirmNoBtn = document.getElementById('confirm-no-btn');
+const confirmCheckboxContainer = document.getElementById('confirm-checkbox-container');
+const confirmCheckbox = document.getElementById('confirm-checkbox');
+const confirmCheckboxText = document.getElementById('confirm-checkbox-text');
 
 // Password Modal Elements
 const passwordModal = document.getElementById('password-modal');
@@ -102,6 +108,7 @@ let domCache = {
   checkboxes: {}
 };
 let gridRebuildCount = 0;
+let isExceptionMode = false;
 
 // Initialize
 loadState();
@@ -156,10 +163,10 @@ function preloadImages() {
   });
 }
 
-export function showCustomConfirm(title, message, onYesCallback, onNoCallback, yesLabel = "Let's Go! 🚀", noLabel = "Not Yet", yesClass = "pixel-btn info", noClass = "pixel-btn") {
+export function showCustomConfirm(title, message, onYesCallback, onNoCallback, yesLabel = "Let's Go! 🚀", noLabel = "Not Yet", yesClass = "pixel-btn info", noClass = "pixel-btn", options = {}) {
   if (!confirmModal || !confirmTitle || !confirmMessage || !confirmYesBtn || !confirmNoBtn) {
     if (confirm(message)) {
-      onYesCallback();
+      onYesCallback(false);
     } else if (onNoCallback && typeof onNoCallback === 'function') {
       onNoCallback();
     }
@@ -177,18 +184,31 @@ export function showCustomConfirm(title, message, onYesCallback, onNoCallback, y
   confirmYesBtn.className = yesClass;
   confirmNoBtn.className = noClass;
   
+  // Handle optional checkbox
+  if (options.showCheckbox && confirmCheckboxContainer && confirmCheckbox && confirmCheckboxText) {
+    confirmCheckboxContainer.classList.remove('hidden');
+    confirmCheckboxText.textContent = options.checkboxLabel || "Carry over exceptions";
+    confirmCheckbox.checked = !!options.checkboxDefaultChecked;
+  } else if (confirmCheckboxContainer) {
+    confirmCheckboxContainer.classList.add('hidden');
+  }
+  
   confirmModal.classList.remove('hidden');
   
   const cleanUpConfirm = () => {
     confirmYesBtn.onclick = null;
     confirmNoBtn.onclick = null;
     confirmModal.onclick = null;
+    if (confirmCheckboxContainer) {
+      confirmCheckboxContainer.classList.add('hidden');
+    }
   };
   
   confirmYesBtn.onclick = () => {
+    const checkboxVal = (confirmCheckbox && options.showCheckbox) ? confirmCheckbox.checked : false;
     confirmModal.classList.add('hidden');
     cleanUpConfirm();
-    if (onYesCallback) onYesCallback();
+    if (onYesCallback) onYesCallback(checkboxVal);
   };
   
   confirmNoBtn.onclick = () => {
@@ -441,8 +461,9 @@ function renderGridTable() {
     for (let d = 0; d < 7; d++) {
       const key = `${d}-${task.id}`;
       const checked = !!state.grid[key];
+      const excused = !!state.excused[key];
       html += `
-        <td class="checkbox-cell">
+        <td class="checkbox-cell ${excused ? 'excused-cell' : ''}">
           <label class="pokeball-checkbox">
             <input type="checkbox" data-day="${d}" data-task="${task.id}" ${checked ? 'checked' : ''}>
             <span class="pokeball"></span>
@@ -506,6 +527,105 @@ function renderGridTable() {
   renderProgress();
 }
 
+function toggleExceptionMode() {
+  isExceptionMode = !isExceptionMode;
+  
+  if (isExceptionMode) {
+    if (exceptionsBtn) {
+      exceptionsBtn.textContent = "Done ✅";
+      exceptionsBtn.classList.add('active');
+    }
+    if (exceptionsBanner) {
+      exceptionsBanner.classList.remove('hidden');
+    }
+    if (layoutContainer) {
+      layoutContainer.classList.add('exception-mode');
+    }
+  } else {
+    if (exceptionsBtn) {
+      exceptionsBtn.textContent = "Set Exceptions";
+      exceptionsBtn.classList.remove('active');
+    }
+    if (exceptionsBanner) {
+      exceptionsBanner.classList.add('hidden');
+    }
+    if (layoutContainer) {
+      layoutContainer.classList.remove('exception-mode');
+    }
+  }
+}
+
+function handleGridClick(e) {
+  if (!isExceptionMode) return;
+  
+  const cell = e.target.closest('.checkbox-cell');
+  if (!cell) return;
+  
+  const input = cell.querySelector('input');
+  if (!input) return;
+  
+  const day = parseInt(input.dataset.day);
+  const taskId = input.dataset.task;
+  const key = `${day}-${taskId}`;
+  
+  // Toggle excused state
+  state.excused[key] = !state.excused[key];
+  if (!state.excused[key]) {
+    delete state.excused[key];
+  } else {
+    // If excused, uncheck it
+    state.grid[key] = false;
+  }
+  
+  saveState();
+  
+  // Update cell UI
+  updateCellUI(cell, key);
+  
+  // Update checkbox state visually
+  const cb = cell.querySelector('input[type="checkbox"]');
+  if (cb) {
+    cb.checked = !!state.grid[key];
+  }
+  
+  // Update totals
+  updateDayTotalUI(day);
+  
+  // Update overall progress
+  renderProgress();
+}
+
+function updateCellUI(cell, key) {
+  if (state.excused[key]) {
+    cell.classList.add('excused-cell');
+  } else {
+    cell.classList.remove('excused-cell');
+  }
+}
+
+function updateDayTotalUI(day) {
+  const dayTotalCell = domCache.dayTotals[day];
+  if (!dayTotalCell) return;
+  
+  const tasks = state.tasks || [];
+  const allCheckedOrExcused = tasks.length > 0 && tasks.every(task => {
+    const k = `${day}-${task.id}`;
+    return !!state.grid[k] || !!state.excused[k];
+  });
+  
+  if (allCheckedOrExcused) {
+    dayTotalCell.innerHTML = '<div class="badge-indicator unlocked">🌟</div>';
+    dayTotalCell.classList.add('unlocked');
+    dayTotalCell.classList.remove('locked');
+  } else {
+    dayTotalCell.innerHTML = '<div class="badge-indicator locked">❌</div>';
+    dayTotalCell.classList.add('locked');
+    dayTotalCell.classList.remove('unlocked');
+  }
+  
+  checkDayCompleted(day, allCheckedOrExcused);
+}
+
 function handleCheckboxChange(e) {
   const cb = e.target;
   
@@ -538,7 +658,7 @@ function handleCheckboxChange(e) {
   const key = `${day}-${taskId}`;
 
   const tasks = state.tasks || [];
-  const wasDayFullyChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${day}-${task.id}`]);
+  const wasDayFullyChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${day}-${task.id}`] || !!state.excused[`${day}-${task.id}`]);
 
   state.grid[key] = isChecked;
 
@@ -555,7 +675,7 @@ function handleCheckboxChange(e) {
     xpGained -= XP_PER_TASK;
   }
 
-  const isDayFullyChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${day}-${task.id}`]);
+  const isDayFullyChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${day}-${task.id}`] || !!state.excused[`${day}-${task.id}`]);
   
   if (isDayFullyChecked && !wasDayFullyChecked) {
     xpGained += XP_DAILY_BONUS;
@@ -667,6 +787,7 @@ function setupEventListeners() {
         handleCheckboxChange(e);
       }
     });
+    tbody.addEventListener('click', handleGridClick);
   }
 
   rewardSelect.addEventListener('change', () => {
@@ -688,11 +809,21 @@ function setupEventListeners() {
       showCustomConfirm(
         "Reset Week Grid? 📅",
         "Are you ready to reset the training grid for this week?\nYour level, XP, and badges will not be affected.",
-        () => {
-          resetWeekGrid();
-        }
+        (carryOver) => {
+          resetWeekGrid(carryOver);
+        },
+        null,
+        "Let's Go! 🚀",
+        "Not Yet",
+        "pixel-btn info",
+        "pixel-btn",
+        { showCheckbox: true, checkboxLabel: "Carry over exceptions", checkboxDefaultChecked: true }
       );
     });
+  }
+
+  if (exceptionsBtn) {
+    exceptionsBtn.addEventListener('click', toggleExceptionMode);
   }
 
 
@@ -922,7 +1053,7 @@ function flashElement(element) {
   }, 3100);
 }
 
-function resetWeekGrid() {
+function resetWeekGrid(carryOverExceptions = false) {
   let flashWeekly = false;
   let flashMega = false;
   
@@ -952,6 +1083,9 @@ function resetWeekGrid() {
   }
   
   state.grid = {};
+  if (!carryOverExceptions) {
+    state.excused = {};
+  }
   saveState();
   renderState(true);
   
@@ -1195,9 +1329,15 @@ function checkAndTriggerWeeklySuccess() {
           isMegaWeek
             ? "Ready to loop back to Week 1 and start working towards a NEW Mega Milestone?"
             : `Are you ready to reset the training grid and start Week ${weekDisplayNum === 4 ? 1 : weekDisplayNum + 1}?`,
-          () => {
-            resetWeekGrid();
-          }
+          (carryOver) => {
+            resetWeekGrid(carryOver);
+          },
+          null,
+          "Let's Go! 🚀",
+          "Not Yet",
+          "pixel-btn info",
+          "pixel-btn",
+          { showCheckbox: true, checkboxLabel: "Carry over exceptions", checkboxDefaultChecked: true }
         );
       }
     );
@@ -1219,7 +1359,8 @@ function renderProgress() {
 
     const totalCell = domCache.taskTotals[task.id];
     if (totalCell) {
-      const required = task.req || 5;
+      const excusedCount = DAYS.filter(day => !!state.excused[`${day}-${task.id}`]).length;
+      const required = Math.max(0, (task.req || 5) - excusedCount);
       totalCell.textContent = `${taskTotals[task.id]} / ${required}`;
       
       if (taskTotals[task.id] >= required) {
@@ -1231,7 +1372,7 @@ function renderProgress() {
   });
 
   DAYS.forEach(day => {
-    const allChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${day}-${task.id}`]);
+    const allChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${day}-${task.id}`] || !!state.excused[`${day}-${task.id}`]);
     const totalCell = domCache.dayTotals[day];
     if (totalCell) {
       const indicator = totalCell.querySelector('.badge-indicator');
@@ -1408,7 +1549,7 @@ if (location.search.includes('runTests=true')) {
     },
     renderState: (rebuildGrid) => renderState(rebuildGrid),
     ADMIN_PASSWORD: ADMIN_PASSWORD,
-    resetWeekGrid: () => resetWeekGrid(),
+    resetWeekGrid: (carryOver) => resetWeekGrid(carryOver),
     renderBadgeCaseGrid: () => renderBadgeCaseGrid(),
     loadState: () => loadState(),
     renderVault: () => renderVault(),

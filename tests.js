@@ -38,7 +38,7 @@ async function runSuite() {
     }
 
     let state = window.__app_state__;
-    assert(state.version === 10, "State version should be 10");
+    assert(state.version === 11, "State version should be 11");
     assert(state.weeklyClaimed === false, "Weekly claimed should be false");
     assert(window.__grid_rebuild_count__ === 1, `Grid should have been built exactly once on reset (actual: ${window.__grid_rebuild_count__})`);
 
@@ -49,7 +49,7 @@ async function runSuite() {
       // Verify Version Indicator
       const versionLabel = document.getElementById('app-version-label');
       assert(versionLabel !== null, "App version indicator should exist");
-      assert(versionLabel.textContent.includes('v1.3.1'), "App version label should display v1.3.1");
+      assert(versionLabel.textContent.includes('v1.4.0'), "App version label should display v1.4.0");
       
       // Select rewards (needed to check boxes)
       const rewardSelect = document.getElementById('reward-select');
@@ -592,7 +592,7 @@ async function runSuite() {
         console.log("Running Test Case 11: Badge Case & Collection...");
         
         // Verify state initial V10 fields
-        assert(state.version === 10, "State version should be 10");
+        assert(state.version === 11, "State version should be 11");
         assert(Array.isArray(state.collectedBadges), "collectedBadges should be an array");
         assert(state.collectedBadges.length === 0, "Initially collected badges should be empty");
         assert(Array.isArray(state.badgePool), "badgePool should be an array");
@@ -720,7 +720,7 @@ async function runSuite() {
         window.__test_helpers__.loadState();
         let migratedState = window.__app_state__;
         
-        assert(migratedState.version === 10, "Migrated state version should be 10");
+        assert(migratedState.version === 11, "Migrated state version should be 11");
         assert(Array.isArray(migratedState.collectedBadges), "collectedBadges should be created");
         assert(migratedState.collectedBadges.length === 2, "Should have retroactively awarded 2 badges based on megaWeeks=2");
         assert(migratedState.collectedBadges[0].id === 658, "1st migrated badge should be Greninja (658)");
@@ -759,7 +759,7 @@ async function runSuite() {
         window.__test_helpers__.loadState();
         migratedState = window.__app_state__;
         
-        assert(migratedState.version === 10, "Migrated state version should be 10");
+        assert(migratedState.version === 11, "Migrated state version should be 11");
         assert(migratedState.collectedBadges.length === 2, "Should award 2 badges based on history");
         assert(migratedState.collectedBadges[0].id === 658, "1st badge is Greninja");
         assert(migratedState.collectedBadges[1].id === 382, "2nd badge is Kyogre");
@@ -1091,6 +1091,135 @@ async function runSuite() {
         // Restore prompt mock
         restoreMocks();
 
+        // Clean up
+        window.__test_helpers__.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+      }
+
+      // 17. Test Case 17: Exception Edit Mode & Carry Over
+      console.log("Running Test Case 17: Exception Edit Mode & Carry Over...");
+      {
+        const exceptionsBtn = document.getElementById('exceptions-btn');
+        const exceptionsBanner = document.getElementById('exceptions-banner');
+        const layoutContainer = document.querySelector('.layout-container');
+        
+        assert(exceptionsBtn !== null, "Exceptions button should exist");
+        assert(exceptionsBanner !== null, "Exceptions banner should exist");
+        assert(exceptionsBanner.classList.contains('hidden'), "Exceptions banner should be initially hidden");
+        
+        // 17.1 Test Toggle Mode
+        exceptionsBtn.click();
+        await sleep(50);
+        assert(exceptionsBtn.textContent === "Done ✅", "Button text should change to Done");
+        assert(exceptionsBtn.classList.contains('active'), "Button should have active class");
+        assert(!exceptionsBanner.classList.contains('hidden'), "Banner should be visible");
+        assert(layoutContainer.classList.contains('exception-mode'), "Layout should have exception-mode class");
+        
+        // 17.2 Test Excusing a cell (Wednesday Piano = day 3, task piano)
+        const wedPianoInput = document.querySelector('input[data-day="3"][data-task="piano"]');
+        assert(wedPianoInput !== null, "Wednesday Piano input should exist");
+        const wedPianoTd = wedPianoInput.closest('.checkbox-cell');
+        assert(wedPianoTd !== null, "Wednesday Piano cell should exist");
+        
+        // Click the cell to excuse it
+        wedPianoTd.click();
+        await sleep(50);
+        
+        assert(wedPianoTd.classList.contains('excused-cell'), "Cell should have excused-cell class");
+        assert(state.excused["3-piano"] === true, "State should have 3-piano excused");
+        assert(state.grid["3-piano"] === false, "State grid for 3-piano should be false (auto-cleared)");
+        assert(wedPianoInput.checked === false, "Checkbox should be unchecked");
+        
+        // 17.3 Test Daily Completion with excused task
+        // Exit Exception Mode first to check them normally
+        exceptionsBtn.click();
+        await sleep(50);
+        assert(exceptionsBanner.classList.contains('hidden'), "Banner should hide after exiting exception mode");
+        
+        // Select rewards (needed to check boxes)
+        const rewardSelect = document.getElementById('reward-select');
+        const megaRewardSelect = document.getElementById('mega-reward-select');
+        rewardSelect.value = "Blanket Fort";
+        rewardSelect.dispatchEvent(new Event('change'));
+        megaRewardSelect.value = "Dessert Outing";
+        megaRewardSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+        
+        // Set active day to Wednesday (day 3) to allow checking
+        state.activeDay = 3;
+        saveState();
+        window.__test_helpers__.renderState(false);
+        await sleep(50);
+        
+        // Check the other 4 tasks
+        const tasksToCheck = ['math', 'reading', 'writing', 'chinese'];
+        for (const tid of tasksToCheck) {
+          const input = document.querySelector(`input[data-day="3"][data-task="${tid}"]`);
+          if (input && !input.checked) {
+            input.click();
+            await sleep(50);
+          }
+        }
+        
+        // Wednesday daily total cell should now show 🌟
+        const wedTotalCell = document.querySelector('.day-total-cell[data-day="3"]');
+        assert(wedTotalCell !== null, "Wednesday total cell should exist");
+        const indicator = wedTotalCell.querySelector('.badge-indicator');
+        assert(indicator && indicator.textContent === '🌟', "Wednesday should show unlocked 🌟 indicator");
+        
+        // Verify it is completed in Star Vault
+        const wedDateStr = getDateOfColumn(state.weekStartDate, 3);
+        assert(state.starVault.earnedDates.includes(wedDateStr), "Wednesday date should be in starVault.earnedDates");
+        
+        // 17.4 Test Carry Over Exceptions - Reset with carryOver = true
+        const resetBtn = document.getElementById('reset-btn');
+        assert(resetBtn !== null, "Reset button should exist");
+        
+        resetBtn.click();
+        await sleep(100);
+        
+        const confirmModal = document.getElementById('confirm-modal');
+        assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should be open");
+        
+        const confirmCheckbox = document.getElementById('confirm-checkbox');
+        assert(confirmCheckbox !== null, "Carry over checkbox should exist");
+        assert(confirmCheckbox.checked === true, "Carry over should be checked by default");
+        
+        // Confirm reset
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        if (confirmYesBtn) confirmYesBtn.click();
+        await sleep(100);
+        
+        // Grid should be cleared, but 3-piano should STILL be excused
+        assert(Object.keys(state.grid).length === 0, "Grid should be empty");
+        assert(state.excused["3-piano"] === true, "3-piano should still be excused after reset with carry over");
+        
+        // Verify UI has .excused-cell class on Wed Piano cell
+        const wedPianoTdAfterReset = document.querySelector('input[data-day="3"][data-task="piano"]').closest('.checkbox-cell');
+        assert(wedPianoTdAfterReset.classList.contains('excused-cell'), "Cell should retain excused-cell class in UI");
+        
+        // 17.5 Test Reset with carryOver = false
+        resetBtn.click();
+        await sleep(100);
+        
+        assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should open again");
+        const confirmCheckbox2 = document.getElementById('confirm-checkbox');
+        
+        // Uncheck it
+        confirmCheckbox2.click();
+        await sleep(50);
+        assert(confirmCheckbox2.checked === false, "Carry over should be unchecked");
+        
+        if (confirmYesBtn) confirmYesBtn.click();
+        await sleep(100);
+        
+        // Grid and excused should be empty
+        assert(Object.keys(state.grid).length === 0, "Grid should be empty");
+        assert(state.excused["3-piano"] === undefined, "3-piano should be cleared after reset without carry over");
+        const wedPianoTdAfterSecondReset = document.querySelector('input[data-day="3"][data-task="piano"]').closest('.checkbox-cell');
+        assert(!wedPianoTdAfterSecondReset.classList.contains('excused-cell'), "Cell should lose excused-cell class in UI");
+        
         // Clean up
         window.__test_helpers__.resetState();
         await sleep(100);

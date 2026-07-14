@@ -313,6 +313,7 @@ function importState() {
             state.collectedBadges = parsed.collectedBadges || [];
             state.badgePool = parsed.badgePool || state.badgePool;
             state.activeWeeklyBadgeId = parsed.activeWeeklyBadgeId !== undefined ? parsed.activeWeeklyBadgeId : state.activeWeeklyBadgeId;
+            state.excused = parsed.excused || {};
             
             saveState();
             loadState();

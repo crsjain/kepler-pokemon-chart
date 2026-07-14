@@ -54,6 +54,10 @@
       <h1 class="title">Kepler's Pokémon Training</h1>
       <p class="subtitle">"Gotta Catch 'Em All!"</p>
     </header>
+    
+    <div id="exceptions-banner" class="exceptions-banner hidden">
+      <span>⚙️ EXCEPTION EDIT MODE: Click cells to excuse tasks from this week's streak!</span>
+    </div>
 
     <!-- Trainer Card / Progress Section -->
     <section class="trainer-card">
@@ -130,6 +134,12 @@
         <h2 id="confirm-title">New Week!</h2>
         <div class="confirm-body">
           <p id="confirm-message">Ready to start the next week and continue progress towards a Mega Milestone?</p>
+          <div id="confirm-checkbox-container" class="hidden" style="margin-top: 15px; text-align: left; font-family: 'Fredoka One', cursive;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px;">
+              <input type="checkbox" id="confirm-checkbox" style="width: 18px; height: 18px; cursor: pointer;">
+              <span id="confirm-checkbox-text">Carry over exceptions</span>
+            </label>
+          </div>
         </div>
         <div class="confirm-actions">
           <button id="confirm-yes-btn" class="pixel-btn info">Let's Go! 🚀</button>
@@ -460,6 +470,7 @@
       <!-- Action Buttons -->
       <div class="actions">
         <button id="reset-btn" class="pixel-btn warning">Reset Week Grid</button>
+        <button id="exceptions-btn" class="pixel-btn danger">Set Exceptions</button>
         <button id="admin-btn" class="pixel-btn info small">Parent Admin</button>
         
         <!-- App Version Info -->
