@@ -632,7 +632,30 @@ function handleCheckboxChange(e) {
   
   const day = parseInt(cb.dataset.day);
   if (day !== state.activeDay) {
-    cb.checked = !cb.checked;
+    cb.checked = !cb.checked; // Revert visually first
+    
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const dayName = daysOfWeek[day];
+    showCustomConfirm(
+      "Switch Day? 📅",
+      `Are you sure you want to switch to ${dayName} to check this task?\nThis is different from today.`,
+      () => {
+        state.activeDay = day;
+        saveState();
+        updateActiveColumnUI();
+        
+        // Restore the user's intended checked state in UI
+        cb.checked = !cb.checked;
+        
+        // Re-run handleCheckboxChange now that activeDay matches
+        handleCheckboxChange(e);
+      },
+      null,
+      "Switch Anyway",
+      "Keep Today",
+      "pixel-btn greyed-out",
+      "pixel-btn info"
+    );
     return;
   }
   

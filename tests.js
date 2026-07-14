@@ -1103,6 +1103,14 @@ async function runSuite() {
         // Clean up any leftover notifications from previous tests
         document.querySelectorAll('.notif-modal').forEach(el => el.remove());
         
+        window.__test_helpers__.resetState();
+        await sleep(50);
+        state = window.__app_state__;
+        state.activeDay = 1; // Monday
+        saveState();
+        window.__test_helpers__.renderState(false);
+        await sleep(50);
+        
         const exceptionsBtn = document.getElementById('exceptions-btn');
         const exceptionsBanner = document.getElementById('exceptions-banner');
         const layoutContainer = document.querySelector('.layout-container');
@@ -1154,6 +1162,7 @@ async function runSuite() {
         assert(state.excused["3-piano"] === true, "State should have 3-piano excused");
         assert(state.grid["3-piano"] === false, "State grid for 3-piano should be false (auto-cleared)");
         assert(wedPianoInput.checked === false, "Checkbox should be unchecked");
+        assert(state.activeDay === 1, "Active day should remain Monday (1) after excusing Wednesday task");
         
         // Assert that NO attention notification modal is displayed (since rewards are not set yet)
         const notifModal = document.querySelector('.notif-modal');
@@ -1250,6 +1259,78 @@ async function runSuite() {
         assert(state.excused["3-piano"] === undefined, "3-piano should be cleared after reset without carry over");
         const wedPianoTdAfterSecondReset = document.querySelector('input[data-day="3"][data-task="piano"]').closest('.checkbox-cell');
         assert(!wedPianoTdAfterSecondReset.classList.contains('excused-cell'), "Cell should lose excused-cell class in UI");
+        
+        // Clean up
+        window.__test_helpers__.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+      }
+
+      // 18. Test Case 18: Normal Mode Cell Click Switch Day Prompt
+      console.log("Running Test Case 18: Normal Mode Cell Click Switch Day Prompt...");
+      {
+        window.__test_helpers__.resetState();
+        await sleep(50);
+        state = window.__app_state__;
+        
+        // Select rewards (needed to check boxes)
+        const rewardSelect = document.getElementById('reward-select');
+        const megaRewardSelect = document.getElementById('mega-reward-select');
+        rewardSelect.value = "Blanket Fort";
+        rewardSelect.dispatchEvent(new Event('change'));
+        megaRewardSelect.value = "Dessert Outing";
+        megaRewardSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+        
+        // Set active day to Monday (1)
+        state.activeDay = 1;
+        saveState();
+        window.__test_helpers__.renderState(false);
+        await sleep(50);
+        
+        // Target Wednesday Piano (day 3, not active)
+        const wedPianoInput = document.querySelector('input[data-day="3"][data-task="piano"]');
+        assert(wedPianoInput !== null, "Wednesday Piano input should exist");
+        assert(wedPianoInput.checked === false, "Wednesday Piano should be unchecked initially");
+        
+        // Click Wednesday Piano (should trigger confirm dialog because it's not Monday)
+        wedPianoInput.click();
+        await sleep(100);
+        
+        const confirmModal = document.getElementById('confirm-modal');
+        assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should open on different day cell click");
+        assert(confirmModal.textContent.includes("Switch Day?"), "Confirm modal title should be Switch Day");
+        
+        // Test Cancel (Keep Today)
+        const confirmNoBtn = document.getElementById('confirm-no-btn');
+        if (confirmNoBtn) confirmNoBtn.click();
+        await sleep(100);
+        
+        assert(confirmModal.classList.contains('hidden'), "Confirm modal should close on Cancel click");
+        assert(state.activeDay === 1, "Active day should remain Monday (1)");
+        assert(wedPianoInput.checked === false, "Wednesday Piano should remain unchecked after cancel");
+        assert(state.grid["3-piano"] !== true, "State grid should not be updated");
+        
+        // Click again to test Confirm (Switch Anyway)
+        wedPianoInput.click();
+        await sleep(100);
+        
+        assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should open again");
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        if (confirmYesBtn) confirmYesBtn.click();
+        await sleep(100);
+        
+        assert(confirmModal.classList.contains('hidden'), "Confirm modal should close on Confirm click");
+        assert(state.activeDay === 3, "Active day should have switched to Wednesday (3)");
+        
+        // Verify Wednesday is now the active column in UI
+        const wedHeader = document.querySelector('.day-header[data-day="3"]');
+        assert(wedHeader.classList.contains('active-day'), "Wednesday header should have active-day class");
+        
+        // Verify Wednesday Piano is checked in UI and State
+        const wedPianoInputAfterSwitch = document.querySelector('input[data-day="3"][data-task="piano"]');
+        assert(wedPianoInputAfterSwitch.checked === true, "Wednesday Piano should be checked in UI after switch");
+        assert(state.grid["3-piano"] === true, "Wednesday Piano should be checked in State after switch");
         
         // Clean up
         window.__test_helpers__.resetState();
