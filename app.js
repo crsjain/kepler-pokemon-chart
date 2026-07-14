@@ -52,6 +52,7 @@ const closeModalBtn = document.getElementById('close-modal-btn');
 const partnerOptionsContainer = document.getElementById('pokemon-options-container');
 const resetBtn = document.getElementById('reset-btn');
 const exceptionsBtn = document.getElementById('exceptions-btn');
+const exceptionsDoneBtn = document.getElementById('exceptions-done-btn');
 const exceptionsBanner = document.getElementById('exceptions-banner');
 const layoutContainer = document.querySelector('.layout-container');
 
@@ -527,31 +528,28 @@ function renderGridTable() {
   renderProgress();
 }
 
-function toggleExceptionMode() {
-  isExceptionMode = !isExceptionMode;
-  
-  if (isExceptionMode) {
-    if (exceptionsBtn) {
-      exceptionsBtn.textContent = "Done ✅";
-      exceptionsBtn.classList.add('active');
-    }
-    if (exceptionsBanner) {
-      exceptionsBanner.classList.remove('hidden');
-    }
-    if (layoutContainer) {
-      layoutContainer.classList.add('exception-mode');
-    }
-  } else {
-    if (exceptionsBtn) {
-      exceptionsBtn.textContent = "Set Exceptions";
-      exceptionsBtn.classList.remove('active');
-    }
-    if (exceptionsBanner) {
-      exceptionsBanner.classList.add('hidden');
-    }
-    if (layoutContainer) {
-      layoutContainer.classList.remove('exception-mode');
-    }
+function startExceptionMode() {
+  isExceptionMode = true;
+  if (exceptionsBanner) {
+    exceptionsBanner.classList.remove('hidden');
+  }
+  if (layoutContainer) {
+    layoutContainer.classList.add('exception-mode');
+  }
+  // Close Parent Admin modal to reveal the grid
+  const adminModal = document.getElementById('admin-modal');
+  if (adminModal) {
+    adminModal.classList.add('hidden');
+  }
+}
+
+function stopExceptionMode() {
+  isExceptionMode = false;
+  if (exceptionsBanner) {
+    exceptionsBanner.classList.add('hidden');
+  }
+  if (layoutContainer) {
+    layoutContainer.classList.remove('exception-mode');
   }
 }
 
@@ -823,7 +821,10 @@ function setupEventListeners() {
   }
 
   if (exceptionsBtn) {
-    exceptionsBtn.addEventListener('click', toggleExceptionMode);
+    exceptionsBtn.addEventListener('click', startExceptionMode);
+  }
+  if (exceptionsDoneBtn) {
+    exceptionsDoneBtn.addEventListener('click', stopExceptionMode);
   }
 
 

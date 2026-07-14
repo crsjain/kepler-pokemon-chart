@@ -1108,11 +1108,32 @@ async function runSuite() {
         assert(exceptionsBanner !== null, "Exceptions banner should exist");
         assert(exceptionsBanner.classList.contains('hidden'), "Exceptions banner should be initially hidden");
         
-        // 17.1 Test Toggle Mode
+        // 17.1 Test Toggle Mode (requires opening admin panel first)
+        const adminBtn = document.getElementById('admin-btn');
+        const adminModal = document.getElementById('admin-modal');
+        assert(adminBtn !== null, "Admin button should exist");
+        
+        // Open admin modal (requires entering password in modal)
+        adminBtn.click();
+        await sleep(100);
+        
+        const passwordModal = document.getElementById('password-modal');
+        assert(passwordModal && !passwordModal.classList.contains('hidden'), "Password modal should open");
+        
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmitBtn = document.getElementById('password-submit-btn');
+        passwordInput.value = window.__test_helpers__.ADMIN_PASSWORD;
+        passwordSubmitBtn.click();
+        await sleep(100);
+        
+        assert(adminModal && !adminModal.classList.contains('hidden'), "Admin Modal should be open");
+        
+        // Click exceptions button inside admin modal
         exceptionsBtn.click();
         await sleep(50);
-        assert(exceptionsBtn.textContent === "Done ✅", "Button text should change to Done");
-        assert(exceptionsBtn.classList.contains('active'), "Button should have active class");
+        
+        // Verify admin modal is now closed and exception mode is active
+        assert(adminModal.classList.contains('hidden'), "Admin Modal should close when entering exception mode");
         assert(!exceptionsBanner.classList.contains('hidden'), "Banner should be visible");
         assert(layoutContainer.classList.contains('exception-mode'), "Layout should have exception-mode class");
         
@@ -1132,10 +1153,13 @@ async function runSuite() {
         assert(wedPianoInput.checked === false, "Checkbox should be unchecked");
         
         // 17.3 Test Daily Completion with excused task
-        // Exit Exception Mode first to check them normally
-        exceptionsBtn.click();
+        // Exit Exception Mode via Done button in banner
+        const exceptionsDoneBtn = document.getElementById('exceptions-done-btn');
+        assert(exceptionsDoneBtn !== null, "Exceptions Done button should exist");
+        exceptionsDoneBtn.click();
         await sleep(50);
         assert(exceptionsBanner.classList.contains('hidden'), "Banner should hide after exiting exception mode");
+        assert(!layoutContainer.classList.contains('exception-mode'), "Layout should lose exception-mode class");
         
         // Select rewards (needed to check boxes)
         const rewardSelect = document.getElementById('reward-select');
