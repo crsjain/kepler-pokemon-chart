@@ -559,6 +559,8 @@ function handleGridClick(e) {
   const cell = e.target.closest('.checkbox-cell');
   if (!cell) return;
   
+  e.preventDefault(); // Prevent default checkbox toggle behavior from label click
+  
   const input = cell.querySelector('input');
   if (!input) return;
   
@@ -625,6 +627,7 @@ function updateDayTotalUI(day) {
 }
 
 function handleCheckboxChange(e) {
+  if (isExceptionMode) return;
   const cb = e.target;
   
   const day = parseInt(cb.dataset.day);

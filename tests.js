@@ -1100,6 +1100,9 @@ async function runSuite() {
       // 17. Test Case 17: Exception Edit Mode & Carry Over
       console.log("Running Test Case 17: Exception Edit Mode & Carry Over...");
       {
+        // Clean up any leftover notifications from previous tests
+        document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+        
         const exceptionsBtn = document.getElementById('exceptions-btn');
         const exceptionsBanner = document.getElementById('exceptions-banner');
         const layoutContainer = document.querySelector('.layout-container');
@@ -1151,6 +1154,10 @@ async function runSuite() {
         assert(state.excused["3-piano"] === true, "State should have 3-piano excused");
         assert(state.grid["3-piano"] === false, "State grid for 3-piano should be false (auto-cleared)");
         assert(wedPianoInput.checked === false, "Checkbox should be unchecked");
+        
+        // Assert that NO attention notification modal is displayed (since rewards are not set yet)
+        const notifModal = document.querySelector('.notif-modal');
+        assert(notifModal === null, "No notification modal should be displayed when excusing a task without rewards set");
         
         // 17.3 Test Daily Completion with excused task
         // Exit Exception Mode via Done button in banner
