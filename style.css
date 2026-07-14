@@ -2551,13 +2551,16 @@ input:checked + .slider:before {
   pointer-events: none; /* Disable standard checkbox clicking */
 }
 
+/* Enable clicking on all cells and make them opaque in Exception Mode */
+.layout-container.exception-mode .weekly-grid td.checkbox-cell {
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}
+
 /* Excused Cell representation */
 .checkbox-cell.excused-cell {
-  background-color: rgba(226, 232, 240, 0.6); /* Light gray overlay */
-  background-image: linear-gradient(45deg, #cbd5e1 25%, transparent 25%, transparent 75%, #cbd5e1 75%, #cbd5e1),
-                    linear-gradient(45deg, #cbd5e1 25%, transparent 25%, transparent 75%, #cbd5e1 75%, #cbd5e1);
-  background-size: 12px 12px;
-  background-position: 0 0, 6px 6px;
+  background-color: #cbd5e1 !important; /* Flat Slate 300 - clearly distinct */
+  background-image: none !important; /* Remove checkerboard pattern */
 }
 
 .checkbox-cell.excused-cell .pokeball {
