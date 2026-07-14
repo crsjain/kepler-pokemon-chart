@@ -595,7 +595,7 @@ button:disabled,
 }
 
 .task-total-cell.completed {
-  color: var(--xp-color);
+  color: #2e7d32; /* Forest Green for AA contrast */
 }
 
 .task-total-cell.completed::after {
@@ -2613,12 +2613,13 @@ input:checked + .slider:before {
 /* Unchecked Star */
 .checkbox-cell.excused-cell input:not(:checked) + .pokeball::before {
   color: #64748b !important; /* Grey star */
+  text-shadow: 1px 1px 0 var(--border-color), -1px -1px 0 var(--border-color), 1px -1px 0 var(--border-color), -1px 1px 0 var(--border-color) !important;
 }
 
 /* Checked Star */
 .checkbox-cell.excused-cell input:checked + .pokeball::before {
-  color: #eab308 !important; /* Gold star */
-  text-shadow: 0 0 4px rgba(234, 179, 8, 0.6);
+  color: #ffcb05 !important; /* Poke Yellow star */
+  text-shadow: 1px 1px 0 var(--border-color), -1px -1px 0 var(--border-color), 1px -1px 0 var(--border-color), -1px 1px 0 var(--border-color), 0 0 4px rgba(234, 179, 8, 0.6) !important;
 }
 
 /* "+XP" Pill Badge (replaces center button) */
@@ -2643,16 +2644,16 @@ input:checked + .slider:before {
 
 /* Unchecked Pill */
 .checkbox-cell.excused-cell input:not(:checked) + .pokeball::after {
-  background: #64748b !important; /* Grey background */
-  border: 1px solid #475569 !important;
-  color: #ffffff !important;
+  background: #cbd5e1 !important; /* Grey background */
+  border: 1px solid var(--border-color) !important;
+  color: #2d3748 !important; /* Dark text */
 }
 
 /* Checked Pill */
 .checkbox-cell.excused-cell input:checked + .pokeball::after {
-  background: #f59e0b !important; /* Gold background */
-  border: 1px solid #d97706 !important;
-  color: #ffffff !important;
+  background: #ffcb05 !important; /* Poke Yellow background */
+  border: 1px solid var(--border-color) !important;
+  color: #2d3748 !important; /* Dark text */
 }
 
 /* Highlight button active state */
