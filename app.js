@@ -874,6 +874,12 @@ function setupEventListeners() {
     th.addEventListener('click', () => {
       const clickedDay = parseInt(th.dataset.day);
       if (state.activeDay !== clickedDay) {
+        if (isExceptionMode) {
+          state.activeDay = clickedDay;
+          saveState();
+          updateActiveColumnUI();
+          return;
+        }
         const today = new Date().getDay();
         if (clickedDay !== today) {
           const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];

@@ -1148,6 +1148,22 @@ async function runSuite() {
         assert(!exceptionsBanner.classList.contains('hidden'), "Banner should be visible");
         assert(layoutContainer.classList.contains('exception-mode'), "Layout should have exception-mode class");
         
+        // 17.1b Test Header click in Exception Mode (should switch activeDay without prompt)
+        const tueHeader = document.querySelector('.day-header[data-day="2"]');
+        assert(tueHeader !== null, "Tuesday header should exist");
+        tueHeader.click();
+        await sleep(50);
+        assert(state.activeDay === 2, "Active day should switch to Tuesday (2) immediately on header click in Exception Mode");
+        const exceptionConfirmModal = document.getElementById('confirm-modal');
+        assert(exceptionConfirmModal.classList.contains('hidden'), "Confirm Modal should not open on header click in Exception Mode");
+        
+        // Switch back to Monday (1)
+        const monHeader = document.querySelector('.day-header[data-day="1"]');
+        assert(monHeader !== null, "Monday header should exist");
+        monHeader.click();
+        await sleep(50);
+        assert(state.activeDay === 1, "Active day should switch back to Monday (1)");
+        
         // 17.2 Test Excusing a cell (Wednesday Piano = day 3, task piano)
         const wedPianoInput = document.querySelector('input[data-day="3"][data-task="piano"]');
         assert(wedPianoInput !== null, "Wednesday Piano input should exist");
