@@ -378,9 +378,25 @@ function renderDebugSidebarVisibility() {
 function updateActiveColumnUI() {
   const activeDay = state.activeDay !== undefined ? state.activeDay : new Date().getDay();
   
+  const daysOfWeekNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
   const headers = document.querySelectorAll('.day-header');
   headers.forEach(th => {
     const day = parseInt(th.dataset.day);
+    const tasks = state.tasks || [];
+    const hasBonus = tasks.some(task => {
+      const key = `${day}-${task.id}`;
+      return !!state.excused[key];
+    });
+    
+    const baseName = daysOfWeekNames[day];
+    if (hasBonus) {
+      th.textContent = `${baseName} (Bonus)`;
+      th.classList.add('has-bonus');
+    } else {
+      th.textContent = baseName;
+      th.classList.remove('has-bonus');
+    }
+    
     if (day === activeDay) {
       th.classList.add('active-day');
     } else {

@@ -2557,15 +2557,96 @@ input:checked + .slider:before {
   opacity: 1 !important;
 }
 
-/* Excused Cell representation */
+/* Bonus Cell / Exception representation */
 .checkbox-cell.excused-cell {
-  background-color: #cbd5e1 !important; /* Flat Slate 300 - clearly distinct */
-  background-image: none !important; /* Remove checkerboard pattern */
+  background-color: #fffbeb !important; /* Very light warm yellow/gold background */
+  background-image: none !important;
+  position: relative;
 }
 
-.checkbox-cell.excused-cell .pokeball {
-  filter: grayscale(100%) opacity(40%);
-  border-style: dashed !important;
+/* +XP Badge on top right of cell */
+.checkbox-cell.excused-cell::after {
+  content: '+XP';
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  background: #f59e0b; /* Gold/Orange */
+  color: white;
+  font-size: 7px;
+  font-weight: bold;
+  padding: 0px 2px;
+  border-radius: 3px;
+  border: 1px solid var(--border-color);
+  z-index: 15;
+  pointer-events: none;
+  font-family: 'Fredoka One', cursive;
+  line-height: 1;
+}
+
+/* When the bonus task is checked, update the badge color to green */
+.checkbox-cell.excused-cell:has(input:checked)::after {
+  background: #10b981; /* Green */
+  content: '★+XP'; /* Add a star to the badge when completed */
+}
+
+/* Unchecked Bonus Pokeball styling */
+.checkbox-cell.excused-cell input:not(:checked) + .pokeball {
+  border-color: var(--border-color);
+  background: white;
+}
+
+.checkbox-cell.excused-cell input:not(:checked) + .pokeball::before {
+  background: #fef08a; /* Faded gold (Yellow 200) */
+  border-bottom: 3px solid var(--border-color);
+}
+
+.checkbox-cell.excused-cell input:not(:checked) + .pokeball::after {
+  content: '★';
+  font-size: 8px;
+  color: #ca8a04; /* Darker gold star */
+  line-height: 8px;
+  text-align: center;
+  width: 14px;
+  height: 14px;
+  background: white;
+  border: 2px solid var(--border-color);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+/* Checked Bonus Pokeball styling */
+.checkbox-cell.excused-cell input:checked + .pokeball {
+  box-shadow: 0 0 8px rgba(234, 179, 8, 0.6);
+  animation: wiggle 0.4s ease;
+}
+
+.checkbox-cell.excused-cell input:checked + .pokeball::before {
+  background: #eab308; /* Bright gold (Yellow 500) */
+  border-bottom: 3px solid var(--border-color);
+}
+
+.checkbox-cell.excused-cell input:checked + .pokeball::after {
+  content: '★';
+  font-size: 10px;
+  color: #fef08a; /* Light gold star */
+  line-height: 10px;
+  text-align: center;
+  width: 16px;
+  height: 16px;
+  background: #eab308; /* Gold center button */
+  border: 2px solid var(--border-color);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
 }
 
 /* Highlight button active state */
