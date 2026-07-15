@@ -1,5 +1,5 @@
 import { getStarsFromDates, getDateOfColumn } from './vault.js';
-import { saveState, rollNewWeeklyBadge, getSunday } from './state.js';
+import { saveState, rollNewWeeklyBadge, getSunday, formatLocalDate } from './state.js';
 
 console.log("🚀 Starting Kepler Chart Regression Tests...");
 
@@ -434,7 +434,7 @@ async function runSuite() {
         for (let i = 1; i <= 10; i++) {
           const d = new Date('2026-07-01T00:00:00');
           d.setDate(d.getDate() + (i - 1));
-          streak10.push(d.toISOString().split('T')[0]);
+          streak10.push(formatLocalDate(d));
         }
         stars = getStarsFromDates(streak10);
         assert(stars.length === 10, "10 consecutive dates should return 10 stars");
@@ -482,7 +482,7 @@ async function runSuite() {
         await sleep(100);
 
         // Verify star is logged in vault
-        const todayDateStr = new Date().toISOString().split('T')[0];
+        const todayDateStr = formatLocalDate(new Date());
         assert(state.starVault.earnedDates.includes(todayDateStr), "Today's star should be logged in vault");
         assert(state.starVault.earnedDates.length === 1, "Vault should contain exactly 1 star");
 
@@ -827,8 +827,8 @@ async function runSuite() {
       console.log("Running Test Case 14: Vault Self-Healing Diagnostics...");
       {
         // Setup a corrupted local storage state
-        const todayStr = new Date().toISOString().split('T')[0];
-        const sundayStr = getSunday(new Date()).toISOString().split('T')[0];
+        const todayStr = formatLocalDate(new Date());
+        const sundayStr = formatLocalDate(getSunday(new Date()));
         
         const corruptedState = {
           version: 10,
@@ -934,7 +934,7 @@ async function runSuite() {
         // Verify weekStartDate has advanced by 7 days
         const expectedNextSunday = new Date(originalSunday + 'T00:00:00');
         expectedNextSunday.setDate(expectedNextSunday.getDate() + 7);
-        const expectedNextSundayStr = expectedNextSunday.toISOString().split('T')[0];
+        const expectedNextSundayStr = formatLocalDate(expectedNextSunday);
         
         assert(state.weekStartDate === expectedNextSundayStr, `weekStartDate should have advanced to ${expectedNextSundayStr} (actual: ${state.weekStartDate})`);
         

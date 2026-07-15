@@ -1,4 +1,4 @@
-import { state, saveState } from './state.js';
+import { state, saveState, formatLocalDate } from './state.js';
 
 // DOM elements cache
 let vaultModal = null;
@@ -336,7 +336,7 @@ export function checkDayCompleted(dayIndex, isCompleted) {
 export function getDateOfColumn(weekStartDateStr, d) {
   const baseDate = new Date(weekStartDateStr + 'T00:00:00');
   baseDate.setDate(baseDate.getDate() + d);
-  return baseDate.toISOString().split('T')[0];
+  return formatLocalDate(baseDate);
 }
 
 export function getStarsFromDates(dates) {

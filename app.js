@@ -16,7 +16,8 @@ import {
   MEGA_POKEMON,
   EVOLUTIONS,
   getSunday,
-  rollNewWeeklyBadge
+  rollNewWeeklyBadge,
+  formatLocalDate
 } from './state.js';
 
 const APP_VERSION = 'v1.4.0 (v21)';
@@ -931,12 +932,6 @@ function setupEventListeners() {
   testWeek3Btn.addEventListener('click', () => { setWeek(3); });
   testWeek4Btn.addEventListener('click', () => { setWeek(4); });
 
-  const formatLocalDate = (date) => {
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  };
 
   const addTodayBtn = document.getElementById('debug-vault-add-today');
   if (addTodayBtn) {
@@ -1106,13 +1101,13 @@ function resetWeekGrid(carryOverExceptions = false) {
     // Advance weekStartDate by 7 days to start the next week cycle
     const currentSunday = new Date(state.weekStartDate + 'T00:00:00');
     currentSunday.setDate(currentSunday.getDate() + 7);
-    state.weekStartDate = currentSunday.toISOString().split('T')[0];
+    state.weekStartDate = formatLocalDate(currentSunday);
 
     state.weeklyClaimed = false;
     state.reward = '';
     flashWeekly = true;
   } else {
-    state.weekStartDate = getSunday(new Date()).toISOString().split('T')[0];
+    state.weekStartDate = formatLocalDate(getSunday(new Date()));
   }
   
   state.grid = {};

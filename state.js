@@ -104,6 +104,13 @@ export function getStageInfo(familyId, stageId) {
   };
 }
 
+export function formatLocalDate(date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export function getSunday(d) {
   const copy = new Date(d.getTime());
   const day = copy.getDay();
@@ -143,7 +150,7 @@ export let state = {
   volume: 50,
   claimedRewardsHistory: [],
   activeDay: new Date().getDay(),
-  weekStartDate: getSunday(new Date()).toISOString().split('T')[0],
+  weekStartDate: formatLocalDate(getSunday(new Date())),
   starVault: {
     earnedDates: [],
     totalTraded: 0
@@ -259,7 +266,7 @@ const MIGRATIONS = [
   {
     version: 9,
     migrate: (s) => {
-      s.weekStartDate = getSunday(new Date()).toISOString().split('T')[0];
+      s.weekStartDate = formatLocalDate(getSunday(new Date()));
       s.starVault = {
         earnedDates: [],
         totalTraded: 0
@@ -463,7 +470,7 @@ export function applyBackup(index) {
 function getColumnDateStr(weekStartDateStr, dayIndex) {
   const baseDate = new Date(weekStartDateStr + 'T00:00:00');
   baseDate.setDate(baseDate.getDate() + dayIndex);
-  return baseDate.toISOString().split('T')[0];
+  return formatLocalDate(baseDate);
 }
 
 export function runStateDiagnostics() {
@@ -563,7 +570,7 @@ export function runStateDiagnostics() {
   }
 
   if (!state.weekStartDate) {
-    state.weekStartDate = getSunday(new Date()).toISOString().split('T')[0];
+    state.weekStartDate = formatLocalDate(getSunday(new Date()));
     issues.push("Missing weekStartDate.");
     fixed.push(`Initialized weekStartDate to ${state.weekStartDate}.`);
   }
