@@ -23,22 +23,10 @@ Review the changes made during the session and update the `README.md` if:
 *   System requirements or configuration steps changed (e.g. new passwords, new dependency files).
 *   Deprecated features were removed (ensure outdated instructions are cleaned up).
 
-### 3. Publish to GitHub
-Commit and push all verified changes to the remote repository, and merge to `main` if the app is hosted on GitHub Pages:
-1. Run `git status` to identify modified and untracked files.
-2. Stage changes: `git add .` (exclude temporary files if any).
-3. Commit with a descriptive message summarizing the session's work: `git commit -m "feat: <summary of work>"`
-4. Push to the active development branch: `git push origin <branch-name>`
-5. If using GitHub Pages for live hosting, perform the deployment sequence:
-   a. Switch to the main branch: `git checkout main`
-   b. Merge the development branch: `git merge <branch-name>`
-   c. Push the merged main branch: `git push origin main`
-   d. Switch back to the development branch: `git checkout <branch-name>`
-
-### 4. Create a Progress Checkpoint
+### 3. Create a Progress Checkpoint
 Generate a new checkpoint markdown file to allow the next session to initialize from this exact state.
-1. Determine the next checkpoint number by checking the existing checkpoints in the brain directory of the previous session or the current one. If the last checkpoint was `checkpoint_5.md`, the new one will be `checkpoint_6.md`.
-2. Create a new artifact file in the current conversation's brain directory: `/usr/local/google/home/crsjain/.gemini/jetski/brain/<conversation-id>/checkpoint_<N>.md`.
+1. Determine the next checkpoint number by checking the existing checkpoints in the project's `docs/` directory. If the last checkpoint was `checkpoint_10.md` (or the highest numbered one), the new one will be `checkpoint_11.md`.
+2. Create a new markdown file in the project's `docs/` directory: `docs/checkpoint_<N>.md` (absolute path: `/usr/local/google/home/crsjain/kepler-pokemon-chart/docs/checkpoint_<N>.md`).
 3. The checkpoint file MUST follow this structure:
 
 ```markdown
@@ -85,4 +73,16 @@ This document contains a complete, chronological record of user requests, system
 [Step-by-step instructions for the user to manually verify the new features/fixes]
 ```
 
-4. Once the checkpoint is created, present the path of the new checkpoint file to the user so they can use it to initialize the next session.
+### 4. Publish to GitHub
+Commit and push all verified changes and the new checkpoint to the remote repository, and merge to `main` if the app is hosted on GitHub Pages:
+1. Run `git status` to identify modified, untracked, and checkpoint files.
+2. Stage changes: `git add .` (this will automatically stage the new checkpoint in `docs/`).
+3. Commit with a descriptive message summarizing the session's work: `git commit -m "feat: <summary of work> and checkpoint <N>"`
+4. Push to the active development branch: `git push origin <branch-name>`
+5. If using GitHub Pages for live hosting, perform the deployment sequence:
+   a. Switch to the main branch: `git checkout main`
+   b. Merge the development branch: `git merge <branch-name>`
+   c. Push the merged main branch: `git push origin main`
+   d. Switch back to the development branch: `git checkout <branch-name>`
+
+Once the checkpoint is created and pushed, present the path of the new checkpoint file in the `docs/` directory to the user so they can use it to initialize the next session.
