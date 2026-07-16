@@ -538,7 +538,6 @@ function startExceptionMode() {
     layoutContainer.classList.add('exception-mode');
   }
   // Close Parent Admin modal to reveal the grid
-  const adminModal = document.getElementById('admin-modal');
   if (adminModal) {
     adminModal.classList.add('hidden');
   }

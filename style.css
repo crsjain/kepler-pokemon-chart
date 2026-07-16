@@ -2613,13 +2613,13 @@ input:checked + .slider:before {
 /* Unchecked Star */
 .checkbox-cell.excused-cell input:not(:checked) + .pokeball::before {
   color: #64748b !important; /* Grey star */
-  text-shadow: 1px 1px 0 #94a3b8, -1px -1px 0 #94a3b8, 1px -1px 0 #94a3b8, -1px 1px 0 #94a3b8 !important;
+  text-shadow: none !important;
 }
 
 /* Checked Star */
 .checkbox-cell.excused-cell input:checked + .pokeball::before {
   color: #ffcb05 !important; /* Poke Yellow star */
-  text-shadow: 1px 1px 0 #b45309, -1px -1px 0 #b45309, 1px -1px 0 #b45309, -1px 1px 0 #b45309, 0 0 4px rgba(234, 179, 8, 0.6) !important;
+  text-shadow: 0 0 4px rgba(234, 179, 8, 0.6) !important;
 }
 
 /* "+XP" Pill Badge (replaces center button) */

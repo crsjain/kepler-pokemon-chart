@@ -251,6 +251,30 @@ async function runSuite() {
       assert(state.partnersData['25'].xp === 99, "XP should clamp to 99");
       assert(state.partnersData['25'].stageId === '25', "Stage ID should recover to default Pikachu");
 
+      // Test Force App Update Button (UI Flow only to avoid reload loop)
+      {
+        console.log("Testing Force App Update Button Flow...");
+        const adminForceUpdateBtn = document.getElementById('admin-force-update-btn');
+        assert(adminForceUpdateBtn !== null, "Force Update button should exist in admin panel");
+        
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmNoBtn = document.getElementById('confirm-no-btn');
+        assert(confirmModal !== null, "Confirm modal should exist");
+        assert(confirmNoBtn !== null, "Confirm No button should exist");
+        
+        // Click Force Update
+        adminForceUpdateBtn.click();
+        await sleep(100);
+        
+        assert(!confirmModal.classList.contains('hidden'), "Confirm modal should be visible after clicking Force Update");
+        
+        // Click Cancel
+        confirmNoBtn.click();
+        await sleep(100);
+        
+        assert(confirmModal.classList.contains('hidden'), "Confirm modal should be hidden after clicking Cancel");
+      }
+
       restoreMocks();
 
       // Close admin modal by clicking backdrop

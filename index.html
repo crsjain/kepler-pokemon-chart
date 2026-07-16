@@ -106,6 +106,118 @@
         <div class="mega-slot" data-index="3"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Locked" class="mega-slot-img locked"></div>
       </div>
     </section>
+
+
+    <!-- Weekly Grid -->
+    <main class="chart-container">
+      <div class="grid-scroll-wrapper">
+        <table class="weekly-grid">
+          <thead>
+            <tr>
+              <th class="task-col-header">TRAINING TASK</th>
+              <th class="day-header" data-day="0">SUN</th>
+              <th class="day-header" data-day="1">MON</th>
+              <th class="day-header" data-day="2">TUE</th>
+              <th class="day-header" data-day="3">WED</th>
+              <th class="day-header" data-day="4">THU</th>
+              <th class="day-header" data-day="5">FRI</th>
+              <th class="day-header" data-day="6">SAT</th>
+              <th class="total-header">GOAL</th>
+            </tr>
+          </thead>
+          <tbody id="grid-tbody">
+            <!-- Populated dynamically via JS -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <!-- Bottom Section -->
+    <footer class="bottom-section">
+      <!-- Weekly Milestone Reward -->
+      <div class="reward-select-container" id="weekly-reward-container">
+        <label for="reward-select" class="reward-label">🏆 Weekly Milestone Reward Choice:</label>
+        <select id="reward-select" class="pixel-select">
+          <option value="" disabled selected>Choose a Weekly Reward...</option>
+          <option value="Bonus Tablet Time">⚡ +20 Mins of Bonus Tablet Time!</option>
+          <option value="Choose Meal">🍽️ Menu Master: Choose Weekend Breakfast or Dinner!</option>
+          <option value="Parent Playtime">🎮 30-Min Playing Pokémon with a Parent!</option>
+          <option value="Blanket Fort">🏰 Master Builder: Giant Living Room Blanket Fort!</option>
+          <option value="One Hour Rule">👑 The Boss: Make 1 Family Rule for an Hour!</option>
+          <option value="Art Project">🎨 Craft Master: Get a Special Art/Drawing Project!</option>
+          <option value="Lego Challenge">🧱 Lego Challenge: Parent Builds Whatever You Design!</option>
+          <option value="Bike Route">🚲 Adventure Guide: Pick the Weekend Bike/Scooter Route!</option>
+          <optgroup label="Recent Rewards" class="recent-rewards-group hidden"></optgroup>
+        </select>
+      </div>
+
+      <!-- Mega Milestone Reward -->
+      <div class="reward-select-container" id="mega-reward-container">
+        <label for="mega-reward-select" class="reward-label">💥 Mega Milestone Reward Choice (4-Weeks):</label>
+        <select id="mega-reward-select" class="pixel-select">
+          <option value="" disabled selected>Choose a Mega Reward...</option>
+          <option value="Booster Pack">💥 Game Time!: Open a Pokémon Card Pack!</option>
+          <option value="Dessert Outing">🍦 Sweet Victory: Special Dessert Outing!</option>
+          <option value="New Book">📚 Epic Upgrade: Pick a New Book!</option>
+          <option value="Clay Set">🧱 Clay Studio: Get an Air-Dry Clay Set!</option>
+          <option value="Science Kit">🔬 Mad Scientist: Get a Cool Science Kit!</option>
+          <option value="Bike Trip">🚲 Trail Blazer: Weekend Bike Trip to a New Trail!</option>
+          <option value="Shoe Laces">👟 Speed Runner: Neon/Glow-in-the-Dark Laces!</option>
+          <optgroup label="Recent Rewards" class="recent-rewards-group hidden"></optgroup>
+        </select>
+      </div>
+
+      <!-- Motivational Quote -->
+      <div class="motivational-quote">
+        "True Trainers never give up! Keep practicing and leveling up your skills!"
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="actions">
+        <button id="reset-btn" class="pixel-btn warning">Reset Week Grid</button>
+        <button id="admin-btn" class="pixel-btn info small">Parent Admin</button>
+        
+        <!-- App Version Info -->
+        <div class="app-version-container">
+          version <span id="app-version-label">v0.0.0</span>
+        </div>
+      </div>
+
+
+    </footer>
+    </div>
+
+    <!-- Debug Sidebar -->
+    <div id="debug-sidebar" class="debug-sidebar hidden">
+      <h3>🧪 Debug Panel</h3>
+      <div class="testing-buttons">
+        <div class="testing-row">
+          <button id="test-milestone-minus-one" class="pixel-btn warning">Milestone -1 Ball</button>
+          <button id="test-mega-minus-one" class="pixel-btn warning">Mega -1 Ball</button>
+        </div>
+        <div class="testing-row">
+          <button id="test-near-evolve" class="pixel-btn warning">Near Evolution</button>
+          <button id="test-near-levelup" class="pixel-btn warning">Near Level Up</button>
+        </div>
+        <div class="test-week-selector">
+          <span>Set Week:</span>
+          <button id="test-week-1" class="pixel-btn info small">W1</button>
+          <button id="test-week-2" class="pixel-btn info small">W2</button>
+          <button id="test-week-3" class="pixel-btn info small">W3</button>
+          <button id="test-week-4" class="pixel-btn info small">W4</button>
+        </div>
+        <div class="testing-row" style="margin-top: 10px; border-top: 1px dashed #cbd5e1; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; width: 100%;">
+          <span style="font-family: 'Fredoka One', cursive; font-size: 0.8rem; color: #5c3a21; text-align: left; align-self: flex-start;">🏅 Badges:</span>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button id="debug-badge-add-random" class="pixel-btn info small" style="flex: 1; min-width: 80px; font-size: 0.65rem; padding: 4px;">Add Rand</button>
+            <button id="debug-badge-roll" class="pixel-btn info small" style="flex: 1; min-width: 80px; font-size: 0.65rem; padding: 4px;">Roll Next</button>
+            <button id="debug-badge-clear" class="pixel-btn danger small" style="flex: 1.3; min-width: 105px; font-size: 0.65rem; padding: 4px;">Clear Badge Case</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
     <!-- Partner Selector Modal -->
     <div id="partner-modal" class="modal hidden">
       <div class="modal-content">
@@ -350,6 +462,7 @@
               <button id="exceptions-btn" class="pixel-btn danger">Set Exceptions</button>
               <button id="admin-export-btn" class="pixel-btn info">Export Backup Code</button>
               <button id="admin-import-btn" class="pixel-btn info">Import Backup Code</button>
+              <button id="admin-force-update-btn" class="pixel-btn warning">Force App Update</button>
               <button id="admin-wipe-btn" class="pixel-btn danger">Wipe All Progress (Reset)</button>
             </div>
             
@@ -403,117 +516,6 @@
         <button id="close-admin-modal-btn" class="pixel-btn">Close</button>
       </div>
     </div>
-
-
-    <!-- Weekly Grid -->
-    <main class="chart-container">
-      <div class="grid-scroll-wrapper">
-        <table class="weekly-grid">
-          <thead>
-            <tr>
-              <th class="task-col-header">TRAINING TASK</th>
-              <th class="day-header" data-day="0">SUN</th>
-              <th class="day-header" data-day="1">MON</th>
-              <th class="day-header" data-day="2">TUE</th>
-              <th class="day-header" data-day="3">WED</th>
-              <th class="day-header" data-day="4">THU</th>
-              <th class="day-header" data-day="5">FRI</th>
-              <th class="day-header" data-day="6">SAT</th>
-              <th class="total-header">GOAL</th>
-            </tr>
-          </thead>
-          <tbody id="grid-tbody">
-            <!-- Populated dynamically via JS -->
-          </tbody>
-        </table>
-      </div>
-    </main>
-
-    <!-- Bottom Section -->
-    <footer class="bottom-section">
-      <!-- Weekly Milestone Reward -->
-      <div class="reward-select-container" id="weekly-reward-container">
-        <label for="reward-select" class="reward-label">🏆 Weekly Milestone Reward Choice:</label>
-        <select id="reward-select" class="pixel-select">
-          <option value="" disabled selected>Choose a Weekly Reward...</option>
-          <option value="Bonus Tablet Time">⚡ +20 Mins of Bonus Tablet Time!</option>
-          <option value="Choose Meal">🍽️ Menu Master: Choose Weekend Breakfast or Dinner!</option>
-          <option value="Parent Playtime">🎮 30-Min Playing Pokémon with a Parent!</option>
-          <option value="Blanket Fort">🏰 Master Builder: Giant Living Room Blanket Fort!</option>
-          <option value="One Hour Rule">👑 The Boss: Make 1 Family Rule for an Hour!</option>
-          <option value="Art Project">🎨 Craft Master: Get a Special Art/Drawing Project!</option>
-          <option value="Lego Challenge">🧱 Lego Challenge: Parent Builds Whatever You Design!</option>
-          <option value="Bike Route">🚲 Adventure Guide: Pick the Weekend Bike/Scooter Route!</option>
-          <optgroup label="Recent Rewards" class="recent-rewards-group hidden"></optgroup>
-        </select>
-      </div>
-
-      <!-- Mega Milestone Reward -->
-      <div class="reward-select-container" id="mega-reward-container">
-        <label for="mega-reward-select" class="reward-label">💥 Mega Milestone Reward Choice (4-Weeks):</label>
-        <select id="mega-reward-select" class="pixel-select">
-          <option value="" disabled selected>Choose a Mega Reward...</option>
-          <option value="Booster Pack">💥 Game Time!: Open a Pokémon Card Pack!</option>
-          <option value="Dessert Outing">🍦 Sweet Victory: Special Dessert Outing!</option>
-          <option value="New Book">📚 Epic Upgrade: Pick a New Book!</option>
-          <option value="Clay Set">🧱 Clay Studio: Get an Air-Dry Clay Set!</option>
-          <option value="Science Kit">🔬 Mad Scientist: Get a Cool Science Kit!</option>
-          <option value="Bike Trip">🚲 Trail Blazer: Weekend Bike Trip to a New Trail!</option>
-          <option value="Shoe Laces">👟 Speed Runner: Neon/Glow-in-the-Dark Laces!</option>
-          <optgroup label="Recent Rewards" class="recent-rewards-group hidden"></optgroup>
-        </select>
-      </div>
-
-      <!-- Motivational Quote -->
-      <div class="motivational-quote">
-        "True Trainers never give up! Keep practicing and leveling up your skills!"
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="actions">
-        <button id="reset-btn" class="pixel-btn warning">Reset Week Grid</button>
-        <button id="admin-btn" class="pixel-btn info small">Parent Admin</button>
-        
-        <!-- App Version Info -->
-        <div class="app-version-container">
-          version <span id="app-version-label">v0.0.0</span>
-        </div>
-      </div>
-
-
-    </footer>
-    </div>
-
-    <!-- Debug Sidebar -->
-    <div id="debug-sidebar" class="debug-sidebar hidden">
-      <h3>🧪 Debug Panel</h3>
-      <div class="testing-buttons">
-        <div class="testing-row">
-          <button id="test-milestone-minus-one" class="pixel-btn warning">Milestone -1 Ball</button>
-          <button id="test-mega-minus-one" class="pixel-btn warning">Mega -1 Ball</button>
-        </div>
-        <div class="testing-row">
-          <button id="test-near-evolve" class="pixel-btn warning">Near Evolution</button>
-          <button id="test-near-levelup" class="pixel-btn warning">Near Level Up</button>
-        </div>
-        <div class="test-week-selector">
-          <span>Set Week:</span>
-          <button id="test-week-1" class="pixel-btn info small">W1</button>
-          <button id="test-week-2" class="pixel-btn info small">W2</button>
-          <button id="test-week-3" class="pixel-btn info small">W3</button>
-          <button id="test-week-4" class="pixel-btn info small">W4</button>
-        </div>
-        <div class="testing-row" style="margin-top: 10px; border-top: 1px dashed #cbd5e1; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; width: 100%;">
-          <span style="font-family: 'Fredoka One', cursive; font-size: 0.8rem; color: #5c3a21; text-align: left; align-self: flex-start;">🏅 Badges:</span>
-          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <button id="debug-badge-add-random" class="pixel-btn info small" style="flex: 1; min-width: 80px; font-size: 0.65rem; padding: 4px;">Add Rand</button>
-            <button id="debug-badge-roll" class="pixel-btn info small" style="flex: 1; min-width: 80px; font-size: 0.65rem; padding: 4px;">Roll Next</button>
-            <button id="debug-badge-clear" class="pixel-btn danger small" style="flex: 1.3; min-width: 105px; font-size: 0.65rem; padding: 4px;">Clear Badge Case</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <script src="particles.js?v=6.0"></script>
   <script type="module" src="app.js?v=6.0"></script>

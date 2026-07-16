@@ -41,6 +41,7 @@ let adminDiagnosticsBtn = null;
 let adminExportBtn = null;
 let adminImportBtn = null;
 let adminWipeBtn = null;
+let adminForceUpdateBtn = null;
 let closeAdminModalBtn = null;
 let adminAddTaskBtn = null;
 let adminSaveTasksBtn = null;
@@ -61,6 +62,7 @@ export function initAdmin(callbacks) {
   adminExportBtn = document.getElementById('admin-export-btn');
   adminImportBtn = document.getElementById('admin-import-btn');
   adminWipeBtn = document.getElementById('admin-wipe-btn');
+  adminForceUpdateBtn = document.getElementById('admin-force-update-btn');
   closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
   adminAddTaskBtn = document.getElementById('admin-add-task-btn');
   adminSaveTasksBtn = document.getElementById('admin-save-tasks-btn');
@@ -129,6 +131,9 @@ export function initAdmin(callbacks) {
   }
   if (adminImportBtn) {
     adminImportBtn.addEventListener('click', importState);
+  }
+  if (adminForceUpdateBtn) {
+    adminForceUpdateBtn.addEventListener('click', forceAppUpdate);
   }
   if (adminWipeBtn) {
     adminWipeBtn.addEventListener('click', () => {
@@ -436,4 +441,45 @@ function restoreBackupFromHistory(index) {
       }
     );
   }
+}
+
+function forceAppUpdate() {
+  showCustomConfirm(
+    "Force App Update? 🚀",
+    "This will clear the asset cache and force the app to reload the latest code from the server. Your progress (levels, badges, history) will NOT be lost.",
+    () => {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          const promises = registrations.map(r => r.unregister());
+          return Promise.all(promises);
+        }).then(() => {
+          if ('caches' in window) {
+            return caches.keys().then(keys => {
+              return Promise.all(keys.map(key => caches.delete(key)));
+            });
+          }
+        }).then(() => {
+          location.reload();
+        }).catch(err => {
+          console.error("Error during force update:", err);
+          location.reload();
+        });
+      } else {
+        if ('caches' in window) {
+          caches.keys().then(keys => {
+            return Promise.all(keys.map(key => caches.delete(key)));
+          }).then(() => {
+            location.reload();
+          });
+        } else {
+          location.reload();
+        }
+      }
+    },
+    null,
+    "Update App",
+    "Cancel",
+    "pixel-btn warning",
+    "pixel-btn"
+  );
 }
