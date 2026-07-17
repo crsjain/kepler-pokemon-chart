@@ -7,7 +7,7 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
-  <link rel="stylesheet" href="style.css?v=6.1">
+  <link rel="stylesheet" href="style.css?v=6.2">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
@@ -114,7 +114,12 @@
         <table class="weekly-grid">
           <thead>
             <tr>
-              <th class="task-col-header">TRAINING TASK</th>
+              <th class="task-col-header">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-right: 10px;">
+                  <span>TRAINING TASK</span>
+                  <button id="open-guide-btn" class="pixel-btn small info" style="font-size: 0.65rem; padding: 2px 6px; font-family: 'Fredoka One', cursive; cursor: pointer; white-space: nowrap;">📖 Guide</button>
+                </div>
+              </th>
               <th class="day-header" data-day="0">SUN</th>
               <th class="day-header" data-day="1">MON</th>
               <th class="day-header" data-day="2">TUE</th>
@@ -448,6 +453,20 @@
       </div>
     </div>
 
+    <!-- Task Guide / Rules Modal -->
+    <div id="guide-modal" class="modal hidden" style="z-index: 100000;">
+      <div class="modal-content guide-modal-content pixel-card">
+        <h2>Pokémon Training Guide 📖</h2>
+        <p class="guide-subtitle">Here is what Kepler needs to do to earn a pokeball for each task!</p>
+        
+        <div class="guide-list" id="guide-tasks-list">
+          <!-- Guide items rendered dynamically -->
+        </div>
+        
+        <button id="close-guide-modal-btn" class="pixel-btn" style="margin-top: 20px;">Done Reading</button>
+      </div>
+    </div>
+
     <!-- Admin Modal -->
     <div id="admin-modal" class="modal hidden">
       <div class="modal-content admin-modal-content">
@@ -517,8 +536,8 @@
       </div>
     </div>
 
-  <script src="particles.js?v=6.1"></script>
-  <script type="module" src="app.js?v=6.1"></script>
+  <script src="particles.js?v=6.2"></script>
+  <script type="module" src="app.js?v=6.2"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 </body>

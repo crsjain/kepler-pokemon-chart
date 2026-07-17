@@ -20,13 +20,14 @@ import {
   formatLocalDate
 } from './state.js';
 
-const APP_VERSION = 'v1.4.0 (v22)';
+const APP_VERSION = 'v1.4.0 (v23)';
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault } from './vault.js';
 import { getPokemonName, TIER_1_IDS, TIER_2_IDS } from './pokemon_data.js';
 import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
 import { initAdmin } from './admin.js';
+import { initGuide, openGuide, renderGuide } from './guide.js';
 
 // DOM Elements
 const pokemonSprite = document.getElementById('pokemon-sprite');
@@ -116,6 +117,7 @@ let isExceptionMode = false;
 loadState();
 initVault();
 initBadgeCase();
+initGuide();
 initAdmin({
   renderState,
   showCustomConfirm,
@@ -1580,7 +1582,9 @@ if (location.search.includes('runTests=true')) {
     renderBadgeCaseGrid: () => renderBadgeCaseGrid(),
     loadState: () => loadState(),
     renderVault: () => renderVault(),
-    syncVaultStarsWithGrid: () => syncVaultStarsWithGrid()
+    syncVaultStarsWithGrid: () => syncVaultStarsWithGrid(),
+    openGuide: () => openGuide(),
+    renderGuide: () => renderGuide()
   };
   
   const script = document.createElement('script');

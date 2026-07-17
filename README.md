@@ -20,8 +20,9 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
 - 🔊 **Audio & Bouncy Animations**: Game-synthesized audio beeps play on checkbox toggles, daily totals, and level-ups. Completing milestone events triggers a bouncy card entrance zoom-in transition and plays a triumphant 6-note 8-bit RPG-style victory fanfare (`megaSuccess`).
 - 📲 **PWA Offline Support**: Fully compatible as a Progressive Web App. Once loaded, it works entirely offline and caches PokeAPI sprite assets locally.
 - 💾 **Local Progress Saving**: Progress is saved automatically in the browser's local storage.
+- 📖 **Pokémon Training Guide**: Tap the "📖 Guide" button in the grid column header to view task-specific rules (e.g., Piano: "Play all pieces 3x...") describing exactly what needs to be done to earn a pokeball.
 - 🔒 **Parent Admin Panel**: Password-protected (`zxcv`) options dashboard in the footer:
-  - **Dynamic Task Manager**: Add, edit, or delete activities, customize goal days (1-7), and save changes instantly.
+  - **Dynamic Task Manager**: Add, edit, or delete activities, customize goal days (1-7), edit task instructions, and save changes instantly.
   - **Claimed Rewards History**: View a list of earned rewards with dates and partner context.
   - **Backup & Restore**: Trigger manual backups, import/export backup codes, or restore from a rolling 2-deep list of automated milestone backups (captured on level-ups and week resets).
   - **Diagnostics & Healing**: Click "Run Diagnostics" to auto-detect and heal any state schema inconsistency.

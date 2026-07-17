@@ -187,29 +187,35 @@ function renderAdminTasksList() {
     item.dataset.index = idx;
     
     item.innerHTML = `
-      <select class="task-emoji-select">
-        <option value="🎹" ${task.emoji === '🎹' ? 'selected' : ''}>🎹</option>
-        <option value="🧮" ${task.emoji === '🧮' ? 'selected' : ''}>🧮</option>
-        <option value="📚" ${task.emoji === '📚' ? 'selected' : ''}>📚</option>
-        <option value="✏️" ${task.emoji === '✏️' ? 'selected' : ''}>✏️</option>
-        <option value="💮" ${task.emoji === '💮' ? 'selected' : ''}>💮</option>
-        <option value="🧪" ${task.emoji === '🧪' ? 'selected' : ''}>🧪</option>
-        <option value="🎨" ${task.emoji === '🎨' ? 'selected' : ''}>🎨</option>
-        <option value="🏃" ${task.emoji === '🏃' ? 'selected' : ''}>🏃</option>
-        <option value="🧹" ${task.emoji === '🧹' ? 'selected' : ''}>🧹</option>
-        <option value="🥦" ${task.emoji === '🥦' ? 'selected' : ''}>🥦</option>
-        <option value="📝" ${task.emoji === '📝' ? 'selected' : ''}>📝</option>
-      </select>
-      <input type="text" class="task-name-input" value="${task.name}">
-      <div class="task-goal-container">
-        <span class="task-goal-label">Goal:</span>
-        <input type="number" class="task-req-input" value="${task.req || 5}" min="1" max="7">
+      <div class="admin-task-row">
+        <select class="task-emoji-select">
+          <option value="🎹" ${task.emoji === '🎹' ? 'selected' : ''}>🎹</option>
+          <option value="🧮" ${task.emoji === '🧮' ? 'selected' : ''}>🧮</option>
+          <option value="📚" ${task.emoji === '📚' ? 'selected' : ''}>📚</option>
+          <option value="✏️" ${task.emoji === '✏️' ? 'selected' : ''}>✏️</option>
+          <option value="💮" ${task.emoji === '💮' ? 'selected' : ''}>💮</option>
+          <option value="🧪" ${task.emoji === '🧪' ? 'selected' : ''}>🧪</option>
+          <option value="🎨" ${task.emoji === '🎨' ? 'selected' : ''}>🎨</option>
+          <option value="🏃" ${task.emoji === '🏃' ? 'selected' : ''}>🏃</option>
+          <option value="🧹" ${task.emoji === '🧹' ? 'selected' : ''}>🧹</option>
+          <option value="🥦" ${task.emoji === '🥦' ? 'selected' : ''}>🥦</option>
+          <option value="📝" ${task.emoji === '📝' ? 'selected' : ''}>📝</option>
+        </select>
+        <input type="text" class="task-name-input" value="${task.name}">
+        <div class="task-goal-container">
+          <span class="task-goal-label">Goal:</span>
+          <input type="number" class="task-req-input" value="${task.req || 5}" min="1" max="7">
+        </div>
+        <button class="pixel-btn danger remove-task-btn" data-index="${idx}">
+          <svg class="delete-icon" viewBox="0 0 448 512" fill="white" xmlns="http://www.w3.org/2000/svg">
+            <path d="M135.2 17.7C140.6 6.8 151.7 0 163.8 0H284.2C296.3 0 307.4 6.8 312.8 17.7L320 32H384C401.7 32 416 46.3 416 64C416 81.7 401.7 96 384 96H64C46.3 96 32 81.7 32 64C32 46.3 46.3 32 64 32H128L135.2 17.7zM32 128H416V448C416 483.3 387.3 512 352 512H96C60.7 512 32 483.3 32 448V128zM96 176C96 162.7 85.3 152 72 152C58.7 152 48 162.7 48 176V408C48 421.3 58.7 432 72 432C85.3 432 96 421.3 96 408V176z"/>
+          </svg>
+        </button>
       </div>
-      <button class="pixel-btn danger remove-task-btn" data-index="${idx}">
-        <svg class="delete-icon" viewBox="0 0 448 512" fill="white" xmlns="http://www.w3.org/2000/svg">
-          <path d="M135.2 17.7C140.6 6.8 151.7 0 163.8 0H284.2C296.3 0 307.4 6.8 312.8 17.7L320 32H384C401.7 32 416 46.3 416 64C416 81.7 401.7 96 384 96H64C46.3 96 32 81.7 32 64C32 46.3 46.3 32 64 32H128L135.2 17.7zM32 128H416V448C416 483.3 387.3 512 352 512H96C60.7 512 32 483.3 32 448V128zM96 176C96 162.7 85.3 152 72 152C58.7 152 48 162.7 48 176V408C48 421.3 58.7 432 72 432C85.3 432 96 421.3 96 408V176z"/>
-        </svg>
-      </button>
+      <div class="admin-task-instructions">
+        <span class="instructions-label">Instructions:</span>
+        <input type="text" class="task-instructions-input" value="${task.instructions || ''}" placeholder="What Kepler needs to do (e.g. Play pieces 3x)">
+      </div>
     `;
     container.appendChild(item);
   });
@@ -242,7 +248,8 @@ function addNewTask() {
     name: 'New Activity',
     req: 5,
     emoji: '📝',
-    concept: 'Keep practicing!'
+    concept: 'Keep practicing!',
+    instructions: ''
   });
   renderAdminTasksList();
 }
@@ -259,6 +266,7 @@ function saveAdminTasks() {
     const emoji = item.querySelector('.task-emoji-select').value;
     const name = item.querySelector('.task-name-input').value.trim();
     const req = parseInt(item.querySelector('.task-req-input').value);
+    const instructions = item.querySelector('.task-instructions-input').value.trim();
     
     if (!name) {
       alert("Activity name cannot be empty!");
@@ -275,6 +283,7 @@ function saveAdminTasks() {
     state.tasks[idx].emoji = emoji;
     state.tasks[idx].name = name;
     state.tasks[idx].req = req;
+    state.tasks[idx].instructions = instructions;
   });
   
   if (!hasError) {

@@ -139,11 +139,11 @@ export let state = {
   debugSidebarEnabled: false,
   grid: {}, // key format: "day-task" -> boolean
   tasks: [
-    { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!' },
-    { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1' },
-    { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!' },
-    { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery' },
-    { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!' }
+    { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!', instructions: 'Play all pieces 3x and work on hard parts.' },
+    { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1', instructions: "Complete today's worksheet or 15 mins on math app." },
+    { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!', instructions: '15min reading out loud w/30s summary.' },
+    { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery', instructions: 'Write at least 3 clean sentences w/punctuation.' },
+    { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!', instructions: 'Practice reading current vocabulary card set 2x.' }
   ],
   rewardHistory: [],
   megaRewardHistory: [],
@@ -394,11 +394,11 @@ export function resetStateToDefault() {
     grid: {},
     excused: {},
     tasks: [
-      { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!' },
-      { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1' },
-      { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!' },
-      { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery' },
-      { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!' }
+      { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!', instructions: 'Play all pieces 3x and work on hard parts.' },
+      { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1', instructions: "Complete today's worksheet or 15 mins on math app." },
+      { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!', instructions: '15min reading out loud w/30s summary.' },
+      { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery', instructions: 'Write at least 3 clean sentences w/punctuation.' },
+      { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!', instructions: 'Practice reading current vocabulary card set 2x.' }
     ],
     rewardHistory: [],
     megaRewardHistory: [],
@@ -553,14 +553,33 @@ export function runStateDiagnostics() {
 
   if (!state.tasks || !Array.isArray(state.tasks) || state.tasks.length === 0) {
     state.tasks = [
-      { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!' },
-      { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1' },
-      { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!' },
-      { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery' },
-      { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!' }
+      { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!', instructions: 'Play all pieces 3x and work on hard parts.' },
+      { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1', instructions: "Complete today's worksheet or 15 mins on math app." },
+      { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!', instructions: '15min reading out loud w/30s summary.' },
+      { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery', instructions: 'Write at least 3 clean sentences w/punctuation.' },
+      { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!', instructions: 'Practice reading current vocabulary card set 2x.' }
     ];
     issues.push("Tasks list was missing or invalid.");
     fixed.push("Reset to default tasks.");
+  } else {
+    let tasksHealed = false;
+    state.tasks.forEach(task => {
+      if (task.instructions === undefined) {
+        const defaults = {
+          piano: 'Play all pieces 3x and work on hard parts.',
+          math: "Complete today's worksheet or 15 mins on math app.",
+          reading: '15min reading out loud w/30s summary.',
+          writing: 'Write at least 3 clean sentences w/punctuation.',
+          chinese: 'Practice reading current vocabulary card set 2x.'
+        };
+        task.instructions = defaults[task.id] || '';
+        tasksHealed = true;
+      }
+    });
+    if (tasksHealed) {
+      issues.push("Some tasks were missing the instructions field.");
+      fixed.push("Populated default instructions for missing fields.");
+    }
   }
   
   if (!state.claimedRewardsHistory || !Array.isArray(state.claimedRewardsHistory)) {

@@ -1430,13 +1430,47 @@ input:checked + .slider:before {
 
 .admin-task-item {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 12px;
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.admin-task-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.admin-task-instructions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.admin-task-instructions .instructions-label {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.admin-task-instructions input[type="text"].task-instructions-input {
+  flex: 1;
+  height: 32px;
+  padding: 6px 10px;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.85rem;
+  box-sizing: border-box;
 }
 
 .admin-task-item input[type="text"].task-name-input {
@@ -2660,5 +2694,76 @@ input:checked + .slider:before {
 .pixel-btn.danger.active {
   background-color: #b91c1c;
   box-shadow: inset 0 -4px 0 rgba(0,0,0,0.4);
+}
+
+/* Guide Modal */
+.guide-modal-content {
+  max-width: 550px;
+  width: 95%;
+  background: #fdf6e2; /* Warm paper tone */
+  border: var(--pixel-border);
+  border-color: #8b5a2b;
+  box-shadow: 0 10px 0px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 25px;
+  max-height: 85vh;
+  box-sizing: border-box;
+}
+
+.guide-subtitle {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  color: #718096;
+  text-align: center;
+  margin-top: -5px;
+  margin-bottom: 20px;
+}
+
+.guide-list {
+  width: 100%;
+  overflow-y: auto;
+  flex-grow: 1;
+  padding-right: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.guide-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.05);
+}
+
+.guide-item-emoji {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.guide-item-details {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.guide-item-name {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1rem;
+  color: var(--poke-dark-blue);
+  margin-bottom: 4px;
+}
+
+.guide-item-instructions {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  color: #2d3748;
+  line-height: 1.35;
 }
 

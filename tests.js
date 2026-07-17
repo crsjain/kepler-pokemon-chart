@@ -1443,6 +1443,114 @@ async function runSuite() {
         state = window.__app_state__;
       }
 
+      // 20. Test Case 20: Task Instructions Guide Modal
+      console.log("Running Test Case 20: Task Instructions Guide Modal...");
+      {
+        window.__test_helpers__.resetState();
+        await sleep(50);
+        state = window.__app_state__;
+
+        // 20.1 Verify Guide button exists
+        const openGuideBtn = document.getElementById('open-guide-btn');
+        assert(openGuideBtn !== null, "Guide button should exist in column header");
+
+        // 20.2 Click Guide button and verify modal opens
+        openGuideBtn.click();
+        await sleep(100);
+        const guideModal = document.getElementById('guide-modal');
+        assert(guideModal && !guideModal.classList.contains('hidden'), "Guide modal should be visible after click");
+
+        // 20.3 Verify default instructions are rendered in the DOM
+        const items = document.querySelectorAll('.guide-item');
+        assert(items.length === 5, "Should display exactly 5 task items in the guide");
+        
+        // Find Piano Practice in guide
+        const pianoItem = Array.from(items).find(el => el.querySelector('.guide-item-name').textContent === 'Piano Practice');
+        assert(pianoItem !== undefined, "Piano Practice should be in the guide list");
+        assert(pianoItem.querySelector('.guide-item-instructions').textContent === 'Play all pieces 3x and work on hard parts.', 
+          "Piano Practice instructions should match defaults");
+
+        // Find Reading Time in guide
+        const readingItem = Array.from(items).find(el => el.querySelector('.guide-item-name').textContent === 'Reading Time');
+        assert(readingItem !== undefined, "Reading Time should be in the guide list");
+        assert(readingItem.querySelector('.guide-item-instructions').textContent === '15min reading out loud w/30s summary.',
+          "Reading Time instructions should match defaults");
+
+        // 20.4 Close guide modal
+        const closeGuideBtn = document.getElementById('close-guide-modal-btn');
+        assert(closeGuideBtn !== null, "Close Guide button should exist");
+        closeGuideBtn.click();
+        await sleep(100);
+        assert(guideModal.classList.contains('hidden'), "Guide modal should be hidden after closing");
+
+        // 20.5 Test Admin Panel integration
+        // Open Admin Panel
+        const adminBtn = document.getElementById('admin-btn');
+        adminBtn.click();
+        await sleep(100);
+        
+        // Enter password
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmit = document.getElementById('password-submit-btn');
+        passwordInput.value = window.__test_helpers__.ADMIN_PASSWORD;
+        passwordSubmit.click();
+        await sleep(100);
+
+        const adminModal = document.getElementById('admin-modal');
+        assert(adminModal && !adminModal.classList.contains('hidden'), "Admin modal should be open");
+
+        // Locate Piano instructions input in Admin Panel
+        const adminTaskItems = document.querySelectorAll('.admin-task-item');
+        const pianoAdminItem = Array.from(adminTaskItems).find(el => el.querySelector('.task-name-input').value === 'Piano Practice');
+        assert(pianoAdminItem !== undefined, "Piano Practice task item should exist in Admin Panel");
+        
+        const pianoInstInput = pianoAdminItem.querySelector('.task-instructions-input');
+        assert(pianoInstInput !== null, "Piano Practice instructions input should exist in Admin Panel");
+        assert(pianoInstInput.value === 'Play all pieces 3x and work on hard parts.', "Admin input value should match current instructions");
+
+        // Change instructions
+        pianoInstInput.value = "New custom piano instructions!";
+        
+        // Mock alert
+        let alertMsg = "";
+        const originalAlert = window.alert;
+        window.alert = (msg) => { alertMsg = msg; };
+
+        // Save tasks
+        const saveBtn = document.getElementById('admin-save-tasks-btn');
+        saveBtn.click();
+        await sleep(100);
+
+        assert(alertMsg.includes("Activities saved successfully"), "Should alert save confirmation");
+        
+        // Restore alert
+        window.alert = originalAlert;
+
+        // Close admin panel
+        const closeAdminBtn = document.getElementById('close-admin-modal-btn');
+        closeAdminBtn.click();
+        await sleep(100);
+
+        // Open Guide again and verify updated instructions are rendered
+        openGuideBtn.click();
+        await sleep(100);
+        
+        const itemsUpdated = document.querySelectorAll('.guide-item');
+        const pianoItemUpdated = Array.from(itemsUpdated).find(el => el.querySelector('.guide-item-name').textContent === 'Piano Practice');
+        assert(pianoItemUpdated !== undefined, "Piano Practice should exist in guide");
+        assert(pianoItemUpdated.querySelector('.guide-item-instructions').textContent === 'New custom piano instructions!', 
+          "Guide should display updated instructions");
+
+        // Close guide
+        closeGuideBtn.click();
+        await sleep(100);
+
+        // Clean up
+        window.__test_helpers__.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
