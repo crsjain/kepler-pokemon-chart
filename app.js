@@ -20,7 +20,7 @@ import {
   formatLocalDate
 } from './state.js';
 
-const APP_VERSION = 'v1.4.0 (v21)';
+const APP_VERSION = 'v1.4.0 (v22)';
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault } from './vault.js';
@@ -940,7 +940,7 @@ function setupEventListeners() {
       if (dates.length === 0) {
         nextDateStr = formatLocalDate(new Date());
       } else {
-        const sorted = [...dates].sort((a, b) => new Date(a) - new Date(b));
+        const sorted = [...dates].sort();
         const lastDate = new Date(sorted[sorted.length - 1] + 'T00:00:00');
         lastDate.setDate(lastDate.getDate() + 1);
         nextDateStr = formatLocalDate(lastDate);
@@ -961,7 +961,7 @@ function setupEventListeners() {
       if (dates.length === 0) {
         nextDateStr = formatLocalDate(new Date());
       } else {
-        const sorted = [...dates].sort((a, b) => new Date(a) - new Date(b));
+        const sorted = [...dates].sort();
         const lastDate = new Date(sorted[sorted.length - 1] + 'T00:00:00');
         // Add 2 days to create a 1-day gap, breaking the streak
         lastDate.setDate(lastDate.getDate() + 2);
@@ -984,7 +984,7 @@ function setupEventListeners() {
         baseDate = new Date();
         baseDate.setDate(baseDate.getDate() - 9); // start 9 days ago
       } else {
-        const sorted = [...dates].sort((a, b) => new Date(a) - new Date(b));
+        const sorted = [...dates].sort();
         baseDate = new Date(sorted[sorted.length - 1] + 'T00:00:00');
         baseDate.setDate(baseDate.getDate() + 1); // start consecutive sequence
       }

@@ -339,10 +339,16 @@ export function getDateOfColumn(weekStartDateStr, d) {
   return formatLocalDate(baseDate);
 }
 
+function parseLocalDate(dateStr) {
+  const parts = dateStr.split('-');
+  return new Date(parts[0], parts[1] - 1, parts[2]);
+}
+
 export function getStarsFromDates(dates) {
   if (!dates || dates.length === 0) return [];
   
-  const sortedDates = [...dates].sort((a, b) => new Date(a) - new Date(b));
+  // YYYY-MM-DD strings sort alphabetically in chronological order
+  const sortedDates = [...dates].sort();
   
   const stars = [];
   let currentStreak = [];
@@ -354,8 +360,8 @@ export function getStarsFromDates(dates) {
       currentStreak.push(dateStr);
     } else {
       const prevDateStr = currentStreak[currentStreak.length - 1];
-      const prevDate = new Date(prevDateStr + 'T00:00:00');
-      const currDate = new Date(dateStr + 'T00:00:00');
+      const prevDate = parseLocalDate(prevDateStr);
+      const currDate = parseLocalDate(dateStr);
       
       const diffTime = currDate.getTime() - prevDate.getTime();
       const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));

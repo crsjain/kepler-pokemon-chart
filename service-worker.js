@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poke-chart-cache-v21';
+const CACHE_NAME = 'poke-chart-cache-v22';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -15,12 +15,14 @@ const ASSETS_TO_CACHE = [
   './manifest.json'
 ];
 
-// Install Event - cache core assets
+// Install Event - cache core assets with cache-busting/bypass HTTP cache
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        return cache.addAll(ASSETS_TO_CACHE);
+        // Force network fetch for all assets to bypass browser HTTP cache during SW install
+        const requests = ASSETS_TO_CACHE.map(url => new Request(url, { cache: 'reload' }));
+        return cache.addAll(requests);
       })
       .then(() => self.skipWaiting())
   );

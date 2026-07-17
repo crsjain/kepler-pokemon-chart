@@ -1378,6 +1378,71 @@ async function runSuite() {
         state = window.__app_state__;
       }
 
+      // 19. Test Case 19: Star Vault Display Order
+      console.log("Running Test Case 19: Star Vault Display Order...");
+      {
+        window.__test_helpers__.resetState();
+        await sleep(50);
+        state = window.__app_state__;
+
+        // Manually inject 3 stars from a past week
+        state.starVault.earnedDates = ["2026-07-06", "2026-07-07", "2026-07-08"];
+        saveState();
+
+        // Start a new week (weekStartDate = 2026-07-12)
+        state.weekStartDate = "2026-07-12";
+        saveState();
+
+        // Earn stars out of order: Tuesday (day 2, 2026-07-14) first, then Monday (day 1, 2026-07-13)
+        const tasks = state.tasks || [];
+        
+        // Complete Tuesday (day 2)
+        tasks.forEach(task => {
+          state.grid[`2-${task.id}`] = true;
+        });
+        saveState();
+        window.__test_helpers__.syncVaultStarsWithGrid();
+        await sleep(50);
+
+        // Complete Monday (day 1)
+        tasks.forEach(task => {
+          state.grid[`1-${task.id}`] = true;
+        });
+        saveState();
+        window.__test_helpers__.syncVaultStarsWithGrid();
+        
+        // Render
+        window.__test_helpers__.renderVault();
+        await sleep(100);
+
+        // Verify state has 5 stars in correct chronological order
+        assert(state.starVault.earnedDates.length === 5, "Vault should contain 5 stars");
+        
+        const stars = getStarsFromDates(state.starVault.earnedDates);
+        assert(stars.length === 5, "getStarsFromDates should return 5 stars");
+        assert(stars[0].date === "2026-07-06", "1st star should be 2026-07-06");
+        assert(stars[1].date === "2026-07-07", "2nd star should be 2026-07-07");
+        assert(stars[2].date === "2026-07-08", "3rd star should be 2026-07-08");
+        assert(stars[3].date === "2026-07-13", "4th star should be 2026-07-13 (Monday)");
+        assert(stars[4].date === "2026-07-14", "5th star should be 2026-07-14 (Tuesday)");
+
+        // Verify DOM slots
+        const slots = document.querySelectorAll('.vault-star-slot');
+        assert(slots.length >= 5, "Should have at least 5 slots");
+        
+        assert(!slots[0].classList.contains('empty'), "Slot 0 should not be empty");
+        assert(!slots[1].classList.contains('empty'), "Slot 1 should not be empty");
+        assert(!slots[2].classList.contains('empty'), "Slot 2 should not be empty");
+        assert(!slots[3].classList.contains('empty'), "Slot 3 should not be empty");
+        assert(!slots[4].classList.contains('empty'), "Slot 4 should not be empty");
+        assert(slots[5].classList.contains('empty'), "Slot 5 should be empty");
+
+        // Clean up
+        window.__test_helpers__.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

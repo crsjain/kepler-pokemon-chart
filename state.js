@@ -648,7 +648,7 @@ export function runStateDiagnostics() {
     });
     
     if (syncedAny) {
-      state.starVault.earnedDates.sort((a, b) => new Date(a) - new Date(b));
+      state.starVault.earnedDates.sort();
     }
   }
 
