@@ -30,6 +30,7 @@ import {
   subscribeToProfileState, 
   saveProfileStateToCloud 
 } from './firebase.js';
+let deleteChildProfileFn = deleteChildProfile;
 import { promptParentPassword } from './admin.js';
 
 const APP_VERSION = 'v1.4.7 (v30)';
@@ -491,41 +492,44 @@ function renderAdminProfilesList() {
     `;
     
     const deleteBtn = item.querySelector('.delete-profile-btn');
-    deleteBtn.addEventListener('click', async (e) => {
+    deleteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       const name = deleteBtn.getAttribute('data-name');
       const id = deleteBtn.getAttribute('data-id');
       
-      const confirmed = await showCustomConfirm(
+      showCustomConfirm(
         "Delete Profile ⚠️",
-        `Are you sure you want to permanently delete profile "${name}"? This will erase all of their levels, badges, and weekly progress. This action CANNOT be undone.`
-      );
-      
-      if (confirmed) {
-        try {
-          showCustomNotification("Deleting...", `Deleting profile ${name}...`);
-          await deleteChildProfile(id);
-          showCustomNotification("Deleted 🗑️", `Profile ${name} was successfully deleted.`);
-          
-          if (id === activeProfileId) {
-            activeProfileId = null;
-            localStorage.removeItem('last_active_profile_id');
-            if (adminModal) adminModal.classList.add('hidden');
+        `Are you sure you want to permanently delete profile "${name}"? This will erase all of their levels, badges, and weekly progress. This action CANNOT be undone.`,
+        async () => {
+          try {
+            showCustomNotification("Deleting...", `Deleting profile ${name}...`);
+            await deleteChildProfileFn(id);
+            showCustomNotification("Deleted 🗑️", `Profile ${name} was successfully deleted.`);
             
-            const appContainer = document.querySelector('.app-container');
-            if (appContainer) {
-              appContainer.style.filter = 'blur(10px)';
-              appContainer.style.pointerEvents = 'none';
+            if (id === activeProfileId) {
+              activeProfileId = null;
+              localStorage.removeItem('last_active_profile_id');
+              if (adminModal) adminModal.classList.add('hidden');
+              
+              const appContainer = document.querySelector('.app-container');
+              if (appContainer) {
+                appContainer.style.filter = 'blur(10px)';
+                appContainer.style.pointerEvents = 'none';
+              }
+              if (profileSelectModal) {
+                profileSelectModal.classList.remove('hidden');
+              }
             }
-            if (profileSelectModal) {
-              profileSelectModal.classList.remove('hidden');
-            }
+          } catch (err) {
+            console.error("Failed to delete profile:", err);
+            showCustomNotification("Error ❌", `Failed to delete profile: ${err.message}`);
           }
-        } catch (err) {
-          console.error("Failed to delete profile:", err);
-          showCustomNotification("Error ❌", `Failed to delete profile: ${err.message}`);
-        }
-      }
+        },
+        () => {}, // No callback
+        "Delete 🗑️",
+        "Cancel",
+        "pixel-btn danger"
+      );
     });
     
     container.appendChild(item);
@@ -2120,7 +2124,8 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     renderGuide: () => renderGuide(),
     setProfilesList: (list) => { profilesList = list; },
     getProfilesList: () => profilesList,
-    renderAdminProfilesList: () => renderAdminProfilesList()
+    renderAdminProfilesList: () => renderAdminProfilesList(),
+    setDeleteChildProfileMock: (fn) => { deleteChildProfileFn = fn || deleteChildProfile; }
   };
   
   if (location.search.includes('runTests=true')) {

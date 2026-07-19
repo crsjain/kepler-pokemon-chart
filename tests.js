@@ -1744,8 +1744,8 @@ async function runSuite() {
         state = window.__app_state__;
       }
 
-      // 23. Test Admin Profiles List Rendering
-      console.log("Running Test Case 23: Admin Profiles List Rendering...");
+      // 23. Test Admin Profiles List Rendering & Deletion Flow
+      console.log("Running Test Case 23: Admin Profiles List Rendering & Deletion Flow...");
       {
         const helpers = window.__test_helpers__;
         
@@ -1765,8 +1765,39 @@ async function runSuite() {
         assert(items[0].querySelector('.admin-profile-name').textContent.includes('Test Child 1'), "First profile name should match");
         assert(items[1].querySelector('.admin-profile-name').textContent.includes('Test Child 2'), "Second profile name should match");
         
+        // Mock delete database call
+        let deletedProfileId = null;
+        helpers.setDeleteChildProfileMock((id) => {
+          deletedProfileId = id;
+          return Promise.resolve();
+        });
+        
+        // Sim click delete for profile_1
+        const deleteBtn = items[0].querySelector('.delete-profile-btn');
+        assert(deleteBtn, "Delete button should exist for Test Child 1");
+        deleteBtn.click();
+        
+        // Check confirmation modal layout
+        const confirmModal = document.getElementById('confirm-modal');
+        assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should be open on delete click");
+        
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        const confirmNoBtn = document.getElementById('confirm-no-btn');
+        
+        // Check UX updates: Delete/Cancel texts
+        assert(confirmYesBtn.textContent === "Delete 🗑️", `Yes button text should be Delete, got ${confirmYesBtn.textContent}`);
+        assert(confirmNoBtn.textContent === "Cancel", `No button text should be Cancel, got ${confirmNoBtn.textContent}`);
+        assert(confirmYesBtn.classList.contains('danger'), "Yes button should have pixel-btn danger class (Red)");
+        
+        // Confirm deletion
+        confirmYesBtn.click();
+        await sleep(100);
+        
+        assert(deletedProfileId === 'profile_1', `Mock delete should have been called with profile_1, got ${deletedProfileId}`);
+        
         // Clean up
         helpers.setProfilesList([]);
+        helpers.setDeleteChildProfileMock(null); // Restore original
         helpers.renderAdminProfilesList();
       }
 
