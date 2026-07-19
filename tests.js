@@ -1,5 +1,6 @@
 import { getStarsFromDates, getDateOfColumn } from './vault.js';
-import { saveState, rollNewWeeklyBadge, getSunday, formatLocalDate } from './state.js';
+import { saveState, rollNewWeeklyBadge, getDefaultStateTemplate } from './state.js';
+import { getSunday, formatLocalDate } from './date_utils.js';
 
 console.log("🚀 Starting Kepler Chart Regression Tests...");
 
@@ -38,7 +39,7 @@ async function runSuite() {
     }
 
     let state = window.__app_state__;
-    assert(state.version === 11, "State version should be 11");
+    assert(state.version === 12, "State version should be 12");
     assert(state.weeklyClaimed === false, "Weekly claimed should be false");
     assert(window.__grid_rebuild_count__ === 1, `Grid should have been built exactly once on reset (actual: ${window.__grid_rebuild_count__})`);
 
@@ -49,7 +50,7 @@ async function runSuite() {
       // Verify Version Indicator
       const versionLabel = document.getElementById('app-version-label');
       assert(versionLabel !== null, "App version indicator should exist");
-      assert(versionLabel.textContent.includes('v1.4.0'), "App version label should display v1.4.0");
+      assert(versionLabel.textContent.includes('v1.4.7'), "App version label should display v1.4.7");
       
       // Select rewards (needed to check boxes)
       const rewardSelect = document.getElementById('reward-select');
@@ -187,11 +188,9 @@ async function runSuite() {
       const newItem = items[items.length - 1]; // Newly added item
       
       const nameInput = newItem.querySelector('.task-name-input');
-      const reqInput = newItem.querySelector('.task-req-input');
       const emojiSelect = newItem.querySelector('.task-emoji-select');
       
       nameInput.value = "Science Project";
-      reqInput.value = "3";
       emojiSelect.value = "🧪";
 
       // Save activities
@@ -220,7 +219,7 @@ async function runSuite() {
 
       assert(state.grid[`0-${newTaskId}`] === true, "State should record new task check");
       const actualGoalText = newRow.querySelector('.task-total-cell').textContent;
-      assert(actualGoalText === "1 / 3", `Goal column should show 1/3 (actual: "${actualGoalText}")`);
+      assert(actualGoalText === "1 / 7", `Goal column should show 1/7 (actual: "${actualGoalText}")`);
 
       // Delete task in Admin
       const deleteBtn = newItem.querySelector('.remove-task-btn');
@@ -616,7 +615,7 @@ async function runSuite() {
         console.log("Running Test Case 11: Badge Case & Collection...");
         
         // Verify state initial V10 fields
-        assert(state.version === 11, "State version should be 11");
+        assert(state.version === 12, "State version should be 12");
         assert(Array.isArray(state.collectedBadges), "collectedBadges should be an array");
         assert(state.collectedBadges.length === 0, "Initially collected badges should be empty");
         assert(Array.isArray(state.badgePool), "badgePool should be an array");
@@ -744,7 +743,7 @@ async function runSuite() {
         window.__test_helpers__.loadState();
         let migratedState = window.__app_state__;
         
-        assert(migratedState.version === 11, "Migrated state version should be 11");
+        assert(migratedState.version === 12, "Migrated state version should be 12");
         assert(Array.isArray(migratedState.collectedBadges), "collectedBadges should be created");
         assert(migratedState.collectedBadges.length === 2, "Should have retroactively awarded 2 badges based on megaWeeks=2");
         assert(migratedState.collectedBadges[0].id === 658, "1st migrated badge should be Greninja (658)");
@@ -783,7 +782,7 @@ async function runSuite() {
         window.__test_helpers__.loadState();
         migratedState = window.__app_state__;
         
-        assert(migratedState.version === 11, "Migrated state version should be 11");
+        assert(migratedState.version === 12, "Migrated state version should be 12");
         assert(migratedState.collectedBadges.length === 2, "Should award 2 badges based on history");
         assert(migratedState.collectedBadges[0].id === 658, "1st badge is Greninja");
         assert(migratedState.collectedBadges[1].id === 382, "2nd badge is Kyogre");
@@ -821,14 +820,14 @@ async function runSuite() {
         }
 
         // Verify stars in vault matches!
-        assert(state.starVault.earnedDates.length === 5, "Star Vault should have 5 earned dates after Milestone -1 click");
+        assert(state.starVault.earnedDates.length === 6, "Star Vault should have 6 earned dates after Milestone -1 click");
 
         // Verify UI stats in Vault Modal match
         window.__test_helpers__.renderVault();
         const statEarned = document.getElementById('vault-stat-earned');
         const statRemaining = document.getElementById('vault-stat-remaining');
-        assert(statEarned && statEarned.textContent === '5', "Vault stats Earned should show 5");
-        assert(statRemaining && statRemaining.textContent === '5', "Vault stats Remaining should show 5");
+        assert(statEarned && statEarned.textContent === '6', "Vault stats Earned should show 6");
+        assert(statRemaining && statRemaining.textContent === '6', "Vault stats Remaining should show 6");
 
         // Now test Set Week W4 button (clears grid, should sync stars to 0 for current week)
         const testWeek4Btn = document.getElementById('test-week-4');
@@ -875,11 +874,11 @@ async function runSuite() {
             '1-chinese': true
           },
           tasks: [
-            { id: 'piano', name: 'Piano Practice', req: 7 },
-            { id: 'math', name: 'Math Practice', req: 7 },
-            { id: 'reading', name: 'Reading Time', req: 7 },
-            { id: 'writing', name: 'Writing', req: 5 },
-            { id: 'chinese', name: 'Chinese', req: 5 }
+            { id: 'piano', name: 'Piano Practice' },
+            { id: 'math', name: 'Math Practice' },
+            { id: 'reading', name: 'Reading Time' },
+            { id: 'writing', name: 'Writing' },
+            { id: 'chinese', name: 'Chinese' }
           ],
           starVault: {
             earnedDates: [
@@ -975,15 +974,15 @@ async function runSuite() {
         await sleep(100);
         state = window.__app_state__;
 
-        // Verify vault has 10 stars! (5 from previous week, 5 from current week)
-        assert(state.starVault.earnedDates.length === 10, `Vault should now contain exactly 10 stars (actual: ${state.starVault.earnedDates.length})`);
+        // Verify vault has 11 stars! (5 from previous week, 6 from current week)
+        assert(state.starVault.earnedDates.length === 11, `Vault should now contain exactly 11 stars (actual: ${state.starVault.earnedDates.length})`);
 
         // Open vault modal and check UI counters
         window.__test_helpers__.renderVault();
         const statEarned = document.getElementById('vault-stat-earned');
         const statRemaining = document.getElementById('vault-stat-remaining');
-        assert(statEarned && statEarned.textContent === '10', "Vault UI Earned should display 10");
-        assert(statRemaining && statRemaining.textContent === '10', "Vault UI Remaining should display 10");
+        assert(statEarned && statEarned.textContent === '11', "Vault UI Earned should display 11");
+        assert(statRemaining && statRemaining.textContent === '11', "Vault UI Remaining should display 11");
 
         // Clean up
         window.__test_helpers__.resetState();
@@ -1203,6 +1202,11 @@ async function runSuite() {
         assert(state.grid["3-piano"] === false, "State grid for 3-piano should be false (auto-cleared)");
         assert(wedPianoInput.checked === false, "Checkbox should be unchecked");
         assert(state.activeDay === 1, "Active day should remain Monday (1) after excusing Wednesday task");
+        
+        // Verify dynamic denominator calculation
+        const pianoRow = document.querySelector('.task-row[data-task="piano"]');
+        const pianoTotalCell = pianoRow.querySelector('.task-total-cell');
+        assert(pianoTotalCell.textContent === "0 / 6", `Piano goal column should show 0/6 (actual: "${pianoTotalCell.textContent}")`);
         
         // Assert that NO attention notification modal is displayed (since rewards are not set yet)
         const notifModal = document.querySelector('.notif-modal');
@@ -1544,6 +1548,195 @@ async function runSuite() {
         // Close guide
         closeGuideBtn.click();
         await sleep(100);
+
+        // Clean up
+        window.__test_helpers__.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+      }
+
+      // 21. Test Week Start Day Setting & Dynamic Headers
+      console.log("Running Test Case 21: Week Start Day Setting & Dynamic Headers...");
+      {
+        // Open Admin Panel
+        const adminBtn = document.getElementById('admin-btn');
+        adminBtn.click();
+        await sleep(100);
+        
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmit = document.getElementById('password-submit-btn');
+        passwordInput.value = window.__test_helpers__.ADMIN_PASSWORD;
+        passwordSubmit.click();
+        await sleep(100);
+
+        const adminModal = document.getElementById('admin-modal');
+        assert(adminModal && !adminModal.classList.contains('hidden'), "Admin modal should be open");
+
+        const select = document.getElementById('admin-week-start-select');
+        assert(select !== null, "Week Start Day select should exist");
+        assert(select.value === '0', "Default value should be 0 (Sunday)");
+
+        // Change to Friday (5)
+        select.value = '5';
+        select.dispatchEvent(new Event('change'));
+        await sleep(100);
+
+        // Verify confirm modal opens
+        const confirmModal = document.getElementById('confirm-modal');
+        assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should open on start day change");
+        assert(confirmModal.querySelector('#confirm-title').textContent.includes("Change Week Start Day"), "Confirm title should match");
+
+        // Click Cancel first
+        const confirmNoBtn = document.getElementById('confirm-no-btn');
+        confirmNoBtn.click();
+        await sleep(100);
+
+        assert(select.value === '0', "Select value should revert to 0 after cancel");
+        assert(state.weekStartDay === 0, "State weekStartDay should remain 0");
+
+        // Change to Friday again and confirm
+        select.value = '5';
+        select.dispatchEvent(new Event('change'));
+        await sleep(100);
+
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        confirmYesBtn.click();
+        await sleep(100);
+
+        state = window.__app_state__; // Refresh reference after reset
+        assert(state.weekStartDay === 5, "State weekStartDay should be updated to 5");
+        assert(select.value === '5', "Select value should remain 5");
+
+        // Verify UI Headers are updated
+        const headers = document.querySelectorAll('.day-header');
+        const expectedHeaders = ['FRI', 'SAT', 'SUN', 'MON', 'TUE', 'WED', 'THU'];
+        headers.forEach((th, index) => {
+          assert(th.textContent === expectedHeaders[index], `Header ${index} should be ${expectedHeaders[index]}, got ${th.textContent}`);
+          assert(parseInt(th.dataset.day) === index, `Header ${index} data-day should be ${index}`);
+        });
+
+        // Now test the warning path when there is weekly progress
+        // Close admin first to test complete user flow
+        const closeAdminBtn = document.getElementById('close-admin-modal-btn');
+        closeAdminBtn.click();
+        await sleep(100);
+        
+        // Select rewards (needed to check boxes)
+        const rewardSelect = document.getElementById('reward-select');
+        const megaRewardSelect = document.getElementById('mega-reward-select');
+        rewardSelect.value = "Blanket Fort";
+        rewardSelect.dispatchEvent(new Event('change'));
+        megaRewardSelect.value = "Dessert Outing";
+        megaRewardSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+        
+        // Check a task to make progress (must match state.activeDay to avoid switch day confirm dialog)
+        const targetDataDay = (state.activeDay - 5 + 7) % 7;
+        const targetCheckbox = document.querySelector(`input[data-day="${targetDataDay}"][data-task="piano"]`);
+        assert(targetCheckbox !== null, `Checkbox for day index ${targetDataDay} should exist`);
+        targetCheckbox.click();
+        await sleep(100);
+        
+        state = window.__app_state__;
+        assert(Object.keys(state.grid).length > 0, "Grid should have progress");
+        
+        // Re-open Admin Panel
+        adminBtn.click();
+        await sleep(100);
+        
+        const passwordInput2 = document.getElementById('password-input');
+        const passwordSubmit2 = document.getElementById('password-submit-btn');
+        passwordInput2.value = window.__test_helpers__.ADMIN_PASSWORD;
+        passwordSubmit2.click();
+        await sleep(100);
+        
+        // Change back to Sunday (0)
+        select.value = '0';
+        select.dispatchEvent(new Event('change'));
+        await sleep(100);
+        
+        // Verify detailed warning modal is shown
+        assert(confirmModal && !confirmModal.classList.contains('hidden'), "Warning Confirm Modal should open");
+        const confirmDetail = confirmModal.querySelector('.confirm-detail');
+        assert(confirmDetail !== null, "Should render detailed HTML warning when progress exists");
+        assert(confirmModal.querySelector('.badge-label.safe') !== null, "Should show 'Safe' badge");
+        
+        // Confirm change
+        confirmYesBtn.click();
+        await sleep(100);
+        
+        state = window.__app_state__;
+        assert(state.weekStartDay === 0, "State weekStartDay should be updated to 0");
+        assert(Object.keys(state.grid).length === 0, "Grid should be reset after mid-week start day change");
+        
+        // Close admin panel
+        closeAdminBtn.click();
+        await sleep(100);
+
+        // Clean up (reset back to Sunday start)
+        window.__test_helpers__.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+      }
+
+      // 22. Test Streak Calculation with Friday Start
+      console.log("Running Test Case 22: Streak Calculation with Friday Start...");
+      {
+        // Setup state with Friday start
+        const template = window.__test_helpers__.loadState ? getDefaultStateTemplate() : {}; // getDefaultStateTemplate is imported
+        template.weekStartDay = 5; // Friday
+        template.weekStartDate = '2026-07-17'; // A Friday
+        
+        // Empty grid and vault
+        template.grid = {};
+        template.starVault = { earnedDates: [], totalTraded: 0 };
+        
+        // We need to use state.js replaceState but we don't have it direct?
+        // Wait, tests.js doesn't import replaceState.
+        // But app.js test helpers has resetState which loads default.
+        // We can just modify the state in place and save it?
+        // Yes, we have window.__app_state__ (which is state).
+        // Let's modify it.
+        state.weekStartDay = 5;
+        state.weekStartDate = '2026-07-17';
+        state.grid = {};
+        state.starVault = { earnedDates: [], totalTraded: 0 };
+        
+        saveState(); // Imported from state.js
+        window.__test_helpers__.renderState(true);
+        await sleep(100);
+
+        // Complete Day 0 (Column 0, which is Friday 2026-07-17)
+        const tasks = state.tasks || [];
+        tasks.forEach(task => {
+          state.grid[`0-${task.id}`] = true;
+        });
+        
+        window.__test_helpers__.syncVaultStarsWithGrid();
+        saveState();
+        window.__test_helpers__.renderState(false);
+        await sleep(100);
+
+        // Verify Friday is in earnedDates
+        assert(state.starVault.earnedDates.includes('2026-07-17'), "Friday 2026-07-17 should be in earnedDates");
+
+        // Complete Day 1 (Column 1, which is Saturday 2026-07-18)
+        tasks.forEach(task => {
+          state.grid[`1-${task.id}`] = true;
+        });
+        window.__test_helpers__.syncVaultStarsWithGrid();
+        saveState();
+        window.__test_helpers__.renderState(false);
+        await sleep(100);
+
+        // Verify Saturday is in earnedDates
+        assert(state.starVault.earnedDates.includes('2026-07-18'), "Saturday 2026-07-18 should be in earnedDates");
+
+        // Verify streak in Vault
+        const stars = getStarsFromDates(state.starVault.earnedDates); // Imported from vault.js
+        assert(stars.length === 2, "Should have 2 stars");
+        assert(stars[0].date === '2026-07-17' && stars[0].streakDay === 1 && stars[0].color === 'yellow', "Day 1 should be yellow, streak 1");
+        assert(stars[1].date === '2026-07-18' && stars[1].streakDay === 2 && stars[1].color === 'yellow', "Day 2 should be yellow, streak 2");
 
         // Clean up
         window.__test_helpers__.resetState();

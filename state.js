@@ -1,4 +1,6 @@
-import { TIER_1_IDS, TIER_2_IDS, getPokemonName } from './pokemon_data.js';
+import { TIER_1_IDS, TIER_2_IDS, getPokemonName, MEGA_POKEMON, STARTER_OPTIONS, STARTER_FAMILIES, EVOLUTIONS } from './pokemon_data.js';
+import { formatLocalDate, getWeekStart, getSunday } from './date_utils.js';
+import { runMigrations } from './migrations.js';
 
 export const ADMIN_PASSWORD = "zxcv";
 export const DAYS = [0, 1, 2, 3, 4, 5, 6];
@@ -6,59 +8,6 @@ export const XP_LEVEL_THRESHOLD = 100;
 export const XP_DAILY_BONUS = 15;
 export const XP_PER_TASK = 5;
 
-// Mega Milestone Pokemon
-export const MEGA_POKEMON = [
-  { id: 658, name: 'Greninja' },
-  { id: 382, name: 'Kyogre' },
-  { id: 249, name: 'Lugia' },
-  { id: 384, name: 'Rayquaza' }
-];
-
-// Evolution configurations
-export const EVOLUTIONS = {
-  '25': {
-    stages: [
-      { level: 1, id: '25', name: 'Pikachu' },
-      { level: 5, id: '26', name: 'Raichu' }
-    ]
-  },
-  '4': {
-    stages: [
-      { level: 1, id: '4', name: 'Charmander' },
-      { level: 5, id: '5', name: 'Charmeleon' },
-      { level: 10, id: '6', name: 'Charizard' }
-    ]
-  },
-  '1': {
-    stages: [
-      { level: 1, id: '1', name: 'Bulbasaur' },
-      { level: 5, id: '2', name: 'Ivysaur' },
-      { level: 10, id: '3', name: 'Venusaur' }
-    ]
-  },
-  '7': {
-    stages: [
-      { level: 1, id: '7', name: 'Squirtle' },
-      { level: 5, id: '8', name: 'Wartortle' },
-      { level: 10, id: '9', name: 'Blastoise' }
-    ]
-  },
-  '133': {
-    stages: [
-      { level: 1, id: '133', name: 'Eevee' }
-    ],
-    options: [
-      { id: '134', name: 'Vaporeon' },
-      { id: '135', name: 'Jolteon' },
-      { id: '136', name: 'Flareon' },
-      { id: '196', name: 'Espeon' },
-      { id: '197', name: 'Umbreon' },
-      { id: '470', name: 'Leafeon' },
-      { id: '471', name: 'Glaceon' },
-      { id: '700', name: 'Sylveon' }
-    ]
-  }
-};
 
 export function getStageInfo(familyId, stageId) {
   const evo = EVOLUTIONS[familyId];
@@ -104,26 +53,12 @@ export function getStageInfo(familyId, stageId) {
   };
 }
 
-export function formatLocalDate(date) {
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
 
-export function getSunday(d) {
-  const copy = new Date(d.getTime());
-  const day = copy.getDay();
-  const diff = copy.getDate() - day;
-  const sunday = new Date(copy.setDate(diff));
-  sunday.setHours(0,0,0,0);
-  return sunday;
-}
-
-// State V10 (Badge Collection)
+// State V12 (Dynamic Week Start)
 export let state = {
-  version: 11,
+  version: 12,
   partnerFamily: '25', // Default Pikachu Family
+  weekStartDay: 0, // Default Sunday (0) to Saturday (6)
   excused: {}, // key format: "day-task" -> boolean
   partnersData: {
     '25': { level: 1, xp: 0, stageId: '25' },
@@ -139,18 +74,18 @@ export let state = {
   debugSidebarEnabled: false,
   grid: {}, // key format: "day-task" -> boolean
   tasks: [
-    { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!', instructions: 'Play all pieces 3x and work on hard parts.' },
-    { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1', instructions: "Complete today's worksheet or 15 mins on math app." },
-    { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!', instructions: '15min reading out loud w/30s summary.' },
-    { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery', instructions: 'Write at least 3 clean sentences w/punctuation.' },
-    { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!', instructions: 'Practice reading current vocabulary card set 2x.' }
+    { id: 'piano', name: 'Piano Practice', emoji: '🎹', concept: 'Level up!', instructions: 'Play all pieces 3x and work on hard parts.' },
+    { id: 'math', name: 'Math Practice', emoji: '🧮', concept: 'Intellect +1', instructions: "Complete today's worksheet or 15 mins on math app." },
+    { id: 'reading', name: 'Reading Time', emoji: '📚', concept: 'Explore new zones!', instructions: '15min reading out loud w/30s summary.' },
+    { id: 'writing', name: 'Writing', emoji: '✏️', concept: 'Skill mastery', instructions: 'Write at least 3 clean sentences w/punctuation.' },
+    { id: 'chinese', name: 'Chinese', emoji: '💮', concept: 'Character master!', instructions: 'Practice reading current vocabulary card set 2x.' }
   ],
   rewardHistory: [],
   megaRewardHistory: [],
   volume: 50,
   claimedRewardsHistory: [],
   activeDay: new Date().getDay(),
-  weekStartDate: formatLocalDate(getSunday(new Date())),
+  weekStartDate: formatLocalDate(getWeekStart(new Date(), 0)),
   starVault: {
     earnedDates: [],
     totalTraded: 0
@@ -164,163 +99,22 @@ export let state = {
 const STATE_KEY = 'kepler_pokemon_training_v2';
 const BACKUPS_KEY = 'kepler_pokemon_backups_history';
 
+let saveListener = null;
+
+export function registerOnSave(callback) {
+  saveListener = callback;
+}
+
 export function saveState() {
   try {
     localStorage.setItem(STATE_KEY, JSON.stringify(state));
+    if (saveListener) {
+      saveListener(state);
+    }
   } catch (e) {
     console.error('Error saving state to localStorage:', e);
   }
 }
-
-const MIGRATIONS = [
-  {
-    version: 3,
-    migrate: (s) => {
-      s.partnerFamily = s.partnerId || '25';
-      s.partnersData = {
-        '25': { level: 1, xp: 0 },
-        '4': { level: 1, xp: 0 },
-        '1': { level: 1, xp: 0 },
-        '7': { level: 1, xp: 0 },
-        '133': { level: 1, xp: 0 }
-      };
-      if (s.partnersData[s.partnerFamily]) {
-        s.partnersData[s.partnerFamily].level = s.level || 1;
-        s.partnersData[s.partnerFamily].xp = s.xp || 0;
-      }
-      delete s.level;
-      delete s.xp;
-      delete s.partnerId;
-      delete s.partnerName;
-      return s;
-    }
-  },
-  {
-    version: 4,
-    migrate: (s) => {
-      if (s.partnersData && s.partnersData['133']) {
-        s.partnersData['133'].evolvedId = null;
-      }
-      return s;
-    }
-  },
-  {
-    version: 5,
-    migrate: (s) => {
-      const families = ['25', '4', '1', '7', '133'];
-      families.forEach(fid => {
-        if (s.partnersData && s.partnersData[fid]) {
-          if (fid === '133') {
-            s.partnersData[fid].stageId = s.partnersData[fid].evolvedId || '133';
-            delete s.partnersData[fid].evolvedId;
-          } else {
-            const lvl = s.partnersData[fid].level || 1;
-            const evo = EVOLUTIONS[fid];
-            let index = 0;
-            if (evo) {
-              for (let i = 1; i < evo.stages.length; i++) {
-                if (lvl >= evo.stages[i].level) {
-                  index = i;
-                } else {
-                  break;
-                }
-              }
-            }
-            s.partnersData[fid].stageId = evo ? evo.stages[index].id : fid;
-          }
-        }
-      });
-      return s;
-    }
-  },
-  {
-    version: 6,
-    migrate: (s) => {
-      s.debugSidebarEnabled = false;
-      return s;
-    }
-  },
-  {
-    version: 7,
-    migrate: (s) => {
-      s.tasks = [
-        { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!' },
-        { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1' },
-        { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!' },
-        { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery' },
-        { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!' }
-      ];
-      s.rewardHistory = [];
-      s.megaRewardHistory = [];
-      s.volume = 50;
-      return s;
-    }
-  },
-  {
-    version: 8,
-    migrate: (s) => {
-      s.claimedRewardsHistory = [];
-      return s;
-    }
-  },
-  {
-    version: 9,
-    migrate: (s) => {
-      s.weekStartDate = formatLocalDate(getSunday(new Date()));
-      s.starVault = {
-        earnedDates: [],
-        totalTraded: 0
-      };
-      return s;
-    }
-  },
-  {
-    version: 10,
-    migrate: (s) => {
-      console.log("MIGRATING V9 to V10: megaWeeks =", s.megaWeeks);
-      s.collectedBadges = [];
-      s.badgePool = [...TIER_1_IDS];
-      
-      const historicalMegaPokemon = [
-        { id: 658, name: "Greninja", weekNum: 1 },
-        { id: 382, name: "Kyogre", weekNum: 2 },
-        { id: 249, name: "Lugia", weekNum: 3 },
-        { id: 384, name: "Rayquaza", weekNum: 4 }
-      ];
-      
-      const history = s.claimedRewardsHistory || [];
-      const wasWeekCompleted = (weekNum) => {
-        if (s.megaWeeks >= weekNum) return true;
-        return history.some(h => h.type === 'weekly' && h.weekNumber === weekNum);
-      };
-      
-      historicalMegaPokemon.forEach(pkmn => {
-        if (wasWeekCompleted(pkmn.weekNum)) {
-          const alreadyEarned = s.collectedBadges.some(b => b.id === pkmn.id);
-          if (!alreadyEarned) {
-            s.collectedBadges.push({
-              id: pkmn.id,
-              name: pkmn.name,
-              dateEarned: new Date().toISOString()
-            });
-          }
-          s.badgePool = s.badgePool.filter(id => id !== pkmn.id);
-        }
-      });
-      
-      const randomIndex = Math.floor(Math.random() * s.badgePool.length);
-      s.activeWeeklyBadgeId = s.badgePool.splice(randomIndex, 1)[0];
-      return s;
-    }
-  },
-  {
-    version: 11,
-    migrate: (s) => {
-      s.excused = s.excused || {};
-      return s;
-    }
-  }
-];
 
 export function loadState() {
   try {
@@ -328,21 +122,7 @@ export function loadState() {
     if (savedState) {
       const parsed = JSON.parse(savedState);
       if (parsed && typeof parsed === 'object') {
-        let currentVersion = parsed.version;
-        if (currentVersion === undefined) {
-          currentVersion = parsed.partnerFamily ? 3 : 2;
-        }
-
-        let migratedState = { ...parsed };
-        
-        MIGRATIONS.forEach(m => {
-          if (currentVersion < m.version) {
-            console.log(`Migrating state from v${currentVersion} to v${m.version}...`);
-            migratedState = m.migrate(migratedState);
-            migratedState.version = m.version;
-            currentVersion = m.version;
-          }
-        });
+        const migratedState = runMigrations(parsed);
 
         // Merge migrated state into template default to guarantee key structure
         state = { ...state, ...migratedState };
@@ -370,15 +150,11 @@ export function loadState() {
   }
 }
 
-export function updateState(newState) {
-  state = { ...state, ...newState };
-  saveState();
-}
-
-export function resetStateToDefault() {
-  state = {
-    version: 11,
+export function getDefaultStateTemplate() {
+  const t = {
+    version: 12,
     partnerFamily: '25',
+    weekStartDay: 0,
     partnersData: {
       '25': { level: 1, xp: 0, stageId: '25' },
       '4': { level: 1, xp: 0, stageId: '4' },
@@ -394,18 +170,18 @@ export function resetStateToDefault() {
     grid: {},
     excused: {},
     tasks: [
-      { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!', instructions: 'Play all pieces 3x and work on hard parts.' },
-      { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1', instructions: "Complete today's worksheet or 15 mins on math app." },
-      { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!', instructions: '15min reading out loud w/30s summary.' },
-      { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery', instructions: 'Write at least 3 clean sentences w/punctuation.' },
-      { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!', instructions: 'Practice reading current vocabulary card set 2x.' }
+      { id: 'piano', name: 'Piano Practice', emoji: '🎹', concept: 'Level up!', instructions: 'Play all pieces 3x and work on hard parts.' },
+      { id: 'math', name: 'Math Practice', emoji: '🧮', concept: 'Intellect +1', instructions: "Complete today's worksheet or 15 mins on math app." },
+      { id: 'reading', name: 'Reading Time', emoji: '📚', concept: 'Explore new zones!', instructions: '15min reading out loud w/30s summary.' },
+      { id: 'writing', name: 'Writing', emoji: '✏️', concept: 'Skill mastery', instructions: 'Write at least 3 clean sentences w/punctuation.' },
+      { id: 'chinese', name: 'Chinese', emoji: '💮', concept: 'Character master!', instructions: 'Practice reading current vocabulary card set 2x.' }
     ],
     rewardHistory: [],
     megaRewardHistory: [],
     volume: 50,
     claimedRewardsHistory: [],
     activeDay: new Date().getDay(),
-    weekStartDate: getSunday(new Date()).toISOString().split('T')[0],
+    weekStartDate: formatLocalDate(getWeekStart(new Date(), 0)),
     starVault: {
       earnedDates: [],
       totalTraded: 0
@@ -414,9 +190,34 @@ export function resetStateToDefault() {
     badgePool: [...TIER_1_IDS],
     activeWeeklyBadgeId: null
   };
-  // Roll initial badge
-  const randomIndex = Math.floor(Math.random() * state.badgePool.length);
-  state.activeWeeklyBadgeId = state.badgePool.splice(randomIndex, 1)[0];
+  
+  const randomIndex = Math.floor(Math.random() * TIER_1_IDS.length);
+  const pool = [...TIER_1_IDS];
+  t.activeWeeklyBadgeId = pool.splice(randomIndex, 1)[0];
+  t.badgePool = pool;
+  return t;
+}
+
+export function replaceState(newState) {
+  let migrated = runMigrations(newState);
+
+  // Mutate in-place to preserve object references in other files
+  for (const key in state) {
+    delete state[key];
+  }
+  Object.assign(state, migrated);
+  
+  runStateDiagnostics();
+}
+
+export function updateState(newState) {
+  Object.assign(state, newState);
+  saveState();
+}
+
+export function resetStateToDefault() {
+  const defaults = getDefaultStateTemplate();
+  replaceState(defaults);
   saveState();
 }
 
@@ -553,11 +354,11 @@ export function runStateDiagnostics() {
 
   if (!state.tasks || !Array.isArray(state.tasks) || state.tasks.length === 0) {
     state.tasks = [
-      { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!', instructions: 'Play all pieces 3x and work on hard parts.' },
-      { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1', instructions: "Complete today's worksheet or 15 mins on math app." },
-      { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!', instructions: '15min reading out loud w/30s summary.' },
-      { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery', instructions: 'Write at least 3 clean sentences w/punctuation.' },
-      { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!', instructions: 'Practice reading current vocabulary card set 2x.' }
+      { id: 'piano', name: 'Piano Practice', emoji: '🎹', concept: 'Level up!', instructions: 'Play all pieces 3x and work on hard parts.' },
+      { id: 'math', name: 'Math Practice', emoji: '🧮', concept: 'Intellect +1', instructions: "Complete today's worksheet or 15 mins on math app." },
+      { id: 'reading', name: 'Reading Time', emoji: '📚', concept: 'Explore new zones!', instructions: '15min reading out loud w/30s summary.' },
+      { id: 'writing', name: 'Writing', emoji: '✏️', concept: 'Skill mastery', instructions: 'Write at least 3 clean sentences w/punctuation.' },
+      { id: 'chinese', name: 'Chinese', emoji: '💮', concept: 'Character master!', instructions: 'Practice reading current vocabulary card set 2x.' }
     ];
     issues.push("Tasks list was missing or invalid.");
     fixed.push("Reset to default tasks.");
@@ -589,7 +390,7 @@ export function runStateDiagnostics() {
   }
 
   if (!state.weekStartDate) {
-    state.weekStartDate = formatLocalDate(getSunday(new Date()));
+    state.weekStartDate = formatLocalDate(getWeekStart(new Date(), state.weekStartDay));
     issues.push("Missing weekStartDate.");
     fixed.push(`Initialized weekStartDate to ${state.weekStartDate}.`);
   }
@@ -688,10 +489,10 @@ export function runStateDiagnostics() {
     fixed.push("Set activeWeeklyBadgeId to default 25.");
   }
 
-  if (state.version !== 11) {
-    issues.push(`State version mismatch. Current: ${state.version}, Expected: 11`);
-    state.version = 11;
-    fixed.push("Forced state version to 11.");
+  if (state.version !== 12) {
+    issues.push(`State version mismatch. Current: ${state.version}, Expected: 12`);
+    state.version = 12;
+    fixed.push("Forced state version to 12.");
   }
 
   if (fixed.length > 0) {
@@ -743,5 +544,10 @@ function expandBadgePool() {
     console.log(`Expanded badge pool with ${newBatch.length} random Pokémon.`);
   }
   saveState();
+}
+
+export function getTaskRequiredDays(taskId) {
+  const excusedCount = DAYS.filter(day => !!state.excused[`${day}-${taskId}`]).length;
+  return Math.max(0, DAYS.length - excusedCount);
 }
 

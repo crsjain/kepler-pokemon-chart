@@ -13,18 +13,29 @@ import {
   XP_LEVEL_THRESHOLD,
   XP_DAILY_BONUS,
   XP_PER_TASK,
-  MEGA_POKEMON,
-  EVOLUTIONS,
-  getSunday,
   rollNewWeeklyBadge,
-  formatLocalDate
+  getTaskRequiredDays,
+  replaceState,
+  getDefaultStateTemplate,
+  registerOnSave
 } from './state.js';
+import { formatLocalDate, getWeekStart } from './date_utils.js';
+import { 
+  loginFamily, 
+  logoutFamily, 
+  subscribeToAuth, 
+  subscribeToProfiles, 
+  createChildProfile, 
+  subscribeToProfileState, 
+  saveProfileStateToCloud 
+} from './firebase.js';
+import { promptParentPassword } from './admin.js';
 
-const APP_VERSION = 'v1.4.0 (v23)';
+const APP_VERSION = 'v1.4.7 (v30)';
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault } from './vault.js';
-import { getPokemonName, TIER_1_IDS, TIER_2_IDS } from './pokemon_data.js';
+import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS } from './pokemon_data.js';
 import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
 import { initAdmin } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
@@ -66,6 +77,7 @@ const adminImportBtn = document.getElementById('admin-import-btn');
 const adminWipeBtn = document.getElementById('admin-wipe-btn');
 const closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
 const toggleDebugSidebar = document.getElementById('toggle-debug-sidebar');
+const adminWeekStartSelect = document.getElementById('admin-week-start-select');
 
 // Testing Panel Elements
 const testMilestoneMinusOneBtn = document.getElementById('test-milestone-minus-one');
@@ -113,18 +125,387 @@ let domCache = {
 let gridRebuildCount = 0;
 let isExceptionMode = false;
 
+// Firebase Variables
+let activeProfileId = null;
+let profilesList = [];
+
+// DOM Elements for Firebase Modals
+const familyLoginModal = document.getElementById('family-login-modal');
+const loginEmailInput = document.getElementById('login-email');
+const loginPasswordInput = document.getElementById('login-password');
+const loginSubmitBtn = document.getElementById('login-submit-btn');
+const loginError = document.getElementById('login-error');
+
+const profileSelectModal = document.getElementById('profile-select-modal');
+const profilesGrid = document.getElementById('profiles-grid');
+const addProfileOpenBtn = document.getElementById('add-profile-open-btn');
+const logoutFamilyBtn = document.getElementById('logout-family-btn');
+const switchProfileBtn = document.getElementById('switch-profile-btn');
+
+const addProfileModal = document.getElementById('add-profile-modal');
+const newProfileNameInput = document.getElementById('new-profile-name');
+const addProfileSubmitBtn = document.getElementById('add-profile-submit-btn');
+const addProfileCancelBtn = document.getElementById('add-profile-cancel-btn');
+const addProfileError = document.getElementById('add-profile-error');
+
+function initFirebaseUI() {
+  const isTestMode = location.search.includes('runTests=true');
+  if (isTestMode) {
+    console.log("Test mode active. Bypassing Firebase Auth and loading local state...");
+    loadState();
+    
+    // Setup Trainer Name static label for tests
+    document.querySelectorAll('.trainer-name-label').forEach(el => {
+      el.textContent = state.childName || 'Kepler';
+    });
+    
+    initVault();
+    initBadgeCase();
+    initGuide();
+    renderState(true);
+    return;
+  }
+
+  const debouncedCloudSave = debounceWithFlush((profileId, updatedState) => {
+    saveProfileStateToCloud(profileId, updatedState).catch(err => {
+      console.error("Cloud save failed:", err);
+    });
+  }, 1500); // 1.5 seconds debounce
+
+  // Hook up save observer to sync local state back to Firestore
+  registerOnSave((updatedState) => {
+    if (activeProfileId) {
+      debouncedCloudSave(activeProfileId, updatedState);
+    }
+  });
+
+  window.addEventListener('beforeunload', () => {
+    debouncedCloudSave.flush();
+  });
+
+  // Auth State Change Listener
+  subscribeToAuth((user) => {
+    console.log("Auth State Changed. User:", user ? user.email : "none");
+    if (!user) {
+      activeProfileId = null;
+      localStorage.removeItem('last_active_profile_id');
+      
+      // Blur app container & show login
+      const appContainer = document.querySelector('.app-container');
+      if (appContainer) {
+        appContainer.style.filter = 'blur(10px)';
+        appContainer.style.pointerEvents = 'none';
+      }
+      
+      if (familyLoginModal) familyLoginModal.classList.remove('hidden');
+      if (profileSelectModal) profileSelectModal.classList.add('hidden');
+      if (addProfileModal) addProfileModal.classList.add('hidden');
+    } else {
+      console.log("User is logged in. Hiding login modal and fetching profiles...");
+      if (familyLoginModal) familyLoginModal.classList.add('hidden');
+      
+      // Load Profiles List
+      console.log("Subscribing to profiles database collection...");
+      subscribeToProfiles((profiles) => {
+        console.log("Received profiles list from Firestore! Count:", profiles.length);
+        profilesList = profiles;
+        renderProfilesGrid();
+        
+        // Auto-select last profile if configured
+        const lastProfile = localStorage.getItem('last_active_profile_id');
+        if (lastProfile && profiles.some(p => p.id === lastProfile)) {
+          if (!activeProfileId) {
+            console.log("Auto-selecting last active profile:", lastProfile);
+            selectProfile(lastProfile);
+          }
+        } else if (!activeProfileId) {
+          console.log("No active profile in memory, opening profile select modal...");
+          // Force profile selection
+          const appContainer = document.querySelector('.app-container');
+          if (appContainer) {
+            appContainer.style.filter = 'blur(10px)';
+            appContainer.style.pointerEvents = 'none';
+          }
+          if (profileSelectModal) profileSelectModal.classList.remove('hidden');
+        }
+      }, (err) => {
+        console.error("Profiles subscription failed:", err);
+        showCustomNotification("Database Error ❌", "Failed to connect to profiles: " + err.message);
+        logoutFamily().catch(() => {});
+      });
+    }
+  });
+
+  // Login Action
+  if (loginSubmitBtn) {
+    loginSubmitBtn.addEventListener('click', async () => {
+      const email = loginEmailInput ? loginEmailInput.value.trim() : '';
+      const password = loginPasswordInput ? loginPasswordInput.value : '';
+      if (loginError) loginError.classList.add('hidden');
+      loginSubmitBtn.disabled = true;
+      loginSubmitBtn.textContent = 'Signing in...';
+      
+      try {
+        await loginFamily(email, password);
+      } catch (err) {
+        if (loginError) {
+          loginError.textContent = err.message;
+          loginError.classList.remove('hidden');
+        }
+      } finally {
+        loginSubmitBtn.disabled = false;
+        loginSubmitBtn.textContent = 'Sign In';
+      }
+    });
+  }
+
+  // Switch Profile Action
+  if (switchProfileBtn) {
+    switchProfileBtn.addEventListener('click', () => {
+      activeProfileId = null;
+      localStorage.removeItem('last_active_profile_id');
+      
+      const appContainer = document.querySelector('.app-container');
+      if (appContainer) {
+        appContainer.style.filter = 'blur(10px)';
+        appContainer.style.pointerEvents = 'none';
+      }
+      if (profileSelectModal) profileSelectModal.classList.remove('hidden');
+    });
+  }
+
+  // Add Child Profile Action
+  const AVATAR_OPTIONS = [
+    { id: '25', name: 'Pikachu' },
+    { id: '6', name: 'Charizard' },
+    { id: '3', name: 'Venusaur' },
+    { id: '9', name: 'Blastoise' },
+    { id: '133', name: 'Eevee' },
+    { id: '448', name: 'Lucario' },
+    { id: '94', name: 'Gengar' },
+    { id: '149', name: 'Dragonite' },
+    { id: '658', name: 'Greninja' },
+    { id: '471', name: 'Glaceon' },
+    { id: '815', name: 'Cinderace' },
+    { id: '40', name: 'Wigglytuff' },
+    { id: '143', name: 'Snorlax' },
+    { id: '151', name: 'Mew' },
+    { id: '150', name: 'Mewtwo' }
+  ];
+
+  let selectedNewProfileAvatar = '25';
+
+  function renderNewProfileIconPicker() {
+    const pickerGrid = document.getElementById('new-profile-icon-picker');
+    if (!pickerGrid) return;
+    
+    pickerGrid.innerHTML = '';
+    selectedNewProfileAvatar = '25'; // default
+    
+    AVATAR_OPTIONS.forEach(opt => {
+      const item = document.createElement('div');
+      item.className = `icon-picker-item ${opt.id === selectedNewProfileAvatar ? 'selected' : ''}`;
+      item.dataset.id = opt.id;
+      item.innerHTML = `
+        <img class="icon-picker-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${opt.id}.png" alt="${opt.name}">
+        <span class="icon-picker-name">${opt.name}</span>
+      `;
+      item.addEventListener('click', () => {
+        selectedNewProfileAvatar = opt.id;
+        pickerGrid.querySelectorAll('.icon-picker-item').forEach(el => el.classList.remove('selected'));
+        item.classList.add('selected');
+      });
+      pickerGrid.appendChild(item);
+    });
+  }
+
+  function checkLocalMigrationOption() {
+    const migrationContainer = document.getElementById('migration-option-container');
+    const migrateLocalDataChk = document.getElementById('migrate-local-data-chk');
+    const localPartnerLevel = document.getElementById('local-partner-level');
+    const localPartnerName = document.getElementById('local-partner-name');
+    
+    if (!migrationContainer || !migrateLocalDataChk) return;
+    
+    const localDataStr = localStorage.getItem('kepler_pokemon_training_v2');
+    if (localDataStr) {
+      try {
+        const localState = JSON.parse(localDataStr);
+        const family = localState.partnerFamily || '25';
+        const stats = localState.partnersData?.[family] || { level: 1, stageId: family };
+        
+        const stageInfo = getStageInfo(family, stats.stageId || family);
+        const pName = stageInfo.currentStage?.name || 'Pokémon';
+        
+        if (localPartnerLevel) localPartnerLevel.textContent = stats.level;
+        if (localPartnerName) localPartnerName.textContent = pName;
+        
+        migrationContainer.classList.remove('hidden');
+        migrateLocalDataChk.checked = false; // default off
+      } catch (e) {
+        console.error("Failed to parse local migration state:", e);
+        migrationContainer.classList.add('hidden');
+      }
+    } else {
+      migrationContainer.classList.add('hidden');
+    }
+  }
+
+  if (addProfileOpenBtn) {
+    addProfileOpenBtn.addEventListener('click', () => {
+      promptParentPassword(() => {
+        if (addProfileModal) addProfileModal.classList.remove('hidden');
+        if (newProfileNameInput) newProfileNameInput.value = '';
+        if (addProfileError) addProfileError.classList.add('hidden');
+        renderNewProfileIconPicker();
+        checkLocalMigrationOption();
+        if (newProfileNameInput) setTimeout(() => newProfileNameInput.focus(), 50);
+      }, 'Enter Parent Password to add a new child:');
+    });
+  }
+
+  if (addProfileSubmitBtn) {
+    addProfileSubmitBtn.addEventListener('click', async () => {
+      const name = newProfileNameInput ? newProfileNameInput.value.trim() : '';
+      if (!name) return;
+      
+      if (addProfileError) addProfileError.classList.add('hidden');
+      addProfileSubmitBtn.disabled = true;
+      
+      try {
+        let targetState;
+        const migrateChk = document.getElementById('migrate-local-data-chk');
+        
+        if (migrateChk && migrateChk.checked) {
+          const localDataStr = localStorage.getItem('kepler_pokemon_training_v2');
+          if (localDataStr) {
+            try {
+              targetState = JSON.parse(localDataStr);
+              console.log("Migrating local device state to child profile...");
+            } catch (e) {
+              console.error("Failed to parse local data for migration, using default:", e);
+            }
+          }
+        }
+        
+        if (!targetState) {
+          targetState = getDefaultStateTemplate();
+        }
+        
+        targetState.childName = name;
+        
+        const newId = await createChildProfile(name, targetState, selectedNewProfileAvatar);
+        
+        // Clean up migrated state from local storage if migration was successful and requested
+        if (migrateChk && migrateChk.checked) {
+          const localDataStr = localStorage.getItem('kepler_pokemon_training_v2');
+          if (localDataStr) {
+            localStorage.setItem('kepler_pokemon_training_v2_backup', localDataStr);
+            localStorage.removeItem('kepler_pokemon_training_v2');
+            console.log("Local device state successfully archived to backup.");
+          }
+        }
+        
+        if (addProfileModal) addProfileModal.classList.add('hidden');
+        selectProfile(newId);
+      } catch (err) {
+        if (addProfileError) {
+          addProfileError.textContent = err.message;
+          addProfileError.classList.remove('hidden');
+        }
+      } finally {
+        addProfileSubmitBtn.disabled = false;
+      }
+    });
+  }
+
+  if (addProfileCancelBtn) {
+    addProfileCancelBtn.addEventListener('click', () => {
+      if (addProfileModal) addProfileModal.classList.add('hidden');
+    });
+  }
+
+  // Logout Family Action
+  if (logoutFamilyBtn) {
+    logoutFamilyBtn.addEventListener('click', async () => {
+      if (confirm("Are you sure you want to sign out of this family account?")) {
+        await logoutFamily();
+      }
+    });
+  }
+}
+
+function renderProfilesGrid() {
+  if (!profilesGrid) return;
+  profilesGrid.innerHTML = '';
+  profilesList.forEach(profile => {
+    const card = document.createElement('div');
+    card.className = 'profile-card';
+    
+    const avatarId = profile.avatarId || '25';
+    const imageUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${avatarId}.png`;
+    
+    card.innerHTML = `
+      <div class="profile-card-img-container">
+        <img class="profile-card-img" src="${imageUrl}" alt="${profile.name}">
+      </div>
+      <div class="profile-card-name">${profile.name}</div>
+    `;
+    
+    card.addEventListener('click', () => {
+      selectProfile(profile.id);
+    });
+    
+    profilesGrid.appendChild(card);
+  });
+}
+
+function selectProfile(profileId) {
+  activeProfileId = profileId;
+  localStorage.setItem('last_active_profile_id', profileId);
+  if (profileSelectModal) profileSelectModal.classList.add('hidden');
+  
+  const appContainer = document.querySelector('.app-container');
+  if (appContainer) {
+    appContainer.style.filter = 'none';
+    appContainer.style.pointerEvents = 'auto';
+  }
+  
+  subscribeToProfileState(profileId, (cloudState) => {
+    if (cloudState) {
+      // Sync cloud state to state.js memory
+      replaceState(cloudState);
+      
+      // Update Trainer Names in UI
+      const name = cloudState.childName || profileId.split('_')[0];
+      document.querySelectorAll('.trainer-name-label').forEach(el => {
+        el.textContent = name;
+      });
+      document.title = `${name}'s Pokémon Training Chart`;
+      
+      // Re-initialize lists that depend on state
+      initVault();
+      initBadgeCase();
+      initGuide();
+      
+      // Re-render UI
+      renderState(true);
+    }
+  }, (err) => {
+    console.error("Profile sync failed:", err);
+    showCustomNotification("Sync Error ❌", "Failed to sync profile: " + err.message);
+    logoutFamily().catch(() => {});
+  });
+}
+
 // Initialize
-loadState();
-initVault();
-initBadgeCase();
-initGuide();
 initAdmin({
   renderState,
   showCustomConfirm,
   showCustomNotification
 });
+initFirebaseUI();
 preloadImages();
-renderState(true);
 setupEventListeners();
 
 // Render App Version
@@ -167,7 +548,7 @@ function preloadImages() {
   });
 }
 
-export function showCustomConfirm(title, message, onYesCallback, onNoCallback, yesLabel = "Let's Go! 🚀", noLabel = "Not Yet", yesClass = "pixel-btn info", noClass = "pixel-btn", options = {}) {
+export function showCustomConfirm(title, message, onYesCallback, onNoCallback, yesLabel = "Let's Go! 🚀", noLabel = "Not Yet", yesClass = "pixel-btn info", noClass = "pixel-btn greyed-out", options = {}) {
   if (!confirmModal || !confirmTitle || !confirmMessage || !confirmYesBtn || !confirmNoBtn) {
     if (confirm(message)) {
       onYesCallback(false);
@@ -178,7 +559,12 @@ export function showCustomConfirm(title, message, onYesCallback, onNoCallback, y
   }
   
   confirmTitle.textContent = title;
-  confirmMessage.innerHTML = message.replace(/\n/g, '<br>');
+  
+  if (message.trim().startsWith('<')) {
+    confirmMessage.innerHTML = message;
+  } else {
+    confirmMessage.innerHTML = message.replace(/\n/g, '<br>');
+  }
   
   // Set custom labels
   confirmYesBtn.textContent = yesLabel;
@@ -341,6 +727,9 @@ export function renderState(rebuildGrid = false) {
   renderRewardDropdowns();
   rewardSelect.value = state.reward || '';
   megaRewardSelect.value = state.megaReward || '';
+  if (adminWeekStartSelect) {
+    adminWeekStartSelect.value = state.weekStartDay !== undefined ? state.weekStartDay : 0;
+  }
 
   // 5. Render Grid Table (conditional build vs update)
   if (rebuildGrid) {
@@ -380,11 +769,12 @@ function renderDebugSidebarVisibility() {
 
 function updateActiveColumnUI() {
   const activeDay = state.activeDay !== undefined ? state.activeDay : new Date().getDay();
+  const activeColumn = (activeDay - state.weekStartDay + 7) % 7;
   
   const headers = document.querySelectorAll('.day-header');
   headers.forEach(th => {
-    const day = parseInt(th.dataset.day);
-    if (day === activeDay) {
+    const day = parseInt(th.dataset.day); // column index
+    if (day === activeColumn) {
       th.classList.add('active-day');
     } else {
       th.classList.remove('active-day');
@@ -400,8 +790,8 @@ function updateActiveColumnUI() {
     checkCells.forEach(cell => {
       const input = cell.querySelector('input');
       if (input) {
-        const d = parseInt(input.dataset.day);
-        if (d === activeDay) {
+        const d = parseInt(input.dataset.day); // column index
+        if (d === activeColumn) {
           cell.classList.add('active-column');
         } else {
           cell.classList.remove('active-column');
@@ -411,8 +801,8 @@ function updateActiveColumnUI() {
     
     const totalCells = row.querySelectorAll('td.day-total-cell');
     totalCells.forEach(cell => {
-      const d = parseInt(cell.dataset.day);
-      if (d === activeDay) {
+      const d = parseInt(cell.dataset.day); // column index
+      if (d === activeColumn) {
         cell.classList.add('active-column');
       } else {
         cell.classList.remove('active-column');
@@ -434,6 +824,16 @@ function renderGridTable() {
   if (location.search.includes('runTests=true')) {
     window.__grid_rebuild_count__ = gridRebuildCount;
   }
+  
+  // Update header text based on weekStartDay
+  const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const headers = document.querySelectorAll('.day-header');
+  headers.forEach((th, index) => {
+    const dayOfWeek = (state.weekStartDay + index) % 7;
+    th.textContent = dayNames[dayOfWeek];
+    th.dataset.day = index; // Ensure it is column index
+  });
+
   const tbody = document.getElementById('grid-tbody');
   if (!tbody) return;
   
@@ -446,7 +846,7 @@ function renderGridTable() {
     row.className = 'task-row';
     row.dataset.task = task.id;
     
-    const reqDays = task.req || 5;
+    const reqDays = getTaskRequiredDays(task.id);
     const taskName = task.name || 'Unknown';
     const emoji = task.emoji || '📝';
     
@@ -633,16 +1033,18 @@ function handleCheckboxChange(e) {
   const cb = e.target;
   
   const day = parseInt(cb.dataset.day);
-  if (day !== state.activeDay) {
+  const clickedRealDay = (state.weekStartDay + day) % 7;
+  
+  if (clickedRealDay !== state.activeDay) {
     cb.checked = !cb.checked; // Revert visually first
     
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const dayName = daysOfWeek[day];
+    const dayName = daysOfWeek[clickedRealDay];
     showCustomConfirm(
       "Switch Day? 📅",
       `Are you sure you want to switch to ${dayName} to check this task?\nThis is different from today.`,
       () => {
-        state.activeDay = day;
+        state.activeDay = clickedRealDay;
         saveState();
         updateActiveColumnUI();
         
@@ -777,11 +1179,10 @@ function renderPartnerSelector() {
   
   container.innerHTML = '';
   
-  const families = ['25', '4', '1', '7', '133'];
-
-  families.forEach(familyId => {
-    const stats = state.partnersData[familyId] || { level: 1, xp: 0, stageId: familyId };
-    const stageInfo = getStageInfo(familyId, stats.stageId || familyId);
+  STARTER_OPTIONS.forEach(opt => {
+    const familyId = opt.familyId;
+    const stats = state.partnersData[familyId] || { level: 1, xp: 0, stageId: opt.baseId };
+    const stageInfo = getStageInfo(familyId, stats.stageId || opt.baseId);
     const activePokemon = stageInfo.currentStage;
 
     const optionDiv = document.createElement('div');
@@ -842,7 +1243,7 @@ function setupEventListeners() {
         "Let's Go! 🚀",
         "Not Yet",
         "pixel-btn info",
-        "pixel-btn",
+        "pixel-btn greyed-out",
         { showCheckbox: true, checkboxLabel: "Carry over exceptions", checkboxDefaultChecked: true }
       );
     });
@@ -874,23 +1275,25 @@ function setupEventListeners() {
   const headers = document.querySelectorAll('.day-header');
   headers.forEach(th => {
     th.addEventListener('click', () => {
-      const clickedDay = parseInt(th.dataset.day);
-      if (state.activeDay !== clickedDay) {
+      const clickedColumn = parseInt(th.dataset.day);
+      const clickedRealDay = (state.weekStartDay + clickedColumn) % 7;
+      
+      if (state.activeDay !== clickedRealDay) {
         if (isExceptionMode) {
-          state.activeDay = clickedDay;
+          state.activeDay = clickedRealDay;
           saveState();
           updateActiveColumnUI();
           return;
         }
         const today = new Date().getDay();
-        if (clickedDay !== today) {
+        if (clickedRealDay !== today) {
           const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-          const dayName = daysOfWeek[clickedDay];
+          const dayName = daysOfWeek[clickedRealDay];
           showCustomConfirm(
             "Switch Day? 📅",
             `Are you sure you want to switch to ${dayName}?\nThis is different from today.`,
             () => {
-              state.activeDay = clickedDay;
+              state.activeDay = clickedRealDay;
               saveState();
               updateActiveColumnUI();
             },
@@ -902,7 +1305,7 @@ function setupEventListeners() {
           );
         } else {
           // Switching back to today has no friction
-          state.activeDay = clickedDay;
+          state.activeDay = clickedRealDay;
           saveState();
           updateActiveColumnUI();
         }
@@ -1070,6 +1473,62 @@ function setupEventListeners() {
       renderDebugSidebarVisibility();
     });
   }
+
+  if (adminWeekStartSelect) {
+    adminWeekStartSelect.addEventListener('change', () => {
+      const newStartDay = parseInt(adminWeekStartSelect.value);
+      if (newStartDay !== state.weekStartDay) {
+        const hasProgress = Object.keys(state.grid || {}).some(k => !!state.grid[k]) || 
+                            Object.keys(state.excused || {}).some(k => !!state.excused[k]);
+        
+        if (!hasProgress) {
+          showCustomConfirm(
+            "Change Week Start Day? 📅",
+            `Are you sure you want to change the week start day? This will update your weekly calendar headers starting today.`,
+            () => {
+              state.weekStartDay = newStartDay;
+              resetWeekGrid(false); 
+            },
+            () => {
+              adminWeekStartSelect.value = state.weekStartDay;
+            },
+            "Change Day",
+            "Cancel"
+          );
+        } else {
+          showCustomConfirm(
+            "Change Week Start Day? ⚠️",
+            `<div class="confirm-detail">
+              <p class="confirm-warning-intro">Changing the start day will reset the current week's grid.</p>
+              <ul class="confirm-info-list">
+                <li><span class="badge-label safe">Safe</span> <span>Vault Stars earned from previous weeks are <strong>100% safe</strong>.</span></li>
+                <li><span class="badge-label reset">Reset</span> <span>Current progress toward this week's Gym Badge, completed Pokeballs, and earned stars from this week will be lost.</span></li>
+              </ul>
+              
+              <div class="confirm-tip-box info-box">
+                💡 <strong>Best Practice:</strong> Change the start day at the start of a new week (when the grid is already empty) to avoid progress loss.
+              </div>
+              
+              <div class="confirm-tip-box">
+                📸 <strong>Mid-week Tip:</strong> Take a screenshot of the current grid before proceeding so you can easily re-check the completed Pokeballs after the reset!
+              </div>
+            </div>`,
+            () => {
+              state.weekStartDay = newStartDay;
+              resetWeekGrid(false); 
+            },
+            () => {
+              adminWeekStartSelect.value = state.weekStartDay;
+            },
+            "Change Day & Reset",
+            "Cancel",
+            "pixel-btn danger",
+            "pixel-btn greyed-out"
+          );
+        }
+      }
+    });
+  }
 }
 
 function flashElement(element) {
@@ -1100,15 +1559,15 @@ function resetWeekGrid(carryOverExceptions = false) {
     }
     
     // Advance weekStartDate by 7 days to start the next week cycle
-    const currentSunday = new Date(state.weekStartDate + 'T00:00:00');
-    currentSunday.setDate(currentSunday.getDate() + 7);
-    state.weekStartDate = formatLocalDate(currentSunday);
+    const currentWeekStart = new Date(state.weekStartDate + 'T00:00:00');
+    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+    state.weekStartDate = formatLocalDate(currentWeekStart);
 
     state.weeklyClaimed = false;
     state.reward = '';
     flashWeekly = true;
   } else {
-    state.weekStartDate = formatLocalDate(getSunday(new Date()));
+    state.weekStartDate = formatLocalDate(getWeekStart(new Date(), state.weekStartDay));
   }
   
   state.grid = {};
@@ -1140,7 +1599,8 @@ function setMilestoneMinusOne() {
   const tasks = state.tasks || [];
   tasks.forEach((task, index) => {
     // Make only the first task short by 1 day (req - 1). Others are set to full requirement.
-    const fillCount = (index === 0) ? (task.req || 5) - 1 : (task.req || 5);
+    const reqDays = getTaskRequiredDays(task.id);
+    const fillCount = (index === 0) ? reqDays - 1 : reqDays;
     for (let d = 0; d < fillCount; d++) {
       state.grid[`${d}-${task.id}`] = true;
     }
@@ -1160,7 +1620,8 @@ function setMegaMilestoneMinusOne() {
   const tasks = state.tasks || [];
   tasks.forEach((task, index) => {
     // Make only the first task short by 1 day. Others are set to full requirement.
-    const fillCount = (index === 0) ? (task.req || 5) - 1 : (task.req || 5);
+    const reqDays = getTaskRequiredDays(task.id);
+    const fillCount = (index === 0) ? reqDays - 1 : reqDays;
     for (let d = 0; d < fillCount; d++) {
       state.grid[`${d}-${task.id}`] = true;
     }
@@ -1270,7 +1731,7 @@ function addXp(amount) {
       playSound('badge');
       showCustomNotification(
         "✨ POKÉMON EVOLVED! ✨",
-        `Amazing job! Kepler's ${getStageInfo(family, oldLevel >= 5 ? evo.stages[0].id : family).currentStage.name} evolved into ${activePokemon.name}!`,
+        `Amazing job! ${state.childName || 'Trainer'}'s ${getStageInfo(family, oldLevel >= 5 ? evo.stages[0].id : family).currentStage.name} evolved into ${activePokemon.name}!`,
         `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`,
         false,
         null,
@@ -1290,7 +1751,7 @@ function checkWeeklySuccess() {
     for (let d = 0; d < 7; d++) {
       if (state.grid[`${d}-${task.id}`]) checkedDays++;
     }
-    return checkedDays >= (task.req || 5);
+    return checkedDays >= getTaskRequiredDays(task.id);
   });
 }
 
@@ -1337,7 +1798,7 @@ function checkAndTriggerWeeklySuccess() {
     CelebrationEngine.triggerCelebration(isMegaWeek);
     playSound(isMegaWeek ? 'megaSuccess' : 'badge');
     
-    let successMessage = `<p class="notif-desc">Kepler has completed all training goals for <strong>Week ${weekDisplayNum}</strong>!</p>`;
+    let successMessage = `<p class="notif-desc">${state.childName || 'Trainer'} has completed all training goals for <strong>Week ${weekDisplayNum}</strong>!</p>`;
     successMessage += `<div class="notif-rewards-container">`;
     if (isMegaWeek) {
       successMessage += `<div class="reward-box mega"><div class="reward-box-header">🏆 MEGA REWARD 🏆</div><div class="reward-box-name">${state.megaReward || 'Mega Reward'}</div></div>`;
@@ -1388,8 +1849,7 @@ function renderProgress() {
 
     const totalCell = domCache.taskTotals[task.id];
     if (totalCell) {
-      const excusedCount = DAYS.filter(day => !!state.excused[`${day}-${task.id}`]).length;
-      const required = Math.max(0, (task.req || 5) - excusedCount);
+      const required = getTaskRequiredDays(task.id);
       totalCell.textContent = `${taskTotals[task.id]} / ${required}`;
       
       if (taskTotals[task.id] >= required) {
@@ -1453,7 +1913,7 @@ function renderProgress() {
     } else {
       const groups = {};
       tasks.forEach(t => {
-        const days = t.req || 5;
+        const days = getTaskRequiredDays(t.id);
         if (!groups[days]) groups[days] = [];
         groups[days].push(t.name);
       });
@@ -1556,7 +2016,7 @@ function selectEeveeEvolution(evolvedId, evolvedName) {
   playSound('badge');
   showCustomNotification(
     "✨ EEVEE EVOLVED! ✨",
-    `Congratulations! Kepler's Eevee evolved into ${evolvedName}!`,
+    `Congratulations! ${state.childName || 'Trainer'}'s Eevee evolved into ${evolvedName}!`,
     `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${evolvedId}.png`,
     false,
     null,
@@ -1565,7 +2025,7 @@ function selectEeveeEvolution(evolvedId, evolvedName) {
 }
 
 // Test Mode setup
-if (location.search.includes('runTests=true')) {
+if (location.search.includes('runTests=true') || location.search.includes('runMigrationTest=true')) {
   Object.defineProperty(window, '__app_state__', {
     get: () => state,
     configurable: true
@@ -1587,16 +2047,60 @@ if (location.search.includes('runTests=true')) {
     renderGuide: () => renderGuide()
   };
   
-  const script = document.createElement('script');
-  script.type = 'module';
-  script.src = 'tests.js?v=' + Date.now();
-  document.body.appendChild(script);
+  if (location.search.includes('runTests=true')) {
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = 'tests.js?v=' + Date.now();
+    document.body.appendChild(script);
+  } else if (location.search.includes('runMigrationTest=true')) {
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = 'migration_test.js?v=' + Date.now();
+    document.body.appendChild(script);
+  }
 }
 
 if ('serviceWorker' in navigator && !location.search.includes('headless=true')) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./service-worker.js')
-      .then(reg => console.log('Service Worker registered successfully.', reg.scope))
+      .then(reg => {
+        console.log('Service Worker registered successfully.', reg.scope);
+        
+        // Auto reload on updates
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('New app version detected. Reloading to apply update...');
+              window.location.reload();
+            }
+          });
+        });
+      })
       .catch(err => console.log('Service Worker registration failed:', err));
   });
+}
+
+function debounceWithFlush(func, wait) {
+  let timeout;
+  let latestArgs;
+  
+  const debounced = function(...args) {
+    latestArgs = args;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      timeout = null;
+      func(...latestArgs);
+    }, wait);
+  };
+  
+  debounced.flush = function() {
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = null;
+      func(...latestArgs);
+    }
+  };
+  
+  return debounced;
 }

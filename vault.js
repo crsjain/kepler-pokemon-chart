@@ -1,4 +1,5 @@
-import { state, saveState, formatLocalDate } from './state.js';
+import { state, saveState } from './state.js';
+import { formatLocalDate } from './date_utils.js';
 
 // DOM elements cache
 let vaultModal = null;

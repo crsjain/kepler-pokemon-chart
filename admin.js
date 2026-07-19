@@ -45,6 +45,23 @@ let adminForceUpdateBtn = null;
 let closeAdminModalBtn = null;
 let adminAddTaskBtn = null;
 let adminSaveTasksBtn = null;
+let passwordSuccessCallback = null;
+
+export function promptParentPassword(onSuccess, customDescription = 'Enter Parent Password to open Admin Panel:') {
+  passwordSuccessCallback = onSuccess;
+  if (passwordInput) passwordInput.value = '';
+  if (passwordError) passwordError.classList.add('hidden');
+  
+  const descEl = document.getElementById('password-prompt-desc');
+  if (descEl) {
+    descEl.textContent = customDescription;
+  }
+  
+  if (passwordModal) {
+    passwordModal.classList.remove('hidden');
+    setTimeout(() => passwordInput.focus(), 50);
+  }
+}
 
 export function initAdmin(callbacks) {
   if (callbacks) {
@@ -69,10 +86,12 @@ export function initAdmin(callbacks) {
 
   if (adminBtn) {
     adminBtn.addEventListener('click', () => {
-      passwordInput.value = '';
-      passwordError.classList.add('hidden');
-      passwordModal.classList.remove('hidden');
-      setTimeout(() => passwordInput.focus(), 50);
+      promptParentPassword(() => {
+        adminModal.classList.remove('hidden');
+        renderAdminTasksList();
+        renderBackupHistory();
+        renderClaimedRewardsHistory();
+      });
     });
   }
 
@@ -148,7 +167,7 @@ export function initAdmin(callbacks) {
         "Wipe Everything",
         "Cancel",
         "pixel-btn danger",
-        "pixel-btn"
+        "pixel-btn greyed-out"
       );
     });
   }
@@ -165,10 +184,15 @@ function handlePasswordSubmit() {
   const password = passwordInput.value;
   if (password === ADMIN_PASSWORD) {
     passwordModal.classList.add('hidden');
-    adminModal.classList.remove('hidden');
-    renderAdminTasksList();
-    renderBackupHistory();
-    renderClaimedRewardsHistory();
+    if (passwordSuccessCallback) {
+      passwordSuccessCallback();
+      passwordSuccessCallback = null;
+    } else {
+      adminModal.classList.remove('hidden');
+      renderAdminTasksList();
+      renderBackupHistory();
+      renderClaimedRewardsHistory();
+    }
   } else {
     passwordError.classList.remove('hidden');
   }
@@ -202,10 +226,6 @@ function renderAdminTasksList() {
           <option value="📝" ${task.emoji === '📝' ? 'selected' : ''}>📝</option>
         </select>
         <input type="text" class="task-name-input" value="${task.name}">
-        <div class="task-goal-container">
-          <span class="task-goal-label">Goal:</span>
-          <input type="number" class="task-req-input" value="${task.req || 5}" min="1" max="7">
-        </div>
         <button class="pixel-btn danger remove-task-btn" data-index="${idx}">
           <svg class="delete-icon" viewBox="0 0 448 512" fill="white" xmlns="http://www.w3.org/2000/svg">
             <path d="M135.2 17.7C140.6 6.8 151.7 0 163.8 0H284.2C296.3 0 307.4 6.8 312.8 17.7L320 32H384C401.7 32 416 46.3 416 64C416 81.7 401.7 96 384 96H64C46.3 96 32 81.7 32 64C32 46.3 46.3 32 64 32H128L135.2 17.7zM32 128H416V448C416 483.3 387.3 512 352 512H96C60.7 512 32 483.3 32 448V128zM96 176C96 162.7 85.3 152 72 152C58.7 152 48 162.7 48 176V408C48 421.3 58.7 432 72 432C85.3 432 96 421.3 96 408V176z"/>
@@ -214,7 +234,7 @@ function renderAdminTasksList() {
       </div>
       <div class="admin-task-instructions">
         <span class="instructions-label">Instructions:</span>
-        <input type="text" class="task-instructions-input" value="${task.instructions || ''}" placeholder="What Kepler needs to do (e.g. Play pieces 3x)">
+        <input type="text" class="task-instructions-input" value="${task.instructions || ''}" placeholder="What ${state.childName || 'Trainer'} needs to do (e.g. Play pieces 3x)">
       </div>
     `;
     container.appendChild(item);
@@ -246,7 +266,6 @@ function addNewTask() {
   state.tasks.push({
     id: newId,
     name: 'New Activity',
-    req: 5,
     emoji: '📝',
     concept: 'Keep practicing!',
     instructions: ''
@@ -265,7 +284,6 @@ function saveAdminTasks() {
     const idx = parseInt(item.dataset.index);
     const emoji = item.querySelector('.task-emoji-select').value;
     const name = item.querySelector('.task-name-input').value.trim();
-    const req = parseInt(item.querySelector('.task-req-input').value);
     const instructions = item.querySelector('.task-instructions-input').value.trim();
     
     if (!name) {
@@ -274,15 +292,8 @@ function saveAdminTasks() {
       return;
     }
     
-    if (isNaN(req) || req < 1 || req > 7) {
-      alert("Goal days must be between 1 and 7!");
-      hasError = true;
-      return;
-    }
-    
     state.tasks[idx].emoji = emoji;
     state.tasks[idx].name = name;
-    state.tasks[idx].req = req;
     state.tasks[idx].instructions = instructions;
   });
   

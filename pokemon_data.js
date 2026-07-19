@@ -118,3 +118,68 @@ export const TIER_2_IDS = [
 export function getPokemonName(id) {
   return POKEMON_MAP[id] || `Pokémon #${id}`;
 }
+
+// Mega Milestone Pokemon
+export const MEGA_POKEMON = [
+  { id: 658, name: 'Greninja' },
+  { id: 382, name: 'Kyogre' },
+  { id: 249, name: 'Lugia' },
+  { id: 384, name: 'Rayquaza' }
+];
+
+// Starter Configurations
+export const STARTER_OPTIONS = [
+  { familyId: '25', baseId: '25', name: 'Pikachu' },
+  { familyId: '4', baseId: '4', name: 'Charmander' },
+  { familyId: '1', baseId: '1', name: 'Bulbasaur' },
+  { familyId: '7', baseId: '7', name: 'Squirtle' },
+  { familyId: '133', baseId: '133', name: 'Eevee' }
+];
+
+export const STARTER_FAMILIES = STARTER_OPTIONS.map(o => o.familyId);
+
+// Evolution configurations
+export const EVOLUTIONS = {
+  '25': {
+    stages: [
+      { level: 1, id: '25', name: 'Pikachu' },
+      { level: 5, id: '26', name: 'Raichu' }
+    ]
+  },
+  '4': {
+    stages: [
+      { level: 1, id: '4', name: 'Charmander' },
+      { level: 5, id: '5', name: 'Charmeleon' },
+      { level: 10, id: '6', name: 'Charizard' }
+    ]
+  },
+  '1': {
+    stages: [
+      { level: 1, id: '1', name: 'Bulbasaur' },
+      { level: 5, id: '2', name: 'Ivysaur' },
+      { level: 10, id: '3', name: 'Venusaur' }
+    ]
+  },
+  '7': {
+    stages: [
+      { level: 1, id: '7', name: 'Squirtle' },
+      { level: 5, id: '8', name: 'Wartortle' },
+      { level: 10, id: '9', name: 'Blastoise' }
+    ]
+  },
+  '133': {
+    stages: [
+      { level: 1, id: '133', name: 'Eevee' }
+    ],
+    options: [
+      { id: '134', name: 'Vaporeon' },
+      { id: '135', name: 'Jolteon' },
+      { id: '136', name: 'Flareon' },
+      { id: '196', name: 'Espeon' },
+      { id: '197', name: 'Umbreon' },
+      { id: '470', name: 'Leafeon' },
+      { id: '471', name: 'Glaceon' },
+      { id: '700', name: 'Sylveon' }
+    ]
+  }
+};

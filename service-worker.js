@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poke-chart-cache-v23';
+const CACHE_NAME = 'poke-chart-cache-v30';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -62,7 +62,7 @@ self.addEventListener('fetch', event => {
             if (isLocalAsset) {
               fetch(event.request).then(networkResponse => {
                 if (networkResponse.status === 200) {
-                  caches.open(CACHE_NAME).then(cache => cache.put(event.request, networkResponse));
+                  caches.open(CACHE_NAME).then(cache => cache.put(event.request, networkResponse.clone()));
                 }
               }).catch(() => {}); // Ignore network errors
             }

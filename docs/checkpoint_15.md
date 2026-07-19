@@ -1,98 +1,74 @@
-# CHECKPOINT 15
+# Checkpoint 15: Firebase Emulator Setup & Local Storage Migration
 
-This document contains a complete, chronological record of user requests, system configurations, version progress, and active schema definitions for Kepler's Pokémon Training Chart app. **Use this block to initialize your next pair-programming session.**
-
----
-
-## 1. Outstanding User Requests
-*   **None** (All requested features and fixes have been successfully implemented and verified).
+This document contains a complete record of user requests, system configurations, version progress, and active schema definitions for Kepler's Pokémon Training Chart app. **Use this block to initialize your next pair-programming session.**
 
 ---
 
-## 2. User & Project Metadata
-*   **Admin Password**: `"zxcv"`
-*   **Target Audience**: Kepler (7 years old)
-*   **Local Server URL**: `http://localhost:8000/` (dev server) and `http://127.0.0.1:8085/` (headless test server)
-*   **Git Policy**: Do NOT push changes to GitHub during the session. Git push must only be executed at the end of the session.
-*   **Sprites Repository**: Official PokéAPI assets fetched from GitHub Raw.
-*   **Audio volume**: Default 50%
+## 1. Context and Objective
+We are transitioning the Kepler Pokémon Chart app from a single-user `localStorage` setup to a multi-child Firestore-backed architecture, with support for offline synchronization, offline testing, and seamless migration of existing local user data.
+
+*   **Repository Location**: `/usr/local/google/home/crsjain/kepler-pokemon-chart`
 *   **Active Branch**: `prototype/pokemon-badge-collection`
+*   **Target Audience**: Kepler (7 years old) and Lyra (5 years old)
+*   **Current Version**: `v1.4.7 (v30)` / Service Worker cache `v30`
+*   **Active Port**: `8085` (running Python web server)
+*   **Database Mode**: Connecting to local Firebase Emulator (`demo-pokemon-chart`) on `localhost` unless `?useProd=true` is set.
 
 ---
 
-## 3. Active V13 State Schema
-```javascript
-export let state = {
-  version: 11,
-  partnerFamily: '25', // Default Pikachu Family
-  excused: {}, // key format: "day-task" -> boolean
-  partnersData: {
-    '25': { level: 1, xp: 0, stageId: '25' },
-    '4': { level: 1, xp: 0, stageId: '4' },
-    '1': { level: 1, xp: 0, stageId: '1' },
-    '7': { level: 1, xp: 0, stageId: '7' },
-    '133': { level: 1, xp: 0, stageId: '133' }
-  },
-  reward: '',
-  megaReward: '',
-  megaWeeks: 0,
-  weeklyClaimed: false,
-  debugSidebarEnabled: false,
-  grid: {}, // key format: "day-task" -> boolean
-  tasks: [
-    { id: 'piano', name: 'Piano Practice', req: 7, emoji: '🎹', concept: 'Level up!', instructions: 'Play all pieces 3x and work on hard parts.' },
-    { id: 'math', name: 'Math Practice', req: 7, emoji: '🧮', concept: 'Intellect +1', instructions: "Complete today's worksheet or 15 mins on math app." },
-    { id: 'reading', name: 'Reading Time', req: 7, emoji: '📚', concept: 'Explore new zones!', instructions: '15min reading out loud w/30s summary.' },
-    { id: 'writing', name: 'Writing', req: 5, emoji: '✏️', concept: 'Skill mastery', instructions: 'Write at least 3 clean sentences w/punctuation.' },
-    { id: 'chinese', name: 'Chinese', req: 5, emoji: '💮', concept: 'Character master!', instructions: 'Practice reading current vocabulary card set 2x.' }
-  ],
-  rewardHistory: [],
-  megaRewardHistory: [],
-  volume: 50,
-  claimedRewardsHistory: [],
-  activeDay: new Date().getDay(),
-  weekStartDate: formatLocalDate(getSunday(new Date())),
-  starVault: {
-    earnedDates: [],
-    totalTraded: 0
-  },
-  collectedBadges: [],
-  badgePool: TIER_1_IDS.filter(id => id !== 25),
-  activeWeeklyBadgeId: 25
-};
-```
+## 2. Completed Work & Implementation Details
+
+### A. Decouple Profile Icon from Gameplay
+*   **Starters Reverted**: Reverted `STARTER_OPTIONS`, `EVOLUTIONS`, and default `partnersData` inside [state.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/state.js) to the original 5 gameplay starter families (`'25'`, `'4'`, `'1'`, `'7'`, `'133'`).
+*   **Visual Avatar Picker**: Created `AVATAR_OPTIONS` containing 15 evolved forms (Charizard, Greninja, Lucario, Glaceon, etc.). These icons populate the "Select Partner Icon" grid during child creation.
+*   **Decoupled Card Drawing**: Stored selection as `avatarId` in Firestore. Updated `renderProfilesGrid()` inside `app.js` to draw card icons from `profile.avatarId || '25'` without impacting starting gameplay partners.
+
+### B. Firebase Staging / Local Emulator Configuration
+*   **Emulator Files**: Generated `firebase.json` (Auth on `9099`, Firestore on `8080`, UI on `4000`), `.firebaserc` (`demo-pokemon-chart`), and `firestore.rules` (open rules for development).
+*   **Emulator Launch Script**: Created executable [run_emulator.sh](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/run_emulator.sh) to handle state persistence using `--import=./emulator_data --export-on-exit`.
+*   **Config Mismatch Bypass**: Updated [firebase.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/firebase.js) to dynamically override `projectId` to `demo-pokemon-chart` when localhost is active, preventing token validation `400 Bad Request` failures.
+
+### C. Local Storage Migration Flow
+*   **Target Key**: Correctly reads from historical storage key `kepler_pokemon_training_v2`.
+*   **Import UI Checkbox**: Shows a mint-green alert box (`#migration-option-container`) inside the Add Child Profile modal when local data is detected, displaying the level and name of the progress found.
+*   **State Retention**: Updated `createChildProfile` in `firebase.js` to preserve the grid, streaks, star vault, and badges from the migration payload instead of hard-resetting them to empty.
+*   **Archive Cleanup**: Automatically renames `kepler_pokemon_training_v2` to `kepler_pokemon_training_v2_backup` upon successful database creation.
+
+### D. UX & Reliability Fixes
+*   **Dynamic Password Prompts**: Updated `promptParentPassword` to support a custom message. Shows *"Enter Parent Password to add a new child:"* for profile creation and *"Enter Parent Password to open Admin Panel:"* for admin actions.
+*   **Favicon 404 Warnings**: Added a favicon link inside `index.html` and saved `icon.png` as a fallback `favicon.ico` in the root folder.
+*   **SW Auto-Reload**: Added `updatefound` event handler to the Service Worker registration in `app.js` to automatically reload the page when a new version is installed.
 
 ---
 
-## 4. Work Accomplished
-1.  **Implemented Task Instructions Guide Modal (Option #4)**:
-    *   Created `guide.js` to manage the modal rendering and visibility logic for the Task Guide. Tapping "📖 Guide" in the grid column header opens the guide.
-    *   Exposed task instructions configuration inside the Parent Admin Panel, transforming `.admin-task-item` into a clean two-row vertical stack. The second row houses a full-width input field enabling parents to edit instructions dynamically.
-    *   Added automated self-healing validation in `state.js` to detect missing `instructions` fields on existing stored user states and safely backfill them with default rules (e.g., Piano: "Play all pieces 3x...", Reading: "15min reading out loud...").
-    *   Wrote integration test (`Test Case 20` in `tests.js`) which verifies opening/closing of the guide modal, DOM rendering of default instructions, editing them in the Parent Admin Panel, saving the changes, and verifying the updated rules successfully render in the guide.
-2.  **Updated PWA Service Worker Cache**:
-    *   Registered `guide.js` in `ASSETS_TO_CACHE` within `service-worker.js`.
-    *   Bumped PWA Cache to `poke-chart-cache-v23` and app version to `v1.4.0 (v23)` to trigger the update on all clients.
-    *   Updated script/stylesheet query cache-busting strings to `v=6.2` inside `index.html`.
+## 3. Local Files Modified (Uncommitted)
+
+*   `[index.html](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/index.html)`: Dynamic password text container; migration alert container layout; favicon links.
+*   `[firebase.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/firebase.js)`: Emulator project ID override; updated `createChildProfile` parameters.
+*   `[state.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/state.js)`: Reverted starters and evolution tables to 5 families.
+*   `[app.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/app.js)`: Render grid using `avatarId`; dynamic description prompts; local migration logic; SW update-reload listener.
+*   `[admin.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/admin.js)`: Dynamic password description parameters; dynamic instructions placeholder.
+*   `[service-worker.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/service-worker.js)`: Version bump to v30; cloned background fetch response to avoid crashes.
+*   `[tests.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/tests.js)`: Version test assertion bump to `v1.4.7`.
+*   `[run_emulator.sh](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/run_emulator.sh)`: Persistent emulator startup helper.
+*   `[favicon.ico](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/favicon.ico)`: Fallback browser favicon.
 
 ---
 
-## 5. Files and Code
+## 4. Initialization Protocol for Next Session
 
-### New Files
-*   `[guide.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/guide.js)`: Manages PWA Task Guide modal logic and dynamic lists (lines 1-61).
-
-### Edited Files
-*   `[state.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/state.js)`: Expanded default schema tasks and self-healing task validator to support instructions (lines 142-146, 397-401, 555-580).
-*   `[index.html](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/index.html)`: Added "📖 Guide" button to grid table column header (lines 117-122) and `#guide-modal` container markup (lines 456-469). Bumped cache versions.
-*   `[style.css](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/style.css)`: Added Guide modal styling (lines 2701-2769). Updated `.admin-task-item` structure to column flex layout and added `.admin-task-row` and `.admin-task-instructions` rules (lines 1431-1472).
-*   `[admin.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/admin.js)`: Restructured `renderAdminTasksList` to support instructions editing inputs (lines 187-226) and updated `addNewTask`/`saveAdminTasks` (lines 249-253, 267-270, 281-285).
-*   `[app.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/app.js)`: Integrated `initGuide`, `openGuide`, `renderGuide` functions, calling it in main entry point and exposing them to `__test_helpers__` (lines 30, 120, 1585, 1586). Bumped version.
-*   `[service-worker.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/service-worker.js)`: Added `guide.js` to cache manifest (line 9) and bumped CACHE_NAME to `v23` (line 1).
-*   `[tests.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/tests.js)`: Added `Test Case 20` for instructions guide modal validation (lines 1445-1552).
+To resume pair-programming:
+1.  **Navigate to repository**: `cd ~/kepler-pokemon-chart`
+2.  **Verify server**: Verify the python server is running: `python3 -m http.server 8085 &`
+3.  **Start emulator**: Run `./run_emulator.sh` to start local Firestore and Auth.
+4.  **Open Chrome**: Load `http://localhost:8085/`.
+5.  **Clear PWA cache (if version is not v1.4.7)**: Click F12 -> Application -> Storage -> "Clear site data", then refresh.
+6.  **Login**: Use parent email `crsjain@gmail.com` with password `food3333`.
 
 ---
 
-## 6. Current Work and Next Steps
-*   **Next Actions**:
-    *   Verify the Task Guide UI looks clean and functions as expected on tablet screen widths.
+## 5. Next Steps
+
+1.  **Test Migration Success**: Inject the live data JSON into local storage, trigger the migration checkboxes, and verify the tasks grid, milestone progress, daily stars, and badge case display correctly.
+2.  **Offline State Testing**: Verify app behavior when the emulator is offline or network is disconnected.
+3.  **Commit and Push**: Stage and commit all changes, then push to GitHub remote branch `prototype/pokemon-badge-collection` when testing completes.
