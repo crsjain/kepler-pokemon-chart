@@ -774,6 +774,12 @@ button:disabled,
   overflow-y: auto;
 }
 
+.modal-content p,
+.notif-body-text,
+.notif-desc {
+  text-wrap: pretty;
+}
+
 .modal-content h2 {
   font-family: 'Fredoka One', cursive;
   color: var(--poke-blue);

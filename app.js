@@ -33,7 +33,7 @@ import {
 let deleteChildProfileFn = deleteChildProfile;
 import { promptParentPassword } from './admin.js';
 
-const APP_VERSION = 'v1.4.9 (v32)';
+const APP_VERSION = 'v1.5.0 (v33)';
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault } from './vault.js';
