@@ -25,6 +25,7 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - **Dynamic Task Manager**: Add, edit, or delete activities, customize goal days (1-7), edit task instructions, and save changes instantly.
   - **Claimed Rewards History**: View a list of earned rewards with dates and partner context.
   - **Backup & Restore**: Trigger manual backups, import/export backup codes, or restore from a rolling 2-deep list of automated milestone backups (captured on level-ups and week resets).
+  - **Profile Management**: Delete child profiles directly from the admin panel list. Deleting the currently active profile automatically redirects you to the profile selection screen.
   - **Diagnostics & Healing**: Click "Run Diagnostics" to auto-detect and heal any state schema inconsistency.
   - **Developer Debug Mode**: Toggle the right-aligned Debug Sidebar to test milestones, level up instantly, or force devolution for testing.
 - 📋 **Integrated Restore Guide**: A quick FAQ inside the Admin Panel details exactly when to use Auto-Backup (accidental resets) vs. Manual Imports (cache clearance/device migration).
