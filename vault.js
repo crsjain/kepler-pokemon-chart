@@ -296,7 +296,7 @@ export function openVault() {
   const pageSize = columns * 4;
   const totalPages = Math.max(1, Math.ceil(stars.length / pageSize));
   
-  currentPage = 0; // Default to first page (newest stars)
+  currentPage = totalPages - 1; // Default to last page
   renderVault();
   if (vaultModal) {
     vaultModal.classList.remove('hidden');
@@ -424,7 +424,7 @@ export function renderVault() {
   if (!vaultGrid) return;
   vaultGrid.innerHTML = '';
 
-  const stars = getStarsFromDates(state.starVault.earnedDates).reverse();
+  const stars = getStarsFromDates(state.starVault.earnedDates);
 
   const isMobile = window.innerWidth <= 480;
   const columns = isMobile ? 5 : 10;
