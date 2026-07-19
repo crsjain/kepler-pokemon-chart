@@ -1172,6 +1172,7 @@ input:checked + .slider:before {
   color: var(--text-color);
   margin-bottom: 25px;
   line-height: 1.4;
+  text-wrap: pretty;
 }
 
 .confirm-actions,

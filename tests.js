@@ -50,7 +50,7 @@ async function runSuite() {
       // Verify Version Indicator
       const versionLabel = document.getElementById('app-version-label');
       assert(versionLabel !== null, "App version indicator should exist");
-      assert(versionLabel.textContent.includes('v1.4.8'), "App version label should display v1.4.8");
+      assert(versionLabel.textContent.includes('v1.4.9'), "App version label should display v1.4.9");
       
       // Select rewards (needed to check boxes)
       const rewardSelect = document.getElementById('reward-select');
