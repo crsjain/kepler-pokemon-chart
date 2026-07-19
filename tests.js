@@ -1744,6 +1744,32 @@ async function runSuite() {
         state = window.__app_state__;
       }
 
+      // 23. Test Admin Profiles List Rendering
+      console.log("Running Test Case 23: Admin Profiles List Rendering...");
+      {
+        const helpers = window.__test_helpers__;
+        
+        // Mock profiles
+        helpers.setProfilesList([
+          { id: 'profile_1', name: 'Test Child 1', avatarId: '25' },
+          { id: 'profile_2', name: 'Test Child 2', avatarId: '6' }
+        ]);
+        
+        helpers.renderAdminProfilesList();
+        
+        const container = document.getElementById('admin-profiles-list');
+        assert(container, "Profiles list container should exist in DOM");
+        const items = container.querySelectorAll('.admin-profile-item');
+        assert(items.length === 2, `Should render exactly 2 profile items, got ${items.length}`);
+        
+        assert(items[0].querySelector('.admin-profile-name').textContent.includes('Test Child 1'), "First profile name should match");
+        assert(items[1].querySelector('.admin-profile-name').textContent.includes('Test Child 2'), "Second profile name should match");
+        
+        // Clean up
+        helpers.setProfilesList([]);
+        helpers.renderAdminProfilesList();
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

@@ -26,6 +26,7 @@ import {
   subscribeToAuth, 
   subscribeToProfiles, 
   createChildProfile, 
+  deleteChildProfile,
   subscribeToProfileState, 
   saveProfileStateToCloud 
 } from './firebase.js';
@@ -210,6 +211,7 @@ function initFirebaseUI() {
         console.log("Received profiles list from Firestore! Count:", profiles.length);
         profilesList = profiles;
         renderProfilesGrid();
+        renderAdminProfilesList();
         
         // Auto-select last profile if configured
         const lastProfile = localStorage.getItem('last_active_profile_id');
@@ -460,6 +462,76 @@ function renderProfilesGrid() {
   });
 }
 
+function renderAdminProfilesList() {
+  const container = document.getElementById('admin-profiles-list');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  if (profilesList.length === 0) {
+    container.innerHTML = '<p class="no-profiles">No profiles found.</p>';
+    return;
+  }
+  
+  profilesList.forEach(profile => {
+    const item = document.createElement('div');
+    item.className = 'admin-profile-item';
+    
+    const avatarId = profile.avatarId || '25';
+    const imageUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${avatarId}.png`;
+    
+    const isActive = (profile.id === activeProfileId);
+    
+    item.innerHTML = `
+      <div class="admin-profile-info">
+        <img class="admin-profile-avatar" src="${imageUrl}" alt="${profile.name}">
+        <span class="admin-profile-name">${profile.name} ${isActive ? '<span style="font-size:0.75rem; color:#10b981; font-family:\'Quicksand\',sans-serif;">(Active)</span>' : ''}</span>
+      </div>
+      <button class="pixel-btn danger small delete-profile-btn" data-id="${profile.id}" data-name="${profile.name}">Delete</button>
+    `;
+    
+    const deleteBtn = item.querySelector('.delete-profile-btn');
+    deleteBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const name = deleteBtn.getAttribute('data-name');
+      const id = deleteBtn.getAttribute('data-id');
+      
+      const confirmed = await showCustomConfirm(
+        "Delete Profile ⚠️",
+        `Are you sure you want to permanently delete profile "${name}"? This will erase all of their levels, badges, and weekly progress. This action CANNOT be undone.`
+      );
+      
+      if (confirmed) {
+        try {
+          showCustomNotification("Deleting...", `Deleting profile ${name}...`);
+          await deleteChildProfile(id);
+          showCustomNotification("Deleted 🗑️", `Profile ${name} was successfully deleted.`);
+          
+          if (id === activeProfileId) {
+            activeProfileId = null;
+            localStorage.removeItem('last_active_profile_id');
+            if (adminModal) adminModal.classList.add('hidden');
+            
+            const appContainer = document.querySelector('.app-container');
+            if (appContainer) {
+              appContainer.style.filter = 'blur(10px)';
+              appContainer.style.pointerEvents = 'none';
+            }
+            if (profileSelectModal) {
+              profileSelectModal.classList.remove('hidden');
+            }
+          }
+        } catch (err) {
+          console.error("Failed to delete profile:", err);
+          showCustomNotification("Error ❌", `Failed to delete profile: ${err.message}`);
+        }
+      }
+    });
+    
+    container.appendChild(item);
+  });
+}
+
 function selectProfile(profileId) {
   activeProfileId = profileId;
   localStorage.setItem('last_active_profile_id', profileId);
@@ -502,7 +574,8 @@ function selectProfile(profileId) {
 initAdmin({
   renderState,
   showCustomConfirm,
-  showCustomNotification
+  showCustomNotification,
+  renderAdminProfilesList: () => renderAdminProfilesList()
 });
 initFirebaseUI();
 preloadImages();
@@ -2044,7 +2117,10 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     renderVault: () => renderVault(),
     syncVaultStarsWithGrid: () => syncVaultStarsWithGrid(),
     openGuide: () => openGuide(),
-    renderGuide: () => renderGuide()
+    renderGuide: () => renderGuide(),
+    setProfilesList: (list) => { profilesList = list; },
+    getProfilesList: () => profilesList,
+    renderAdminProfilesList: () => renderAdminProfilesList()
   };
   
   if (location.search.includes('runTests=true')) {

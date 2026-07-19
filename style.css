@@ -1331,6 +1331,60 @@ input:checked + .slider:before {
   padding: 15px 0;
 }
 
+/* Manage Profiles Styles */
+.admin-profiles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px;
+  background: #f8fafc;
+  margin-top: 8px;
+  margin-bottom: 15px;
+}
+
+.admin-profile-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  gap: 10px;
+}
+
+.admin-profile-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Quicksand', sans-serif;
+  text-align: left;
+}
+
+.admin-profile-avatar {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.admin-profile-name {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.9rem;
+  color: var(--poke-dark-blue);
+}
+
+.no-profiles {
+  text-align: center;
+  font-family: 'Quicksand', sans-serif;
+  color: #a0aec0;
+  font-size: 0.9rem;
+  padding: 15px 0;
+}
+
 /* Claimed Rewards History Styles */
 .claimed-rewards-history-list {
   display: flex;
@@ -1714,7 +1768,7 @@ input:checked + .slider:before {
     grid-row: 1;
   }
 
-  .admin-faq {
+  .manage-profiles-section {
     grid-column: 1;
     grid-row: 2;
   }
@@ -1727,6 +1781,11 @@ input:checked + .slider:before {
   .claimed-rewards-section {
     grid-column: 3;
     grid-row: 2;
+  }
+
+  .admin-faq {
+    grid-column: 1 / span 3;
+    grid-row: 3;
   }
 }
 

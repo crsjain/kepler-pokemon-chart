@@ -13,7 +13,8 @@ import {
 let appCallbacks = {
   renderState: () => {},
   showCustomConfirm: () => {},
-  showCustomNotification: () => {}
+  showCustomNotification: () => {},
+  renderAdminProfilesList: () => {}
 };
 
 function renderState(...args) {
@@ -91,6 +92,7 @@ export function initAdmin(callbacks) {
         renderAdminTasksList();
         renderBackupHistory();
         renderClaimedRewardsHistory();
+        appCallbacks.renderAdminProfilesList();
       });
     });
   }

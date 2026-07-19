@@ -1,0 +1,5 @@
+{
+  "command": "./start.sh",
+  "restart_policy": "always",
+  "description": "Starts the local Firebase emulator for Kepler Pokemon Chart."
+}
