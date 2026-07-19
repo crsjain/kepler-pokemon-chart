@@ -33,7 +33,7 @@ import {
 let deleteChildProfileFn = deleteChildProfile;
 import { promptParentPassword } from './admin.js';
 
-const APP_VERSION = 'v1.4.7 (v30)';
+const APP_VERSION = 'v1.4.8 (v31)';
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault } from './vault.js';
@@ -502,7 +502,9 @@ function renderAdminProfilesList() {
         `Are you sure you want to permanently delete profile "${name}"? This will erase all of their levels, badges, and weekly progress. This action CANNOT be undone.`,
         async () => {
           try {
-            showCustomNotification("Deleting...", `Deleting profile ${name}...`);
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = "Deleting...";
+            
             await deleteChildProfileFn(id);
             showCustomNotification("Deleted 🗑️", `Profile ${name} was successfully deleted.`);
             
@@ -521,6 +523,8 @@ function renderAdminProfilesList() {
               }
             }
           } catch (err) {
+            deleteBtn.disabled = false;
+            deleteBtn.textContent = "Delete";
             console.error("Failed to delete profile:", err);
             showCustomNotification("Error ❌", `Failed to delete profile: ${err.message}`);
           }
