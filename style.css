@@ -1156,7 +1156,7 @@ input:checked + .slider:before {
 
 /* Confirm Modal Styles */
 #confirm-modal {
-  z-index: 120000;
+  z-index: 210000;
 }
 
 .confirm-content {
@@ -2415,7 +2415,7 @@ input:checked + .slider:before {
 
 /* success custom notifications responsive design overrides */
 .notif-modal {
-  z-index: 110000;
+  z-index: 200000;
 }
 .notif-modal .modal-content {
   max-width: 520px;
