@@ -50,7 +50,7 @@ async function runSuite() {
       // Verify Version Indicator
       const versionLabel = document.getElementById('app-version-label');
       assert(versionLabel !== null, "App version indicator should exist");
-      assert(versionLabel.textContent.includes('v1.5.5'), "App version label should display v1.5.5");
+      assert(versionLabel.textContent.includes('v1.5.6'), "App version label should display v1.5.6");
       
       // Select rewards (needed to check boxes)
       const rewardSelect = document.getElementById('reward-select');
@@ -1880,6 +1880,54 @@ async function runSuite() {
         helpers.setExportCloudDataMock(null);
         helpers.setImportCloudDataMock(null);
         restoreMocks();
+      }
+
+      console.log("Running Test Case 25: Profile Modal Click-Outside Cancellation...");
+      {
+        const helpers = window.__test_helpers__;
+        const profileSelectModal = document.getElementById('profile-select-modal');
+        const switchProfileBtn = document.getElementById('switch-profile-btn');
+        const appContainer = document.querySelector('.app-container');
+
+        // Reset UI to clean state
+        profileSelectModal.classList.add('hidden');
+        appContainer.style.filter = 'none';
+        appContainer.style.pointerEvents = 'auto';
+
+        // 1. Click outside when active profile IS set -> modal should close
+        helpers.setActiveProfileId('kepler_1234');
+        switchProfileBtn.click();
+        await sleep(100);
+        
+        assert(profileSelectModal.classList.contains('hidden') === false, "Profile select modal should open on switch profile click");
+        assert(appContainer.style.filter === 'blur(10px)', "App container should be blurred when modal is open");
+
+        // Simulate click outside (clicking the backdrop element directly)
+        profileSelectModal.click();
+        await sleep(100);
+
+        assert(profileSelectModal.classList.contains('hidden') === true, "Profile select modal should close on click outside if profile is active");
+        assert(appContainer.style.filter === 'none', "App container should unblur after modal closes");
+
+        // 2. Click outside when active profile is NOT set -> modal should NOT close
+        helpers.setActiveProfileId(null);
+        switchProfileBtn.click();
+        await sleep(100);
+
+        assert(profileSelectModal.classList.contains('hidden') === false, "Profile select modal should open");
+
+        // Simulate click outside
+        profileSelectModal.click();
+        await sleep(100);
+
+        assert(profileSelectModal.classList.contains('hidden') === false, "Profile select modal should remain open on click outside if no profile is active");
+        assert(appContainer.style.filter === 'blur(10px)', "App container should remain blurred");
+
+        // Clean up
+        profileSelectModal.classList.add('hidden');
+        appContainer.style.filter = 'none';
+        appContainer.style.pointerEvents = 'auto';
+        helpers.setActiveProfileId(null);
       }
 
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");

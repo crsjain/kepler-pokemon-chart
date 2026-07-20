@@ -35,7 +35,7 @@ import {
 let deleteChildProfileFn = deleteChildProfile;
 import { promptParentPassword } from './admin.js';
 
-const APP_VERSION = 'v1.5.5 (v38)';
+const APP_VERSION = 'v1.5.6 (v39)';
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault } from './vault.js';
@@ -264,20 +264,7 @@ function initFirebaseUI() {
     });
   }
 
-  // Switch Profile Action
-  if (switchProfileBtn) {
-    switchProfileBtn.addEventListener('click', () => {
-      activeProfileId = null;
-      localStorage.removeItem('last_active_profile_id');
-      
-      const appContainer = document.querySelector('.app-container');
-      if (appContainer) {
-        appContainer.style.filter = 'blur(10px)';
-        appContainer.style.pointerEvents = 'none';
-      }
-      if (profileSelectModal) profileSelectModal.classList.remove('hidden');
-    });
-  }
+  // Switch Profile and Click-Outside listeners moved to setupEventListeners
 
   // Add Child Profile Action
   const AVATAR_OPTIONS = [
@@ -1306,6 +1293,32 @@ function renderPartnerSelector() {
 }
 
 function setupEventListeners() {
+  // Switch Profile Action
+  if (switchProfileBtn) {
+    switchProfileBtn.addEventListener('click', () => {
+      // Do not clear activeProfileId yet to allow cancelling by clicking outside
+      const appContainer = document.querySelector('.app-container');
+      if (appContainer) {
+        appContainer.style.filter = 'blur(10px)';
+        appContainer.style.pointerEvents = 'none';
+      }
+      if (profileSelectModal) profileSelectModal.classList.remove('hidden');
+    });
+  }
+
+  // Click outside profile select modal to close (if a profile is active)
+  if (profileSelectModal) {
+    profileSelectModal.addEventListener('click', (e) => {
+      if (e.target === profileSelectModal && activeProfileId) {
+        profileSelectModal.classList.add('hidden');
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) {
+          appContainer.style.filter = 'none';
+          appContainer.style.pointerEvents = 'auto';
+        }
+      }
+    });
+  }
   const tbody = document.getElementById('grid-tbody');
   if (tbody) {
     tbody.addEventListener('change', (e) => {
@@ -2149,7 +2162,9 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     renderAdminProfilesList: () => renderAdminProfilesList(),
     setDeleteChildProfileMock: (fn) => { deleteChildProfileFn = fn || deleteChildProfile; },
     setExportCloudDataMock: (fn) => { exportCloudDataFn = fn; },
-    setImportCloudDataMock: (fn) => { importCloudDataFn = fn; }
+    setImportCloudDataMock: (fn) => { importCloudDataFn = fn; },
+    setActiveProfileId: (id) => { activeProfileId = id; },
+    getActiveProfileId: () => activeProfileId
   };
   
   if (location.search.includes('runTests=true')) {
