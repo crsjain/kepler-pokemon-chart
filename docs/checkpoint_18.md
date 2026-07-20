@@ -18,7 +18,7 @@ This document contains a complete record of user requests, system configurations
 *   **Repository Location**: `/usr/local/google/home/crsjain/kepler-pokemon-chart`
 *   **Active Branch**: `prototype/pokemon-badge-collection`
 *   **Target Audience**: Kepler (7 years old) and Lyra (5 years old)
-*   **Current Version**: `v1.5.3 (v36)` / Service Worker cache `v36` (Cloud Backup additions)
+*   **Current Version**: `v1.5.4 (v37)` / Service Worker cache `v37` (Cloud Backup additions)
 *   **Active Port**: `8085` (running Python web server)
 *   **Firebase Emulator Project**: `demo-pokemon-chart` (Firestore UI on port `4000`, DB on `8080`)
 *   **Parent Email**: `crsjain@gmail.com`
