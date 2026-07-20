@@ -135,9 +135,12 @@ export async function createChildProfile(name, defaultStateTemplate, avatarId = 
     updatedAt: new Date().toISOString()
   };
   
-  const updateData = {};
-  updateData[`profiles.${profileId}`] = profileData;
-  updateData['updatedAt'] = new Date().toISOString();
+  const updateData = {
+    profiles: {
+      [profileId]: profileData
+    },
+    updatedAt: new Date().toISOString()
+  };
   
   await setDoc(userDocRef, updateData, { merge: true });
   
@@ -150,9 +153,12 @@ export async function deleteChildProfile(profileId) {
   
   const userDocRef = doc(db, 'users', currentFamilyUid);
   
-  const updateData = {};
-  updateData[`profiles.${profileId}`] = deleteField();
-  updateData['updatedAt'] = new Date().toISOString();
+  const updateData = {
+    profiles: {
+      [profileId]: deleteField()
+    },
+    updatedAt: new Date().toISOString()
+  };
   
   await setDoc(userDocRef, updateData, { merge: true });
 }
@@ -193,12 +199,17 @@ export async function saveProfileStateToCloud(profileId, localState) {
   
   const userDocRef = doc(db, 'users', currentFamilyUid);
   
-  const updateData = {};
-  updateData[`profiles.${profileId}.state`] = localState;
-  updateData[`profiles.${profileId}.name`] = localState.childName || profileId.split('_')[0];
-  updateData[`profiles.${profileId}.partnerFamily`] = localState.partnerFamily || '25';
-  updateData[`profiles.${profileId}.updatedAt`] = new Date().toISOString();
-  updateData['updatedAt'] = new Date().toISOString();
+  const updateData = {
+    profiles: {
+      [profileId]: {
+        state: localState,
+        name: localState.childName || profileId.split('_')[0],
+        partnerFamily: localState.partnerFamily || '25',
+        updatedAt: new Date().toISOString()
+      }
+    },
+    updatedAt: new Date().toISOString()
+  };
   
   await setDoc(userDocRef, updateData, { merge: true });
 }
