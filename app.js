@@ -35,7 +35,7 @@ import {
 let deleteChildProfileFn = deleteChildProfile;
 import { promptParentPassword } from './admin.js';
 
-const APP_VERSION = 'v1.5.7 (v40)';
+const APP_VERSION = 'v1.5.8 (v41)';
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault } from './vault.js';
@@ -152,6 +152,52 @@ const addProfileSubmitBtn = document.getElementById('add-profile-submit-btn');
 const addProfileCancelBtn = document.getElementById('add-profile-cancel-btn');
 const addProfileError = document.getElementById('add-profile-error');
 
+function handleProfilesUpdate(profiles) {
+  console.log("Received profiles list from Firestore! Count:", profiles.length);
+  profilesList = profiles;
+  renderProfilesGrid();
+  renderAdminProfilesList();
+  
+  // If active profile is set but no longer exists in the updated profiles list (e.g. database overwritten/restored)
+  if (activeProfileId && !profiles.some(p => p.id === activeProfileId)) {
+    console.log(`Active profile ${activeProfileId} was deleted or is missing in DB.`);
+    if (profiles.length > 0) {
+      console.log(`Switching active view to first restored profile: ${profiles[0].id}`);
+      selectProfile(profiles[0].id);
+    } else {
+      console.log("No profiles available in DB, clearing active view.");
+      activeProfileId = null;
+      localStorage.removeItem('last_active_profile_id');
+      // Force profile selection
+      const appContainer = document.querySelector('.app-container');
+      if (appContainer) {
+        appContainer.style.filter = 'blur(10px)';
+        appContainer.style.pointerEvents = 'none';
+      }
+      if (profileSelectModal) profileSelectModal.classList.remove('hidden');
+    }
+    return;
+  }
+
+  // Auto-select last profile if configured
+  const lastProfile = localStorage.getItem('last_active_profile_id');
+  if (lastProfile && profiles.some(p => p.id === lastProfile)) {
+    if (!activeProfileId) {
+      console.log("Auto-selecting last active profile:", lastProfile);
+      selectProfile(lastProfile);
+    }
+  } else if (!activeProfileId) {
+    console.log("No active profile in memory, opening profile select modal...");
+    // Force profile selection
+    const appContainer = document.querySelector('.app-container');
+    if (appContainer) {
+      appContainer.style.filter = 'blur(10px)';
+      appContainer.style.pointerEvents = 'none';
+    }
+    if (profileSelectModal) profileSelectModal.classList.remove('hidden');
+  }
+}
+
 function initFirebaseUI() {
   const isTestMode = location.search.includes('runTests=true');
   if (isTestMode) {
@@ -211,28 +257,7 @@ function initFirebaseUI() {
       // Load Profiles List
       console.log("Subscribing to profiles database collection...");
       subscribeToProfiles((profiles) => {
-        console.log("Received profiles list from Firestore! Count:", profiles.length);
-        profilesList = profiles;
-        renderProfilesGrid();
-        renderAdminProfilesList();
-        
-        // Auto-select last profile if configured
-        const lastProfile = localStorage.getItem('last_active_profile_id');
-        if (lastProfile && profiles.some(p => p.id === lastProfile)) {
-          if (!activeProfileId) {
-            console.log("Auto-selecting last active profile:", lastProfile);
-            selectProfile(lastProfile);
-          }
-        } else if (!activeProfileId) {
-          console.log("No active profile in memory, opening profile select modal...");
-          // Force profile selection
-          const appContainer = document.querySelector('.app-container');
-          if (appContainer) {
-            appContainer.style.filter = 'blur(10px)';
-            appContainer.style.pointerEvents = 'none';
-          }
-          if (profileSelectModal) profileSelectModal.classList.remove('hidden');
-        }
+        handleProfilesUpdate(profiles);
       }, (err) => {
         console.error("Profiles subscription failed:", err);
         showCustomNotification("Database Error ❌", "Failed to connect to profiles: " + err.message);
@@ -2164,7 +2189,8 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     setExportCloudDataMock: (fn) => { exportCloudDataFn = fn; },
     setImportCloudDataMock: (fn) => { importCloudDataFn = fn; },
     setActiveProfileId: (id) => { activeProfileId = id; },
-    getActiveProfileId: () => activeProfileId
+    getActiveProfileId: () => activeProfileId,
+    triggerProfilesUpdate: (profiles) => handleProfilesUpdate(profiles)
   };
   
   if (location.search.includes('runTests=true')) {

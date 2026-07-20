@@ -50,7 +50,7 @@ async function runSuite() {
       // Verify Version Indicator
       const versionLabel = document.getElementById('app-version-label');
       assert(versionLabel !== null, "App version indicator should exist");
-      assert(versionLabel.textContent.includes('v1.5.7'), "App version label should display v1.5.7");
+      assert(versionLabel.textContent.includes('v1.5.8'), "App version label should display v1.5.8");
       
       // Select rewards (needed to check boxes)
       const rewardSelect = document.getElementById('reward-select');
@@ -1922,6 +1922,52 @@ async function runSuite() {
 
         assert(profileSelectModal.classList.contains('hidden') === false, "Profile select modal should remain open on click outside if no profile is active");
         assert(appContainer.style.filter === 'blur(10px)', "App container should remain blurred");
+
+        // Clean up
+        profileSelectModal.classList.add('hidden');
+        appContainer.style.filter = 'none';
+        appContainer.style.pointerEvents = 'auto';
+        helpers.setActiveProfileId(null);
+      }
+
+      console.log("Running Test Case 26: Auto-Switch Profile on Restore/Delete...");
+      {
+        const helpers = window.__test_helpers__;
+        const profileSelectModal = document.getElementById('profile-select-modal');
+        const appContainer = document.querySelector('.app-container');
+
+        // Set up initial condition: active profile is 'profile_1'
+        helpers.setActiveProfileId('profile_1');
+        profileSelectModal.classList.add('hidden');
+        appContainer.style.filter = 'none';
+        appContainer.style.pointerEvents = 'auto';
+
+        // Trigger a profiles update where 'profile_1' STILL EXISTS (normal update)
+        // Nothing should change (active profile remains 'profile_1', modal hidden)
+        helpers.triggerProfilesUpdate([
+          { id: 'profile_1', name: 'Test Child 1', avatarId: '25' },
+          { id: 'profile_2', name: 'Test Child 2', avatarId: '6' }
+        ]);
+        assert(helpers.getActiveProfileId() === 'profile_1', "Active profile should remain profile_1");
+        assert(profileSelectModal.classList.contains('hidden') === true, "Modal should remain hidden");
+
+        // Trigger a profiles update where 'profile_1' is MISSING but other profiles exist (overwrite/delete scenario)
+        // It should auto-switch to the first available profile ('profile_2')
+        helpers.triggerProfilesUpdate([
+          { id: 'profile_2', name: 'Test Child 2', avatarId: '6' },
+          { id: 'profile_3', name: 'Test Child 3', avatarId: '25' }
+        ]);
+        await sleep(100);
+        assert(helpers.getActiveProfileId() === 'profile_2', `Active profile should auto-switch to profile_2, got ${helpers.getActiveProfileId()}`);
+        assert(profileSelectModal.classList.contains('hidden') === true, "Modal should remain hidden because a valid profile was auto-selected");
+
+        // Trigger a profiles update where NO profiles exist (all deleted scenario)
+        // It should clear active profile and force open the profile selection modal
+        helpers.triggerProfilesUpdate([]);
+        await sleep(100);
+        assert(helpers.getActiveProfileId() === null, "Active profile should be cleared (null)");
+        assert(profileSelectModal.classList.contains('hidden') === false, "Profile select modal should force open");
+        assert(appContainer.style.filter === 'blur(10px)', "App container should be blurred");
 
         // Clean up
         profileSelectModal.classList.add('hidden');
