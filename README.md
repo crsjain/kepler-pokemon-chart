@@ -24,7 +24,7 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
 - 🔒 **Parent Admin Panel**: Password-protected (`zxcv`) options dashboard in the footer:
   - **Dynamic Task Manager**: Add, edit, or delete activities, customize goal days (1-7), edit task instructions, and save changes instantly.
   - **Claimed Rewards History**: View a list of earned rewards with dates and partner context.
-  - **Backup & Restore**: Trigger manual backups, import/export backup codes, or restore from a rolling 2-deep list of automated milestone backups (captured on level-ups and week resets).
+  - **Backup & Restore (Child & Family)**: Backup or restore individual child progress (`Backup Child` / `Restore Child`) or backup/restore the entire family database containing all child profiles (`Backup Family` / `Restore Family`). Also supports restoring from a rolling 2-deep list of automated milestone backups (captured on level-ups and week resets).
   - **Profile Management**: Delete child profiles directly from the admin panel list. Deleting the currently active profile automatically redirects you to the profile selection screen.
   - **Diagnostics & Healing**: Click "Run Diagnostics" to auto-detect and heal any state schema inconsistency.
   - **Developer Debug Mode**: Toggle the right-aligned Debug Sidebar to test milestones, level up instantly, or force devolution for testing.
