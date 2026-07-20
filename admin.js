@@ -14,7 +14,9 @@ let appCallbacks = {
   renderState: () => {},
   showCustomConfirm: () => {},
   showCustomNotification: () => {},
-  renderAdminProfilesList: () => {}
+  renderAdminProfilesList: () => {},
+  exportCloudData: async () => { return null; },
+  importCloudData: async () => {}
 };
 
 function renderState(...args) {
@@ -41,6 +43,8 @@ let passwordError = null;
 let adminDiagnosticsBtn = null;
 let adminExportBtn = null;
 let adminImportBtn = null;
+let adminCloudExportBtn = null;
+let adminCloudImportBtn = null;
 let adminWipeBtn = null;
 let adminForceUpdateBtn = null;
 let closeAdminModalBtn = null;
@@ -79,6 +83,8 @@ export function initAdmin(callbacks) {
   adminDiagnosticsBtn = document.getElementById('admin-diagnostics-btn');
   adminExportBtn = document.getElementById('admin-export-btn');
   adminImportBtn = document.getElementById('admin-import-btn');
+  adminCloudExportBtn = document.getElementById('admin-cloud-export-btn');
+  adminCloudImportBtn = document.getElementById('admin-cloud-import-btn');
   adminWipeBtn = document.getElementById('admin-wipe-btn');
   adminForceUpdateBtn = document.getElementById('admin-force-update-btn');
   closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
@@ -152,6 +158,12 @@ export function initAdmin(callbacks) {
   }
   if (adminImportBtn) {
     adminImportBtn.addEventListener('click', importState);
+  }
+  if (adminCloudExportBtn) {
+    adminCloudExportBtn.addEventListener('click', exportCloudState);
+  }
+  if (adminCloudImportBtn) {
+    adminCloudImportBtn.addEventListener('click', importCloudState);
   }
   if (adminForceUpdateBtn) {
     adminForceUpdateBtn.addEventListener('click', forceAppUpdate);
@@ -359,6 +371,60 @@ function importState() {
   } catch (e) {
     console.error("Error importing state:", e);
     showCustomNotification("IMPORT ERROR", "Failed to parse the backup code. Make sure it is copied correctly.");
+  }
+}
+
+async function exportCloudState() {
+  try {
+    const data = await appCallbacks.exportCloudData();
+    if (!data) {
+      showCustomNotification("EXPORT FAILED ❌", "No cloud data found. Ensure you are logged in and have profiles.");
+      return;
+    }
+    const dataStr = JSON.stringify(data);
+    navigator.clipboard.writeText(dataStr).then(() => {
+      showCustomNotification("CLOUD EXPORT SUCCESS 📋", "Full Family backup copied to clipboard! Save this code somewhere safe.");
+    }).catch(err => {
+      prompt("Could not auto-copy. Please copy this backup code manually:", dataStr);
+    });
+  } catch (err) {
+    console.error("Cloud export failed:", err);
+    showCustomNotification("EXPORT ERROR ❌", "Failed to export cloud data: " + err.message);
+  }
+}
+
+async function importCloudState() {
+  const code = prompt("Paste your FULL FAMILY Trainer backup code here (This will overwrite ALL profiles!):");
+  if (!code) return;
+
+  try {
+    const parsed = JSON.parse(code);
+    if (parsed && typeof parsed === 'object' && parsed.profiles) {
+      showCustomConfirm(
+        "Restore Full Cloud Backup? ⚠️",
+        "Are you sure you want to restore this full backup? It will completely overwrite ALL profiles and progress in the cloud!",
+        async () => {
+          try {
+            await appCallbacks.importCloudData(parsed);
+            showCustomNotification("RESTORE SUCCESS", "Full family progress restored successfully!");
+            const adminModal = document.getElementById('admin-modal');
+            if (adminModal) adminModal.classList.add('hidden');
+          } catch (err) {
+            console.error("Cloud restore failed:", err);
+            showCustomNotification("RESTORE ERROR ❌", "Failed to restore cloud data: " + err.message);
+          }
+        },
+        null,
+        "Restore Everything",
+        "Cancel",
+        "pixel-btn danger",
+        "pixel-btn greyed-out"
+      );
+    } else {
+      showCustomNotification("INVALID CODE ❌", "The provided code is not a valid full family backup.");
+    }
+  } catch (e) {
+    showCustomNotification("PARSE ERROR ❌", "Failed to parse backup code: " + e.message);
   }
 }
 

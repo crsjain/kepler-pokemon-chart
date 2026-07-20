@@ -28,7 +28,9 @@ import {
   createChildProfile, 
   deleteChildProfile,
   subscribeToProfileState, 
-  saveProfileStateToCloud 
+  saveProfileStateToCloud,
+  exportFamilyData,
+  importFamilyData
 } from './firebase.js';
 let deleteChildProfileFn = deleteChildProfile;
 import { promptParentPassword } from './admin.js';
@@ -578,12 +580,28 @@ function selectProfile(profileId) {
   });
 }
 
+let exportCloudDataFn = async () => {
+  if (location.search.includes('runTests=true')) {
+    throw new Error("Cloud operations not available in Test Mode");
+  }
+  return await exportFamilyData();
+};
+
+let importCloudDataFn = async (data) => {
+  if (location.search.includes('runTests=true')) {
+    throw new Error("Cloud operations not available in Test Mode");
+  }
+  await importFamilyData(data);
+};
+
 // Initialize
 initAdmin({
   renderState,
   showCustomConfirm,
   showCustomNotification,
-  renderAdminProfilesList: () => renderAdminProfilesList()
+  renderAdminProfilesList: () => renderAdminProfilesList(),
+  exportCloudData: () => exportCloudDataFn(),
+  importCloudData: (data) => importCloudDataFn(data)
 });
 initFirebaseUI();
 preloadImages();
@@ -2129,7 +2147,9 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     setProfilesList: (list) => { profilesList = list; },
     getProfilesList: () => profilesList,
     renderAdminProfilesList: () => renderAdminProfilesList(),
-    setDeleteChildProfileMock: (fn) => { deleteChildProfileFn = fn || deleteChildProfile; }
+    setDeleteChildProfileMock: (fn) => { deleteChildProfileFn = fn || deleteChildProfile; },
+    setExportCloudDataMock: (fn) => { exportCloudDataFn = fn; },
+    setImportCloudDataMock: (fn) => { importCloudDataFn = fn; }
   };
   
   if (location.search.includes('runTests=true')) {

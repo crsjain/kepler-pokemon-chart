@@ -1801,6 +1801,87 @@ async function runSuite() {
         helpers.renderAdminProfilesList();
       }
 
+      // 24. Test Cloud Export & Import UI wiring
+      console.log("Running Test Case 24: Cloud Export & Import UI wiring...");
+      {
+        const helpers = window.__test_helpers__;
+        
+        // Mock Clipboard
+        let clipboardContent = null;
+        const originalClipboard = navigator.clipboard;
+        Object.defineProperty(navigator, 'clipboard', {
+          value: {
+            writeText: (text) => {
+              clipboardContent = text;
+              return Promise.resolve();
+            }
+          },
+          configurable: true,
+          writable: true
+        });
+        
+        // Mock appCallbacks
+        let exportCalled = false;
+        let importCalledWith = null;
+        
+        const mockFamilyData = {
+          profiles: {
+            kepler_1234: { name: "Kepler", avatarId: "25", state: { version: 12 } }
+          }
+        };
+        
+        helpers.setExportCloudDataMock(() => {
+          exportCalled = true;
+          return Promise.resolve(mockFamilyData);
+        });
+        
+        helpers.setImportCloudDataMock((data) => {
+          importCalledWith = data;
+          return Promise.resolve();
+        });
+        
+        // Mock prompt to return the export string
+        window.prompt = () => JSON.stringify(mockFamilyData);
+        
+        // Sim click Cloud Export
+        const cloudExportBtn = document.getElementById('admin-cloud-export-btn');
+        assert(cloudExportBtn, "Cloud Export button should exist");
+        
+        cloudExportBtn.click();
+        await sleep(100);
+        
+        assert(exportCalled, "exportCloudData callback should have been called");
+        assert(clipboardContent === JSON.stringify(mockFamilyData), "Clipboard content should match mock family data");
+        
+        // Sim click Cloud Import
+        const cloudImportBtn = document.getElementById('admin-cloud-import-btn');
+        assert(cloudImportBtn, "Cloud Import button should exist");
+        
+        cloudImportBtn.click();
+        await sleep(100);
+        
+        // Custom confirm modal should be open
+        const confirmModal = document.getElementById('confirm-modal');
+        assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should be open on import click");
+        
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        assert(confirmYesBtn, "Confirm Yes button should exist");
+        confirmYesBtn.click();
+        await sleep(100);
+        
+        assert(importCalledWith !== null, "importCloudData callback should have been called");
+        assert(JSON.stringify(importCalledWith) === JSON.stringify(mockFamilyData), "Imported data should match mock family data");
+        
+        // Clean up
+        Object.defineProperty(navigator, 'clipboard', {
+          value: originalClipboard,
+          configurable: true
+        });
+        helpers.setExportCloudDataMock(null);
+        helpers.setImportCloudDataMock(null);
+        restoreMocks();
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

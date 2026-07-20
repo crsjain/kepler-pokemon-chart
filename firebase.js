@@ -15,7 +15,8 @@ import {
   getDoc, 
   onSnapshot,
   query,
-  connectFirestoreEmulator
+  connectFirestoreEmulator,
+  deleteField
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 // --- PLACEHOLDER CONFIGURATION ---
@@ -83,18 +84,23 @@ export function subscribeToAuth(callback) {
 export function subscribeToProfiles(callback, errorCallback) {
   if (!currentFamilyUid) return null;
   
-  const profilesRef = collection(db, 'users', currentFamilyUid, 'profiles');
+  const userDocRef = doc(db, 'users', currentFamilyUid);
   
   if (profileUnsubscribe) profileUnsubscribe();
   
-  profileUnsubscribe = onSnapshot(profilesRef, (snapshot) => {
+  profileUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
     const profiles = [];
-    snapshot.forEach((doc) => {
-      profiles.push({
-        id: doc.id,
-        ...doc.data()
-      });
-    });
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data.profiles) {
+        Object.keys(data.profiles).forEach((profileId) => {
+          profiles.push({
+            id: profileId,
+            ...data.profiles[profileId]
+          });
+        });
+      }
+    }
     callback(profiles);
   }, (error) => {
     console.error("Error fetching profiles:", error);
@@ -111,7 +117,7 @@ export async function createChildProfile(name, defaultStateTemplate, avatarId = 
   // Format profile ID from name
   const profileId = name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now().toString().slice(-4);
   
-  const docRef = doc(db, 'users', currentFamilyUid, 'profiles', profileId);
+  const userDocRef = doc(db, 'users', currentFamilyUid);
   
   const initialProfileState = {
     ...defaultStateTemplate,
@@ -121,13 +127,19 @@ export async function createChildProfile(name, defaultStateTemplate, avatarId = 
     grid: defaultStateTemplate.grid || {}
   };
   
-  await setDoc(docRef, {
+  const profileData = {
     name: name,
     avatarId: avatarId,
     partnerFamily: initialProfileState.partnerFamily || '25',
     state: initialProfileState,
     updatedAt: new Date().toISOString()
-  });
+  };
+  
+  const updateData = {};
+  updateData[`profiles.${profileId}`] = profileData;
+  updateData['updatedAt'] = new Date().toISOString();
+  
+  await setDoc(userDocRef, updateData, { merge: true });
   
   return profileId;
 }
@@ -136,23 +148,36 @@ export async function createChildProfile(name, defaultStateTemplate, avatarId = 
 export async function deleteChildProfile(profileId) {
   if (!currentFamilyUid) throw new Error("Not authenticated");
   
-  const docRef = doc(db, 'users', currentFamilyUid, 'profiles', profileId);
-  const { deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
-  await deleteDoc(docRef);
+  const userDocRef = doc(db, 'users', currentFamilyUid);
+  
+  const updateData = {};
+  updateData[`profiles.${profileId}`] = deleteField();
+  updateData['updatedAt'] = new Date().toISOString();
+  
+  await setDoc(userDocRef, updateData, { merge: true });
 }
 
 // Subscribe to Active Profile State Sync (Firestore -> Local memory)
 export function subscribeToProfileState(profileId, callback, errorCallback) {
   if (!currentFamilyUid) return null;
   
-  const docRef = doc(db, 'users', currentFamilyUid, 'profiles', profileId);
+  const userDocRef = doc(db, 'users', currentFamilyUid);
   
   if (stateUnsubscribe) stateUnsubscribe();
   
-  stateUnsubscribe = onSnapshot(docRef, (docSnap) => {
+  let lastStateStr = null;
+  
+  stateUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
     if (docSnap.exists()) {
       const data = docSnap.data();
-      callback(data.state);
+      const profile = data.profiles ? data.profiles[profileId] : null;
+      if (profile && profile.state) {
+        const stateStr = JSON.stringify(profile.state);
+        if (stateStr !== lastStateStr) {
+          lastStateStr = stateStr;
+          callback(profile.state);
+        }
+      }
     }
   }, (error) => {
     console.error("Error syncing profile state:", error);
@@ -166,12 +191,32 @@ export function subscribeToProfileState(profileId, callback, errorCallback) {
 export async function saveProfileStateToCloud(profileId, localState) {
   if (!currentFamilyUid) return;
   
-  const docRef = doc(db, 'users', currentFamilyUid, 'profiles', profileId);
+  const userDocRef = doc(db, 'users', currentFamilyUid);
   
-  await setDoc(docRef, {
-    name: localState.childName || profileId.split('_')[0],
-    partnerFamily: localState.partnerFamily || '25',
-    state: localState,
-    updatedAt: new Date().toISOString()
-  }, { merge: true });
+  const updateData = {};
+  updateData[`profiles.${profileId}.state`] = localState;
+  updateData[`profiles.${profileId}.name`] = localState.childName || profileId.split('_')[0];
+  updateData[`profiles.${profileId}.partnerFamily`] = localState.partnerFamily || '25';
+  updateData[`profiles.${profileId}.updatedAt`] = new Date().toISOString();
+  updateData['updatedAt'] = new Date().toISOString();
+  
+  await setDoc(userDocRef, updateData, { merge: true });
+}
+
+// Export the entire family JSON blob (all profiles)
+export async function exportFamilyData() {
+  if (!currentFamilyUid) throw new Error("Not authenticated");
+  const userDocRef = doc(db, 'users', currentFamilyUid);
+  const docSnap = await getDoc(userDocRef);
+  if (docSnap.exists()) {
+    return docSnap.data();
+  }
+  return null;
+}
+
+// Overwrite/Restore the entire family JSON blob (all profiles)
+export async function importFamilyData(data) {
+  if (!currentFamilyUid) throw new Error("Not authenticated");
+  const userDocRef = doc(db, 'users', currentFamilyUid);
+  await setDoc(userDocRef, data);
 }
