@@ -39,7 +39,7 @@ async function runSuite() {
     }
 
     let state = window.__app_state__;
-    assert(state.version === 12, "State version should be 12");
+    assert(state.version === 14, "State version should be 14");
     assert(state.weeklyClaimed === false, "Weekly claimed should be false");
     assert(window.__grid_rebuild_count__ === 1, `Grid should have been built exactly once on reset (actual: ${window.__grid_rebuild_count__})`);
 
@@ -50,7 +50,7 @@ async function runSuite() {
       // Verify Version Indicator
       const versionLabel = document.getElementById('app-version-label');
       assert(versionLabel !== null, "App version indicator should exist");
-      assert(versionLabel.textContent.includes('v1.5.8'), "App version label should display v1.5.8");
+      assert(versionLabel.textContent.includes('v1.7.1'), "App version label should display v1.7.1");
       
       // Select rewards (needed to check boxes)
       const rewardSelect = document.getElementById('reward-select');
@@ -615,7 +615,7 @@ async function runSuite() {
         console.log("Running Test Case 11: Badge Case & Collection...");
         
         // Verify state initial V10 fields
-        assert(state.version === 12, "State version should be 12");
+        assert(state.version === 14, "State version should be 14");
         assert(Array.isArray(state.collectedBadges), "collectedBadges should be an array");
         assert(state.collectedBadges.length === 0, "Initially collected badges should be empty");
         assert(Array.isArray(state.badgePool), "badgePool should be an array");
@@ -743,7 +743,10 @@ async function runSuite() {
         window.__test_helpers__.loadState();
         let migratedState = window.__app_state__;
         
-        assert(migratedState.version === 12, "Migrated state version should be 12");
+        assert(migratedState.version === 14, "Migrated state version should be 14");
+        assert(migratedState.idleTimeout === 10, "Migrated state should have default idleTimeout 10");
+        assert(Array.isArray(migratedState.weeklyRewardOptions), "weeklyRewardOptions should be initialized on migration");
+        assert(Array.isArray(migratedState.megaRewardOptions), "megaRewardOptions should be initialized on migration");
         assert(Array.isArray(migratedState.collectedBadges), "collectedBadges should be created");
         assert(migratedState.collectedBadges.length === 2, "Should have retroactively awarded 2 badges based on megaWeeks=2");
         assert(migratedState.collectedBadges[0].id === 658, "1st migrated badge should be Greninja (658)");
@@ -782,7 +785,10 @@ async function runSuite() {
         window.__test_helpers__.loadState();
         migratedState = window.__app_state__;
         
-        assert(migratedState.version === 12, "Migrated state version should be 12");
+        assert(migratedState.version === 14, "Migrated state version should be 14");
+        assert(migratedState.idleTimeout === 10, "Migrated state should have default idleTimeout 10");
+        assert(Array.isArray(migratedState.weeklyRewardOptions), "weeklyRewardOptions should be initialized on migration");
+        assert(Array.isArray(migratedState.megaRewardOptions), "megaRewardOptions should be initialized on migration");
         assert(migratedState.collectedBadges.length === 2, "Should award 2 badges based on history");
         assert(migratedState.collectedBadges[0].id === 658, "1st badge is Greninja");
         assert(migratedState.collectedBadges[1].id === 382, "2nd badge is Kyogre");
@@ -1974,6 +1980,354 @@ async function runSuite() {
         appContainer.style.filter = 'none';
         appContainer.style.pointerEvents = 'auto';
         helpers.setActiveProfileId(null);
+      }
+
+      console.log("Running Test Case 27: Wipe All Progress UI wiring...");
+      {
+        const helpers = window.__test_helpers__;
+        
+        // Open Admin Panel
+        const adminBtn = document.getElementById('admin-btn');
+        adminBtn.click();
+        await sleep(100);
+        
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmit = document.getElementById('password-submit-btn');
+        passwordInput.value = helpers.ADMIN_PASSWORD;
+        passwordSubmit.click();
+        await sleep(100);
+
+        const adminModal = document.getElementById('admin-modal');
+        assert(adminModal && !adminModal.classList.contains('hidden'), "Admin modal should be open");
+
+        // Mock wipeData and reload
+        let wipeCalled = false;
+        let reloadCalled = false;
+        
+        helpers.setWipeDataMock(async () => {
+          wipeCalled = true;
+        });
+        helpers.setReloadMock(() => {
+          reloadCalled = true;
+        });
+
+        // Sim click Wipe All Progress
+        const wipeBtn = document.getElementById('admin-wipe-btn');
+        assert(wipeBtn !== null, "Wipe button should exist");
+        
+        wipeBtn.click();
+        await sleep(100);
+
+        // Custom confirm modal should be open
+        const confirmModal = document.getElementById('confirm-modal');
+        assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should be open on wipe click");
+        assert(confirmModal.querySelector('#confirm-title').textContent.includes("Wipe All Progress"), "Confirm title should match");
+
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        assert(confirmYesBtn, "Confirm Yes button should exist");
+        confirmYesBtn.click();
+        await sleep(100);
+
+        assert(wipeCalled === true, "wipeData callback should have been called");
+        assert(reloadCalled === true, "reload callback should have been called");
+
+        // Clean up
+        helpers.setWipeDataMock(null);
+        helpers.setReloadMock(null);
+        
+        // Close admin modal if still open (it should be since reload was mocked to no-op)
+        const closeAdminBtn = document.getElementById('close-admin-modal-btn');
+        if (closeAdminBtn) closeAdminBtn.click();
+        await sleep(100);
+      }
+
+      console.log("Running Test Case 28: Carry over exceptions on Week Start Day change...");
+      {
+        const helpers = window.__test_helpers__;
+        let state = window.__app_state__;
+
+        // Reset state
+        helpers.resetState();
+        await sleep(100);
+
+        // Ensure weekStartDay is 0 (Sunday)
+        state.weekStartDay = 0;
+        
+        // Add some exceptions (excused tasks)
+        // Sunday (0) and Tuesday (2)
+        state.excused = {
+          '0-piano': true,
+          '2-piano': true
+        };
+        // Add some progress to trigger the "hasProgress" confirm modal
+        state.grid = {
+          '1-math': true
+        };
+        helpers.renderState(true);
+        await sleep(100);
+
+        // Open Admin Panel
+        const adminBtn = document.getElementById('admin-btn');
+        adminBtn.click();
+        await sleep(100);
+        
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmit = document.getElementById('password-submit-btn');
+        passwordInput.value = helpers.ADMIN_PASSWORD;
+        passwordSubmit.click();
+        await sleep(100);
+
+        const select = document.getElementById('admin-week-start-select');
+        assert(select !== null, "Week Start Day select should exist");
+        
+        // Change to Friday (5)
+        select.value = '5';
+        select.dispatchEvent(new Event('change'));
+        await sleep(100);
+
+        // Verify confirm modal opens with checkbox
+        const confirmModal = document.getElementById('confirm-modal');
+        assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should open");
+        
+        const checkboxContainer = document.getElementById('confirm-checkbox-container');
+        const checkbox = document.getElementById('confirm-checkbox');
+        assert(checkboxContainer && !checkboxContainer.classList.contains('hidden'), "Checkbox container should be visible");
+        assert(checkbox && checkbox.checked === true, "Checkbox should be checked by default");
+
+        // Confirm
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        confirmYesBtn.click();
+        await sleep(100);
+
+        // Verify state
+        assert(state.weekStartDay === 5, "Week start day should be 5 (Friday)");
+        
+        // Verify exceptions remapped:
+        // Sunday (0) -> grid day 2 (Friday=0, Sat=1, Sun=2)
+        // Tuesday (2) -> grid day 4 (Friday=0, Sat=1, Sun=2, Mon=3, Tue=4)
+        assert(state.excused['2-piano'] === true, "Exception on Sunday (0) should map to Sunday (2) in Friday-start grid");
+        assert(state.excused['4-piano'] === true, "Exception on Tuesday (2) should map to Tuesday (4) in Friday-start grid");
+        assert(state.excused['0-piano'] === undefined, "Old exception key 0-piano should be removed");
+        assert(state.excused['2-math'] === undefined, "Math was not excused");
+        
+        // Verify grid is cleared
+        assert(Object.keys(state.grid).length === 0, "Grid should be cleared");
+
+        // Clean up
+        helpers.resetState();
+        await sleep(100);
+        
+        // Close admin modal if still open
+        const closeAdminBtn = document.getElementById('close-admin-modal-btn');
+        if (closeAdminBtn) closeAdminBtn.click();
+        await sleep(100);
+      }
+
+      console.log("Running Test Case 29: Inactivity Detector / Idle Mode...");
+      {
+        const helpers = window.__test_helpers__;
+        
+        // Initially, we should be active (not idle) immediately after reset or interaction
+        assert(document.body.classList.contains('idle-mode') === false, "Should not be in idle mode initially");
+
+        // Wait for IDLE_TIMEOUT (200ms in test mode) + some buffer
+        await sleep(300);
+        assert(document.body.classList.contains('idle-mode') === true, "Should enter idle mode after timeout");
+
+        // Simulate interaction (click)
+        document.dispatchEvent(new MouseEvent('click'));
+        await sleep(50); // Small buffer for event handler to run
+        assert(document.body.classList.contains('idle-mode') === false, "Should leave idle mode on interaction");
+
+        // Wait again to verify it re-enters idle mode
+        await sleep(300);
+        assert(document.body.classList.contains('idle-mode') === true, "Should re-enter idle mode after timeout");
+
+        // Clean up: return to active
+        document.dispatchEvent(new MouseEvent('click'));
+        await sleep(50);
+      }
+
+      console.log("Running Test Case 30: Screensaver Inactivity Timeout configuration in Admin Panel...");
+      {
+        const helpers = window.__test_helpers__;
+        let state = window.__app_state__;
+
+        // Reset state
+        helpers.resetState();
+        await sleep(100);
+
+        // Verify default value is 10
+        assert(state.idleTimeout === 10, "Default idleTimeout should be 10");
+
+        // Open Admin Panel
+        const adminBtn = document.getElementById('admin-btn');
+        adminBtn.click();
+        await sleep(100);
+        
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmit = document.getElementById('password-submit-btn');
+        passwordInput.value = helpers.ADMIN_PASSWORD;
+        passwordSubmit.click();
+        await sleep(100);
+
+        const select = document.getElementById('admin-idle-timeout-select');
+        assert(select !== null, "Screensaver idle-timeout select should exist");
+        assert(select.value === '10', "Select value should be initialized to 10");
+
+        // Change to 5 minutes
+        select.value = '5';
+        select.dispatchEvent(new Event('change'));
+        await sleep(100);
+
+        assert(state.idleTimeout === 5, "state.idleTimeout should update to 5");
+
+        // Change to Never (0)
+        select.value = '0';
+        select.dispatchEvent(new Event('change'));
+        await sleep(100);
+
+        assert(state.idleTimeout === 0, "state.idleTimeout should update to 0");
+
+        // Clean up
+        helpers.resetState();
+        await sleep(100);
+
+        // Close admin modal if still open
+        const closeAdminBtn = document.getElementById('close-admin-modal-btn');
+        if (closeAdminBtn) closeAdminBtn.click();
+        await sleep(100);
+      }
+
+      console.log("Running Test Case 31: Per-child Custom Rewards...");
+      {
+        const helpers = window.__test_helpers__;
+        let state = window.__app_state__;
+
+        // Reset state
+        helpers.resetState();
+        await sleep(100);
+
+        // Verify state has default reward options
+        assert(Array.isArray(state.weeklyRewardOptions), "weeklyRewardOptions should be an array");
+        assert(state.weeklyRewardOptions.length > 0, "weeklyRewardOptions should not be empty");
+        assert(Array.isArray(state.megaRewardOptions), "megaRewardOptions should be an array");
+        assert(state.megaRewardOptions.length > 0, "megaRewardOptions should not be empty");
+
+        // Verify main dropdowns are populated
+        const rewardSelect = document.getElementById('reward-select');
+        const megaRewardSelect = document.getElementById('mega-reward-select');
+        
+        const getSelectMainOptionsCount = (select) => {
+          return Array.from(select.options).filter(opt => opt.value !== "" && !opt.parentElement.classList.contains('recent-rewards-group')).length;
+        };
+
+        assert(getSelectMainOptionsCount(rewardSelect) === state.weeklyRewardOptions.length, "Weekly select should have matching options count");
+        assert(getSelectMainOptionsCount(megaRewardSelect) === state.megaRewardOptions.length, "Mega select should have matching options count");
+
+        // Set up mock profile list in test helpers (profile_1 is active)
+        const mockProfileId = 'profile_1';
+        helpers.setActiveProfileId(mockProfileId);
+        helpers.setProfilesList([
+          {
+            id: mockProfileId,
+            name: 'Kepler',
+            avatarId: '25',
+            state: JSON.parse(JSON.stringify(state))
+          }
+        ]);
+
+        // Open Admin Panel
+        const adminBtn = document.getElementById('admin-btn');
+        adminBtn.click();
+        await sleep(100);
+        
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmit = document.getElementById('password-submit-btn');
+        passwordInput.value = helpers.ADMIN_PASSWORD;
+        passwordSubmit.click();
+        await sleep(100);
+
+        // Verify "Rewards" button exists in profile item
+        const editRewardsBtn = document.querySelector(`.edit-rewards-btn[data-id="${mockProfileId}"]`);
+        assert(editRewardsBtn !== null, "Rewards button should exist for profile");
+
+        // Click Rewards
+        editRewardsBtn.click();
+        await sleep(100);
+
+        // Verify modal opens
+        const modal = document.getElementById('edit-rewards-modal');
+        assert(modal && !modal.classList.contains('hidden'), "Edit Rewards Modal should open");
+
+        // Verify lists are populated in modal
+        const weeklyList = document.getElementById('weekly-rewards-list');
+        const megaList = document.getElementById('mega-rewards-list');
+        assert(weeklyList.children.length === state.weeklyRewardOptions.length, "Weekly rewards list in modal should match state count");
+
+        // Add a new reward
+        const newWeeklyInput = document.getElementById('new-weekly-reward-input');
+        const addWeeklyBtn = document.getElementById('add-weekly-reward-btn');
+        newWeeklyInput.value = "🎁 Custom Reward 1";
+        addWeeklyBtn.click();
+        await sleep(50);
+        
+        assert(weeklyList.children.length === state.weeklyRewardOptions.length + 1, "List count should increment in modal");
+
+        // Delete first reward in modal list
+        const firstDelBtn = weeklyList.querySelector('.delete-reward-btn');
+        const originalFirstReward = state.weeklyRewardOptions[0];
+        firstDelBtn.click();
+        await sleep(50);
+
+        assert(weeklyList.children.length === state.weeklyRewardOptions.length, "List count should return to original after deleting one");
+
+        // Mock save function
+        let savedProfileId = null;
+        let savedWeekly = null;
+        let savedMega = null;
+        helpers.setSaveProfileRewardsMock((profileId, weekly, mega) => {
+          savedProfileId = profileId;
+          savedWeekly = weekly;
+          savedMega = mega;
+          
+          const p = helpers.getProfilesList().find(p => p.id === profileId);
+          if (p) {
+            p.state.weeklyRewardOptions = weekly;
+            p.state.megaRewardOptions = mega;
+          }
+          return Promise.resolve();
+        });
+
+        // Click Save Rewards
+        const saveBtn = document.getElementById('edit-rewards-save-btn');
+        saveBtn.click();
+        await sleep(100);
+
+        // Verify mock save was called
+        assert(savedProfileId === mockProfileId, "Save should be called with correct profileId");
+        assert(savedWeekly !== null && savedWeekly.some(r => r.text === "🎁 Custom Reward 1"), "Saved list should contain new reward");
+        assert(!savedWeekly.some(r => r.value === originalFirstReward.value), "Saved list should NOT contain deleted reward");
+
+        // Verify active state is updated
+        assert(state.weeklyRewardOptions.some(r => r.text === "🎁 Custom Reward 1"), "Active state weekly rewards should contain new reward");
+        assert(!state.weeklyRewardOptions.some(r => r.value === originalFirstReward.value), "Active state should not have deleted reward");
+        assert(state.weeklyRewardOptions.length === savedWeekly.length, "Active state should match saved list length");
+
+        // Verify main select updated its options
+        assert(getSelectMainOptionsCount(rewardSelect) === state.weeklyRewardOptions.length, "Weekly select should update options count");
+
+        // Clean up
+        helpers.resetState();
+        helpers.setSaveProfileRewardsMock(null);
+        helpers.setProfilesList([]);
+        helpers.setActiveProfileId(null);
+        await sleep(100);
+
+        // Close admin modal if still open
+        const closeAdminBtn = document.getElementById('close-admin-modal-btn');
+        if (closeAdminBtn) closeAdminBtn.click();
+        await sleep(100);
       }
 
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");

@@ -145,14 +145,7 @@
         <label for="reward-select" class="reward-label">🏆 Weekly Milestone Reward Choice:</label>
         <select id="reward-select" class="pixel-select">
           <option value="" disabled selected>Choose a Weekly Reward...</option>
-          <option value="Bonus Tablet Time">⚡ +20 Mins of Bonus Tablet Time!</option>
-          <option value="Choose Meal">🍽️ Menu Master: Choose Weekend Breakfast or Dinner!</option>
-          <option value="Parent Playtime">🎮 30-Min Playing Pokémon with a Parent!</option>
-          <option value="Blanket Fort">🏰 Master Builder: Giant Living Room Blanket Fort!</option>
-          <option value="One Hour Rule">👑 The Boss: Make 1 Family Rule for an Hour!</option>
-          <option value="Art Project">🎨 Craft Master: Get a Special Art/Drawing Project!</option>
-          <option value="Lego Challenge">🧱 Lego Challenge: Parent Builds Whatever You Design!</option>
-          <option value="Bike Route">🚲 Adventure Guide: Pick the Weekend Bike/Scooter Route!</option>
+          <!-- Populated dynamically via JS -->
           <optgroup label="Recent Rewards" class="recent-rewards-group hidden"></optgroup>
         </select>
       </div>
@@ -162,13 +155,7 @@
         <label for="mega-reward-select" class="reward-label">💥 Mega Milestone Reward Choice (4-Weeks):</label>
         <select id="mega-reward-select" class="pixel-select">
           <option value="" disabled selected>Choose a Mega Reward...</option>
-          <option value="Booster Pack">💥 Game Time!: Open a Pokémon Card Pack!</option>
-          <option value="Dessert Outing">🍦 Sweet Victory: Special Dessert Outing!</option>
-          <option value="New Book">📚 Epic Upgrade: Pick a New Book!</option>
-          <option value="Clay Set">🧱 Clay Studio: Get an Air-Dry Clay Set!</option>
-          <option value="Science Kit">🔬 Mad Scientist: Get a Cool Science Kit!</option>
-          <option value="Bike Trip">🚲 Trail Blazer: Weekend Bike Trip to a New Trail!</option>
-          <option value="Shoe Laces">👟 Speed Runner: Neon/Glow-in-the-Dark Laces!</option>
+          <!-- Populated dynamically via JS -->
           <optgroup label="Recent Rewards" class="recent-rewards-group hidden"></optgroup>
         </select>
       </div>
@@ -495,17 +482,28 @@
                     <option value="6">Saturday</option>
                   </select>
                 </div>
+                <div class="admin-option-row">
+                  <span>Screensaver:</span>
+                  <select id="admin-idle-timeout-select" class="pixel-select">
+                    <option value="1">1 min</option>
+                    <option value="5">5 min</option>
+                    <option value="10">10 min</option>
+                    <option value="15">15 min</option>
+                    <option value="30">30 min</option>
+                    <option value="0">Never</option>
+                  </select>
+                </div>
               </div>
               
               <div class="admin-action-group">
                 <h4>Backup & Sync</h4>
                 <div class="admin-action-row-buttons">
-                  <button id="admin-export-btn" class="pixel-btn info" title="Backup current child's progress to clipboard">Backup Child</button>
-                  <button id="admin-import-btn" class="pixel-btn info" title="Restore current child's progress from clipboard code">Restore Child</button>
+                  <button id="admin-export-btn" class="pixel-btn info" title="Export current child's progress code to clipboard">Export Child</button>
+                  <button id="admin-import-btn" class="pixel-btn info" title="Import current child's progress from clipboard code">Import Child</button>
                 </div>
                 <div class="admin-action-row-buttons" style="margin-top: 8px;">
-                  <button id="admin-cloud-export-btn" class="pixel-btn success" title="Backup all family profiles and settings to clipboard">Backup Family</button>
-                  <button id="admin-cloud-import-btn" class="pixel-btn success" title="Restore all family profiles and settings from clipboard code">Restore Family</button>
+                  <button id="admin-cloud-export-btn" class="pixel-btn success" title="Export all family profiles and settings code to clipboard">Export Family</button>
+                  <button id="admin-cloud-import-btn" class="pixel-btn success" title="Import all family profiles and settings from clipboard code">Import Family</button>
                 </div>
               </div>
               
@@ -648,6 +646,44 @@
         <div class="password-prompt-actions">
           <button id="add-profile-cancel-btn" class="pixel-btn greyed-out">Cancel</button>
           <button id="add-profile-submit-btn" class="pixel-btn info">Create</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Rewards Modal -->
+    <div id="edit-rewards-modal" class="modal hidden">
+      <div class="modal-content admin-modal-content">
+        <h2 id="edit-rewards-title">Customize Rewards</h2>
+        
+        <div class="reward-modal-grid">
+          <!-- Weekly Rewards Section -->
+          <div class="admin-section">
+            <h3>🏆 Weekly Milestone Rewards</h3>
+            <div id="weekly-rewards-list" class="admin-tasks-list" style="margin-bottom: 10px;">
+              <!-- Populated dynamically -->
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="new-weekly-reward-input" class="pixel-input" placeholder="Add new weekly reward..." style="flex: 1; padding: 8px;">
+              <button id="add-weekly-reward-btn" class="pixel-btn info small" style="padding: 8px 12px;">Add</button>
+            </div>
+          </div>
+          
+          <!-- Mega Rewards Section -->
+          <div class="admin-section">
+            <h3>💥 Mega Milestone Rewards</h3>
+            <div id="mega-rewards-list" class="admin-tasks-list" style="margin-bottom: 10px;">
+              <!-- Populated dynamically -->
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="new-mega-reward-input" class="pixel-input" placeholder="Add new mega reward..." style="flex: 1; padding: 8px;">
+              <button id="add-mega-reward-btn" class="pixel-btn info small" style="padding: 8px 12px;">Add</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="password-prompt-actions" style="margin-top: 15px;">
+          <button id="edit-rewards-cancel-btn" class="pixel-btn greyed-out">Cancel</button>
+          <button id="edit-rewards-save-btn" class="pixel-btn success">Save Rewards</button>
         </div>
       </div>
     </div>

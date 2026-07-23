@@ -1,6 +1,6 @@
 import { TIER_1_IDS, TIER_2_IDS, getPokemonName, MEGA_POKEMON, STARTER_OPTIONS, STARTER_FAMILIES, EVOLUTIONS } from './pokemon_data.js';
 import { formatLocalDate, getWeekStart, getSunday } from './date_utils.js';
-import { runMigrations } from './migrations.js';
+import { runMigrations, DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS } from './migrations.js';
 
 export const ADMIN_PASSWORD = "zxcv";
 export const DAYS = [0, 1, 2, 3, 4, 5, 6];
@@ -54,11 +54,14 @@ export function getStageInfo(familyId, stageId) {
 }
 
 
-// State V12 (Dynamic Week Start)
+// State V14 (Per-child Custom Rewards)
 export let state = {
-  version: 12,
+  version: 14,
   partnerFamily: '25', // Default Pikachu Family
   weekStartDay: 0, // Default Sunday (0) to Saturday (6)
+  idleTimeout: 10, // Default 10 minutes
+  weeklyRewardOptions: [...DEFAULT_WEEKLY_REWARDS],
+  megaRewardOptions: [...DEFAULT_MEGA_REWARDS],
   excused: {}, // key format: "day-task" -> boolean
   partnersData: {
     '25': { level: 1, xp: 0, stageId: '25' },
@@ -152,9 +155,12 @@ export function loadState() {
 
 export function getDefaultStateTemplate() {
   const t = {
-    version: 12,
+    version: 14,
     partnerFamily: '25',
     weekStartDay: 0,
+    idleTimeout: 10,
+    weeklyRewardOptions: [...DEFAULT_WEEKLY_REWARDS],
+    megaRewardOptions: [...DEFAULT_MEGA_REWARDS],
     partnersData: {
       '25': { level: 1, xp: 0, stageId: '25' },
       '4': { level: 1, xp: 0, stageId: '4' },
@@ -489,10 +495,30 @@ export function runStateDiagnostics() {
     fixed.push("Set activeWeeklyBadgeId to default 25.");
   }
 
-  if (state.version !== 12) {
-    issues.push(`State version mismatch. Current: ${state.version}, Expected: 12`);
-    state.version = 12;
-    fixed.push("Forced state version to 12.");
+  if (state.idleTimeout === undefined || typeof state.idleTimeout !== 'number' || ![0, 1, 5, 10, 15, 30].includes(state.idleTimeout)) {
+    state.idleTimeout = 10;
+    issues.push("Missing or invalid idleTimeout.");
+    fixed.push("Set idleTimeout to default 10.");
+  }
+
+  const isValidOption = (opt) => opt && typeof opt === 'object' && opt.value !== undefined && opt.text !== undefined;
+
+  if (!state.weeklyRewardOptions || !Array.isArray(state.weeklyRewardOptions) || !state.weeklyRewardOptions.every(isValidOption)) {
+    state.weeklyRewardOptions = [...DEFAULT_WEEKLY_REWARDS];
+    issues.push("Missing or invalid weeklyRewardOptions.");
+    fixed.push("Reset weeklyRewardOptions to defaults.");
+  }
+
+  if (!state.megaRewardOptions || !Array.isArray(state.megaRewardOptions) || !state.megaRewardOptions.every(isValidOption)) {
+    state.megaRewardOptions = [...DEFAULT_MEGA_REWARDS];
+    issues.push("Missing or invalid megaRewardOptions.");
+    fixed.push("Reset megaRewardOptions to defaults.");
+  }
+
+  if (state.version !== 14) {
+    issues.push(`State version mismatch. Current: ${state.version}, Expected: 14`);
+    state.version = 14;
+    fixed.push("Forced state version to 14.");
   }
 
   if (fixed.length > 0) {

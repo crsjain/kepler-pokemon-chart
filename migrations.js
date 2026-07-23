@@ -1,6 +1,27 @@
 import { TIER_1_IDS, EVOLUTIONS } from './pokemon_data.js';
 import { formatLocalDate, getWeekStart } from './date_utils.js';
 
+export const DEFAULT_WEEKLY_REWARDS = [
+  { value: "Bonus Tablet Time", text: "⚡ +20 Mins of Bonus Tablet Time!" },
+  { value: "Choose Meal", text: "🍽️ Menu Master: Choose Weekend Breakfast or Dinner!" },
+  { value: "Parent Playtime", text: "🎮 30-Min Playing Pokémon with a Parent!" },
+  { value: "Blanket Fort", text: "🏰 Master Builder: Giant Living Room Blanket Fort!" },
+  { value: "One Hour Rule", text: "👑 The Boss: Make 1 Family Rule for an Hour!" },
+  { value: "Art Project", text: "🎨 Craft Master: Get a Special Art/Drawing Project!" },
+  { value: "Lego Challenge", text: "🧱 Lego Challenge: Parent Builds Whatever You Design!" },
+  { value: "Bike Route", text: "🚲 Adventure Guide: Pick the Weekend Bike/Scooter Route!" }
+];
+
+export const DEFAULT_MEGA_REWARDS = [
+  { value: "Booster Pack", text: "💥 Game Time!: Open a Pokémon Card Pack!" },
+  { value: "Dessert Outing", text: "🍦 Sweet Victory: Special Dessert Outing!" },
+  { value: "New Book", text: "📚 Epic Upgrade: Pick a New Book!" },
+  { value: "Clay Set", text: "🧱 Clay Studio: Get an Air-Dry Clay Set!" },
+  { value: "Science Kit", text: "🔬 Mad Scientist: Get a Cool Science Kit!" },
+  { value: "Bike Trip", text: "🚲 Trail Blazer: Weekend Bike Trip to a New Trail!" },
+  { value: "Shoe Laces", text: "👟 Speed Runner: Neon/Glow-in-the-Dark Laces!" }
+];
+
 export const MIGRATIONS = [
   {
     version: 3,
@@ -153,6 +174,21 @@ export const MIGRATIONS = [
     version: 12,
     migrate: (s) => {
       s.weekStartDay = 0; // Default Sunday
+      return s;
+    }
+  },
+  {
+    version: 13,
+    migrate: (s) => {
+      s.idleTimeout = 10; // Default 10 minutes
+      return s;
+    }
+  },
+  {
+    version: 14,
+    migrate: (s) => {
+      s.weeklyRewardOptions = [...DEFAULT_WEEKLY_REWARDS];
+      s.megaRewardOptions = [...DEFAULT_MEGA_REWARDS];
       return s;
     }
   }

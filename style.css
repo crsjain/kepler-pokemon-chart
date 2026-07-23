@@ -774,6 +774,27 @@ button:disabled,
   overflow-y: auto;
 }
 
+/* Modals custom scrollbar to preserve rounded corners and clean theme */
+.modal-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: transparent; /* transparent track prevents grey bar from filling/sharpening rounded corners */
+  border-radius: 0 12px 12px 0;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 .modal-content p,
 .notif-body-text,
 .notif-desc {
@@ -1110,11 +1131,19 @@ input:checked + .slider:before {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px; /* Ensure space between label and select */
   padding: 12px 0;
   border-bottom: 2px dashed #e2e8f0;
   font-family: 'Fredoka One', cursive;
   font-size: 0.95rem;
   color: var(--poke-dark-blue);
+}
+
+.admin-option-row select.pixel-select {
+  width: 120px; /* Restrict width to prevent overflow */
+  padding: 8px 28px 8px 10px; /* tighter padding for admin options to fit text */
+  background-position: right 10px center;
+  flex-shrink: 0;
 }
 
 .testing-buttons {
@@ -1345,6 +1374,7 @@ input:checked + .slider:before {
   gap: 10px;
   max-height: 200px;
   overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scroll */
   border: 2px solid #cbd5e1;
   border-radius: 6px;
   padding: 8px;
@@ -1362,26 +1392,43 @@ input:checked + .slider:before {
   border: 2px solid #e2e8f0;
   border-radius: 6px;
   gap: 10px;
+  min-width: 0; /* Allow inner flex to shrink */
 }
 
 .admin-profile-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-family: 'Quicksand', sans-serif;
   text-align: left;
+  min-width: 0; /* Enable inner text truncation */
+  flex: 1;
 }
 
 .admin-profile-avatar {
   width: 32px;
   height: 32px;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 .admin-profile-name {
   font-family: 'Fredoka One', cursive;
   font-size: 0.9rem;
   color: var(--poke-dark-blue);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-profile-active-label {
+  font-size: 0.75rem;
+  color: #10b981;
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 .no-profiles {
@@ -1500,8 +1547,8 @@ input:checked + .slider:before {
   gap: 8px;
   margin-top: 8px;
   margin-bottom: 15px;
-  max-height: 480px;
   flex-grow: 1;
+  min-height: 0; /* Allow shrinking to fit parent grid card */
   overflow-y: auto;
   border-radius: 8px;
   padding: 6px;
@@ -1625,6 +1672,12 @@ input:checked + .slider:before {
   height: 16px;
 }
 
+.admin-btn-icon {
+  width: 16px;
+  height: 16px;
+  fill: white;
+}
+
 /* Partner Modal Specific Styles (Bigger Dialog) */
 #partner-modal .modal-content {
   max-width: 650px;
@@ -1746,7 +1799,7 @@ input:checked + .slider:before {
 @media (min-width: 768px) {
   /* 3-column grid structure on desktop to align items across rows */
   .admin-grid {
-    grid-template-columns: 280px 1fr 1fr;
+    grid-template-columns: 300px 1fr 1fr;
     gap: 20px;
   }
 
@@ -3152,4 +3205,109 @@ input:checked + .slider:before {
   border: 3px solid #0284c7;
   color: #0369a1;
   box-shadow: 0 4px 0 #0284c7;
+}
+
+/* Idle Mode - Pause all animations to allow device sleep */
+body.idle-mode * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Pixel Input style */
+.pixel-input {
+  padding: 10px;
+  border: 3px solid var(--border-color);
+  border-radius: 6px;
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 500;
+  font-size: 0.95rem;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+  outline: none;
+  box-sizing: border-box;
+  background-color: white;
+  color: var(--text-color);
+  transition: border-color 0.2s;
+}
+
+.pixel-input:focus {
+  border-color: var(--poke-blue);
+}
+
+/* Rewards Customization Modal Items */
+.reward-list-item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  background: white;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  gap: 10px;
+  min-width: 0;
+}
+
+.reward-item-text {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  color: #1e293b;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.delete-reward-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 32px;
+  padding: 0 !important;
+  flex-shrink: 0;
+}
+
+/* Reward Modal Desktop Layout Enhancements */
+.reward-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+  min-height: 0;
+  padding: 5px 0;
+}
+
+.reward-modal-grid .admin-section {
+  min-width: 0; /* allows text truncation inside grid items */
+  display: flex;
+  flex-direction: column;
+}
+
+#edit-rewards-modal .admin-modal-content {
+  width: 95%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease-in-out;
+}
+
+@media (min-width: 768px) {
+  #edit-rewards-modal .admin-modal-content {
+    max-width: 1000px;
+    width: 90%;
+    height: 80vh; /* Fixed height on desktop */
+    overflow: hidden; /* Lock modal body scroll on desktop */
+  }
+  
+  .reward-modal-grid {
+    grid-template-columns: 1fr 1fr;
+    flex-grow: 1; /* Stretch to fill modal content height */
+    overflow: hidden; /* prevent grid scrolling */
+  }
+
+  .reward-modal-grid .admin-section {
+    height: 100%; /* force card to fill grid cell height */
+  }
 }

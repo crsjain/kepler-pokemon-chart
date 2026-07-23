@@ -30,12 +30,25 @@ import {
   subscribeToProfileState, 
   saveProfileStateToCloud,
   exportFamilyData,
-  importFamilyData
+  importFamilyData,
+  saveProfileRewardsToCloud
 } from './firebase.js';
 let deleteChildProfileFn = deleteChildProfile;
+let saveProfileRewardsToCloudFn = saveProfileRewardsToCloud;
 import { promptParentPassword } from './admin.js';
+import { DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS } from './migrations.js';
 
-const APP_VERSION = 'v1.5.8 (v41)';
+const APP_VERSION = 'v1.7.1 (v54)';
+
+let idleTimer = null;
+let isCloudSavePending = false;
+function getIdleTimeoutMs() {
+  if (location.search.includes('runTests=true') || location.search.includes('runMigrationTest=true')) {
+    return 200; // 200ms in test mode
+  }
+  const minutes = (state && state.idleTimeout !== undefined) ? state.idleTimeout : 10;
+  return minutes * 60 * 1000;
+}
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault } from './vault.js';
@@ -78,10 +91,21 @@ const adminModal = document.getElementById('admin-modal');
 const adminDiagnosticsBtn = document.getElementById('admin-diagnostics-btn');
 const adminExportBtn = document.getElementById('admin-export-btn');
 const adminImportBtn = document.getElementById('admin-import-btn');
-const adminWipeBtn = document.getElementById('admin-wipe-btn');
 const closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
 const toggleDebugSidebar = document.getElementById('toggle-debug-sidebar');
 const adminWeekStartSelect = document.getElementById('admin-week-start-select');
+const adminIdleTimeoutSelect = document.getElementById('admin-idle-timeout-select');
+
+const editRewardsModal = document.getElementById('edit-rewards-modal');
+const editRewardsTitle = document.getElementById('edit-rewards-title');
+const weeklyRewardsList = document.getElementById('weekly-rewards-list');
+const newWeeklyRewardInput = document.getElementById('new-weekly-reward-input');
+const addWeeklyRewardBtn = document.getElementById('add-weekly-reward-btn');
+const megaRewardsList = document.getElementById('mega-rewards-list');
+const newMegaRewardInput = document.getElementById('new-mega-reward-input');
+const addMegaRewardBtn = document.getElementById('add-mega-reward-btn');
+const editRewardsCancelBtn = document.getElementById('edit-rewards-cancel-btn');
+const editRewardsSaveBtn = document.getElementById('edit-rewards-save-btn');
 
 // Testing Panel Elements
 const testMilestoneMinusOneBtn = document.getElementById('test-milestone-minus-one');
@@ -132,6 +156,10 @@ let isExceptionMode = false;
 // Firebase Variables
 let activeProfileId = null;
 let profilesList = [];
+
+let editingProfileId = null;
+let tempWeeklyRewards = [];
+let tempMegaRewards = [];
 
 // DOM Elements for Firebase Modals
 const familyLoginModal = document.getElementById('family-login-modal');
@@ -217,14 +245,20 @@ function initFirebaseUI() {
   }
 
   const debouncedCloudSave = debounceWithFlush((profileId, updatedState) => {
-    saveProfileStateToCloud(profileId, updatedState).catch(err => {
-      console.error("Cloud save failed:", err);
-    });
+    saveProfileStateToCloud(profileId, updatedState)
+      .then(() => {
+        isCloudSavePending = false;
+      })
+      .catch(err => {
+        console.error("Cloud save failed:", err);
+        isCloudSavePending = false;
+      });
   }, 1500); // 1.5 seconds debounce
 
   // Hook up save observer to sync local state back to Firestore
   registerOnSave((updatedState) => {
     if (activeProfileId) {
+      isCloudSavePending = true;
       debouncedCloudSave(activeProfileId, updatedState);
     }
   });
@@ -500,11 +534,31 @@ function renderAdminProfilesList() {
     item.innerHTML = `
       <div class="admin-profile-info">
         <img class="admin-profile-avatar" src="${imageUrl}" alt="${profile.name}">
-        <span class="admin-profile-name">${profile.name} ${isActive ? '<span style="font-size:0.75rem; color:#10b981; font-family:\'Quicksand\',sans-serif;">(Active)</span>' : ''}</span>
+        <span class="admin-profile-name" title="${profile.name}">${profile.name}</span>
+        ${isActive ? '<span class="admin-profile-active-label">(Active)</span>' : ''}
       </div>
-      <button class="pixel-btn danger small delete-profile-btn" data-id="${profile.id}" data-name="${profile.name}">Delete</button>
+      <div class="admin-profile-actions" style="display: flex; gap: 6px; flex-shrink: 0;">
+        <button class="pixel-btn info small edit-rewards-btn" data-id="${profile.id}" data-name="${profile.name}" title="Customize Rewards" style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 32px; padding: 0;">
+          <svg class="admin-btn-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h16v6z"/>
+          </svg>
+        </button>
+        <button class="pixel-btn danger small delete-profile-btn" data-id="${profile.id}" data-name="${profile.name}" title="Delete Profile" style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 32px; padding: 0;">
+          <svg class="admin-btn-icon" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+            <path d="M135.2 17.7C140.6 6.8 151.7 0 163.8 0H284.2C296.3 0 307.4 6.8 312.8 17.7L320 32H384C401.7 32 416 46.3 416 64C416 81.7 401.7 96 384 96H64C46.3 96 32 81.7 32 64C32 46.3 46.3 32 64 32H128L135.2 17.7zM32 128H416V448C416 483.3 387.3 512 352 512H96C60.7 512 32 483.3 32 448V128zM96 176C96 162.7 85.3 152 72 152C58.7 152 48 162.7 48 176V408C48 421.3 58.7 432 72 432C85.3 432 96 421.3 96 408V176z"/>
+          </svg>
+        </button>
+      </div>
     `;
     
+    const editRewardsBtn = item.querySelector('.edit-rewards-btn');
+    editRewardsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = editRewardsBtn.getAttribute('data-id');
+      const name = editRewardsBtn.getAttribute('data-name');
+      openEditRewardsModal(id, name);
+    });
+
     const deleteBtn = item.querySelector('.delete-profile-btn');
     deleteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -567,6 +621,10 @@ function selectProfile(profileId) {
   
   subscribeToProfileState(profileId, (cloudState) => {
     if (cloudState) {
+      if (isCloudSavePending) {
+        console.log("Ignoring cloud state update because local write is pending.");
+        return;
+      }
       // Sync cloud state to state.js memory
       replaceState(cloudState);
       
@@ -606,6 +664,19 @@ let importCloudDataFn = async (data) => {
   await importFamilyData(data);
 };
 
+let wipeCloudDataFn = async () => {
+  if (location.search.includes('runTests=true')) {
+    throw new Error("Cloud operations not available in Test Mode");
+  }
+  await importFamilyData({ profiles: {} });
+  localStorage.removeItem('last_active_profile_id');
+  localStorage.clear();
+};
+
+let reloadFn = () => {
+  location.reload();
+};
+
 // Initialize
 initAdmin({
   renderState,
@@ -613,11 +684,14 @@ initAdmin({
   showCustomNotification,
   renderAdminProfilesList: () => renderAdminProfilesList(),
   exportCloudData: () => exportCloudDataFn(),
-  importCloudData: (data) => importCloudDataFn(data)
+  importCloudData: (data) => importCloudDataFn(data),
+  wipeData: () => wipeCloudDataFn(),
+  reload: () => reloadFn()
 });
 initFirebaseUI();
 preloadImages();
 setupEventListeners();
+initInactivityDetector();
 
 // Render App Version
 const versionLabel = document.getElementById('app-version-label');
@@ -840,6 +914,9 @@ export function renderState(rebuildGrid = false) {
   megaRewardSelect.value = state.megaReward || '';
   if (adminWeekStartSelect) {
     adminWeekStartSelect.value = state.weekStartDay !== undefined ? state.weekStartDay : 0;
+  }
+  if (adminIdleTimeoutSelect) {
+    adminIdleTimeoutSelect.value = state.idleTimeout !== undefined ? state.idleTimeout.toString() : '10';
   }
 
   // 5. Render Grid Table (conditional build vs update)
@@ -1239,33 +1316,45 @@ function handleCheckboxChange(e) {
 }
 
 export function renderRewardDropdowns() {
-  const weeklyGroup = rewardSelect.querySelector('.recent-rewards-group');
-  if (weeklyGroup) {
-    weeklyGroup.innerHTML = '';
-    const history = state.rewardHistory || [];
-    if (history.length > 0) {
-      history.forEach(r => {
-        weeklyGroup.appendChild(new Option(r, r));
-      });
-      weeklyGroup.style.display = 'block';
-    } else {
-      weeklyGroup.style.display = 'none';
-    }
-  }
+  const weeklyOptions = state.weeklyRewardOptions || [];
+  const weeklyHistory = state.rewardHistory || [];
+  populateSelect(rewardSelect, weeklyOptions, weeklyHistory, "Choose a Weekly Reward...");
 
-  const megaGroup = megaRewardSelect.querySelector('.recent-rewards-group');
-  if (megaGroup) {
-    megaGroup.innerHTML = '';
-    const history = state.megaRewardHistory || [];
-    if (history.length > 0) {
-      history.forEach(mr => {
-        megaGroup.appendChild(new Option(mr, mr));
-      });
-      megaGroup.style.display = 'block';
-    } else {
-      megaGroup.style.display = 'none';
-    }
+  const megaOptions = state.megaRewardOptions || [];
+  const megaHistory = state.megaRewardHistory || [];
+  populateSelect(megaRewardSelect, megaOptions, megaHistory, "Choose a Mega Reward...");
+}
+
+function populateSelect(selectEl, options, history, placeholderText) {
+  if (!selectEl) return;
+  
+  let recentGroup = selectEl.querySelector('.recent-rewards-group');
+  if (!recentGroup) {
+    recentGroup = document.createElement('optgroup');
+    recentGroup.className = 'recent-rewards-group';
+    recentGroup.label = 'Recent Rewards';
   }
+  
+  selectEl.innerHTML = '';
+  
+  const placeholder = new Option(placeholderText, "");
+  placeholder.disabled = true;
+  selectEl.appendChild(placeholder);
+  
+  options.forEach(opt => {
+    selectEl.appendChild(new Option(opt.text, opt.value));
+  });
+  
+  recentGroup.innerHTML = '';
+  if (history && history.length > 0) {
+    history.forEach(r => {
+      recentGroup.appendChild(new Option(r, r));
+    });
+    recentGroup.classList.remove('hidden');
+  } else {
+    recentGroup.classList.add('hidden');
+  }
+  selectEl.appendChild(recentGroup);
 }
 
 function addRewardToHistory(reward, type) {
@@ -1623,8 +1712,9 @@ function setupEventListeners() {
             "Change Week Start Day? 📅",
             `Are you sure you want to change the week start day? This will update your weekly calendar headers starting today.`,
             () => {
+              const oldStartDay = state.weekStartDay;
               state.weekStartDay = newStartDay;
-              resetWeekGrid(false); 
+              resetWeekGrid(false, oldStartDay, newStartDay); 
             },
             () => {
               adminWeekStartSelect.value = state.weekStartDay;
@@ -1650,9 +1740,10 @@ function setupEventListeners() {
                 📸 <strong>Mid-week Tip:</strong> Take a screenshot of the current grid before proceeding so you can easily re-check the completed Pokeballs after the reset!
               </div>
             </div>`,
-            () => {
+            (carryOverExceptions) => {
+              const oldStartDay = state.weekStartDay;
               state.weekStartDay = newStartDay;
-              resetWeekGrid(false); 
+              resetWeekGrid(carryOverExceptions, oldStartDay, newStartDay); 
             },
             () => {
               adminWeekStartSelect.value = state.weekStartDay;
@@ -1660,9 +1751,80 @@ function setupEventListeners() {
             "Change Day & Reset",
             "Cancel",
             "pixel-btn danger",
-            "pixel-btn greyed-out"
+            "pixel-btn greyed-out",
+            { showCheckbox: true, checkboxLabel: "Keep exceptions on same weekdays", checkboxDefaultChecked: true }
           );
         }
+      }
+    });
+  }
+
+  if (adminIdleTimeoutSelect) {
+    adminIdleTimeoutSelect.addEventListener('change', () => {
+      state.idleTimeout = parseInt(adminIdleTimeoutSelect.value);
+      saveState();
+      resetIdleTimer();
+    });
+  }
+
+  if (addWeeklyRewardBtn) {
+    addWeeklyRewardBtn.addEventListener('click', () => {
+      const val = newWeeklyRewardInput.value.trim();
+      if (val && !tempWeeklyRewards.some(r => r.value === val || r.text === val)) {
+        tempWeeklyRewards.push({ value: val, text: val });
+        renderEditRewardsLists();
+        newWeeklyRewardInput.value = '';
+      }
+    });
+  }
+
+  if (addMegaRewardBtn) {
+    addMegaRewardBtn.addEventListener('click', () => {
+      const val = newMegaRewardInput.value.trim();
+      if (val && !tempMegaRewards.some(r => r.value === val || r.text === val)) {
+        tempMegaRewards.push({ value: val, text: val });
+        renderEditRewardsLists();
+        newMegaRewardInput.value = '';
+      }
+    });
+  }
+
+  if (editRewardsCancelBtn) {
+    editRewardsCancelBtn.addEventListener('click', () => {
+      editRewardsModal.classList.add('hidden');
+      document.querySelector('.layout-container').classList.remove('blurred');
+      editingProfileId = null;
+    });
+  }
+
+  if (editRewardsSaveBtn) {
+    editRewardsSaveBtn.addEventListener('click', async () => {
+      if (!editingProfileId) return;
+      
+      try {
+        editRewardsSaveBtn.disabled = true;
+        editRewardsSaveBtn.textContent = 'Saving...';
+        
+        await saveProfileRewardsToCloudFn(editingProfileId, tempWeeklyRewards, tempMegaRewards);
+        
+        if (editingProfileId === activeProfileId) {
+          state.weeklyRewardOptions = [...tempWeeklyRewards];
+          state.megaRewardOptions = [...tempMegaRewards];
+          renderRewardDropdowns();
+          rewardSelect.value = state.reward || '';
+          megaRewardSelect.value = state.megaReward || '';
+        }
+        
+        showCustomNotification("Saved ✨", "Rewards customized successfully!");
+        editRewardsModal.classList.add('hidden');
+        document.querySelector('.layout-container').classList.remove('blurred');
+      } catch (err) {
+        console.error("Failed to save rewards:", err);
+        showCustomNotification("Error ❌", "Failed to save customized rewards.");
+      } finally {
+        editRewardsSaveBtn.disabled = false;
+        editRewardsSaveBtn.textContent = 'Save Rewards';
+        editingProfileId = null;
       }
     });
   }
@@ -1678,7 +1840,7 @@ function flashElement(element) {
   }, 3100);
 }
 
-function resetWeekGrid(carryOverExceptions = false) {
+function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStartDay, newStartDay = state.weekStartDay) {
   let flashWeekly = false;
   let flashMega = false;
   
@@ -1710,6 +1872,20 @@ function resetWeekGrid(carryOverExceptions = false) {
   state.grid = {};
   if (!carryOverExceptions) {
     state.excused = {};
+  } else if (oldStartDay !== newStartDay) {
+    // Remap exceptions to keep them on the same weekdays
+    const newExcused = {};
+    Object.keys(state.excused || {}).forEach(key => {
+      const parts = key.split('-');
+      const oldDay = parseInt(parts[0]);
+      const taskId = parts[1];
+      
+      const actualWeekday = (oldStartDay + oldDay) % 7;
+      const newDay = (actualWeekday - newStartDay + 7) % 7;
+      
+      newExcused[`${newDay}-${taskId}`] = state.excused[key];
+    });
+    state.excused = newExcused;
   }
   saveState();
   renderState(true);
@@ -2161,6 +2337,61 @@ function selectEeveeEvolution(evolvedId, evolvedName) {
   );
 }
 
+function openEditRewardsModal(profileId, profileName) {
+  editingProfileId = profileId;
+  const profile = profilesList.find(p => p.id === profileId);
+  const pState = (profile && profile.state) ? profile.state : {};
+  
+  tempWeeklyRewards = [...(pState.weeklyRewardOptions || DEFAULT_WEEKLY_REWARDS)];
+  tempMegaRewards = [...(pState.megaRewardOptions || DEFAULT_MEGA_REWARDS)];
+  
+  editRewardsTitle.textContent = `Customize Rewards for ${profileName}`;
+  renderEditRewardsLists();
+  
+  // Clear inputs
+  newWeeklyRewardInput.value = '';
+  newMegaRewardInput.value = '';
+  
+  editRewardsModal.classList.remove('hidden');
+  document.querySelector('.layout-container').classList.add('blurred');
+}
+
+function renderEditRewardsLists() {
+  renderRewardList(weeklyRewardsList, tempWeeklyRewards, 'weekly');
+  renderRewardList(megaRewardsList, tempMegaRewards, 'mega');
+}
+
+function renderRewardList(container, list, type) {
+  container.innerHTML = '';
+  if (list.length === 0) {
+    container.innerHTML = '<p class="no-items" style="color: #64748b; font-size: 0.85rem; font-style: italic; padding: 5px;">No rewards configured.</p>';
+    return;
+  }
+  
+  list.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.className = 'reward-list-item';
+    
+    row.innerHTML = `
+      <span class="reward-item-text" title="${item.text}">${item.text}</span>
+      <button class="pixel-btn danger small delete-reward-btn" data-type="${type}" data-index="${idx}" title="Delete Reward">
+        <svg class="admin-btn-icon" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+          <path d="M135.2 17.7C140.6 6.8 151.7 0 163.8 0H284.2C296.3 0 307.4 6.8 312.8 17.7L320 32H384C401.7 32 416 46.3 416 64C416 81.7 401.7 96 384 96H64C46.3 96 32 81.7 32 64C32 46.3 46.3 32 64 32H128L135.2 17.7zM32 128H416V448C416 483.3 387.3 512 352 512H96C60.7 512 32 483.3 32 448V128zM96 176C96 162.7 85.3 152 72 152C58.7 152 48 162.7 48 176V408C48 421.3 58.7 432 72 432C85.3 432 96 421.3 96 408V176z"/>
+        </svg>
+      </button>
+    `;
+    
+    const delBtn = row.querySelector('.delete-reward-btn');
+    delBtn.addEventListener('click', () => {
+      const listToUpdate = type === 'weekly' ? tempWeeklyRewards : tempMegaRewards;
+      listToUpdate.splice(idx, 1);
+      renderEditRewardsLists();
+    });
+    
+    container.appendChild(row);
+  });
+}
+
 // Test Mode setup
 if (location.search.includes('runTests=true') || location.search.includes('runMigrationTest=true')) {
   Object.defineProperty(window, '__app_state__', {
@@ -2186,8 +2417,11 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     getProfilesList: () => profilesList,
     renderAdminProfilesList: () => renderAdminProfilesList(),
     setDeleteChildProfileMock: (fn) => { deleteChildProfileFn = fn || deleteChildProfile; },
+    setSaveProfileRewardsMock: (fn) => { saveProfileRewardsToCloudFn = fn || saveProfileRewardsToCloud; },
     setExportCloudDataMock: (fn) => { exportCloudDataFn = fn; },
     setImportCloudDataMock: (fn) => { importCloudDataFn = fn; },
+    setWipeDataMock: (fn) => { wipeCloudDataFn = fn; },
+    setReloadMock: (fn) => { reloadFn = fn || (() => location.reload()); },
     setActiveProfileId: (id) => { activeProfileId = id; },
     getActiveProfileId: () => activeProfileId,
     triggerProfilesUpdate: (profiles) => handleProfilesUpdate(profiles)
@@ -2249,4 +2483,32 @@ function debounceWithFlush(func, wait) {
   };
   
   return debounced;
+}
+
+function initInactivityDetector() {
+  resetIdleTimer();
+  
+  const events = ['touchstart', 'click', 'mousemove', 'keypress'];
+  events.forEach(evt => {
+    document.addEventListener(evt, resetIdleTimer, { passive: true });
+  });
+}
+
+function resetIdleTimer() {
+  if (document.body.classList.contains('idle-mode')) {
+    document.body.classList.remove('idle-mode');
+    console.log("System active: Left idle mode.");
+  }
+  
+  clearTimeout(idleTimer);
+  
+  const timeoutMs = getIdleTimeoutMs();
+  if (timeoutMs > 0) {
+    idleTimer = setTimeout(goIdle, timeoutMs);
+  }
+}
+
+function goIdle() {
+  document.body.classList.add('idle-mode');
+  console.log("System idle: Entered idle mode (animations paused).");
 }

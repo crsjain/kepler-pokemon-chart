@@ -16,7 +16,9 @@ let appCallbacks = {
   showCustomNotification: () => {},
   renderAdminProfilesList: () => {},
   exportCloudData: async () => { return null; },
-  importCloudData: async () => {}
+  importCloudData: async () => {},
+  wipeData: async () => {},
+  reload: () => location.reload()
 };
 
 function renderState(...args) {
@@ -173,9 +175,17 @@ export function initAdmin(callbacks) {
       showCustomConfirm(
         "Wipe All Progress? 🚨",
         "This will completely erase all levels, XP, and badges, and restore defaults! This cannot be undone.",
-        () => {
-          localStorage.clear();
-          location.reload();
+        async () => {
+          try {
+            if (appCallbacks.wipeData) {
+              await appCallbacks.wipeData();
+            } else {
+              localStorage.clear();
+            }
+            appCallbacks.reload();
+          } catch (err) {
+            showCustomNotification("Wipe Failed ❌", err.message);
+          }
         },
         null,
         "Wipe Everything",

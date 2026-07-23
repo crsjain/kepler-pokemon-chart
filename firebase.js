@@ -16,7 +16,8 @@ import {
   onSnapshot,
   query,
   connectFirestoreEmulator,
-  deleteField
+  deleteField,
+  updateDoc
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 // --- PLACEHOLDER CONFIGURATION ---
@@ -199,19 +200,13 @@ export async function saveProfileStateToCloud(profileId, localState) {
   
   const userDocRef = doc(db, 'users', currentFamilyUid);
   
-  const updateData = {
-    profiles: {
-      [profileId]: {
-        state: localState,
-        name: localState.childName || profileId.split('_')[0],
-        partnerFamily: localState.partnerFamily || '25',
-        updatedAt: new Date().toISOString()
-      }
-    },
+  await updateDoc(userDocRef, {
+    [`profiles.${profileId}.state`]: localState,
+    [`profiles.${profileId}.name`]: localState.childName || profileId.split('_')[0],
+    [`profiles.${profileId}.partnerFamily`]: localState.partnerFamily || '25',
+    [`profiles.${profileId}.updatedAt`]: new Date().toISOString(),
     updatedAt: new Date().toISOString()
-  };
-  
-  await setDoc(userDocRef, updateData, { merge: true });
+  });
 }
 
 // Export the entire family JSON blob (all profiles)
@@ -230,4 +225,16 @@ export async function importFamilyData(data) {
   if (!currentFamilyUid) throw new Error("Not authenticated");
   const userDocRef = doc(db, 'users', currentFamilyUid);
   await setDoc(userDocRef, data);
+}
+
+// Save Custom Rewards to Firestore
+export async function saveProfileRewardsToCloud(profileId, weeklyOptions, megaOptions) {
+  if (!currentFamilyUid) return;
+  const userDocRef = doc(db, 'users', currentFamilyUid);
+  await updateDoc(userDocRef, {
+    [`profiles.${profileId}.state.weeklyRewardOptions`]: weeklyOptions,
+    [`profiles.${profileId}.state.megaRewardOptions`]: megaOptions,
+    [`profiles.${profileId}.updatedAt`]: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
 }
