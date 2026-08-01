@@ -41,7 +41,7 @@ import { DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS } from './migrations.js';
 
 let currentViewingWeekStartDate = null;
 
-const APP_VERSION = 'v1.7.1 (v54)';
+const APP_VERSION = 'v1.7.1 (v55)';
 
 let idleTimer = null;
 let isCloudSavePending = false;
