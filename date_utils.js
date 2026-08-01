@@ -17,3 +17,9 @@ export function getWeekStart(d, weekStartDay = 0) {
 export function getSunday(d) {
   return getWeekStart(d, 0);
 }
+
+export function getDateOfColumn(weekStartDateStr, d) {
+  const baseDate = new Date(weekStartDateStr + 'T00:00:00');
+  baseDate.setDate(baseDate.getDate() + d);
+  return formatLocalDate(baseDate);
+}

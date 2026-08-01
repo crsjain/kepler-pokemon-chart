@@ -1,6 +1,11 @@
-import { getStarsFromDates, getDateOfColumn } from './vault.js';
-import { saveState, rollNewWeeklyBadge, getDefaultStateTemplate } from './state.js';
-import { getSunday, formatLocalDate } from './date_utils.js';
+import { getStarsFromDates } from './vault.js';
+import { saveState, rollNewWeeklyBadge, getDefaultStateTemplate, DAYS, getTaskRequiredDays } from './state.js';
+import { getSunday, formatLocalDate, getDateOfColumn, getWeekStart } from './date_utils.js';
+import { runMigrations } from './migrations.js';
+
+function getGridKey(dayIndex, taskId) {
+  return `${getDateOfColumn(window.__app_state__.weekStartDate, dayIndex)}-${taskId}`;
+}
 
 console.log("🚀 Starting Kepler Chart Regression Tests...");
 
@@ -39,7 +44,7 @@ async function runSuite() {
     }
 
     let state = window.__app_state__;
-    assert(state.version === 14, "State version should be 14");
+    assert(state.version === 15, "State version should be 15");
     assert(state.weeklyClaimed === false, "Weekly claimed should be false");
     assert(window.__grid_rebuild_count__ === 1, `Grid should have been built exactly once on reset (actual: ${window.__grid_rebuild_count__})`);
 
@@ -76,14 +81,14 @@ async function runSuite() {
       firstCheckbox.click();
       await sleep(100);
 
-      assert(state.grid['0-piano'] === true, "State should record checked task");
+      assert(state.grid[getGridKey(0, 'piano')] === true, "State should record checked task");
       assert(document.getElementById('current-xp').textContent === '5', "XP should increase to 5");
       assert(window.__grid_rebuild_count__ === 1, "Grid should NOT have rebuilt after checking a box");
 
       // Click it again (Uncheck)
       firstCheckbox.click();
       await sleep(100);
-      assert(state.grid['0-piano'] === false, "State should record unchecked task");
+      assert(state.grid[getGridKey(0, 'piano')] === false, "State should record unchecked task");
       assert(document.getElementById('current-xp').textContent === '0', "XP should decrease back to 0");
       assert(window.__grid_rebuild_count__ === 1, "Grid should NOT have rebuilt after unchecking a box");
 
@@ -203,26 +208,43 @@ async function runSuite() {
 
       // Check task in grid
       const gridTbody = document.getElementById('grid-tbody');
-      const newRow = gridTbody.querySelector('.task-row[data-task^="task_"]');
+      const rows = gridTbody.querySelectorAll('.task-row');
+      let newRow = null;
+      rows.forEach(row => {
+        if (row.querySelector('.task-name').textContent === "Science Project") {
+          newRow = row;
+        }
+      });
       assert(newRow !== null, "New task row should render in the grid");
-      assert(newRow.querySelector('.task-name').textContent === "Science Project", "Task name should match");
-      
       const newTaskId = newRow.dataset.task;
+      assert(newTaskId === "science-project", "Task ID should be slugified to science-project");
 
       // Check the new task box
-      const newCb = gridTbody.querySelector(`input[data-day="0"][data-task="${newTaskId}"]`);
-      assert(newCb !== null, "New checkbox should exist");
-      state.activeDay = 0;
+      const todayDayIndex = (new Date().getDay() - state.weekStartDay + 7) % 7;
+      const newCb = gridTbody.querySelector(`input[data-day="${todayDayIndex}"][data-task="${newTaskId}"]`);
+      assert(newCb !== null, "New checkbox should exist for today");
+      state.activeDay = new Date().getDay();
       window.__test_helpers__.renderState(false);
       newCb.click();
       await sleep(100);
 
-      assert(state.grid[`0-${newTaskId}`] === true, "State should record new task check");
+      assert(state.grid[getGridKey(todayDayIndex, newTaskId)] === true, "State should record new task check");
       const actualGoalText = newRow.querySelector('.task-total-cell').textContent;
-      assert(actualGoalText === "1 / 7", `Goal column should show 1/7 (actual: "${actualGoalText}")`);
+      const expectedReq = getTaskRequiredDays(newTaskId);
+      assert(actualGoalText === `1 / ${expectedReq}`, `Goal column should show 1/${expectedReq} (actual: "${actualGoalText}")`);
 
-      // Delete task in Admin
-      const deleteBtn = newItem.querySelector('.remove-task-btn');
+      // Delete task in Admin (re-query after list re-renders to get new ID in DOM)
+      const updatedItems = taskList.querySelectorAll('.admin-task-item');
+      let updatedNewItem = null;
+      updatedItems.forEach(item => {
+        if (item.querySelector('.task-name-input').value === "Science Project") {
+          updatedNewItem = item;
+        }
+      });
+      assert(updatedNewItem !== null, "Science Project item should exist in admin list after save");
+      assert(updatedNewItem.dataset.taskId === "science-project", "Admin list item should have updated task ID");
+
+      const deleteBtn = updatedNewItem.querySelector('.remove-task-btn');
       deleteBtn.click(); // Auto-confirms
       await sleep(100);
 
@@ -231,8 +253,14 @@ async function runSuite() {
       await sleep(100);
 
       assert(window.__grid_rebuild_count__ === 3, "Grid should rebuild after deletion (count: 3)");
-      assert(gridTbody.querySelector(`.task-row[data-task="${newTaskId}"]`) === null, "Row should be removed from DOM");
-      assert(state.grid[`0-${newTaskId}`] === undefined, "Checked history for deleted task should be cleaned up");
+      const deletedRow = gridTbody.querySelector(`.task-row[data-task="${newTaskId}"]`);
+      assert(deletedRow !== null, "Row should STILL render in current week grid after soft-deletion");
+      if (todayDayIndex < 6) {
+        const nextCb = gridTbody.querySelector(`input[data-day="${todayDayIndex + 1}"][data-task="${newTaskId}"]`);
+        assert(nextCb && nextCb.disabled === true, "Checkbox for days after deletion should be disabled");
+        assert(nextCb.closest('.checkbox-cell').classList.contains('out-of-range-cell'), "Cell for days after deletion should be greyed out");
+      }
+      assert(state.grid[getGridKey(todayDayIndex, newTaskId)] === true, "Checked history for soft-deleted task should be preserved");
 
       // 5. Test State Diagnostics (Auto-Repair)
       console.log("Testing State Diagnostics...");
@@ -289,10 +317,12 @@ async function runSuite() {
       assert(resetBtn !== null, "Reset button should exist");
 
       // Check a box first
+      state.activeDay = 0;
+      window.__test_helpers__.renderState(false);
       const pianoCb = document.querySelector('input[data-day="0"][data-task="piano"]');
       if (pianoCb && !pianoCb.checked) pianoCb.click();
       await sleep(50);
-      assert(state.grid['0-piano'] === true, "Piano checkbox should be checked before reset");
+      assert(state.grid[getGridKey(0, 'piano')] === true, "Piano checkbox should be checked before reset");
 
       // 1st click on Reset button
       resetBtn.click();
@@ -301,13 +331,13 @@ async function runSuite() {
       confirmYesBtn.click();
       await sleep(100);
       assert(confirmModal.classList.contains('hidden'), "Confirm Modal should close after confirmation");
-      assert(state.grid['0-piano'] === undefined, "Grid should be cleared after 1st reset");
+      assert(state.grid[getGridKey(0, 'piano')] === undefined, "Grid should be cleared after 1st reset");
 
       // Check a box again
       const pianoCb2 = document.querySelector('input[data-day="0"][data-task="piano"]');
       if (pianoCb2 && !pianoCb2.checked) pianoCb2.click();
       await sleep(50);
-      assert(state.grid['0-piano'] === true, "Piano checkbox should be checked again");
+      assert(state.grid[getGridKey(0, 'piano')] === true, "Piano checkbox should be checked again");
 
       // 2nd click on Reset button (Subsequent click!)
       resetBtn.click();
@@ -316,7 +346,7 @@ async function runSuite() {
       confirmYesBtn.click();
       await sleep(100);
       assert(confirmModal.classList.contains('hidden'), "Confirm Modal should close after 2nd confirmation");
-      assert(state.grid['0-piano'] === undefined, "Grid should be cleared after 2nd reset");
+      assert(state.grid[getGridKey(0, 'piano')] === undefined, "Grid should be cleared after 2nd reset");
 
       // 7. Test Focused Active Day Column Restrictions with Friction Warning
       {
@@ -351,7 +381,7 @@ async function runSuite() {
         cb2.click();
         await sleep(100);
         assert(cb2.checked === false, "Inactive checkbox click should be blocked");
-        assert(state.grid[`${otherDay2}-piano`] === undefined, "Inactive task should NOT be in state grid");
+        assert(state.grid[getGridKey(otherDay2, 'piano')] === undefined, "Inactive task should NOT be in state grid");
 
         // Try checking active checkbox (should be allowed)
         const cb1 = document.querySelector(`input[data-day="${otherDay1}"][data-task="piano"]`);
@@ -359,7 +389,7 @@ async function runSuite() {
         cb1.click();
         await sleep(100);
         assert(cb1.checked === true, "Active checkbox click should be allowed");
-        assert(state.grid[`${otherDay1}-piano`] === true, "Active task should be saved to state grid");
+        assert(state.grid[getGridKey(otherDay1, 'piano')] === true, "Active task should be saved to state grid");
 
         // Now click inactive header (switching to a non-today day should show friction pop-up)
         header2.click();
@@ -615,7 +645,7 @@ async function runSuite() {
         console.log("Running Test Case 11: Badge Case & Collection...");
         
         // Verify state initial V10 fields
-        assert(state.version === 14, "State version should be 14");
+        assert(state.version === 15, "State version should be 15");
         assert(Array.isArray(state.collectedBadges), "collectedBadges should be an array");
         assert(state.collectedBadges.length === 0, "Initially collected badges should be empty");
         assert(Array.isArray(state.badgePool), "badgePool should be an array");
@@ -743,7 +773,7 @@ async function runSuite() {
         window.__test_helpers__.loadState();
         let migratedState = window.__app_state__;
         
-        assert(migratedState.version === 14, "Migrated state version should be 14");
+        assert(migratedState.version === 15, "Migrated state version should be 15");
         assert(migratedState.idleTimeout === 10, "Migrated state should have default idleTimeout 10");
         assert(Array.isArray(migratedState.weeklyRewardOptions), "weeklyRewardOptions should be initialized on migration");
         assert(Array.isArray(migratedState.megaRewardOptions), "megaRewardOptions should be initialized on migration");
@@ -785,7 +815,7 @@ async function runSuite() {
         window.__test_helpers__.loadState();
         migratedState = window.__app_state__;
         
-        assert(migratedState.version === 14, "Migrated state version should be 14");
+        assert(migratedState.version === 15, "Migrated state version should be 15");
         assert(migratedState.idleTimeout === 10, "Migrated state should have default idleTimeout 10");
         assert(Array.isArray(migratedState.weeklyRewardOptions), "weeklyRewardOptions should be initialized on migration");
         assert(Array.isArray(migratedState.megaRewardOptions), "megaRewardOptions should be initialized on migration");
@@ -817,7 +847,7 @@ async function runSuite() {
         const tasks = state.tasks || [];
         // Day 0, 1, 2, 3, 4 should be completed
         for (let d = 0; d < 5; d++) {
-          const allChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${d}-${task.id}`]);
+          const allChecked = tasks.length > 0 && tasks.every(task => !!state.grid[getGridKey(d, task.id)]);
           assert(allChecked === true, `Day ${d} should be fully checked after Milestone -1 Ball`);
           
           // Total cell should show 🌟
@@ -938,7 +968,7 @@ async function runSuite() {
         const tasks = state.tasks || [];
         for (let d = 0; d < 5; d++) {
           tasks.forEach(task => {
-            state.grid[`${d}-${task.id}`] = true;
+            state.grid[getGridKey(d, task.id)] = true;
           });
         }
         
@@ -967,8 +997,22 @@ async function runSuite() {
         
         assert(state.weekStartDate === expectedNextSundayStr, `weekStartDate should have advanced to ${expectedNextSundayStr} (actual: ${state.weekStartDate})`);
         
-        // Grid should be empty
-        assert(Object.keys(state.grid).length === 0, "Grid should be cleared after week reset");
+        // Grid should be empty for the new week
+        const nextWeekDates = DAYS.map(day => getDateOfColumn(state.weekStartDate, day));
+        const hasProgressInNewWeek = nextWeekDates.some(dateStr => {
+          return state.tasks.some(task => !!state.grid[`${dateStr}-${task.id}`]);
+        });
+        assert(hasProgressInNewWeek === false, "New week's grid should be empty after week reset");
+        
+        // Old week keys should still exist in grid history
+        const oldWeekDates = DAYS.map(day => getDateOfColumn(originalSunday, day));
+        let oldKeysCount = 0;
+        oldWeekDates.forEach(dateStr => {
+          state.tasks.forEach(task => {
+            if (state.grid[`${dateStr}-${task.id}`]) oldKeysCount++;
+          });
+        });
+        assert(oldKeysCount === 25, "Old week completions should be preserved in grid history");
         
         // Vault should still have 5 historical stars from last week
         assert(state.starVault.earnedDates.length === 5, `Vault should retain 5 historical stars (actual: ${state.starVault.earnedDates.length})`);
@@ -1204,8 +1248,8 @@ async function runSuite() {
         await sleep(50);
         
         assert(wedPianoTd.classList.contains('excused-cell'), "Cell should have excused-cell class");
-        assert(state.excused["3-piano"] === true, "State should have 3-piano excused");
-        assert(state.grid["3-piano"] === false, "State grid for 3-piano should be false (auto-cleared)");
+        assert(state.excused[getGridKey(3, 'piano')] === true, "State should have 3-piano excused");
+        assert(state.grid[getGridKey(3, 'piano')] === false, "State grid for 3-piano should be false (auto-cleared)");
         assert(wedPianoInput.checked === false, "Checkbox should be unchecked");
         assert(state.activeDay === 1, "Active day should remain Monday (1) after excusing Wednesday task");
         
@@ -1283,7 +1327,7 @@ async function runSuite() {
         
         // Grid should be cleared, but 3-piano should STILL be excused
         assert(Object.keys(state.grid).length === 0, "Grid should be empty");
-        assert(state.excused["3-piano"] === true, "3-piano should still be excused after reset with carry over");
+        assert(state.excused[getGridKey(3, 'piano')] === true, "3-piano should still be excused after reset with carry over");
         
         // Verify UI has .excused-cell class on Wed Piano cell
         const wedPianoTdAfterReset = document.querySelector('input[data-day="3"][data-task="piano"]').closest('.checkbox-cell');
@@ -1306,7 +1350,7 @@ async function runSuite() {
         
         // Grid and excused should be empty
         assert(Object.keys(state.grid).length === 0, "Grid should be empty");
-        assert(state.excused["3-piano"] === undefined, "3-piano should be cleared after reset without carry over");
+        assert(state.excused[getGridKey(3, 'piano')] === undefined, "3-piano should be cleared after reset without carry over");
         const wedPianoTdAfterSecondReset = document.querySelector('input[data-day="3"][data-task="piano"]').closest('.checkbox-cell');
         assert(!wedPianoTdAfterSecondReset.classList.contains('excused-cell'), "Cell should lose excused-cell class in UI");
         
@@ -1359,7 +1403,7 @@ async function runSuite() {
         assert(confirmModal.classList.contains('hidden'), "Confirm modal should close on Cancel click");
         assert(state.activeDay === 1, "Active day should remain Monday (1)");
         assert(wedPianoInput.checked === false, "Wednesday Piano should remain unchecked after cancel");
-        assert(state.grid["3-piano"] !== true, "State grid should not be updated");
+        assert(state.grid[getGridKey(3, 'piano')] !== true, "State grid should not be updated");
         
         // Click again to test Confirm (Switch Anyway)
         wedPianoInput.click();
@@ -1380,7 +1424,7 @@ async function runSuite() {
         // Verify Wednesday Piano is checked in UI and State
         const wedPianoInputAfterSwitch = document.querySelector('input[data-day="3"][data-task="piano"]');
         assert(wedPianoInputAfterSwitch.checked === true, "Wednesday Piano should be checked in UI after switch");
-        assert(state.grid["3-piano"] === true, "Wednesday Piano should be checked in State after switch");
+        assert(state.grid[getGridKey(3, 'piano')] === true, "Wednesday Piano should be checked in State after switch");
         
         // Clean up
         window.__test_helpers__.resetState();
@@ -1408,7 +1452,7 @@ async function runSuite() {
         
         // Complete Tuesday (day 2)
         tasks.forEach(task => {
-          state.grid[`2-${task.id}`] = true;
+          state.grid[getGridKey(2, task.id)] = true;
         });
         saveState();
         window.__test_helpers__.syncVaultStarsWithGrid();
@@ -1416,7 +1460,7 @@ async function runSuite() {
 
         // Complete Monday (day 1)
         tasks.forEach(task => {
-          state.grid[`1-${task.id}`] = true;
+          state.grid[getGridKey(1, task.id)] = true;
         });
         saveState();
         window.__test_helpers__.syncVaultStarsWithGrid();
@@ -1665,7 +1709,6 @@ async function runSuite() {
         assert(confirmModal && !confirmModal.classList.contains('hidden'), "Warning Confirm Modal should open");
         const confirmDetail = confirmModal.querySelector('.confirm-detail');
         assert(confirmDetail !== null, "Should render detailed HTML warning when progress exists");
-        assert(confirmModal.querySelector('.badge-label.safe') !== null, "Should show 'Safe' badge");
         
         // Confirm change
         confirmYesBtn.click();
@@ -1673,7 +1716,7 @@ async function runSuite() {
         
         state = window.__app_state__;
         assert(state.weekStartDay === 0, "State weekStartDay should be updated to 0");
-        assert(Object.keys(state.grid).length === 0, "Grid should be reset after mid-week start day change");
+        assert(Object.keys(state.grid).length > 0, "Grid should NOT be reset after mid-week start day change");
         
         // Close admin panel
         closeAdminBtn.click();
@@ -1715,7 +1758,7 @@ async function runSuite() {
         // Complete Day 0 (Column 0, which is Friday 2026-07-17)
         const tasks = state.tasks || [];
         tasks.forEach(task => {
-          state.grid[`0-${task.id}`] = true;
+          state.grid[getGridKey(0, task.id)] = true;
         });
         
         window.__test_helpers__.syncVaultStarsWithGrid();
@@ -1728,7 +1771,7 @@ async function runSuite() {
 
         // Complete Day 1 (Column 1, which is Saturday 2026-07-18)
         tasks.forEach(task => {
-          state.grid[`1-${task.id}`] = true;
+          state.grid[getGridKey(1, task.id)] = true;
         });
         window.__test_helpers__.syncVaultStarsWithGrid();
         saveState();
@@ -2041,7 +2084,7 @@ async function runSuite() {
         await sleep(100);
       }
 
-      console.log("Running Test Case 28: Carry over exceptions on Week Start Day change...");
+      console.log("Running Test Case 28: Keep exceptions on Week Start Day change (date-keyed)...");
       {
         const helpers = window.__test_helpers__;
         let state = window.__app_state__;
@@ -2053,15 +2096,20 @@ async function runSuite() {
         // Ensure weekStartDay is 0 (Sunday)
         state.weekStartDay = 0;
         
-        // Add some exceptions (excused tasks)
-        // Sunday (0) and Tuesday (2)
+        // Resolve dates for mock data
+        const baseDateStr = state.weekStartDate;
+        const sunDateStr = getDateOfColumn(baseDateStr, 0);
+        const monDateStr = getDateOfColumn(baseDateStr, 1);
+        const tueDateStr = getDateOfColumn(baseDateStr, 2);
+
+        // Add some exceptions (excused tasks) using date keys
         state.excused = {
-          '0-piano': true,
-          '2-piano': true
+          [`${sunDateStr}-piano`]: true,
+          [`${tueDateStr}-piano`]: true
         };
-        // Add some progress to trigger the "hasProgress" confirm modal
+        // Add some progress using date keys
         state.grid = {
-          '1-math': true
+          [`${monDateStr}-math`]: true
         };
         helpers.renderState(true);
         await sleep(100);
@@ -2085,14 +2133,9 @@ async function runSuite() {
         select.dispatchEvent(new Event('change'));
         await sleep(100);
 
-        // Verify confirm modal opens with checkbox
+        // Verify confirm modal opens (no checkbox verified here as it was removed)
         const confirmModal = document.getElementById('confirm-modal');
         assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should open");
-        
-        const checkboxContainer = document.getElementById('confirm-checkbox-container');
-        const checkbox = document.getElementById('confirm-checkbox');
-        assert(checkboxContainer && !checkboxContainer.classList.contains('hidden'), "Checkbox container should be visible");
-        assert(checkbox && checkbox.checked === true, "Checkbox should be checked by default");
 
         // Confirm
         const confirmYesBtn = document.getElementById('confirm-yes-btn');
@@ -2102,16 +2145,17 @@ async function runSuite() {
         // Verify state
         assert(state.weekStartDay === 5, "Week start day should be 5 (Friday)");
         
-        // Verify exceptions remapped:
-        // Sunday (0) -> grid day 2 (Friday=0, Sat=1, Sun=2)
-        // Tuesday (2) -> grid day 4 (Friday=0, Sat=1, Sun=2, Mon=3, Tue=4)
-        assert(state.excused['2-piano'] === true, "Exception on Sunday (0) should map to Sunday (2) in Friday-start grid");
-        assert(state.excused['4-piano'] === true, "Exception on Tuesday (2) should map to Tuesday (4) in Friday-start grid");
-        assert(state.excused['0-piano'] === undefined, "Old exception key 0-piano should be removed");
-        assert(state.excused['2-math'] === undefined, "Math was not excused");
+        // Recalculate expected weekStartDate based on today's calendar Friday start
+        const expectedNewStart = formatLocalDate(getWeekStart(new Date(), 5));
+        assert(state.weekStartDate === expectedNewStart, `weekStartDate should be ${expectedNewStart}`);
+
+        // Verify exceptions and grid are NOT modified (preserved as-is)
+        assert(state.excused[`${sunDateStr}-piano`] === true, "Sunday exception should remain intact");
+        assert(state.excused[`${tueDateStr}-piano`] === true, "Tuesday exception should remain intact");
+        assert(state.grid[`${monDateStr}-math`] === true, "Monday progress should remain intact");
         
-        // Verify grid is cleared
-        assert(Object.keys(state.grid).length === 0, "Grid should be cleared");
+        assert(Object.keys(state.grid).length === 1, "Grid should not be cleared");
+        assert(Object.keys(state.excused).length === 2, "Exceptions should not be cleared");
 
         // Clean up
         helpers.resetState();
@@ -2327,6 +2371,170 @@ async function runSuite() {
         // Close admin modal if still open
         const closeAdminBtn = document.getElementById('close-admin-modal-btn');
         if (closeAdminBtn) closeAdminBtn.click();
+        await sleep(100);
+      }
+
+      // 32. Test Case 32: Grid Migration (V14 -> V15)
+      console.log("Running Test Case 32: Grid Migration (V14 -> V15)...");
+      {
+        const v14State = {
+          version: 14,
+          childName: "Kepler",
+          weekStartDate: "2026-07-26",
+          weekStartDay: 0,
+          reward: "Bonus Tablet Time",
+          megaReward: "Booster Pack",
+          megaWeeks: 1,
+          weeklyClaimed: false,
+          grid: {
+            "0-piano": true,
+            "1-math": true,
+            "6-reading": true
+          },
+          excused: {
+            "2-piano": true
+          },
+          tasks: [
+            { id: 'piano', name: 'Piano Practice', emoji: '🎹', concept: 'Level up!' },
+            { id: 'math', name: 'Math Practice', emoji: '🧮', concept: 'Intellect +1' },
+            { id: 'reading', name: 'Reading Time', emoji: '📚', concept: 'Explore new zones!' }
+          ]
+        };
+
+        const migrated = runMigrations(v14State);
+
+        assert(migrated.version === 15, "Migrated state version should be 15");
+        assert(migrated.weeklyHistory !== undefined, "weeklyHistory should be initialized");
+        
+        assert(migrated.grid["2026-07-26-piano"] === true, "Day 0 piano should migrate to 2026-07-26-piano");
+        assert(migrated.grid["2026-07-27-math"] === true, "Day 1 math should migrate to 2026-07-27-math");
+        assert(migrated.grid["2026-08-01-reading"] === true, "Day 6 reading should migrate to 2026-08-01-reading");
+        assert(migrated.grid["0-piano"] === undefined, "Old grid key 0-piano should be deleted");
+
+        assert(migrated.excused["2026-07-28-piano"] === true, "Day 2 excused piano should migrate to 2026-07-28-piano");
+
+        migrated.tasks.forEach(t => {
+          assert(t.active === true, "Tasks should be active by default");
+          assert(t.createdAt === "2026-07-01", "Existing tasks should have default createdAt");
+          assert(t.deletedAt === null, "Existing tasks should have deletedAt = null");
+        });
+      }
+
+      // 33. Test Case 33: Historical Paging (Read-Only)
+      console.log("Running Test Case 33: Historical Paging (Read-Only)...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+
+        const currentWeekStart = state.weekStartDate;
+        const pastWeekStart = "2026-07-19";
+        
+        state.weeklyHistory[pastWeekStart] = {
+          weekStartDay: 0,
+          reward: "Parent Playtime",
+          megaReward: "Dessert Outing",
+          weeklyClaimed: true,
+          badgeId: 4,
+          xpEarned: 50
+        };
+        state.grid[`${pastWeekStart}-piano`] = true;
+        helpers.renderState(true);
+        await sleep(100);
+
+        const nextBtn = document.getElementById('next-week-btn');
+        const prevBtn = document.getElementById('prev-week-btn');
+        assert(nextBtn !== null, "Next week button should exist");
+        assert(prevBtn !== null, "Prev week button should exist");
+        assert(nextBtn.disabled === true, "Next button should be disabled on current week");
+
+        prevBtn.click();
+        await sleep(100);
+
+        assert(nextBtn.disabled === false, "Next button should be enabled on historical week");
+        
+        const checkboxes = document.querySelectorAll('#grid-tbody input[type="checkbox"]');
+        assert(checkboxes.length > 0, "Grid checkboxes should be rendered");
+        checkboxes.forEach(cb => {
+          assert(cb.disabled === true, "Checkboxes must be disabled in past weeks");
+        });
+
+        assert(rewardSelect.disabled === true, "Weekly Reward select should be disabled in history");
+        assert(megaRewardSelect.disabled === true, "Mega Reward select should be disabled in history");
+
+        const resetBtn = document.getElementById('reset-btn');
+        assert(resetBtn !== null, "Reset button should exist");
+        assert(resetBtn.disabled === true, "Reset button should be disabled in history");
+
+        assert(rewardSelect.value === "Parent Playtime", "Historical reward should be selected");
+        assert(megaRewardSelect.value === "Dessert Outing", "Historical mega reward should be selected");
+
+        nextBtn.click();
+        await sleep(100);
+
+        assert(nextBtn.disabled === true, "Next button should be disabled again on current week");
+        
+        const currentCheckboxes = document.querySelectorAll('#grid-tbody input[type="checkbox"]');
+        currentCheckboxes.forEach(cb => {
+          assert(cb.disabled === false, "Checkboxes must be enabled on current week");
+        });
+        
+        assert(rewardSelect.disabled === false, "Weekly Reward select should be enabled on current week");
+        assert(megaRewardSelect.disabled === false, "Mega Reward select should be enabled on current week");
+        assert(resetBtn.disabled === false, "Reset button should be enabled on current week");
+        
+        helpers.resetState();
+        await sleep(100);
+      }
+
+      // 34. Test Case 34: Task Lifecycle Rendering (out of range cells)
+      console.log("Running Test Case 34: Task Lifecycle Rendering (out of range cells)...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+
+        const currentWeekStart = state.weekStartDate;
+        
+        const pianoTask = state.tasks.find(t => t.id === 'piano');
+        pianoTask.createdAt = "2026-07-29"; // Wednesday
+
+        const mathTask = state.tasks.find(t => t.id === 'math');
+        mathTask.active = false;
+        mathTask.deletedAt = "2026-07-30"; // Thursday
+
+        helpers.renderState(true);
+        await sleep(100);
+
+        const pianoRow = document.querySelector('tr[data-task="piano"]');
+        assert(pianoRow !== null, "Piano row should exist");
+        
+        const pianoCells = pianoRow.querySelectorAll('.checkbox-cell');
+        assert(pianoCells[0].classList.contains('out-of-range-cell'), "Piano Sunday cell should be out of range");
+        assert(pianoCells[0].querySelector('input').disabled === true, "Piano Sunday input should be disabled");
+        
+        assert(pianoCells[1].classList.contains('out-of-range-cell'), "Piano Monday cell should be out of range");
+        assert(pianoCells[1].querySelector('input').disabled === true, "Piano Monday input should be disabled");
+
+        assert(!pianoCells[3].classList.contains('out-of-range-cell'), "Piano Wednesday cell should NOT be out of range");
+        assert(pianoCells[3].querySelector('input').disabled === false, "Piano Wednesday input should be active");
+
+        const mathRow = document.querySelector('tr[data-task="math"]');
+        assert(mathRow !== null, "Math row should exist");
+        
+        const mathCells = mathRow.querySelectorAll('.checkbox-cell');
+        assert(!mathCells[3].classList.contains('out-of-range-cell'), "Math Wednesday cell should NOT be out of range");
+        assert(mathCells[3].querySelector('input').disabled === false, "Math Wednesday input should be active");
+
+        assert(mathCells[4].classList.contains('out-of-range-cell'), "Math Thursday cell should be out of range");
+        assert(mathCells[4].querySelector('input').disabled === true, "Math Thursday input should be disabled");
+
+        assert(mathCells[5].classList.contains('out-of-range-cell'), "Math Friday cell should be out of range");
+        assert(mathCells[5].querySelector('input').disabled === true, "Math Friday input should be disabled");
+
+        helpers.resetState();
         await sleep(100);
       }
 

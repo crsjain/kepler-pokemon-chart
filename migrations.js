@@ -1,5 +1,6 @@
 import { TIER_1_IDS, EVOLUTIONS } from './pokemon_data.js';
-import { formatLocalDate, getWeekStart } from './date_utils.js';
+import { formatLocalDate, getWeekStart, getDateOfColumn } from './date_utils.js';
+
 
 export const DEFAULT_WEEKLY_REWARDS = [
   { value: "Bonus Tablet Time", text: "⚡ +20 Mins of Bonus Tablet Time!" },
@@ -189,6 +190,84 @@ export const MIGRATIONS = [
     migrate: (s) => {
       s.weeklyRewardOptions = [...DEFAULT_WEEKLY_REWARDS];
       s.megaRewardOptions = [...DEFAULT_MEGA_REWARDS];
+      return s;
+    }
+  },
+  {
+    version: 15,
+    migrate: (s) => {
+      s.weeklyHistory = s.weeklyHistory || {};
+      
+      // Migrate grid keys from dayIndex-taskId to YYYY-MM-DD-taskId
+      if (s.grid && s.weekStartDate) {
+        const newGrid = {};
+        Object.keys(s.grid).forEach(key => {
+          if (key.includes('-')) {
+            const parts = key.split('-');
+            const dayIndex = parseInt(parts[0]);
+            const taskId = parts.slice(1).join('-');
+            if (!isNaN(dayIndex) && dayIndex >= 0 && dayIndex <= 6) {
+              const dateStr = getDateOfColumn(s.weekStartDate, dayIndex);
+              newGrid[`${dateStr}-${taskId}`] = s.grid[key];
+            } else {
+              newGrid[key] = s.grid[key];
+            }
+          } else {
+            newGrid[key] = s.grid[key];
+          }
+        });
+        s.grid = newGrid;
+      }
+
+      // Migrate excused keys from dayIndex-taskId to YYYY-MM-DD-taskId
+      if (s.excused && s.weekStartDate) {
+        const newExcused = {};
+        Object.keys(s.excused).forEach(key => {
+          if (key.includes('-')) {
+            const parts = key.split('-');
+            const dayIndex = parseInt(parts[0]);
+            const taskId = parts.slice(1).join('-');
+            if (!isNaN(dayIndex) && dayIndex >= 0 && dayIndex <= 6) {
+              const dateStr = getDateOfColumn(s.weekStartDate, dayIndex);
+              newExcused[`${dateStr}-${taskId}`] = s.excused[key];
+            } else {
+              newExcused[key] = s.excused[key];
+            }
+          } else {
+            newExcused[key] = s.excused[key];
+          }
+        });
+        s.excused = newExcused;
+      }
+
+      // Add lifecycle metadata to tasks
+      if (s.tasks) {
+        s.tasks = s.tasks.map(task => ({
+          ...task,
+          active: task.active !== undefined ? task.active : true,
+          createdAt: task.createdAt || '2026-07-01',
+          deletedAt: task.deletedAt || null
+        }));
+      }
+
+      // Seeding Hook for Kepler and Lyra (guarded for Node.js environment)
+      const seedData = typeof window !== 'undefined' ? window.__seed_historical_data__ : null;
+      if (seedData && s.childName) {
+        const seed = seedData[s.childName.toLowerCase()];
+        if (seed) {
+          console.log(`Seeding historical data for ${s.childName}...`);
+          if (seed.weeklyHistory) {
+            s.weeklyHistory = { ...s.weeklyHistory, ...seed.weeklyHistory };
+          }
+          if (seed.grid) {
+            s.grid = { ...s.grid, ...seed.grid };
+          }
+          if (seed.excused) {
+            s.excused = { ...s.excused, ...seed.excused };
+          }
+        }
+      }
+
       return s;
     }
   }

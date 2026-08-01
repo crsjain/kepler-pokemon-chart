@@ -1,5 +1,5 @@
 import { state, saveState } from './state.js';
-import { formatLocalDate } from './date_utils.js';
+import { formatLocalDate, getDateOfColumn } from './date_utils.js';
 
 // DOM elements cache
 let vaultModal = null;
@@ -313,12 +313,7 @@ export function closeVault() {
   closeTradeFlow();
 }
 
-export function checkDayCompleted(dayIndex, isCompleted) {
-  if (!state.weekStartDate) {
-    console.error('weekStartDate is missing in state.');
-    return;
-  }
-  const dateStr = getDateOfColumn(state.weekStartDate, dayIndex);
+export function checkDayCompleted(dateStr, isCompleted) {
   const index = state.starVault.earnedDates.indexOf(dateStr);
 
   if (isCompleted) {
@@ -332,12 +327,6 @@ export function checkDayCompleted(dayIndex, isCompleted) {
       saveState();
     }
   }
-}
-
-export function getDateOfColumn(weekStartDateStr, d) {
-  const baseDate = new Date(weekStartDateStr + 'T00:00:00');
-  baseDate.setDate(baseDate.getDate() + d);
-  return formatLocalDate(baseDate);
 }
 
 function parseLocalDate(dateStr) {

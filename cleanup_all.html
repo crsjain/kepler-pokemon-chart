@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cleanup All Documents</title>
+</head>
+<body>
+  <div id="output" style="white-space: pre-wrap; font-family: monospace;">Querying all users...</div>
+  <script type="module">
+    import { db } from './firebase.js';
+    import { collection, getDocs, doc, updateDoc, deleteField } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+    async function run() {
+      try {
+        const out = document.getElementById('output');
+        const usersRef = collection(db, 'users');
+        out.textContent += "\nFetching all user documents...";
+        const snapshot = await getDocs(usersRef);
+        
+        out.textContent += `\nFound ${snapshot.docs.length} user documents. Scanning for test profiles...`;
+        
+        let totalDeleted = 0;
+        
+        for (const docSnapshot of snapshot.docs) {
+          const userUid = docSnapshot.id;
+          const data = docSnapshot.data();
+          
+          if (data && data.profiles) {
+            const updates = {};
+            let deletedInDoc = 0;
+            
+            Object.keys(data.profiles).forEach(profileId => {
+              const profile = data.profiles[profileId];
+              // Check if key or name starts with KeplerMigrated_
+              if (profileId.startsWith('keplermigrated_') || (profile && profile.name && profile.name.startsWith('KeplerMigrated_'))) {
+                updates[`profiles.${profileId}`] = deleteField();
+                out.textContent += `\n[User: ${userUid}] Scheduling deletion of: ${profileId} (${profile.name || 'no name'})`;
+                deletedInDoc++;
+              }
+            });
+            
+            if (deletedInDoc > 0) {
+              const userDocRef = doc(db, 'users', userUid);
+              await updateDoc(userDocRef, updates);
+              out.textContent += `\n[User: ${userUid}] Cleaned up ${deletedInDoc} test profiles.`;
+              totalDeleted += deletedInDoc;
+            }
+          }
+        }
+        
+        out.textContent += `\n\nGlobal Cleanup Complete. Deleted ${totalDeleted} profiles in total across all users.`;
+        console.log("CLEANUP_ALL_SUCCESS");
+      } catch (e) {
+        document.getElementById('output').textContent += "\nError: " + e.message;
+        console.error("CLEANUP_ALL_FAILED", e);
+        console.log("CLEANUP_ALL_FAILED");
+      }
+    }
+    run();
+  </script>
+</body>
+</html>

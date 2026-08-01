@@ -1,5 +1,5 @@
 import { TIER_1_IDS, TIER_2_IDS, getPokemonName, MEGA_POKEMON, STARTER_OPTIONS, STARTER_FAMILIES, EVOLUTIONS } from './pokemon_data.js';
-import { formatLocalDate, getWeekStart, getSunday } from './date_utils.js';
+import { formatLocalDate, getWeekStart, getSunday, getDateOfColumn } from './date_utils.js';
 import { runMigrations, DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS } from './migrations.js';
 
 export const ADMIN_PASSWORD = "zxcv";
@@ -54,15 +54,16 @@ export function getStageInfo(familyId, stageId) {
 }
 
 
-// State V14 (Per-child Custom Rewards)
+// State V15 (Historical Weeks & Date-Keyed Grid)
 export let state = {
-  version: 14,
+  version: 15,
   partnerFamily: '25', // Default Pikachu Family
   weekStartDay: 0, // Default Sunday (0) to Saturday (6)
   idleTimeout: 10, // Default 10 minutes
   weeklyRewardOptions: [...DEFAULT_WEEKLY_REWARDS],
   megaRewardOptions: [...DEFAULT_MEGA_REWARDS],
-  excused: {}, // key format: "day-task" -> boolean
+  excused: {}, // key format: "YYYY-MM-DD-task" -> boolean
+  weeklyHistory: {}, // key format: "YYYY-MM-DD" -> { weekStartDay, reward, megaReward, weeklyClaimed, badgeId, xpEarned }
   partnersData: {
     '25': { level: 1, xp: 0, stageId: '25' },
     '4': { level: 1, xp: 0, stageId: '4' },
@@ -75,13 +76,13 @@ export let state = {
   megaWeeks: 0,
   weeklyClaimed: false,
   debugSidebarEnabled: false,
-  grid: {}, // key format: "day-task" -> boolean
+  grid: {}, // key format: "YYYY-MM-DD-task" -> boolean
   tasks: [
-    { id: 'piano', name: 'Piano Practice', emoji: '🎹', concept: 'Level up!', instructions: 'Play all pieces 3x and work on hard parts.' },
-    { id: 'math', name: 'Math Practice', emoji: '🧮', concept: 'Intellect +1', instructions: "Complete today's worksheet or 15 mins on math app." },
-    { id: 'reading', name: 'Reading Time', emoji: '📚', concept: 'Explore new zones!', instructions: '15min reading out loud w/30s summary.' },
-    { id: 'writing', name: 'Writing', emoji: '✏️', concept: 'Skill mastery', instructions: 'Write at least 3 clean sentences w/punctuation.' },
-    { id: 'chinese', name: 'Chinese', emoji: '💮', concept: 'Character master!', instructions: 'Practice reading current vocabulary card set 2x.' }
+    { id: 'piano', name: 'Piano Practice', emoji: '🎹', concept: 'Level up!', instructions: 'Play all pieces 3x and work on hard parts.', active: true, createdAt: '2026-07-01', deletedAt: null },
+    { id: 'math', name: 'Math Practice', emoji: '🧮', concept: 'Intellect +1', instructions: "Complete today's worksheet or 15 mins on math app.", active: true, createdAt: '2026-07-01', deletedAt: null },
+    { id: 'reading', name: 'Reading Time', emoji: '📚', concept: 'Explore new zones!', instructions: '15min reading out loud w/30s summary.', active: true, createdAt: '2026-07-01', deletedAt: null },
+    { id: 'writing', name: 'Writing', emoji: '✏️', concept: 'Skill mastery', instructions: 'Write at least 3 clean sentences w/punctuation.', active: true, createdAt: '2026-07-01', deletedAt: null },
+    { id: 'chinese', name: 'Chinese', emoji: '💮', concept: 'Character master!', instructions: 'Practice reading current vocabulary card set 2x.', active: true, createdAt: '2026-07-01', deletedAt: null }
   ],
   rewardHistory: [],
   megaRewardHistory: [],
@@ -155,7 +156,7 @@ export function loadState() {
 
 export function getDefaultStateTemplate() {
   const t = {
-    version: 14,
+    version: 15,
     partnerFamily: '25',
     weekStartDay: 0,
     idleTimeout: 10,
@@ -175,12 +176,13 @@ export function getDefaultStateTemplate() {
     debugSidebarEnabled: false,
     grid: {},
     excused: {},
+    weeklyHistory: {},
     tasks: [
-      { id: 'piano', name: 'Piano Practice', emoji: '🎹', concept: 'Level up!', instructions: 'Play all pieces 3x and work on hard parts.' },
-      { id: 'math', name: 'Math Practice', emoji: '🧮', concept: 'Intellect +1', instructions: "Complete today's worksheet or 15 mins on math app." },
-      { id: 'reading', name: 'Reading Time', emoji: '📚', concept: 'Explore new zones!', instructions: '15min reading out loud w/30s summary.' },
-      { id: 'writing', name: 'Writing', emoji: '✏️', concept: 'Skill mastery', instructions: 'Write at least 3 clean sentences w/punctuation.' },
-      { id: 'chinese', name: 'Chinese', emoji: '💮', concept: 'Character master!', instructions: 'Practice reading current vocabulary card set 2x.' }
+      { id: 'piano', name: 'Piano Practice', emoji: '🎹', concept: 'Level up!', instructions: 'Play all pieces 3x and work on hard parts.', active: true, createdAt: '2026-07-01', deletedAt: null },
+      { id: 'math', name: 'Math Practice', emoji: '🧮', concept: 'Intellect +1', instructions: "Complete today's worksheet or 15 mins on math app.", active: true, createdAt: '2026-07-01', deletedAt: null },
+      { id: 'reading', name: 'Reading Time', emoji: '📚', concept: 'Explore new zones!', instructions: '15min reading out loud w/30s summary.', active: true, createdAt: '2026-07-01', deletedAt: null },
+      { id: 'writing', name: 'Writing', emoji: '✏️', concept: 'Skill mastery', instructions: 'Write at least 3 clean sentences w/punctuation.', active: true, createdAt: '2026-07-01', deletedAt: null },
+      { id: 'chinese', name: 'Chinese', emoji: '💮', concept: 'Character master!', instructions: 'Practice reading current vocabulary card set 2x.', active: true, createdAt: '2026-07-01', deletedAt: null }
     ],
     rewardHistory: [],
     megaRewardHistory: [],
@@ -456,8 +458,8 @@ export function runStateDiagnostics() {
     const currentWeekDates = DAYS.map(day => getColumnDateStr(state.weekStartDate, day));
     
     DAYS.forEach(day => {
-      const allChecked = state.tasks.every(task => !!state.grid[`${day}-${task.id}`] || !!state.excused[`${day}-${task.id}`]);
       const dateStr = currentWeekDates[day];
+      const allChecked = state.tasks.every(task => !!state.grid[`${dateStr}-${task.id}`] || !!state.excused[`${dateStr}-${task.id}`]);
       const index = state.starVault.earnedDates.indexOf(dateStr);
       
       if (allChecked && index === -1) {
@@ -515,10 +517,10 @@ export function runStateDiagnostics() {
     fixed.push("Reset megaRewardOptions to defaults.");
   }
 
-  if (state.version !== 14) {
-    issues.push(`State version mismatch. Current: ${state.version}, Expected: 14`);
-    state.version = 14;
-    fixed.push("Forced state version to 14.");
+  if (state.version !== 15) {
+    issues.push(`State version mismatch. Current: ${state.version}, Expected: 15`);
+    state.version = 15;
+    fixed.push("Forced state version to 15.");
   }
 
   if (fixed.length > 0) {
@@ -573,7 +575,56 @@ function expandBadgePool() {
 }
 
 export function getTaskRequiredDays(taskId) {
-  const excusedCount = DAYS.filter(day => !!state.excused[`${day}-${taskId}`]).length;
+  if (!state.weekStartDate) return 7;
+  const task = state.tasks.find(t => t.id === taskId);
+  if (!task) return 7;
+  
+  const excusedCount = DAYS.filter(day => {
+    const dateStr = getDateOfColumn(state.weekStartDate, day);
+    const isExcused = !!state.excused[`${dateStr}-${taskId}`];
+    const isOutOfRange = (task.createdAt && dateStr < task.createdAt) || (task.deletedAt && dateStr >= task.deletedAt);
+    return isExcused || isOutOfRange;
+  }).length;
   return Math.max(0, DAYS.length - excusedCount);
+}
+
+export function getEarliestDataWeekStartDate() {
+  if (!state.weekStartDate) return null;
+  
+  let earliest = state.weekStartDate;
+  
+  // 1. Check weeklyHistory keys
+  if (state.weeklyHistory) {
+    Object.keys(state.weeklyHistory).forEach(dateStr => {
+      if (dateStr < earliest) {
+        earliest = dateStr;
+      }
+    });
+  }
+  
+  // 2. Check starVault.earnedDates
+  if (state.starVault && state.starVault.earnedDates) {
+    state.starVault.earnedDates.forEach(dateStr => {
+      const weekStart = formatLocalDate(getWeekStart(new Date(dateStr + 'T00:00:00'), state.weekStartDay || 0));
+      if (weekStart < earliest) {
+        earliest = weekStart;
+      }
+    });
+  }
+  
+  // 3. Check claimedRewardsHistory
+  if (state.claimedRewardsHistory) {
+    state.claimedRewardsHistory.forEach(entry => {
+      if (entry.date) {
+        const dateStr = entry.date.split('T')[0];
+        const weekStart = formatLocalDate(getWeekStart(new Date(dateStr + 'T00:00:00'), state.weekStartDay || 0));
+        if (weekStart < earliest) {
+          earliest = weekStart;
+        }
+      }
+    });
+  }
+  
+  return earliest;
 }
 

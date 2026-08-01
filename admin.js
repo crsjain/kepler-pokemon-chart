@@ -9,6 +9,7 @@ import {
   getBackupHistory,
   applyBackup
 } from './state.js';
+import { formatLocalDate } from './date_utils.js';
 
 let appCallbacks = {
   renderState: () => {},
@@ -228,11 +229,12 @@ function renderAdminTasksList() {
   
   container.innerHTML = '';
   const tasks = state.tasks || [];
+  const activeTasks = tasks.filter(t => t.active !== false);
   
-  tasks.forEach((task, idx) => {
+  activeTasks.forEach((task) => {
     const item = document.createElement('div');
     item.className = 'admin-task-item';
-    item.dataset.index = idx;
+    item.dataset.taskId = task.id;
     
     item.innerHTML = `
       <div class="admin-task-row">
@@ -250,7 +252,7 @@ function renderAdminTasksList() {
           <option value="📝" ${task.emoji === '📝' ? 'selected' : ''}>📝</option>
         </select>
         <input type="text" class="task-name-input" value="${task.name}">
-        <button class="pixel-btn danger remove-task-btn" data-index="${idx}">
+        <button class="pixel-btn danger remove-task-btn" data-task-id="${task.id}">
           <svg class="delete-icon" viewBox="0 0 448 512" fill="white" xmlns="http://www.w3.org/2000/svg">
             <path d="M135.2 17.7C140.6 6.8 151.7 0 163.8 0H284.2C296.3 0 307.4 6.8 312.8 17.7L320 32H384C401.7 32 416 46.3 416 64C416 81.7 401.7 96 384 96H64C46.3 96 32 81.7 32 64C32 46.3 46.3 32 64 32H128L135.2 17.7zM32 128H416V448C416 483.3 387.3 512 352 512H96C60.7 512 32 483.3 32 448V128zM96 176C96 162.7 85.3 152 72 152C58.7 152 48 162.7 48 176V408C48 421.3 58.7 432 72 432C85.3 432 96 421.3 96 408V176z"/>
           </svg>
@@ -266,20 +268,20 @@ function renderAdminTasksList() {
   
   container.querySelectorAll('.remove-task-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const idx = parseInt(e.currentTarget.dataset.index);
-      removeTask(idx);
+      const taskId = e.currentTarget.dataset.taskId;
+      removeTask(taskId);
     });
   });
 }
 
-function removeTask(index) {
+function removeTask(taskId) {
   if (!state.tasks) return;
-  const taskToRemove = state.tasks[index];
-  if (confirm(`Remove task "${taskToRemove.name}"? This will delete all checked history for this task.`)) {
-    DAYS.forEach(day => {
-      delete state.grid[`${day}-${taskToRemove.id}`];
-    });
-    state.tasks.splice(index, 1);
+  const taskToRemove = state.tasks.find(t => t.id === taskId);
+  if (!taskToRemove) return;
+  
+  if (confirm(`Remove task "${taskToRemove.name}"? This will hide it from the grid, but preserve its history.`)) {
+    taskToRemove.active = false;
+    taskToRemove.deletedAt = formatLocalDate(new Date());
     renderAdminTasksList();
   }
 }
@@ -292,9 +294,20 @@ function addNewTask() {
     name: 'New Activity',
     emoji: '📝',
     concept: 'Keep practicing!',
-    instructions: ''
+    instructions: '',
+    active: true,
+    createdAt: formatLocalDate(new Date()),
+    deletedAt: null
   });
   renderAdminTasksList();
+}
+
+function generateSlug(text) {
+  return text.toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')     // Remove non-word chars (except spaces and hyphens)
+    .replace(/[\s_]+/g, '-')       // Replace spaces and underscores with hyphens
+    .replace(/^-+|-+$/g, '');     // Trim leading/trailing hyphens
 }
 
 function saveAdminTasks() {
@@ -304,8 +317,10 @@ function saveAdminTasks() {
   const items = container.querySelectorAll('.admin-task-item');
   let hasError = false;
   
+  const tasksToDelete = new Set();
+  
   items.forEach(item => {
-    const idx = parseInt(item.dataset.index);
+    const taskId = item.dataset.taskId;
     const emoji = item.querySelector('.task-emoji-select').value;
     const name = item.querySelector('.task-name-input').value.trim();
     const instructions = item.querySelector('.task-instructions-input').value.trim();
@@ -316,16 +331,54 @@ function saveAdminTasks() {
       return;
     }
     
-    state.tasks[idx].emoji = emoji;
-    state.tasks[idx].name = name;
-    state.tasks[idx].instructions = instructions;
+    const isNew = taskId.startsWith('task_');
+    let targetTask = state.tasks.find(t => t.id === taskId);
+    
+    if (isNew) {
+      // Check if there is a soft-deleted task with the same name to reactivate
+      const deletedMatch = state.tasks.find(t => t.active === false && t.name.toLowerCase() === name.toLowerCase());
+      if (deletedMatch) {
+        deletedMatch.active = true;
+        deletedMatch.deletedAt = null;
+        deletedMatch.emoji = emoji;
+        deletedMatch.instructions = instructions;
+        tasksToDelete.add(taskId);
+        return;
+      } else {
+        // Generate slug ID
+        let slugId = generateSlug(name);
+        if (!slugId) slugId = 'activity';
+        
+        let finalId = slugId;
+        let counter = 2;
+        while (state.tasks.some(t => t.id === finalId)) {
+          finalId = `${slugId}-${counter}`;
+          counter++;
+        }
+        
+        if (targetTask) {
+          targetTask.id = finalId;
+        }
+      }
+    }
+    
+    if (targetTask) {
+      targetTask.emoji = emoji;
+      targetTask.name = name;
+      targetTask.instructions = instructions;
+    }
   });
   
-  if (!hasError) {
-    saveState();
-    renderState(true);
-    alert("Activities saved successfully!");
+  if (hasError) return;
+  
+  if (tasksToDelete.size > 0) {
+    state.tasks = state.tasks.filter(t => !tasksToDelete.has(t.id));
   }
+  
+  saveState();
+  renderState(true);
+  renderAdminTasksList();
+  alert("Activities saved successfully!");
 }
 
 function exportState() {

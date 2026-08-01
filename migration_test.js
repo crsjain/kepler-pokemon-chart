@@ -1,5 +1,5 @@
 import { loginFamily, db, auth } from './firebase.js';
-import { collection, getDocs, deleteDoc, doc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { doc, getDoc, updateDoc, deleteField } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 console.log("🚀 Starting Kepler Chart Migration Test...");
 
@@ -22,19 +22,37 @@ async function cleanupTestProfiles() {
     console.error("No user logged in for cleanup");
     return;
   }
-  console.log("Cleaning up test profiles...");
-  const profilesRef = collection(db, 'users', user.uid, 'profiles');
-  const snapshot = await getDocs(profilesRef);
+  console.log("Cleaning up test profiles from Firestore map...");
+  const userDocRef = doc(db, 'users', user.uid);
+  const docSnap = await getDoc(userDocRef);
+  if (!docSnap.exists()) {
+    console.log("No user document found.");
+    return;
+  }
+
+  const data = docSnap.data();
+  if (!data.profiles) {
+    console.log("No profiles map found in document.");
+    return;
+  }
+
+  const updates = {};
   let deletedCount = 0;
-  for (const docSnapshot of snapshot.docs) {
-    const name = docSnapshot.data().name;
-    if (name && name.startsWith('KeplerMigrated_')) {
-      await deleteDoc(doc(db, 'users', user.uid, 'profiles', docSnapshot.id));
-      console.log(`Deleted test profile: ${name} (${docSnapshot.id})`);
+  Object.keys(data.profiles).forEach(profileId => {
+    const profile = data.profiles[profileId];
+    if (profile && profile.name && profile.name.startsWith('KeplerMigrated_')) {
+      updates[`profiles.${profileId}`] = deleteField();
+      console.log(`Scheduling deletion for test profile key: ${profileId} (${profile.name})`);
       deletedCount++;
     }
+  });
+
+  if (deletedCount > 0) {
+    await updateDoc(userDocRef, updates);
+    console.log(`Cleanup complete. Deleted ${deletedCount} profiles from map.`);
+  } else {
+    console.log("No test profiles found to clean up.");
   }
-  console.log(`Cleanup complete. Deleted ${deletedCount} profiles.`);
 }
 
 async function runMigrationTest() {
@@ -88,8 +106,8 @@ async function runMigrationTest() {
     assert(passwordInput !== null, "Password input should exist");
     assert(loginBtn !== null, "Login button should exist");
 
-    emailInput.value = 'crsjain@gmail.com';
-    passwordInput.value = 'food3333';
+    emailInput.value = 'test_integration_user@gmail.com';
+    passwordInput.value = 'testpassword';
     loginBtn.click();
 
     // Wait for login to complete and profile select modal to appear
@@ -158,11 +176,15 @@ async function runMigrationTest() {
     
     const state = window.__app_state__;
     assert(state !== undefined, "App state should be accessible");
-    assert(state.version === 12, "State version should be migrated to 12");
+    assert(state.version === 15, "State version should be migrated to 15");
     assert(state.childName === testProfileName, "Child name should match");
     assert(state.partnerFamily === '25', "Partner family should be Pikachu");
     assert(state.partnersData['25'].level === 2, "Pikachu level should be 2");
     
+    // Verify V15 fields
+    assert(state.weeklyHistory !== undefined, "weeklyHistory should be defined");
+    assert(state.tasks.every(t => t.active !== undefined && t.createdAt !== undefined && t.deletedAt !== undefined), "All tasks should have V15 lifecycle metadata");
+
     // Check collected badges
     assert(state.collectedBadges.length === 2, "Should have 2 retroactively awarded badges");
     assert(state.collectedBadges.some(b => b.id === 658), "Should have Greninja badge");
@@ -175,11 +197,11 @@ async function runMigrationTest() {
     const uiPartnerName = document.getElementById('partner-name').textContent;
     assert(uiPartnerName === 'Pikachu', `UI Partner name should be Pikachu, got ${uiPartnerName}`);
     
-    // Check if checkmarks are rendered for Day 0 (all tasks completed in our mock)
+    // Verify grid completions migrated to date keys in state (UI verification is disabled until Phase 2)
+    const targetDate = "2026-07-13"; // v9State.weekStartDate
     const tasks = ['piano', 'math', 'reading', 'writing', 'chinese'];
     tasks.forEach(taskId => {
-      const cb = document.querySelector(`input[data-day="0"][data-task="${taskId}"]`);
-      assert(cb && cb.checked, `UI Checkbox for day 0 task ${taskId} should be checked`);
+      assert(state.grid[`${targetDate}-${taskId}`] === true, `State grid for ${targetDate}-${taskId} should be true`);
     });
 
     // Check localStorage cleanup

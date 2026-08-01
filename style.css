@@ -498,6 +498,38 @@ button:disabled,
   overflow: hidden;
 }
 
+.week-navigation-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #f8fafc;
+  border-bottom: 3px solid var(--border-color);
+}
+
+.week-range-text {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.1rem;
+  color: #334155;
+  text-shadow: 1px 1px 0px #cbd5e1;
+}
+
+.week-navigation-container .pixel-btn {
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.checkbox-cell.out-of-range-cell {
+  background-color: #e2e8f0 !important;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.checkbox-cell.out-of-range-cell .pokeball {
+  filter: grayscale(100%) opacity(0.5);
+}
+
 .grid-scroll-wrapper {
   overflow-x: auto;
 }
@@ -1731,6 +1763,18 @@ input:checked + .slider:before {
 
 .day-header:hover {
   background-color: #e2e8f0;
+}
+
+.day-header.past-week-header {
+  cursor: not-allowed !important;
+  opacity: 0.6;
+  background-color: #cbd5e1 !important; /* Neutral grey background */
+  color: #64748b !important; /* Muted slate text */
+  text-shadow: none !important;
+}
+
+.day-header.past-week-header:hover {
+  background-color: #cbd5e1 !important; /* Prevent hover background change */
 }
 
 .day-header.active-day {
@@ -3281,6 +3325,7 @@ body.idle-mode * {
 
 .reward-modal-grid .admin-section {
   min-width: 0; /* allows text truncation inside grid items */
+  min-height: 0; /* allow shrinking inside grid row */
   display: flex;
   flex-direction: column;
 }
@@ -3303,6 +3348,7 @@ body.idle-mode * {
   
   .reward-modal-grid {
     grid-template-columns: 1fr 1fr;
+    grid-template-rows: minmax(0, 1fr); /* Force grid row to shrink and fit container */
     flex-grow: 1; /* Stretch to fill modal content height */
     overflow: hidden; /* prevent grid scrolling */
   }

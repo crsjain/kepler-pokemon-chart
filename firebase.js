@@ -22,7 +22,7 @@ import {
 
 // --- PLACEHOLDER CONFIGURATION ---
 // You will replace this object with your actual configuration keys from the Firebase Console.
-const firebaseConfig = {
+const firebaseConfigProd = {
   apiKey: "AIzaSyDq4KnI-rgyREog9ahPYjg1pJbz7o-vXOg",
   authDomain: "pokemon-chart-3154f.firebaseapp.com",
   projectId: "pokemon-chart-3154f",
@@ -31,12 +31,30 @@ const firebaseConfig = {
   appId: "1:942560435967:web:c846c17e717c90b6b536ca"
 };
 
-// Determine if we should connect to the local emulator
-const useEmulator = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && !window.location.search.includes('useProd=true');
+// TODO: Create a separate personal Firebase project for staging, 
+// register a web app, and paste its config keys here.
+const firebaseConfigStaging = {
+  apiKey: "YOUR_STAGING_API_KEY",
+  authDomain: "YOUR_STAGING_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_STAGING_PROJECT_ID",
+  storageBucket: "YOUR_STAGING_PROJECT_ID.firebasestorage.app",
+  messagingSenderId: "YOUR_STAGING_SENDER_ID",
+  appId: "YOUR_STAGING_APP_ID"
+};
 
-const finalConfig = { ...firebaseConfig };
-if (useEmulator) {
-  // Override projectId to match the emulators' demo project ID to prevent token validation 400 Bad Requests
+const params = new URLSearchParams(window.location.search);
+const useProd = params.get('useProd') === 'true' || window.location.hostname.includes('pokemon-chart-3154f');
+const useStaging = params.get('useStaging') === 'true' || window.location.hostname.includes('staging');
+const useEmulator = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && !useProd && !useStaging;
+
+let finalConfig;
+if (useProd) {
+  finalConfig = { ...firebaseConfigProd };
+} else if (useStaging) {
+  finalConfig = { ...firebaseConfigStaging };
+} else {
+  // Emulator Mode
+  finalConfig = { ...firebaseConfigStaging }; // Use staging template for emulator
   finalConfig.projectId = "demo-pokemon-chart";
 }
 

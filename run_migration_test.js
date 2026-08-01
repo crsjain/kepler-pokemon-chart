@@ -49,9 +49,12 @@ async function main() {
     console.log(`Chrome process exited with code ${code} and signal ${signal}`);
   });
 
+  // Wait for Chrome to initialize port
+  await new Promise(r => setTimeout(r, 2000));
+
   // Get debug targets with retry
   let targets;
-  let retries = 5;
+  let retries = 15;
   while (retries > 0) {
     try {
       console.log("Fetching debug targets...");
