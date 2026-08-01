@@ -23,7 +23,7 @@ import {
 // --- PLACEHOLDER CONFIGURATION ---
 // You will replace this object with your actual configuration keys from the Firebase Console.
 const firebaseConfigProd = {
-  apiKey: "AIzaSyDq4KnI-rgyREog9ahPYjg1pJbz7o-vXOg",
+  apiKey: "AIzaSyA7qf6YhCUvUMjX9MgtZoTwpYCo-xKuFME",
   authDomain: "pokemon-chart-3154f.firebaseapp.com",
   projectId: "pokemon-chart-3154f",
   storageBucket: "pokemon-chart-3154f.firebasestorage.app",
