@@ -530,6 +530,16 @@ button:disabled,
   filter: grayscale(100%) opacity(0.5);
 }
 
+.checkbox-cell.future-cell {
+  background-color: #f1f5f9 !important;
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.checkbox-cell.future-cell .pokeball {
+  filter: opacity(0.7);
+}
+
 .grid-scroll-wrapper {
   overflow-x: auto;
 }
@@ -1765,7 +1775,8 @@ input:checked + .slider:before {
   background-color: #e2e8f0;
 }
 
-.day-header.past-week-header {
+.day-header.past-week-header,
+.day-header.future-day-header {
   cursor: not-allowed !important;
   opacity: 0.6;
   background-color: #cbd5e1 !important; /* Neutral grey background */
@@ -1773,7 +1784,8 @@ input:checked + .slider:before {
   text-shadow: none !important;
 }
 
-.day-header.past-week-header:hover {
+.day-header.past-week-header:hover,
+.day-header.future-day-header:hover {
   background-color: #cbd5e1 !important; /* Prevent hover background change */
 }
 

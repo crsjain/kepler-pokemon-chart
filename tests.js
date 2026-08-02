@@ -2545,6 +2545,79 @@ async function runSuite() {
         await sleep(100);
       }
 
+      // 35. Test Case 35: Future Day Locking
+      console.log("Running Test Case 35: Future Day Locking...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+
+        const today = new Date();
+        const todayColumnIndex = (today.getDay() - state.weekStartDay + 7) % 7;
+
+        // --- PART 1: Locked Mode (Production Mock) ---
+        window.__mock_allow_future_edits__ = false;
+        helpers.renderState(true);
+        await sleep(100);
+
+        const pianoRow = document.querySelector('tr[data-task="piano"]');
+        assert(pianoRow !== null, "Piano row should exist");
+        const pianoCells = pianoRow.querySelectorAll('.checkbox-cell');
+        const headers = document.querySelectorAll('.day-header');
+
+        for (let d = 0; d < 7; d++) {
+          const input = pianoCells[d].querySelector('input');
+          if (d > todayColumnIndex) {
+            // Future column
+            assert(pianoCells[d].classList.contains('future-cell'), `Column ${d} should be styled as a future-cell`);
+            assert(input.disabled === true, `Future checkbox at column ${d} should be disabled`);
+            assert(headers[d].classList.contains('future-day-header'), `Future header at column ${d} should be styled as future-day-header`);
+            
+            // Try to click checkbox - should not check it
+            const wasChecked = input.checked;
+            input.click();
+            await sleep(50);
+            assert(input.checked === wasChecked, `Clicking disabled future checkbox at column ${d} should not change state`);
+          } else {
+            // Today or past column (should not be disabled by future lock)
+            assert(!pianoCells[d].classList.contains('future-cell'), `Column ${d} should NOT be styled as a future-cell`);
+            assert(input.disabled === false, `Today/Past checkbox at column ${d} should be enabled`);
+            assert(!headers[d].classList.contains('future-day-header'), `Today/Past header at column ${d} should NOT be styled as future-day-header`);
+          }
+        }
+
+        // Try to click a future header - active day should NOT change
+        if (todayColumnIndex < 6) {
+          const futureHeader = headers[todayColumnIndex + 1];
+          const previousActiveDay = state.activeDay;
+          futureHeader.click();
+          await sleep(100);
+          assert(state.activeDay === previousActiveDay, "Clicking future day header should not change activeDay");
+        }
+
+        // --- PART 2: Sandbox Mode (Allowed Future Edits) ---
+        window.__mock_allow_future_edits__ = true;
+        helpers.renderState(true);
+        await sleep(100);
+
+        const pianoRowSandbox = document.querySelector('tr[data-task="piano"]');
+        const pianoCellsSandbox = pianoRowSandbox.querySelectorAll('.checkbox-cell');
+        const headersSandbox = document.querySelectorAll('.day-header');
+
+        for (let d = 0; d < 7; d++) {
+          const input = pianoCellsSandbox[d].querySelector('input');
+          assert(!pianoCellsSandbox[d].classList.contains('future-cell'), `Column ${d} should NOT be styled as a future-cell in sandbox`);
+          assert(input.disabled === false, `Checkbox at column ${d} should be enabled in sandbox`);
+          assert(!headersSandbox[d].classList.contains('future-day-header'), `Header at column ${d} should NOT be styled as future-day-header in sandbox`);
+        }
+
+        // Clean up mock
+        delete window.__mock_allow_future_edits__;
+        helpers.resetState();
+        await sleep(100);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

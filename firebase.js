@@ -46,8 +46,8 @@ const params = new URLSearchParams(window.location.search);
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
 const useStaging = params.get('useStaging') === 'true' || window.location.hostname.includes('staging');
-const useProd = params.get('useProd') === 'true' || (!isLocal && !useStaging);
-const useEmulator = isLocal && !useProd && !useStaging;
+export const useProd = params.get('useProd') === 'true' || (!isLocal && !useStaging);
+export const useEmulator = isLocal && !useProd && !useStaging;
 
 let finalConfig;
 if (useProd) {

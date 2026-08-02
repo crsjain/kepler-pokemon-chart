@@ -10,6 +10,7 @@ This document contains a complete, chronological record of user requests, system
 - [x] Forced Today Active Day: Startup auto-aligns Kepler's active training day to today's date (done)
 - [x] Isolated Test Account: Modified test runs to execute under `test_integration_user@gmail.com` to prevent personal profile overwrite (done)
 - [x] Week Start Day Switch bug: Reset `currentViewingWeekStartDate` to `null` on start day changes in Admin panel to prevent past-week locking regressions (done)
+- [x] Future Day Locking: Prevent checking off days in the future relative to today's date in production, while permitting developer bypasses in local emulator mode and test runs (done)
 
 ---
 
@@ -17,7 +18,7 @@ This document contains a complete, chronological record of user requests, system
 *   **Repository Location**: `/usr/local/google/home/crsjain/kepler-pokemon-chart`
 *   **Active Branch**: `prototype/pokemon-badge-collection`
 *   **Target Audience**: Kepler (7 years old) and Lyra (5 years old)
-*   **Current Version**: `v1.7.1 (v56)` / Service Worker cache `v56`
+*   **Current Version**: `v1.7.1 (v57)` / Service Worker cache `v57`
 *   **Active Port**: `8085` (running Python web server)
 *   **Firebase Emulator Project**: `demo-pokemon-chart` (Firestore UI on port `4000`, DB on `8080`, Auth on `9099` - running in background)
 *   **Parent Email**: `crsjain@gmail.com`
@@ -84,19 +85,21 @@ export let state = {
 *   **Production API Key Rotation**: Replaced the system-revoked production API key with a new restricted key in `firebase.js` that contains website referrer locks, resolving the live login failure.
 *   **Robust Environment Selector**: Upgraded host detection in `firebase.js` to automatically default any non-localhost public domain (like `crsjain.github.io`) to Production. This prevents custom hosting sites from falling back to emulator config templates that use staging dummy key values.
 *   **Dynamic Dates in Regression Tests**: Restructured Test Cases 33 and 34 in `tests.js` to calculate reference dates dynamically (relative to the active `weekStartDate` instead of hardcoded strings), eliminating timezone-dependent test suite failures.
-*   **PWA Cache Invalidation**: Bumped app version to `v1.7.1 (v56)` and service worker cache to `v56` to force client browsers to invalidate old caching directories and pull the new `firebase.js`.
-*   **All Tests Passed**: Verified that all 34 regression tests run completely green on the local headless test suite.
+*   **Future Day Locking**: Blocked clicking day headers or checking tasks for days in the future relative to today's date inside the current week, disabling future checkboxes and styling headers/cells as gray/unclickable.
+*   **Sandbox bypass for scale-testing**: Enabled future edits bypass automatically if `useEmulator` (localhost) or `isTestMode` (runTests=true) is true, allowing developers to manually fill future days for scale-testing.
+*   **PWA Cache Invalidation**: Bumped app version to `v1.7.1 (v57)` and service worker cache to `v57` to force client browsers to invalidate old caching directories and pull the new updates.
+*   **All Tests Passed**: Verified that all 35 regression tests run completely green on the local headless test suite.
 
 ---
 
 ## 5. Files and Code
 ### Edited Files
 *   [state.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/state.js): Added `getEarliestDataWeekStartDate` logic (lines 590-629).
-*   [firebase.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/firebase.js): Updated the production API key, and rewrote the environment selector flags to default public hosts to production and localhost to emulator.
-*   [app.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/app.js): Disabled `#prev-week-btn` based on earliest week start, toggled `.past-week-header` class, added click locks on past week headers, forced today's active day index on profile startup, reset `currentViewingWeekStartDate` on week start changes in Admin Panel, and bumped version to `v1.7.1 (v56)`.
-*   [service-worker.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/service-worker.js): Bumped cache ID to `'poke-chart-cache-v56'`.
-*   [style.css](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/style.css): Appended styling definition for `.day-header.past-week-header`.
-*   [tests.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/tests.js): Rewrote Test Cases 33 and 34 to compute reference dates dynamically relative to `weekStartDate`.
+*   [firebase.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/firebase.js): Updated the production API key, rewrote environment selector flags, and exported `useEmulator` and `useProd` flags.
+*   [app.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/app.js): Disabled `#prev-week-btn` on bounds, forced activeDay today on startup, reset `currentViewingWeekStartDate` on week start changes, implemented `areFutureEditsAllowed()` helper, locked future day checkbox updates/cell highlights/header clicks, and bumped version to `v1.7.1 (v57)`.
+*   [service-worker.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/service-worker.js): Bumped cache ID to `'poke-chart-cache-v57'`.
+*   [style.css](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/style.css): Appended styling definitions for `.day-header.future-day-header` and `.checkbox-cell.future-cell`.
+*   [tests.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/tests.js): Rewrote Test Cases 33 and 34 to compute reference dates dynamically; added **Test Case 35** to verify future day locking and sandbox bypass behaviors.
 *   [migration_test.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/migration_test.js): Changed test login credentials to isolated test account `test_integration_user@gmail.com`.
 *   [emulator_data/auth_export/accounts.json](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/emulator_data/auth_export/accounts.json): Added pre-configured account entry for the test integration user.
 

@@ -32,7 +32,9 @@ import {
   saveProfileStateToCloud,
   exportFamilyData,
   importFamilyData,
-  saveProfileRewardsToCloud
+  saveProfileRewardsToCloud,
+  useEmulator,
+  useProd
 } from './firebase.js';
 let deleteChildProfileFn = deleteChildProfile;
 let saveProfileRewardsToCloudFn = saveProfileRewardsToCloud;
@@ -41,7 +43,15 @@ import { DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS } from './migrations.js';
 
 let currentViewingWeekStartDate = null;
 
-const APP_VERSION = 'v1.7.1 (v56)';
+const APP_VERSION = 'v1.7.1 (v57)';
+
+function areFutureEditsAllowed() {
+  if (window.__mock_allow_future_edits__ !== undefined) {
+    return window.__mock_allow_future_edits__;
+  }
+  const isTestMode = location.search.includes('runTests=true');
+  return useEmulator || isTestMode;
+}
 
 let idleTimer = null;
 let isCloudSavePending = false;
@@ -1051,6 +1061,17 @@ function updateActiveColumnUI() {
     } else {
       th.classList.remove('past-week-header');
     }
+
+    const dateStr = getDateOfColumn(currentViewingWeekStartDate, day);
+    const todayStr = formatLocalDate(new Date());
+    const isFutureDay = dateStr > todayStr;
+    const allowFutureEdits = areFutureEditsAllowed();
+
+    if (isFutureDay && !allowFutureEdits) {
+      th.classList.add('future-day-header');
+    } else {
+      th.classList.remove('future-day-header');
+    }
   });
 
   const tbody = document.getElementById('grid-tbody');
@@ -1158,10 +1179,16 @@ function renderGridTable() {
       const checked = !!state.grid[stateKey];
       const excused = !!state.excused[stateKey];
       const isOutOfRange = (task.createdAt && dateStr < task.createdAt) || (task.deletedAt && dateStr >= task.deletedAt);
+      
+      const todayStr = formatLocalDate(new Date());
+      const isFutureDay = dateStr > todayStr;
+      const allowFutureEdits = areFutureEditsAllowed();
+      const shouldDisable = isPastWeek || isOutOfRange || (isFutureDay && !allowFutureEdits);
+
       html += `
-        <td class="checkbox-cell ${excused ? 'excused-cell' : ''} ${isOutOfRange ? 'out-of-range-cell' : ''}">
+        <td class="checkbox-cell ${excused ? 'excused-cell' : ''} ${isOutOfRange ? 'out-of-range-cell' : ''} ${(isFutureDay && !allowFutureEdits) ? 'future-cell' : ''}">
           <label class="pokeball-checkbox">
-            <input type="checkbox" data-day="${d}" data-task="${task.id}" ${checked ? 'checked' : ''} ${(isPastWeek || isOutOfRange) ? 'disabled' : ''}>
+            <input type="checkbox" data-day="${d}" data-task="${task.id}" ${checked ? 'checked' : ''} ${shouldDisable ? 'disabled' : ''}>
             <span class="pokeball"></span>
           </label>
         </td>
@@ -1333,14 +1360,25 @@ function updateDayTotalUI(day) {
 
 function handleCheckboxChange(e) {
   if (isExceptionMode) return;
+  const cb = e.target;
+  const day = parseInt(cb.dataset.day);
+
   const isPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
   if (isPastWeek) {
     e.preventDefault();
     return;
   }
-  const cb = e.target;
-  
-  const day = parseInt(cb.dataset.day);
+
+  const dateStr = getDateOfColumn(currentViewingWeekStartDate, day);
+  const todayStr = formatLocalDate(new Date());
+  const isFutureDay = dateStr > todayStr;
+  const allowFutureEdits = areFutureEditsAllowed();
+
+  if (isFutureDay && !allowFutureEdits) {
+    e.preventDefault();
+    cb.checked = !cb.checked;
+    return;
+  }
   const clickedRealDay = (state.weekStartDay + day) % 7;
   
   if (clickedRealDay !== state.activeDay) {
@@ -1391,7 +1429,6 @@ function handleCheckboxChange(e) {
 
   const isChecked = cb.checked;
   const taskId = cb.dataset.task;
-  const dateStr = getDateOfColumn(state.weekStartDate, day);
   const key = `${dateStr}-${taskId}`;
 
   const tasks = state.tasks || [];
@@ -1649,6 +1686,12 @@ function setupEventListeners() {
       if (isPastWeek) return; // Prevent switching active day in historical weeks!
 
       const clickedColumn = parseInt(th.dataset.day);
+      const dateStr = getDateOfColumn(currentViewingWeekStartDate, clickedColumn);
+      const todayStr = formatLocalDate(new Date());
+      const isFutureDay = dateStr > todayStr;
+      const allowFutureEdits = areFutureEditsAllowed();
+
+      if (isFutureDay && !allowFutureEdits) return; // Prevent switching active day to future days!
       const clickedRealDay = (state.weekStartDay + clickedColumn) % 7;
       
       if (state.activeDay !== clickedRealDay) {
