@@ -81,15 +81,22 @@ export let state = {
 *   **Forced Startup Active Day**: Automatically resolves today's weekday index on initial profile loads and aligns `state.activeDay` to it, ensuring that stale active days from previous sessions do not persist on app launch.
 *   **Isolated Integration Tests**: Registered `test_integration_user@gmail.com` in both `migration_test.js` and the emulator's pre-configured Auth backup database (`accounts.json`), insulating the user's live profile from automated test updates.
 *   **Start Day Change Fix**: Reset `currentViewingWeekStartDate` to `null` during mid-week week start day changes in Admin panel. This prevents calendar columns from locking into a stale Sunday-relative view that gets incorrectly flagged as a past week.
-*   **Test Suite Passes**: Verified the regression suite and resolved all calendar alignment tests, resulting in a 100% green test pass.
+*   **Production API Key Rotation**: Replaced the system-revoked production API key with a new restricted key in `firebase.js` that contains website referrer locks, resolving the live login failure.
+*   **Robust Environment Selector**: Upgraded host detection in `firebase.js` to automatically default any non-localhost public domain (like `crsjain.github.io`) to Production. This prevents custom hosting sites from falling back to emulator config templates that use staging dummy key values.
+*   **Dynamic Dates in Regression Tests**: Restructured Test Cases 33 and 34 in `tests.js` to calculate reference dates dynamically (relative to the active `weekStartDate` instead of hardcoded strings), eliminating timezone-dependent test suite failures.
+*   **PWA Cache Invalidation**: Bumped app version to `v1.7.1 (v56)` and service worker cache to `v56` to force client browsers to invalidate old caching directories and pull the new `firebase.js`.
+*   **All Tests Passed**: Verified that all 34 regression tests run completely green on the local headless test suite.
 
 ---
 
 ## 5. Files and Code
 ### Edited Files
 *   [state.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/state.js): Added `getEarliestDataWeekStartDate` logic (lines 590-629).
-*   [app.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/app.js): Disabled `#prev-week-btn` based on earliest week start, toggled `.past-week-header` class, added click locks on past week headers, forced today's active day index on profile startup, and reset `currentViewingWeekStartDate` on week start changes in Admin Panel.
+*   [firebase.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/firebase.js): Updated the production API key, and rewrote the environment selector flags to default public hosts to production and localhost to emulator.
+*   [app.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/app.js): Disabled `#prev-week-btn` based on earliest week start, toggled `.past-week-header` class, added click locks on past week headers, forced today's active day index on profile startup, reset `currentViewingWeekStartDate` on week start changes in Admin Panel, and bumped version to `v1.7.1 (v56)`.
+*   [service-worker.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/service-worker.js): Bumped cache ID to `'poke-chart-cache-v56'`.
 *   [style.css](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/style.css): Appended styling definition for `.day-header.past-week-header`.
+*   [tests.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/tests.js): Rewrote Test Cases 33 and 34 to compute reference dates dynamically relative to `weekStartDate`.
 *   [migration_test.js](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/migration_test.js): Changed test login credentials to isolated test account `test_integration_user@gmail.com`.
 *   [emulator_data/auth_export/accounts.json](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/emulator_data/auth_export/accounts.json): Added pre-configured account entry for the test integration user.
 
