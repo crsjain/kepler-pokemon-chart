@@ -43,9 +43,11 @@ const firebaseConfigStaging = {
 };
 
 const params = new URLSearchParams(window.location.search);
-const useProd = params.get('useProd') === 'true' || window.location.hostname.includes('pokemon-chart-3154f');
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
 const useStaging = params.get('useStaging') === 'true' || window.location.hostname.includes('staging');
-const useEmulator = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && !useProd && !useStaging;
+const useProd = params.get('useProd') === 'true' || (!isLocal && !useStaging);
+const useEmulator = isLocal && !useProd && !useStaging;
 
 let finalConfig;
 if (useProd) {
