@@ -2429,7 +2429,9 @@ async function runSuite() {
         state = window.__app_state__;
 
         const currentWeekStart = state.weekStartDate;
-        const pastWeekStart = "2026-07-19";
+        const currentWeekDate = new Date(currentWeekStart + 'T00:00:00');
+        currentWeekDate.setDate(currentWeekDate.getDate() - 7);
+        const pastWeekStart = formatLocalDate(currentWeekDate);
         
         state.weeklyHistory[pastWeekStart] = {
           weekStartDay: 0,
@@ -2499,11 +2501,16 @@ async function runSuite() {
         const currentWeekStart = state.weekStartDate;
         
         const pianoTask = state.tasks.find(t => t.id === 'piano');
-        pianoTask.createdAt = "2026-07-29"; // Wednesday
+        const wedDate = new Date(currentWeekStart + 'T00:00:00');
+        wedDate.setDate(wedDate.getDate() + 3); // Wednesday (Index 3)
+        pianoTask.createdAt = formatLocalDate(wedDate);
 
         const mathTask = state.tasks.find(t => t.id === 'math');
         mathTask.active = false;
-        mathTask.deletedAt = "2026-07-30"; // Thursday
+        
+        const thuDate = new Date(currentWeekStart + 'T00:00:00');
+        thuDate.setDate(thuDate.getDate() + 4); // Thursday (Index 4)
+        mathTask.deletedAt = formatLocalDate(thuDate);
 
         helpers.renderState(true);
         await sleep(100);
