@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poke-chart-cache-v57';
+const CACHE_NAME = 'poke-chart-cache-v65';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -50,7 +50,13 @@ self.addEventListener('fetch', event => {
   
   // Handle PokeAPI sprite requests (external GitHub raw URLs)
   const isPokeapiSprite = url.hostname === 'raw.githubusercontent.com' && (url.pathname.includes('/sprites/pokemon/') || url.pathname.includes('/sprites/items/'));
-  const isLocalAsset = ASSETS_TO_CACHE.some(asset => event.request.url.includes(asset.replace('./', '')));
+  const isLocalAsset = ASSETS_TO_CACHE.some(asset => {
+    if (asset === './') {
+      return url.pathname === '/' || url.pathname === '/index.html';
+    }
+    const cleanAsset = asset.replace('./', '');
+    return url.pathname.endsWith(cleanAsset);
+  });
 
   if (isLocalAsset || isPokeapiSprite) {
     event.respondWith(

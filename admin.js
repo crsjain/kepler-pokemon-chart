@@ -3,6 +3,7 @@ import {
   saveState, 
   loadState, 
   runStateDiagnostics,
+  replaceState,
   ADMIN_PASSWORD,
   DAYS,
   getStageInfo,
@@ -53,6 +54,7 @@ let adminForceUpdateBtn = null;
 let closeAdminModalBtn = null;
 let adminAddTaskBtn = null;
 let adminSaveTasksBtn = null;
+let adminPartnersList = null;
 let passwordSuccessCallback = null;
 
 export function promptParentPassword(onSuccess, customDescription = 'Enter Parent Password to open Admin Panel:') {
@@ -93,6 +95,7 @@ export function initAdmin(callbacks) {
   closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
   adminAddTaskBtn = document.getElementById('admin-add-task-btn');
   adminSaveTasksBtn = document.getElementById('admin-save-tasks-btn');
+  adminPartnersList = document.getElementById('admin-partners-list');
 
   if (adminBtn) {
     adminBtn.addEventListener('click', () => {
@@ -101,6 +104,7 @@ export function initAdmin(callbacks) {
         renderAdminTasksList();
         renderBackupHistory();
         renderClaimedRewardsHistory();
+        renderAdminPartnersList();
         appCallbacks.renderAdminProfilesList();
       });
     });
@@ -402,23 +406,8 @@ function importState() {
           "Restore Backup? ⚠️",
           "Are you sure you want to restore this backup? It will overwrite current progress!",
           () => {
-            state.partnerFamily = parsed.partnerFamily || '25';
-            state.partnersData = parsed.partnersData || state.partnersData;
-            state.grid = parsed.grid || {};
-            state.tasks = parsed.tasks || state.tasks;
-            state.reward = parsed.reward || '';
-            state.megaReward = parsed.megaReward || '';
-            state.megaWeeks = parsed.megaWeeks || 0;
-            state.weeklyClaimed = parsed.weeklyClaimed || false;
-            state.claimedRewardsHistory = parsed.claimedRewardsHistory || [];
-            state.starVault = parsed.starVault || { earnedDates: [], totalTraded: 0 };
-            state.collectedBadges = parsed.collectedBadges || [];
-            state.badgePool = parsed.badgePool || state.badgePool;
-            state.activeWeeklyBadgeId = parsed.activeWeeklyBadgeId !== undefined ? parsed.activeWeeklyBadgeId : state.activeWeeklyBadgeId;
-            state.excused = parsed.excused || {};
-            
+            replaceState(parsed);
             saveState();
-            loadState();
             renderState(true);
             showCustomNotification("RESTORE SUCCESS", "Trainer progress restored successfully!");
             const adminModal = document.getElementById('admin-modal');
@@ -634,3 +623,36 @@ function forceAppUpdate() {
     "pixel-btn"
   );
 }
+
+function renderAdminPartnersList() {
+  if (!adminPartnersList) return;
+  adminPartnersList.innerHTML = '';
+  
+  if (!state.partnersData || Object.keys(state.partnersData).length === 0) {
+    adminPartnersList.innerHTML = '<p class="no-partners">No Pokémon unlocked yet.</p>';
+    return;
+  }
+  
+  Object.keys(state.partnersData).forEach(instanceId => {
+    const pData = state.partnersData[instanceId];
+    const familyId = pData.familyId || '25';
+    const stageInfo = getStageInfo(familyId, pData.stageId || familyId);
+    const activePokemon = stageInfo.currentStage;
+    
+    const row = document.createElement('div');
+    row.className = 'admin-partner-row';
+    
+    row.innerHTML = `
+      <div class="admin-partner-info">
+        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png" class="admin-partner-sprite" alt="${activePokemon.name}">
+        <div class="admin-partner-details">
+          <span class="admin-partner-name">${activePokemon.name}</span>
+          <span class="admin-partner-meta">LV ${pData.level} | ID: ${instanceId}</span>
+        </div>
+      </div>
+    `;
+    
+    adminPartnersList.appendChild(row);
+  });
+}
+

@@ -270,6 +270,27 @@ export const MIGRATIONS = [
 
       return s;
     }
+  },
+  {
+    version: 16,
+    migrate: (s) => {
+      s.activePartnerInstanceId = s.partnerFamily || '25';
+      if (s.partnersData) {
+        Object.keys(s.partnersData).forEach(key => {
+          if (s.partnersData[key] && !s.partnersData[key].familyId) {
+            s.partnersData[key].familyId = key;
+          }
+        });
+      } else {
+        s.partnersData = {
+          '25': { familyId: '25', level: 1, xp: 0, stageId: '25' }
+        };
+      }
+      s.starVault = s.starVault || { earnedDates: [], totalTraded: 0 };
+      s.starVault.totalTraded = s.starVault.totalTraded || 0;
+      s.starVault.earnedDates = s.starVault.earnedDates || [];
+      return s;
+    }
   }
 ];
 

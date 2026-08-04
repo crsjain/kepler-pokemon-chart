@@ -376,36 +376,101 @@
       </div>
     </div>
 
-    <!-- Star Vault Trade Modal -->
-    <div id="vault-trade-modal" class="modal hidden" style="z-index: 110000; display: flex; justify-content: center; align-items: center; background: rgba(0,0,0,0.6);">
-      <div class="modal-content pixel-card" style="max-width: 380px; text-align: center; background: white; border: var(--pixel-border); border-radius: 12px; padding: 25px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.25); margin: auto;">
-        <button id="close-trade-modal-btn" class="modal-close-btn" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 2rem; cursor: pointer; color: #64748b;">&times;</button>
+    <!-- Pokémon Shop Modal -->
+    <div id="pokemon-shop-modal" class="modal hidden">
+      <div class="modal-content pixel-card">
+        <button id="close-shop-modal-btn" class="modal-close-btn shop-close-btn">&times;</button>
         
-        <!-- Screen 1: Parent Gate -->
-        <div id="trade-screen-gate" class="trade-screen">
-          <h3 style="font-family: 'Fredoka One', cursive; color: var(--poke-red); margin-top: 10px; font-size: 1.4rem;">Parent Check 🔒</h3>
-          <p style="font-size: 0.95rem; color: #475569; margin: 15px 0; font-family: 'Fredoka One', cursive;">Parents: Please enter password to unlock trading:</p>
-          <input type="password" id="trade-gate-password" class="pixel-input" placeholder="Password" style="width: 85%; padding: 10px; font-size: 1.1rem; margin-bottom: 12px; text-align: center; border: 3px solid var(--border-color); border-radius: 6px;">
-          <div id="trade-gate-error" class="error-msg hidden" style="color: var(--poke-red); font-size: 0.9rem; margin-bottom: 10px; font-family: 'Fredoka One', cursive;">Incorrect password!</div>
-          <button id="trade-gate-submit-btn" class="pixel-btn warning small" style="width: 85%; padding: 10px; font-family: 'Fredoka One', cursive;">Unlock 🔑</button>
-        </div>
-
-        <!-- Screen 2: Trading Panel -->
-        <div id="trade-screen-panel" class="trade-screen hidden">
-          <h3 style="font-family: 'Fredoka One', cursive; color: var(--poke-blue); margin-top: 10px; font-size: 1.4rem;">Spend <span class="trainer-name-label">Kepler</span>'s Stars!</h3>
-          <p style="font-size: 0.95rem; color: #475569; margin: 15px 0;">You have <strong id="trade-available-count" style="color: #10b981; font-size: 1.25rem;">0</strong> stars available to spend.</p>
+        <!-- Screen 1: Browse Shop -->
+        <div id="shop-screen-browse" class="shop-screen">
+          <h3 class="shop-title">Pokémon Partner Shop! 🏪</h3>
+          <p class="shop-subtitle">You have <strong id="shop-available-stars" class="shop-available-stars-count">0</strong> stars available to spend.</p>
           
-          <div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin: 25px 0;">
-            <button id="trade-count-minus" class="pixel-btn danger small" style="font-size: 1.6rem; padding: 4px 16px;">-</button>
-            <span id="trade-count-value" style="font-family: 'Fredoka One', cursive; font-size: 2.5rem; min-width: 60px; color: var(--text-color);">1</span>
-            <button id="trade-count-plus" class="pixel-btn success small" style="font-size: 1.6rem; padding: 4px 16px;">+</button>
+          <div class="shop-filter-bar">
+            <select id="shop-filter-type">
+              <option value="all">All Types</option>
+              <option value="Grass">Grass 🌿</option>
+              <option value="Fire">Fire 🔥</option>
+              <option value="Water">Water 💧</option>
+              <option value="Electric">Electric ⚡</option>
+              <option value="Psychic">Psychic 🔮</option>
+              <option value="Fighting">Fighting 🥊</option>
+              <option value="Rock">Rock 🪨</option>
+              <option value="Ground">Ground 🏔️</option>
+              <option value="Dragon">Dragon 🐲</option>
+              <option value="Steel">Steel ⚙️</option>
+              <option value="Ice">Ice ❄️</option>
+              <option value="Ghost">Ghost 👻</option>
+              <option value="Bug">Bug 🐛</option>
+              <option value="Dark">Dark 🌙</option>
+              <option value="Fairy">Fairy ✨</option>
+              <option value="Normal">Normal 🔘</option>
+              <option value="Poison">Poison ☠️</option>
+            </select>
+            <label class="filter-toggle-label" id="shop-filter-legendary-label">
+              <input type="checkbox" id="shop-filter-legendary">
+              <span>⭐ Legendary Only</span>
+            </label>
+            <button id="shop-filter-clear-btn" class="pixel-btn small info hidden-opacity">Clear 🔄</button>
           </div>
           
-          <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 25px;">Choose how many stars to trade for your reward!</p>
+          <div id="shop-items-grid" class="shop-items-grid">
+            <!-- Dynamic items go here -->
+          </div>
+        </div>
+
+        <!-- Screen 2: Confirm Unlock (Hold-to-Unlock) -->
+        <div id="shop-screen-confirm" class="shop-screen hidden">
+          <button id="back-to-browse-btn" class="pixel-btn small info shop-back-btn">◀ Back</button>
           
-          <div class="confirm-actions" style="margin-top: 20px;">
-            <button id="trade-cancel-btn" class="pixel-btn greyed-out">Cancel</button>
-            <button id="trade-confirm-btn" class="pixel-btn success">Confirm Trade! 🎉</button>
+          <div id="shop-confirm-sprite-container" class="shop-confirm-sprite-wrapper">
+            <img id="shop-confirm-sprite" src="" alt="Pokemon">
+            <div id="shop-confirm-lock-overlay" class="lock-overlay shop-confirm-lock">
+              <span>🔒</span>
+            </div>
+          </div>
+          
+          <h4 id="shop-confirm-name">Pokemon Name</h4>
+          <p id="shop-confirm-desc">Ready to welcome your new partner for 10 Stars? 🌟</p>
+          
+          <!-- Hold to Unlock Button Container -->
+          <div id="hold-button-container" class="hold-btn-wrapper">
+            <button id="shop-hold-unlock-btn" class="pixel-btn success">
+              <svg width="24" height="24" viewBox="0 0 36 36">
+                <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="4"></circle>
+                <circle id="hold-progress-circle" cx="18" cy="18" r="16" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="100.53" stroke-dashoffset="100.53"></circle>
+              </svg>
+              <span id="shop-hold-btn-text">Hold Down to Unlock! 🔓</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pokémon Unlock Celebration Overlay -->
+    <div id="shop-unlock-animation-overlay" class="hidden">
+      <!-- Star Counter Source -->
+      <div id="anim-star-source-container" class="hidden">
+        <span class="mr-2">⭐</span>
+        <span id="anim-star-source-count">10</span>
+      </div>
+
+      <!-- Celebration Title -->
+      <h2 id="anim-title" class="hidden">Unlocking...</h2>
+
+      <!-- Silhouette and Lock Container -->
+      <div class="anim-lock-wrapper">
+        <!-- Star slots circle -->
+        <div id="anim-star-slots-circle">
+          <!-- 10 star contours positioned in a circle dynamically -->
+        </div>
+
+        <!-- Pokemon Sprite / Silhouette -->
+        <div class="anim-pokemon-wrapper">
+          <img id="anim-pokemon-sprite" src="" alt="Unlocking Pokémon">
+          <!-- Shattering Lock Overlay -->
+          <div id="anim-lock-container">
+            <span id="anim-lock-icon">🔒</span>
           </div>
         </div>
       </div>
@@ -550,6 +615,15 @@
             <h3>👥 Manage Profiles</h3>
             <div id="admin-profiles-list" class="admin-profiles-list">
               <!-- Populated dynamically via JS -->
+            </div>
+          </div>
+
+          <!-- Manage Partners -->
+          <div class="admin-section manage-partners-section">
+            <h3>🦖 Unlocked Pokémon Partners</h3>
+            <div id="admin-partners-list" class="admin-partners-list">
+              <!-- Populated dynamically via JS -->
+              <p class="no-partners">No Pokémon unlocked yet.</p>
             </div>
           </div>
 

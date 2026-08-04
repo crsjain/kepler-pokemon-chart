@@ -7,6 +7,10 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
 - 👾 **Retro Pokémon UI**: Immersive retro game font and pixel aesthetics.
 - 🦊 **Multi-Partner Training**: Kepler can choose to train different partners (Pikachu, Charmander, Bulbasaur, Squirtle, Eevee). XP and Levels are tracked **individually** for each Pokémon, encouraging him to train them all!
   - **Eevee Branching Evolution**: Reaching Level 5 with Eevee unlocks a branching evolution modal allowing Kepler to choose between 8 different evolutions (Vaporeon, Jolteon, Flareon, Espeon, Umbreon, Leafeon, Glaceon, Sylveon) with individual sprites.
+- 🪙 **Star Vault & Partner Shop**:
+  - Daily totals completed are saved as stars in the **Star Vault**.
+  - Spend 10 stars from your vault to purchase and unlock new partners from the **Partner Shop** featuring 100+ different Pokémon!
+  - Filter shop items dynamically by type (Fire, Water, Grass, etc.) or search for rare Legendaries.
 - 📈 **XP & Evolution System**: 
   - Each task checked adds **5 XP**.
   - Clearing all tasks in a day unlocks the **Daily Total (⭐)** and grants a **+15 XP Bonus**.

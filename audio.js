@@ -69,6 +69,23 @@ export function playSound(type) {
       gain.gain.exponentialRampToValueAtTime(0.01 * volumeMultiplier, now + 0.75);
       osc.start(now);
       osc.stop(now + 0.75);
+    } else if (type === 'hold_start') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(330, now); // E4
+      gain.gain.setValueAtTime(0.02 * volumeMultiplier, now);
+      gain.gain.exponentialRampToValueAtTime(0.001 * volumeMultiplier, now + 0.05);
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } else if (type === 'unlock') {
+      osc.type = 'triangle';
+      const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99]; // C4, E4, G4, C5, E5, G5
+      notes.forEach((freq, idx) => {
+        osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+      });
+      gain.gain.setValueAtTime(0.08 * volumeMultiplier, now);
+      gain.gain.exponentialRampToValueAtTime(0.01 * volumeMultiplier, now + 0.4);
+      osc.start(now);
+      osc.stop(now + 0.4);
     }
   } catch (e) {
     console.warn('Audio playback failed or blocked:', e);

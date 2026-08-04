@@ -1,5 +1,6 @@
 import { state, saveState } from './state.js';
 import { formatLocalDate, getDateOfColumn } from './date_utils.js';
+import { openPokemonShop } from './shop.js';
 
 // DOM elements cache
 let vaultModal = null;
@@ -17,23 +18,8 @@ let pageInfoSpan = null;
 let paginationContainer = null;
 let globalTooltip = null;
 
-// Inline Trading DOM Cache
+// DOM element for spend shortcut
 let tradeOpenBtn = null;
-let tradeModal = null;
-let closeTradeBtn = null;
-let tradeGateScreen = null;
-let tradePanelScreen = null;
-let tradePasswordInput = null;
-let tradePasswordSubmitBtn = null;
-let tradePasswordError = null;
-let tradeAvailableCount = null;
-let tradeCountMinusBtn = null;
-let tradeCountPlusBtn = null;
-let tradeCountValue = null;
-let tradeCancelBtn = null;
-let tradeConfirmBtn = null;
-
-let selectedTradeCount = 1;
 
 // Admin panel DOM elements cache
 let adminEarned = null;
@@ -56,21 +42,8 @@ export function initVault() {
   paginationContainer = document.getElementById('vault-pagination');
   globalTooltip = document.getElementById('global-star-tooltip');
 
-  // Trading Modal bindings
+  // Spend shortcut binding
   tradeOpenBtn = document.getElementById('vault-trade-open-btn');
-  tradeModal = document.getElementById('vault-trade-modal');
-  closeTradeBtn = document.getElementById('close-trade-modal-btn');
-  tradeGateScreen = document.getElementById('trade-screen-gate');
-  tradePanelScreen = document.getElementById('trade-screen-panel');
-  tradePasswordInput = document.getElementById('trade-gate-password');
-  tradePasswordSubmitBtn = document.getElementById('trade-gate-submit-btn');
-  tradePasswordError = document.getElementById('trade-gate-error');
-  tradeAvailableCount = document.getElementById('trade-available-count');
-  tradeCountMinusBtn = document.getElementById('trade-count-minus');
-  tradeCountPlusBtn = document.getElementById('trade-count-plus');
-  tradeCountValue = document.getElementById('trade-count-value');
-  tradeCancelBtn = document.getElementById('trade-cancel-btn');
-  tradeConfirmBtn = document.getElementById('trade-confirm-btn');
 
   if (pagePrevBtn) {
     pagePrevBtn.addEventListener('click', () => {
@@ -102,127 +75,17 @@ export function initVault() {
 
   // Bind Inline Trading Flow
   if (tradeOpenBtn) {
-    tradeOpenBtn.addEventListener('click', openTradeFlow);
-  }
-  if (closeTradeBtn) {
-    closeTradeBtn.addEventListener('click', closeTradeFlow);
-  }
-  if (tradeCancelBtn) {
-    tradeCancelBtn.addEventListener('click', closeTradeFlow);
-  }
-  if (tradePasswordSubmitBtn) {
-    tradePasswordSubmitBtn.addEventListener('click', verifyTradePassword);
-  }
-  if (tradePasswordInput) {
-    tradePasswordInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        verifyTradePassword();
-      }
-    });
-  }
-  if (tradeCountMinusBtn) {
-    tradeCountMinusBtn.addEventListener('click', () => {
-      if (selectedTradeCount > 1) {
-        selectedTradeCount--;
-        updateTradePanelUI();
-      }
-    });
-  }
-  if (tradeCountPlusBtn) {
-    tradeCountPlusBtn.addEventListener('click', () => {
-      const earned = state.starVault.earnedDates.length;
-      const traded = state.starVault.totalTraded || 0;
-      const available = Math.max(0, earned - traded);
-      if (selectedTradeCount < available) {
-        selectedTradeCount++;
-        updateTradePanelUI();
-      }
-    });
-  }
-  if (tradeConfirmBtn) {
-    tradeConfirmBtn.addEventListener('click', () => {
-      state.starVault.totalTraded = (state.starVault.totalTraded || 0) + selectedTradeCount;
-      saveState();
-      
-      // Trigger particles celebration
-      if (window.CelebrationEngine && window.CelebrationEngine.triggerCelebration) {
-        window.CelebrationEngine.triggerCelebration(false);
-      }
-      
-      closeTradeFlow();
-      renderVault();
-
+    tradeOpenBtn.addEventListener('click', () => {
+      closeVault();
+      openPokemonShop();
     });
   }
 
-  // Close trade modal on clicking background
-  if (tradeModal) {
-    tradeModal.addEventListener('click', (e) => {
-      if (e.target === tradeModal) {
-        closeTradeFlow();
-      }
-    });
-  }
 
   bindAdminElements();
 }
 
-function openTradeFlow() {
-  if (!tradeModal) return;
-  
-  if (tradeGateScreen) tradeGateScreen.classList.remove('hidden');
-  if (tradePanelScreen) tradePanelScreen.classList.add('hidden');
-  if (tradePasswordInput) {
-    tradePasswordInput.value = '';
-    tradePasswordInput.focus();
-  }
-  if (tradePasswordError) tradePasswordError.classList.add('hidden');
-  
-  selectedTradeCount = 1;
-  tradeModal.classList.remove('hidden');
-}
 
-function verifyTradePassword() {
-  if (!tradePasswordInput) return;
-  const pw = tradePasswordInput.value;
-  if (pw === 'zxcv') {
-    if (tradeGateScreen) tradeGateScreen.classList.add('hidden');
-    if (tradePanelScreen) tradePanelScreen.classList.remove('hidden');
-    
-    const earned = state.starVault.earnedDates.length;
-    const traded = state.starVault.totalTraded || 0;
-    const available = Math.max(0, earned - traded);
-    
-    if (tradeAvailableCount) tradeAvailableCount.textContent = available;
-    
-    selectedTradeCount = Math.min(1, available);
-    updateTradePanelUI();
-  } else {
-    if (tradePasswordError) tradePasswordError.classList.remove('hidden');
-    if (tradePasswordInput) {
-      tradePasswordInput.value = '';
-      tradePasswordInput.focus();
-    }
-  }
-}
-
-function updateTradePanelUI() {
-  const earned = state.starVault.earnedDates.length;
-  const traded = state.starVault.totalTraded || 0;
-  const available = Math.max(0, earned - traded);
-  
-  if (tradeCountValue) tradeCountValue.textContent = selectedTradeCount;
-  
-  if (tradeCountMinusBtn) tradeCountMinusBtn.disabled = selectedTradeCount <= 1;
-  if (tradeCountPlusBtn) tradeCountPlusBtn.disabled = selectedTradeCount >= available;
-  if (tradeConfirmBtn) tradeConfirmBtn.disabled = selectedTradeCount <= 0;
-}
-
-function closeTradeFlow() {
-  if (tradeModal) {
-    tradeModal.classList.add('hidden');
-  }
-}
 
 function bindAdminElements() {
   adminEarned = document.getElementById('admin-vault-earned');
@@ -310,7 +173,7 @@ export function closeVault() {
   if (globalTooltip) {
     globalTooltip.classList.add('hidden');
   }
-  closeTradeFlow();
+
 }
 
 export function checkDayCompleted(dateStr, isCompleted) {
@@ -400,13 +263,18 @@ export function renderVault() {
   // Toggle Spend Button state (disabled if nothing to spend)
   const tradeBtn = document.getElementById('vault-trade-open-btn');
   if (tradeBtn) {
-    tradeBtn.disabled = remainingCount <= 0;
-    if (remainingCount <= 0) {
-      tradeBtn.classList.add('disabled');
-      tradeBtn.textContent = 'Earn Stars to spend!';
+    tradeBtn.disabled = false; // Always enabled to allow browsing
+    tradeBtn.classList.remove('disabled');
+    
+    if (remainingCount >= 10) {
+      tradeBtn.classList.add('ready-to-unlock');
+      tradeBtn.classList.remove('locked-shop');
+      tradeBtn.textContent = 'Go to Pokémon Shop! 🚀 (Ready to Unlock!)';
     } else {
-      tradeBtn.classList.remove('disabled');
-      tradeBtn.textContent = '✨ Spend Stars for a Reward! ✨';
+      tradeBtn.classList.remove('ready-to-unlock');
+      tradeBtn.classList.add('locked-shop');
+      const needed = 10 - remainingCount;
+      tradeBtn.textContent = `Go to Pokémon Shop! 🚀 (Earn ${needed} more stars to unlock Pokemon! 💪)`;
     }
   }
 

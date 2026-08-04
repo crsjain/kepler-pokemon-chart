@@ -28,7 +28,6 @@ async function main() {
     '--ignore-certificate-errors',
     '--allow-insecure-localhost',
     '--disable-extensions',
-    '--incognito',
     '--disable-features=HttpsUpgrades,NetworkChangeNotifier',
     '--disable-background-networking',
     '--no-first-run',
@@ -105,7 +104,7 @@ async function main() {
       chrome.kill();
       process.exit(1);
     }, 5000);
-  }, 30000);
+  }, 60000);
 
   let initialized = false;
   let runtimeEnabled = false;

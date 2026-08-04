@@ -2,6 +2,7 @@ import { getStarsFromDates } from './vault.js';
 import { saveState, rollNewWeeklyBadge, getDefaultStateTemplate, DAYS, getTaskRequiredDays } from './state.js';
 import { getSunday, formatLocalDate, getDateOfColumn, getWeekStart } from './date_utils.js';
 import { runMigrations } from './migrations.js';
+import { POKEMON_TYPES, LEGENDARY_POKEMON_IDS } from './pokemon_data.js';
 
 function getGridKey(dayIndex, taskId) {
   return `${getDateOfColumn(window.__app_state__.weekStartDate, dayIndex)}-${taskId}`;
@@ -44,7 +45,8 @@ async function runSuite() {
     }
 
     let state = window.__app_state__;
-    assert(state.version === 15, "State version should be 15");
+    console.log("DEBUG: state before assert:", JSON.stringify(state));
+    assert(state.version === 16, "State version should be 16 (actual: " + state.version + ")");
     assert(state.weeklyClaimed === false, "Weekly claimed should be false");
     assert(window.__grid_rebuild_count__ === 1, `Grid should have been built exactly once on reset (actual: ${window.__grid_rebuild_count__})`);
 
@@ -96,7 +98,7 @@ async function runSuite() {
       console.log("Testing Eevee Evolution Dialog...");
       
       // Programmatically switch to Eevee
-      state.partnerFamily = '133';
+      state.activePartnerInstanceId = '133';
       // Set Eevee's level near milestone (Level 4, 95 XP)
       state.partnersData['133'].level = 4;
       state.partnersData['133'].xp = 95;
@@ -146,7 +148,7 @@ async function runSuite() {
       await sleep(300); // Wait for CSS transition
 
       // Restore back to Pikachu for subsequent tests
-      state.partnerFamily = '25';
+      state.activePartnerInstanceId = '25';
       window.__test_helpers__.renderState(false);
 
       // 4. Test Dynamic Task Customization (Save, Edit, Delete)
@@ -541,7 +543,7 @@ async function runSuite() {
 
         // Verify Daily Total UI indicator is a star
         const dailyTotalCell = document.querySelector(`.day-total-cell[data-day="${today}"]`);
-        assert(dailyTotalCell.querySelector('.badge-indicator').textContent === '🌟', "Daily indicator should show 🌟");
+        assert(dailyTotalCell.querySelector('.badge-indicator').classList.contains('unlocked'), "Daily indicator should be unlocked");
 
         // Uncheck one task
         const firstTaskCb = document.querySelector(`input[data-day="${today}"][data-task="${tasks[0].id}"]`);
@@ -556,96 +558,138 @@ async function runSuite() {
         assert(dailyTotalCell.querySelector('.badge-indicator').textContent === '❌', "Daily indicator should show ❌");
       }
 
-      // 10. Test Inline Vault Trading Flow
+      // 10. Test Pokémon Partner Shop & Hold-to-Unlock
       {
-        console.log("Testing Inline Vault Trading Flow...");
+        console.log("Testing Pokémon Partner Shop & Hold-to-Unlock...");
         window.__test_helpers__.resetState();
         state = window.__app_state__;
         
-        // Inject some stars
-        state.starVault.earnedDates = ['2026-07-01', '2026-07-02', '2026-07-03'];
-        state.starVault.totalTraded = 2; // leaving 1 remaining star
+        // Inject 1 star (remaining is 1)
+        state.starVault.earnedDates = ['2026-07-01'];
+        state.starVault.totalTraded = 0;
         saveState();
 
         // Open Vault Modal
         const openVaultBtn = document.getElementById('open-vault-btn');
-        assert(openVaultBtn !== null, "Vault button should exist in total row");
+        assert(openVaultBtn !== null, "Vault button should exist");
         openVaultBtn.click();
         await sleep(100);
 
-        // Verify Vault Modal Stats
-        const vaultEarned = document.getElementById('vault-stat-earned');
-        const vaultTraded = document.getElementById('vault-stat-traded');
-        const vaultRemaining = document.getElementById('vault-stat-remaining');
-
-        assert(vaultEarned.textContent === '3', "Vault modal should show 3 earned");
-        assert(vaultTraded.textContent === '2', "Vault modal should show 2 traded");
-        assert(vaultRemaining.textContent === '1', "Vault modal should show 1 remaining");
-
         const vaultTradeOpenBtn = document.getElementById('vault-trade-open-btn');
-        assert(vaultTradeOpenBtn !== null, "Inline Spend button should exist in Vault Modal");
-        assert(!vaultTradeOpenBtn.disabled, "Spend button should be enabled since remaining count is 1");
+        assert(vaultTradeOpenBtn !== null, "Spend button should exist");
         
+        // Click Spend -> should close vault and open shop
         vaultTradeOpenBtn.click();
-        await sleep(50);
-        
-        const tradeModal = document.getElementById('vault-trade-modal');
-        const gateScreen = document.getElementById('trade-screen-gate');
-        const panelScreen = document.getElementById('trade-screen-panel');
-        
-        assert(tradeModal && !tradeModal.classList.contains('hidden'), "Trade Modal should be visible");
-        assert(gateScreen && !gateScreen.classList.contains('hidden'), "Parent Gate should be visible initially");
-        assert(panelScreen && panelScreen.classList.contains('hidden'), "Trading Panel should be hidden initially");
-        
-        const tradePasswordInput = document.getElementById('trade-gate-password');
-        const tradePasswordSubmitBtn = document.getElementById('trade-gate-submit-btn');
-        const tradePasswordError = document.getElementById('trade-gate-error');
-        
-        tradePasswordInput.value = 'wrong_password';
-        tradePasswordSubmitBtn.click();
-        await sleep(50);
-        assert(!tradePasswordError.classList.contains('hidden'), "Password error should show on wrong password");
-        
-        tradePasswordInput.value = 'zxcv';
-        tradePasswordSubmitBtn.click();
-        await sleep(50);
-        
-        assert(gateScreen.classList.contains('hidden'), "Parent Gate should be hidden after correct password");
-        assert(!panelScreen.classList.contains('hidden'), "Trading Panel should be visible after correct password");
-        
-        const tradeAvailableCount = document.getElementById('trade-available-count');
-        assert(tradeAvailableCount.textContent === '1', "Trade panel should report 1 available star");
-        
-        const tradeCountMinusBtn = document.getElementById('trade-count-minus');
-        const tradeCountPlusBtn = document.getElementById('trade-count-plus');
-        const tradeCountValue = document.getElementById('trade-count-value');
-        
-        assert(tradeCountValue.textContent === '1', "Selected count should default to 1");
-        assert(tradeCountMinusBtn.disabled, "Minus button should be disabled for count 1");
-        assert(tradeCountPlusBtn.disabled, "Plus button should be disabled since max available is 1");
-        
-        const tradeConfirmBtn = document.getElementById('trade-confirm-btn');
-        tradeConfirmBtn.click();
-        await sleep(50);
-        
-        assert(tradeModal.classList.contains('hidden'), "Trade modal should close after confirm");
-        
-        assert(state.starVault.totalTraded === 3, "State totalTraded should increment to 3");
-        assert(vaultEarned.textContent === '3', "Earned count remains 3");
-        assert(vaultTraded.textContent === '3', "Traded count updates to 3");
-        assert(vaultRemaining.textContent === '0', "Remaining count drops to 0");
-        assert(vaultTradeOpenBtn.disabled, "Spend button should become disabled when remaining stars count is 0");
-
-        // Close Vault Modal
-        const closeVaultModalBtn = document.getElementById('close-vault-modal-btn');
-        closeVaultModalBtn.click();
         await sleep(100);
+
+        const vaultModal = document.getElementById('vault-modal');
+        const shopModal = document.getElementById('pokemon-shop-modal');
+        assert(vaultModal.classList.contains('hidden'), "Vault modal should close when opening shop");
+        assert(shopModal && !shopModal.classList.contains('hidden'), "Shop modal should open");
+
+        // Verify Shop Browse Screen
+        const browseScreen = document.getElementById('shop-screen-browse');
+        const confirmScreen = document.getElementById('shop-screen-confirm');
+        assert(browseScreen && !browseScreen.classList.contains('hidden'), "Browse screen should be visible");
+        assert(confirmScreen && confirmScreen.classList.contains('hidden'), "Confirm screen should be hidden");
+
+        const shopAvailableStars = document.getElementById('shop-available-stars');
+        assert(shopAvailableStars.textContent === '1', "Shop should report 1 star");
+
+        // Verify cards are locked
+        const firstCard = document.querySelector('.shop-item-card');
+        assert(firstCard && firstCard.classList.contains('locked'), "Cards should be locked when stars < 10");
+
+        // Click a card (Mew - ID 151)
+        const mewCard = document.querySelector('.shop-item-card[data-id="151"]');
+        assert(mewCard !== null, "Mew card should exist in shop");
+        mewCard.click();
+        await sleep(100);
+
+        assert(browseScreen.classList.contains('hidden'), "Browse screen should hide on card selection");
+        assert(!confirmScreen.classList.contains('hidden'), "Confirm screen should show on card selection");
+
+        const holdBtn = document.getElementById('shop-hold-unlock-btn');
+        assert(holdBtn && holdBtn.disabled, "Hold button should be disabled when stars < 10");
+        const holdBtnText = document.getElementById('shop-hold-btn-text');
+        assert(holdBtnText && holdBtnText.textContent.includes("Earn 9 more stars"), "Hold button should show needed stars");
+
+        // Click Back
+        const backBtn = document.getElementById('back-to-browse-btn');
+        backBtn.click();
+        await sleep(100);
+        assert(!browseScreen.classList.contains('hidden'), "Should go back to browse screen");
+        
+        // Close Shop
+        const closeShopBtn = document.getElementById('close-shop-modal-btn');
+        closeShopBtn.click();
+        await sleep(100);
+        assert(shopModal.classList.contains('hidden'), "Shop modal should close");
+
+        // Inject 10 stars (remaining is 10)
+        state.starVault.earnedDates = Array.from({length: 10}, (_, i) => `2026-07-${10+i}`);
+        state.starVault.totalTraded = 0;
+        saveState();
+
+        // Open Shop directly
+        window.__test_helpers__.openPokemonShop();
+        await sleep(100);
+        assert(!shopModal.classList.contains('hidden'), "Shop modal should open");
+        assert(shopAvailableStars.textContent === '10', "Shop should report 10 stars");
+
+        // Verify cards are affordable
+        const newFirstCard = document.getElementById('shop-items-grid').querySelector('.shop-item-card');
+        assert(newFirstCard && newFirstCard.classList.contains('affordable'), "Cards should be affordable when stars >= 10");
+
+        // Select Mew again
+        const mewCardAffordable = document.querySelector('.shop-item-card[data-id="151"]');
+        mewCardAffordable.click();
+        await sleep(100);
+
+        assert(!holdBtn.disabled, "Hold button should be enabled when stars >= 10");
+        assert(holdBtnText.textContent === 'Hold Down to Unlock! 🔓', "Hold button text should be ready");
+
+        // Test early release (hold for 100ms < 300ms)
+        const initialPartnerCount = Object.keys(state.partnersData).length;
+        
+        holdBtn.dispatchEvent(new MouseEvent('mousedown'));
+        await sleep(100);
+        holdBtn.dispatchEvent(new MouseEvent('mouseleave')); // cancel
+        await sleep(100);
+
+        assert(Object.keys(state.partnersData).length === initialPartnerCount, "Should not unlock if released early");
+
+        // Test full hold (400ms > 300ms)
+        holdBtn.dispatchEvent(new MouseEvent('mousedown'));
+        await sleep(400); // Wait for hold to complete
+
+        // Verify that the animation overlay opened
+        const animOverlay = document.getElementById('shop-unlock-animation-overlay');
+        assert(animOverlay && !animOverlay.classList.contains('hidden'), "Unlock animation overlay should be visible");
+        
+        // Wait for animation to finish in test mode
+        await sleep(1500);
+        
+        // Overlay should now be hidden again
+        assert(animOverlay.classList.contains('hidden'), "Animation overlay should close when done");
+        
+        // State should be committed
+        assert(state.starVault.totalTraded === 10, "Should have spent 10 stars");
+        
+        const partnerKeys = Object.keys(state.partnersData);
+        assert(partnerKeys.length === initialPartnerCount + 1, "Should have added 1 new partner instance");
+        
+        const newInstanceId = state.activePartnerInstanceId;
+        assert(state.partnersData[newInstanceId].familyId === '151', "Active partner should be Mew (151)");
+        assert(state.partnersData[newInstanceId].level === 1, "New partner level should be 1");
+
+        assert(shopModal.classList.contains('hidden'), "Shop modal should close after successful unlock");
 
         // 11. Test Case 11: Badge Case & Collection
         console.log("Running Test Case 11: Badge Case & Collection...");
         
         // Verify state initial V10 fields
-        assert(state.version === 15, "State version should be 15");
+        assert(state.version === 16, "State version should be 16");
         assert(Array.isArray(state.collectedBadges), "collectedBadges should be an array");
         assert(state.collectedBadges.length === 0, "Initially collected badges should be empty");
         assert(Array.isArray(state.badgePool), "badgePool should be an array");
@@ -773,7 +817,7 @@ async function runSuite() {
         window.__test_helpers__.loadState();
         let migratedState = window.__app_state__;
         
-        assert(migratedState.version === 15, "Migrated state version should be 15");
+        assert(migratedState.version === 16, "Migrated state version should be 16");
         assert(migratedState.idleTimeout === 10, "Migrated state should have default idleTimeout 10");
         assert(Array.isArray(migratedState.weeklyRewardOptions), "weeklyRewardOptions should be initialized on migration");
         assert(Array.isArray(migratedState.megaRewardOptions), "megaRewardOptions should be initialized on migration");
@@ -815,7 +859,7 @@ async function runSuite() {
         window.__test_helpers__.loadState();
         migratedState = window.__app_state__;
         
-        assert(migratedState.version === 15, "Migrated state version should be 15");
+        assert(migratedState.version === 16, "Migrated state version should be 16");
         assert(migratedState.idleTimeout === 10, "Migrated state should have default idleTimeout 10");
         assert(Array.isArray(migratedState.weeklyRewardOptions), "weeklyRewardOptions should be initialized on migration");
         assert(Array.isArray(migratedState.megaRewardOptions), "megaRewardOptions should be initialized on migration");
@@ -852,7 +896,7 @@ async function runSuite() {
           
           // Total cell should show 🌟
           const totalCell = document.querySelector(`.day-total-cell[data-day="${d}"] .badge-indicator`);
-          assert(totalCell && totalCell.textContent === '🌟', `Day ${d} total cell should show 🌟`);
+          assert(totalCell && totalCell.classList.contains('unlocked'), `Day ${d} total cell should be unlocked`);
         }
 
         // Verify stars in vault matches!
@@ -1300,7 +1344,7 @@ async function runSuite() {
         const wedTotalCell = document.querySelector('.day-total-cell[data-day="3"]');
         assert(wedTotalCell !== null, "Wednesday total cell should exist");
         const indicator = wedTotalCell.querySelector('.badge-indicator');
-        assert(indicator && indicator.textContent === '🌟', "Wednesday should show unlocked 🌟 indicator");
+        assert(indicator && indicator.classList.contains('unlocked'), "Wednesday should show unlocked indicator");
         
         // Verify it is completed in Star Vault
         const wedDateStr = getDateOfColumn(state.weekStartDate, 3);
@@ -2403,7 +2447,7 @@ async function runSuite() {
 
         const migrated = runMigrations(v14State);
 
-        assert(migrated.version === 15, "Migrated state version should be 15");
+        assert(migrated.version === 16, "Migrated state version should be 16");
         assert(migrated.weeklyHistory !== undefined, "weeklyHistory should be initialized");
         
         assert(migrated.grid["2026-07-26-piano"] === true, "Day 0 piano should migrate to 2026-07-26-piano");
@@ -2618,6 +2662,459 @@ async function runSuite() {
         await sleep(100);
       }
 
+      // 36. Test Case 36: Reward Selection Persistence
+      console.log("Running Test Case 36: Reward Selection Persistence...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+
+        const rewardSelect = document.getElementById('reward-select');
+        const megaRewardSelect = document.getElementById('mega-reward-select');
+
+        // Select "Choose Meal"
+        rewardSelect.value = "Choose Meal";
+        rewardSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        assert(state.reward === "Choose Meal", "State weekly reward should be 'Choose Meal'");
+        assert(rewardSelect.value === "Choose Meal", `UI weekly reward should be 'Choose Meal' immediately after change (actual: '${rewardSelect.value}')`);
+
+        // Select "Dessert Outing"
+        megaRewardSelect.value = "Dessert Outing";
+        megaRewardSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        assert(state.megaReward === "Dessert Outing", "State mega reward should be 'Dessert Outing'");
+        assert(megaRewardSelect.value === "Dessert Outing", `UI mega reward should be 'Dessert Outing' immediately after change (actual: '${megaRewardSelect.value}')`);
+
+        // Trigger a re-render
+        helpers.renderState(false);
+        await sleep(50);
+
+        assert(rewardSelect.value === "Choose Meal", `UI weekly reward should survive renderState (actual: '${rewardSelect.value}')`);
+        assert(megaRewardSelect.value === "Dessert Outing", `UI mega reward should survive renderState (actual: '${megaRewardSelect.value}')`);
+        
+        helpers.resetState();
+        await sleep(100);
+      }
+
+      // 37. Test Case 37: Partner Devolution
+      console.log("Running Test Case 37: Partner Devolution...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(100);
+        state = window.__app_state__;
+
+        // --- Part 1: Regular Pokemon (Pikachu -> Raichu -> Pikachu) ---
+        state.activePartnerInstanceId = '25';
+        state.partnersData['25'] = { familyId: '25', level: 4, xp: 95, stageId: '25' };
+        
+        const rewardSelect = document.getElementById('reward-select');
+        rewardSelect.value = "Bonus Tablet Time";
+        rewardSelect.dispatchEvent(new Event('change'));
+        const megaRewardSelect = document.getElementById('mega-reward-select');
+        megaRewardSelect.value = "Booster Pack";
+        megaRewardSelect.dispatchEvent(new Event('change'));
+        
+        state.activeDay = 0;
+        helpers.renderState(true);
+        await sleep(100);
+
+        const firstCheckbox = document.querySelector('input[data-day="0"][data-task="piano"]');
+        assert(firstCheckbox !== null, "Piano checkbox should exist");
+        assert(firstCheckbox.checked === false, "Checkbox should be unchecked initially");
+
+        // Click to check (Gain 5 XP -> Level 5, 0 XP -> Evolve to Raichu '26')
+        firstCheckbox.click();
+        await sleep(100);
+
+        assert(state.partnersData['25'].level === 5, `Pikachu should level up to 5 (actual: ${state.partnersData['25'].level})`);
+        assert(state.partnersData['25'].xp === 0, `Pikachu XP should be 0 (actual: ${state.partnersData['25'].xp})`);
+        assert(state.partnersData['25'].stageId === '26', `Pikachu should evolve to Raichu (stageId '26') (actual: ${state.partnersData['25'].stageId})`);
+
+        // Click to uncheck (Lose 5 XP -> Level 4, 95 XP -> Devolve to Pikachu '25')
+        firstCheckbox.click();
+        await sleep(100);
+
+        assert(state.partnersData['25'].level === 4, `Pikachu should level down to 4 (actual: ${state.partnersData['25'].level})`);
+        assert(state.partnersData['25'].xp === 95, `Pikachu XP should be 95 (actual: ${state.partnersData['25'].xp})`);
+        assert(state.partnersData['25'].stageId === '25', `Pikachu should devolve back to Pikachu (stageId '25') (actual: ${state.partnersData['25'].stageId})`);
+
+        // --- Part 2: Eevee Special Case (Vaporeon -> Eevee) ---
+        state.activePartnerInstanceId = '133';
+        state.partnersData['133'] = { familyId: '133', level: 5, xp: 0, stageId: '134' }; // Vaporeon
+        
+        // Programmatically check a box in grid to uncheck it
+        const dateStr = getDateOfColumn(state.weekStartDate, 0);
+        const gridKey = `${dateStr}-piano`;
+        state.grid[gridKey] = true;
+        
+        helpers.renderState(true);
+        await sleep(100);
+
+        const checkboxToUncheck = document.querySelector('input[data-day="0"][data-task="piano"]');
+        assert(checkboxToUncheck !== null, "Piano checkbox should exist");
+        assert(checkboxToUncheck.checked === true, "Checkbox should be checked");
+
+        // Click to uncheck (Lose 5 XP -> Level 4, 95 XP -> Devolve to Eevee '133')
+        checkboxToUncheck.click();
+        await sleep(100);
+
+        assert(state.partnersData['133'].level === 4, `Eevee should level down to 4 (actual: ${state.partnersData['133'].level})`);
+        assert(state.partnersData['133'].xp === 95, `Eevee XP should be 95 (actual: ${state.partnersData['133'].xp})`);
+        assert(state.partnersData['133'].stageId === '133', `Eevee should devolve back to Eevee (stageId '133') (actual: ${state.partnersData['133'].stageId})`);
+
+        helpers.resetState();
+        await sleep(100);
+      }
+
+      // 38. Test Case 38: State Migration (V15 -> V16)
+      console.log("Running Test Case 38: State Migration (V15 -> V16)...");
+      {
+        const v15State = {
+          version: 15,
+          partnerFamily: '4', // Charmander
+          partnersData: {
+            '25': { level: 2, xp: 10, stageId: '25' },
+            '4': { level: 3, xp: 20, stageId: '4' }
+          },
+          starVault: {
+            earnedDates: ['2026-07-01'],
+            totalTraded: 1
+          }
+        };
+
+        const migrated = runMigrations(v15State);
+
+        assert(migrated.version === 16, "Migrated state version should be 16");
+        assert(migrated.activePartnerInstanceId === '4', "activePartnerInstanceId should be set to partnerFamily '4'");
+        assert(migrated.partnersData['25'].familyId === '25', "Pikachu should get familyId '25'");
+        assert(migrated.partnersData['4'].familyId === '4', "Charmander should get familyId '4'");
+        assert(migrated.partnersData['25'].level === 2, "Pikachu level should be preserved");
+        assert(migrated.partnersData['4'].level === 3, "Charmander level should be preserved");
+        assert(migrated.starVault.totalTraded === 1, "totalTraded should be preserved");
+        assert(migrated.starVault.earnedDates.length === 1, "earnedDates should be preserved");
+      }
+
+      // 39. Test Case 39: Grid Star Streak Colors
+      console.log("Running Test Case 39: Grid Star Streak Colors...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        // Setup rewards so we can check boxes
+        const rewardSelect = document.getElementById('reward-select');
+        rewardSelect.value = "Bonus Tablet Time";
+        rewardSelect.dispatchEvent(new Event('change'));
+        const megaRewardSelect = document.getElementById('mega-reward-select');
+        megaRewardSelect.value = "Booster Pack";
+        megaRewardSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        const tasks = state.tasks || [];
+        
+        // Complete Sunday (Day 0)
+        state.activeDay = 0; // Sunday
+        for (const t of tasks) {
+          const cb = document.querySelector(`input[data-day="0"][data-task="${t.id}"]`);
+          if (cb && !cb.checked) { cb.click(); await sleep(20); }
+        }
+        await sleep(50);
+        let cell = document.querySelector('.day-total-cell[data-day="0"] .badge-indicator');
+        assert(cell && cell.textContent === '🌟', "Day 0 should show star emoji");
+
+        // Complete Monday (Day 1)
+        state.activeDay = 1; // Monday
+        for (const t of tasks) {
+          const cb = document.querySelector(`input[data-day="1"][data-task="${t.id}"]`);
+          if (cb && !cb.checked) { cb.click(); await sleep(20); }
+        }
+        await sleep(50);
+        cell = document.querySelector('.day-total-cell[data-day="1"] .badge-indicator');
+        assert(cell && cell.textContent === '🌟', "Day 1 should show star emoji");
+
+        // Complete Tuesday (Day 2)
+        state.activeDay = 2; // Tuesday
+        for (const t of tasks) {
+          const cb = document.querySelector(`input[data-day="2"][data-task="${t.id}"]`);
+          if (cb && !cb.checked) { cb.click(); await sleep(20); }
+        }
+        await sleep(50);
+        cell = document.querySelector('.day-total-cell[data-day="2"] .badge-indicator');
+        assert(cell && cell.textContent === '🌟', "Day 2 should show star emoji");
+
+        // Complete Wednesday (Day 3)
+        state.activeDay = 3; // Wednesday
+        for (const t of tasks) {
+          const cb = document.querySelector(`input[data-day="3"][data-task="${t.id}"]`);
+          if (cb && !cb.checked) { cb.click(); await sleep(20); }
+        }
+        await sleep(50);
+        cell = document.querySelector('.day-total-cell[data-day="3"] .badge-indicator');
+        assert(cell && cell.textContent === '🌟', "Day 3 should show star emoji");
+
+        // Complete Thursday (Day 4)
+        state.activeDay = 4; // Thursday
+        for (const t of tasks) {
+          const cb = document.querySelector(`input[data-day="4"][data-task="${t.id}"]`);
+          if (cb && !cb.checked) { cb.click(); await sleep(20); }
+        }
+        await sleep(50);
+        cell = document.querySelector('.day-total-cell[data-day="4"] .badge-indicator');
+        assert(cell && cell.textContent === '🌟', "Day 4 should show star emoji");
+
+        // 2. Open Vault Modal and verify streak colors inside the cabinet
+        const openVaultBtn = document.getElementById('open-vault-btn');
+        assert(openVaultBtn, "Open Vault button should exist");
+        openVaultBtn.click();
+        await sleep(100);
+
+        const vaultModal = document.getElementById('vault-modal');
+        assert(vaultModal && !vaultModal.classList.contains('hidden'), "Vault Modal should be open");
+
+        const vaultStars = document.querySelectorAll('#vault-grid .vault-star-wrapper');
+        assert(vaultStars.length === 5, "Vault should contain 5 stars");
+
+        assert(vaultStars[0].classList.contains('yellow'), "1st star should be yellow (Day 1)");
+        assert(vaultStars[1].classList.contains('yellow'), "2nd star should be yellow (Day 2)");
+        assert(vaultStars[2].classList.contains('silver'), "3rd star should be silver (Day 3)");
+        assert(vaultStars[3].classList.contains('silver'), "4th star should be silver (Day 4)");
+        assert(vaultStars[4].classList.contains('blue'), "5th star should be blue (Day 5)");
+
+        // Close Vault Modal
+        const closeVaultBtn = document.getElementById('close-vault-modal-btn');
+        closeVaultBtn.click();
+        await sleep(100);
+        assert(vaultModal.classList.contains('hidden'), "Vault Modal should be closed");
+
+        helpers.resetState();
+        await sleep(50);
+      }
+
+
+
+      // 41. Test Case 41: Partner Shop Filtering (Type & Legendary)
+      console.log("Running Test Case 41: Partner Shop Filtering...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        // Open Shop Modal
+        helpers.openPokemonShop();
+        await sleep(100);
+
+        const shopModal = document.getElementById('pokemon-shop-modal');
+        assert(shopModal && !shopModal.classList.contains('hidden'), "Shop Modal should be open");
+
+        // 1. Initial State: should show many cards
+        let cards = document.querySelectorAll('#shop-items-grid .shop-item-card');
+        assert(cards.length > 20, `Initially should show many cards (actual: ${cards.length})`);
+
+        // 2. Filter by Fire type
+        const typeSelect = document.getElementById('shop-filter-type');
+        assert(typeSelect, "Type filter select should exist");
+        typeSelect.value = "Fire";
+        typeSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        cards = document.querySelectorAll('#shop-items-grid .shop-item-card');
+        assert(cards.length > 0, "Should have visible Fire cards");
+        cards.forEach(card => {
+          const id = Number(card.dataset.id);
+          assert(POKEMON_TYPES[id] === "Fire", `Card ID ${id} should be Fire type, but got ${POKEMON_TYPES[id]}`);
+        });
+
+        // 3. Filter by Legendary Only (with Fire still selected)
+        const legendaryCheckbox = document.getElementById('shop-filter-legendary');
+        assert(legendaryCheckbox, "Legendary filter checkbox should exist");
+        legendaryCheckbox.checked = true;
+        legendaryCheckbox.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        cards = document.querySelectorAll('#shop-items-grid .shop-item-card');
+        assert(cards.length > 0, "Should have visible Fire Legendaries");
+        cards.forEach(card => {
+          const id = Number(card.dataset.id);
+          assert(POKEMON_TYPES[id] === "Fire", `Card ID ${id} should be Fire type`);
+          assert(LEGENDARY_POKEMON_IDS.has(id), `Card ID ${id} should be Legendary`);
+        });
+
+        // 4. Change Type filter back to "all" (Legendary Only still checked)
+        typeSelect.value = "all";
+        typeSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        cards = document.querySelectorAll('#shop-items-grid .shop-item-card');
+        assert(cards.length > 0, "Should have visible Legendaries");
+        cards.forEach(card => {
+          const id = Number(card.dataset.id);
+          assert(LEGENDARY_POKEMON_IDS.has(id), `Card ID ${id} should be Legendary`);
+        });
+
+        // 4.5. Test Clear Filters button
+        const clearBtn = document.getElementById('shop-filter-clear-btn');
+        assert(clearBtn, "Clear filters button should exist");
+        clearBtn.click();
+        await sleep(50);
+
+        assert(typeSelect.value === 'all', "Type filter should be reset to 'all' after clear click");
+        assert(legendaryCheckbox.checked === false, "Legendary filter should be reset to false after clear click");
+
+        cards = document.querySelectorAll('#shop-items-grid .shop-item-card');
+        assert(cards.length > 20, `After clear filters, should show all cards (actual: ${cards.length})`);
+
+        // 5. Close Shop and verify filters reset when reopening
+        const closeShopBtn = document.getElementById('close-shop-modal-btn');
+        closeShopBtn.click();
+        await sleep(100);
+        assert(shopModal.classList.contains('hidden'), "Shop modal should be closed");
+
+        helpers.openPokemonShop();
+        await sleep(100);
+        assert(!shopModal.classList.contains('hidden'), "Shop modal should reopen");
+
+        // Verify filters are reset
+        assert(typeSelect.value === 'all', "Type filter should be reset to 'all'");
+        assert(legendaryCheckbox.checked === false, "Legendary filter should be reset to false");
+
+        // Verify all cards are visible again
+        cards = document.querySelectorAll('#shop-items-grid .shop-item-card');
+        assert(cards.length > 20, `Reopened shop should show all cards (actual: ${cards.length})`);
+
+        // Clean up
+        closeShopBtn.click();
+        await sleep(100);
+        helpers.resetState();
+        await sleep(50);
+      }
+
+      // 42. Test Case 42: New Partner Persistence on Reload
+      console.log("Running Test Case 42: New Partner Persistence on Reload...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        // 1. Force state to have 10 stars so we can unlock Eevee
+        const stateObj = window.__app_state__;
+        stateObj.starVault.earnedDates = [
+          "2026-07-01", "2026-07-02", "2026-07-03", "2026-07-04", "2026-07-05",
+          "2026-07-06", "2026-07-07", "2026-07-08", "2026-07-09", "2026-07-10"
+        ];
+        helpers.saveState();
+        helpers.renderState(true);
+        await sleep(50);
+
+        // 2. Open Shop Modal
+        helpers.openPokemonShop();
+        await sleep(100);
+
+        // 3. Find Eevee card (ID 133) and click it
+        const eeveeCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="133"]');
+        assert(eeveeCard, "Eevee shop card should exist");
+        eeveeCard.click();
+        await sleep(100);
+
+        // 4. Confirm screen should be open. Trigger hold unlock.
+        const holdBtn = document.getElementById('shop-hold-unlock-btn');
+        assert(holdBtn, "Hold unlock button should exist");
+        
+        // Dispatch mousedown (HOLD_DURATION is 300ms in tests)
+        holdBtn.dispatchEvent(new MouseEvent('mousedown'));
+        await sleep(400);
+        holdBtn.dispatchEvent(new MouseEvent('mouseup'));
+        
+        // Wait for celebration fade and modal close (animation delay scaled down in test mode)
+        await sleep(2000);
+
+        // 5. Assert Eevee is now the active partner
+        const activeInstanceId = window.__app_state__.activePartnerInstanceId;
+        assert(activeInstanceId && activeInstanceId.startsWith('133_'), `Active partner should be Eevee (got ${activeInstanceId})`);
+
+        // 6. Simulate reload by loading state again
+        helpers.loadState();
+        
+        // 7. Assert Eevee is STILL the active partner!
+        const activeInstanceIdPostLoad = window.__app_state__.activePartnerInstanceId;
+        assert(activeInstanceIdPostLoad && activeInstanceIdPostLoad.startsWith('133_'), `Active partner post-load should still be Eevee (got ${activeInstanceIdPostLoad})`);
+        
+        // Clean up
+        helpers.resetState();
+        await sleep(50);
+      }
+
+      // 45. Test Case 45: Old Week Alert on Startup
+      console.log("Running Test Case 45: Old Week Alert on Startup...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        // Mock Date to a date after the active week
+        const OriginalDate = window.Date;
+        class MockedDate extends OriginalDate {
+          constructor(...args) {
+            if (args.length === 0) {
+              return new OriginalDate('2026-08-04T12:00:00'); // Tuesday (New Week started Aug 3)
+            }
+            return new OriginalDate(...args);
+          }
+          static now() {
+            return new OriginalDate('2026-08-04T12:00:00').getTime();
+          }
+        }
+        window.Date = MockedDate;
+
+        // Set grid week to a past week: Jul 27 - Aug 2, and ensure it's not completed
+        const stateObj = window.__app_state__;
+        stateObj.weekStartDate = '2026-07-27';
+        stateObj.weekStartDay = 1; // Monday start
+        stateObj.grid = {}; // Clear checked tasks to prevent Weekly Milestone pop
+        stateObj.weeklyClaimed = false;
+        helpers.saveState();
+        await sleep(800);
+
+        // Trigger profile reload (reselects Kepler profile robustly)
+        const profiles = helpers.getProfilesList();
+        const keplerProfile = profiles.find(p => p.name.includes('Kepler'));
+        const profileId = keplerProfile ? keplerProfile.id : (profiles[0] ? profiles[0].id : null);
+        assert(profileId !== null, "Should have at least one profile available to test startup alert");
+        helpers.selectProfile(profileId);
+        await sleep(800); // Increased wait for snapshot load
+
+        // Check if the notification modal is displayed
+        const notifModal = document.querySelector('.notif-modal');
+        assert(notifModal && !notifModal.classList.contains('hidden'), "New Week notification modal should be displayed");
+        
+        // Assert text content has the instructions
+        const notifTitle = notifModal.querySelector('h2');
+        assert(notifTitle && notifTitle.textContent === "New Week Training! 📅", "Notification title should match");
+        
+        const notifBody = notifModal.querySelector('.notif-body-text');
+        assert(notifBody && notifBody.textContent.includes("Reset Week Grid"), "Notification message should instruct to reset the grid");
+
+        // Close the notification
+        const closeBtn = notifModal.querySelector('.notif-close-btn');
+        assert(closeBtn, "Awesome! close button should exist");
+        closeBtn.click();
+        await sleep(100);
+
+        // Verify it is hidden
+        assert(notifModal.classList.contains('hidden') || !document.body.contains(notifModal), "Notification should be closed");
+
+        // Restore Date
+        window.Date = OriginalDate;
+
+        // Clean up
+        helpers.resetState();
+        await sleep(50);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
@@ -2627,4 +3124,19 @@ async function runSuite() {
     }
   }
 
-  setTimeout(runSuite, 1000);
+  async function startTests() {
+    console.log("Waiting for profiles to load from Firestore emulator...");
+    for (let i = 0; i < 50; i++) {
+      const profiles = window.__test_helpers__ ? window.__test_helpers__.getProfilesList() : [];
+      if (profiles && profiles.length > 0) {
+        console.log(`Profiles loaded! Count: ${profiles.length}. Starting suite...`);
+        await runSuite();
+        return;
+      }
+      await sleep(100);
+    }
+    console.error("❌ Timeout waiting for profiles to load from Firestore emulator.");
+    alert("❌ Timeout waiting for profiles to load from Firestore emulator.");
+  }
+  
+  startTests();

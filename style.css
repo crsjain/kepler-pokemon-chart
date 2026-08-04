@@ -3369,3 +3369,728 @@ body.idle-mode * {
     height: 100%; /* force card to fill grid cell height */
   }
 }
+
+/* Ready to Unlock button in Star Vault (glowing/pulsing green) */
+.pixel-btn.ready-to-unlock {
+  --badge-glow-rgba-low: rgba(16, 185, 129, 0.4);
+  --badge-glow-rgba-high: rgba(16, 185, 129, 0.8);
+  animation: pulse 1.5s infinite alternate;
+  box-shadow: 0 0 15px var(--badge-glow-rgba-high), 0 4px 0 #047857;
+  background-color: #10b981;
+}
+.pixel-btn.ready-to-unlock:hover {
+  background-color: #059669;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.8), 0 2px 0 #047857;
+}
+
+/* Locked shop button (disabled look but clickable) */
+.pixel-btn.locked-shop {
+  background-color: #94a3b8; /* Slate gray */
+  box-shadow: 0 4px 0 #475569;
+  color: #f1f5f9;
+}
+.pixel-btn.locked-shop:hover {
+  background-color: #64748b;
+  box-shadow: 0 2px 0 #475569;
+}
+
+/* Pokémon Shop Styles */
+.shop-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.shop-item-card {
+  border: 3px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.shop-item-card.locked {
+  opacity: 0.85;
+}
+
+.shop-item-card.affordable {
+  border-color: #cbd5e1;
+}
+
+.shop-item-card.affordable:hover {
+  border-color: #10b981;
+  background: #f0fdf4;
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+.shop-item-card.locked:hover {
+  border-color: #94a3b8;
+  background: #f1f5f9;
+  transform: translateY(-2px);
+}
+
+.shop-item-sprite-container {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.shop-item-sprite {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.shop-item-lock-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #475569;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.85rem;
+  border: 1.5px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.shop-item-name {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.8rem;
+  color: #334155;
+  margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.shop-item-price-container {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.shop-item-progress-bg {
+  background: #e2e8f0;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  width: 100%;
+  position: relative;
+  border: 1px solid #cbd5e1;
+}
+
+.shop-item-progress-fill {
+  background: #3b82f6;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.shop-item-progress-text {
+  font-size: 0.65rem;
+  font-family: 'Fredoka One', cursive;
+  color: #64748b;
+  display: block;
+  margin-top: 2px;
+}
+
+.shop-item-price-tag {
+  background: #ecfdf5;
+  color: #10b981;
+  border: 1.5px solid #10b981;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  font-family: 'Fredoka One', cursive;
+  display: inline-block;
+  text-shadow: 0.5px 0.5px 0 rgba(255,255,255,0.5);
+}
+
+/* Shop partner select '+' card styling */
+.pokemon-option.add-new-partner {
+  border: 2px dashed #94a3b8;
+  background: #f8fafc;
+  justify-content: center;
+  min-height: 110px;
+}
+
+.pokemon-option.add-new-partner:hover {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.add-partner-plus {
+  font-size: 2.2rem;
+  color: #94a3b8;
+  font-family: 'Fredoka One', cursive;
+  line-height: 1;
+}
+
+.pokemon-option.add-new-partner:hover .add-partner-plus {
+  color: #10b981;
+}
+
+/* Unlock Animation Overlay Styles */
+#shop-unlock-animation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 120000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#anim-star-source-container {
+  position: absolute;
+  top: 32px;
+  right: 32px;
+  display: flex;
+  align-items: center;
+  background: #1e293b;
+  border: 2px solid #fbbf24;
+  border-radius: 9999px;
+  padding: 8px 16px;
+  color: #fbbf24;
+  font-weight: bold;
+  font-size: 1.125rem;
+}
+
+#anim-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.8rem;
+  color: #fbbf24;
+  text-align: center;
+  margin-bottom: 32px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+.anim-lock-wrapper {
+  position: relative;
+  width: 256px;
+  height: 256px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 48px;
+}
+
+#anim-star-slots-circle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.anim-pokemon-wrapper {
+  position: relative;
+  width: 192px;
+  height: 192px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #0f172a;
+  border: 4px solid #f59e0b;
+  border-radius: 9999px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.anim-pokemon-wrapper img {
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+}
+
+#anim-lock-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.20);
+  transition: all 0.5s ease-out;
+}
+
+#anim-lock-icon {
+  font-size: 3.75rem;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+  transition: all 0.5s ease-out;
+}
+
+/* Responsive adjustments for animation overlay on mobile */
+@media (max-width: 480px) {
+  #anim-star-source-container {
+    top: 16px;
+    right: 16px;
+    padding: 6px 12px;
+    font-size: 0.95rem;
+  }
+
+  #anim-title {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    padding: 0 15px;
+  }
+
+  .anim-lock-wrapper {
+    width: 200px;
+    height: 200px;
+    margin-bottom: 24px;
+  }
+
+  .anim-pokemon-wrapper {
+    width: 150px;
+    height: 150px;
+    border-width: 3px;
+  }
+
+  .anim-pokemon-wrapper img {
+    width: 120px;
+    height: 120px;
+  }
+
+  #anim-lock-icon {
+    font-size: 2.75rem;
+  }
+  
+  .anim-star-slot {
+    font-size: 1.4rem;
+  }
+}
+
+.anim-star-slot {
+  position: absolute;
+  font-size: 1.8rem;
+  color: #1e293b; /* dark slate */
+  opacity: 0.25;
+  transition: all 0.3s ease;
+  user-select: none;
+  transform: translate(-50%, -50%);
+}
+
+.anim-star-slot.filled {
+  opacity: 1;
+  color: #fbbf24; /* yellow-400 */
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.8), 0 0 20px rgba(251, 191, 36, 0.4);
+  transform: translate(-50%, -50%) scale(1.3);
+}
+
+.flying-star {
+  position: absolute;
+  font-size: 2.2rem;
+  z-index: 120020;
+  user-select: none;
+  transform: translate(-50%, -50%);
+  text-shadow: 0 0 12px rgba(251, 191, 36, 0.9);
+}
+
+#anim-pokemon-sprite {
+  filter: brightness(0);
+  transition: filter 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+#anim-pokemon-sprite.revealed {
+  filter: brightness(1) contrast(1);
+}
+
+#anim-lock-container.shattered {
+  opacity: 0;
+  transform: scale(2.5) rotate(45deg);
+  pointer-events: none;
+}
+
+#anim-lock-icon.shattered {
+  opacity: 0;
+  transform: translateY(50px) rotate(-90deg) scale(0.1);
+}
+
+/* Admin Manage Partners section */
+.admin-partners-list {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-partner-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+}
+
+.admin-partner-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-partner-sprite {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.admin-partner-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-partner-name {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.admin-partner-meta {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.no-partners {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  padding: 15px 0;
+}
+
+/* ==========================================
+   Pokémon Shop Modal Styling (Rule 8 compliance)
+   ========================================== */
+
+#pokemon-shop-modal {
+  z-index: 110000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+#pokemon-shop-modal .modal-content {
+  max-width: 600px;
+  width: 90%;
+  background: white;
+  border: var(--pixel-border);
+  border-radius: 12px;
+  padding: 25px;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+}
+
+.shop-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: #64748b;
+  z-index: 10;
+}
+
+.shop-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.shop-title {
+  font-family: 'Fredoka One', cursive;
+  color: var(--poke-blue);
+  margin-top: 10px;
+  font-size: 1.4rem;
+  text-align: center;
+}
+
+.shop-subtitle {
+  font-size: 0.95rem;
+  color: #475569;
+  margin: 10px 0;
+  text-align: center;
+}
+
+.shop-available-stars-count {
+  color: #10b981;
+  font-size: 1.25rem;
+}
+
+/* Rule 7 compliance: Wrap and responsive spacing */
+.shop-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  margin: 5px 0 15px 0;
+  min-height: 38px;
+}
+
+.shop-filter-bar select {
+  height: 36px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  border: 2px solid #cbd5e1;
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+  background: white;
+  color: #334155;
+  min-width: 120px;
+  transition: border-color 0.2s;
+}
+
+#shop-filter-type:hover {
+  border-color: #94a3b8;
+}
+
+/* Styled filter toggle button (formerly checkbox label) */
+.filter-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  border: 2px solid #cbd5e1;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  font-weight: 600;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.filter-toggle-label:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+/* Hide actual checkbox input */
+.filter-toggle-label input {
+  display: none;
+}
+
+/* Checked/Active state for toggle label */
+.filter-toggle-label.active {
+  background: #fef3c7; /* light yellow */
+  border-color: #f59e0b; /* amber-500 */
+  color: #b45309; /* amber-700 */
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.15);
+}
+
+#shop-filter-clear-btn {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Hidden state with scale and opacity fade */
+#shop-filter-clear-btn.hidden-opacity {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.9);
+  width: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  overflow: hidden;
+}
+
+.shop-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  margin-top: 15px;
+  overflow-y: auto;
+  padding: 5px;
+  flex-grow: 1;
+}
+
+/* Screen 2: Confirm Unlock (Hold-to-Unlock) */
+/* Rule 8: responsive max-height and scrolling for low-height devices */
+#shop-screen-confirm {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 20px 0;
+  position: relative;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.shop-back-btn {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.shop-confirm-sprite-wrapper {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  margin: 15px 0;
+  flex-shrink: 0;
+}
+
+.shop-confirm-sprite-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.shop-confirm-lock {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.shop-confirm-lock span {
+  font-size: 3rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+#shop-confirm-name {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.5rem;
+  color: var(--text-color);
+  margin: 10px 0;
+  flex-shrink: 0;
+}
+
+#shop-confirm-desc {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin-bottom: 25px;
+  flex-shrink: 0;
+}
+
+.hold-btn-wrapper {
+  position: relative;
+  width: 220px;
+  height: 60px;
+  margin: 0 auto;
+  flex-shrink: 0;
+}
+
+.hold-btn-wrapper button {
+  width: 100%;
+  height: 100%;
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+}
+
+.hold-btn-wrapper svg {
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+
+.hold-btn-wrapper span {
+  pointer-events: none;
+}
+
+/* Mobile responsive fixes for filters and modal height limits */
+@media (max-width: 480px) {
+  .shop-filter-bar {
+    gap: 8px;
+  }
+  
+  .shop-filter-bar select {
+    flex: 1 1 100%; /* force select to wrap to full width on extremely small mobile */
+  }
+  
+  .filter-toggle-label {
+    flex-grow: 1;
+    justify-content: center;
+  }
+  
+  #shop-filter-clear-btn {
+    flex-grow: 1;
+  }
+  
+  #shop-screen-confirm {
+    justify-content: flex-start; /* allow scroll flow from top on low height */
+    padding-top: 50px; /* offset back button */
+  }
+}
+
+/* Highlight animation for newly unlocked partner */
+.new-unlock-glow {
+  animation: unlock-partner-bounce 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 2;
+  filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.95)) drop-shadow(0 0 30px rgba(251, 191, 36, 0.5));
+}
+
+@keyframes unlock-partner-bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+

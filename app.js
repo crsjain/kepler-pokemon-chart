@@ -64,11 +64,12 @@ function getIdleTimeoutMs() {
 }
 
 import { playSound } from './audio.js';
-import { initVault, openVault, checkDayCompleted, renderVault } from './vault.js';
+import { initVault, openVault, checkDayCompleted, renderVault, getStarsFromDates } from './vault.js';
 import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS } from './pokemon_data.js';
 import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
 import { initAdmin } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
+import { initShop, openPokemonShop } from './shop.js';
 
 // DOM Elements
 const pokemonSprite = document.getElementById('pokemon-sprite');
@@ -153,6 +154,8 @@ const passwordError = document.getElementById('password-error');
 // Eevee Modal Elements
 const eeveeModal = document.getElementById('eevee-modal');
 const evolutionHelper = document.getElementById('evolution-helper');
+
+
 
 // Debug Sidebar Element
 const debugSidebar = document.getElementById('debug-sidebar');
@@ -256,6 +259,7 @@ function initFirebaseUI() {
     initVault();
     initBadgeCase();
     initGuide();
+    initShop({ renderAppState: (rebuild) => renderState(rebuild) });
     renderState(true);
     return;
   }
@@ -398,9 +402,9 @@ function initFirebaseUI() {
     if (localDataStr) {
       try {
         const localState = JSON.parse(localDataStr);
-        const family = localState.partnerFamily || '25';
-        const stats = localState.partnersData?.[family] || { level: 1, stageId: family };
-        
+        const activeInstanceId = localState.activePartnerInstanceId || localState.partnerFamily || '25';
+        const stats = localState.partnersData?.[activeInstanceId] || { level: 1, stageId: activeInstanceId };
+        const family = stats.familyId || localState.partnerFamily || '25';
         const stageInfo = getStageInfo(family, stats.stageId || family);
         const pName = stageInfo.currentStage?.name || 'Pokémon';
         
@@ -655,6 +659,15 @@ function selectProfile(profileId) {
           state.activeDay = todayDay;
           saveState();
         }
+        
+        // Notify if today belongs to a later week than the grid week start
+        const currentRealWeekStart = formatLocalDate(getWeekStart(new Date(), state.weekStartDay || 0));
+        if (state.weekStartDate && currentRealWeekStart > state.weekStartDate) {
+          showCustomNotification(
+            "New Week Training! 📅",
+            `You are looking at last week's grid!<br><br>🌟 <b>Did you finish tasks last week?</b> Mark them complete now to get your stars!<br><br>🚀 <b>Ready for a new week?</b> Scroll down and click <b>Reset Week Grid</b> to start your brand new week of training! Let's go!`
+          );
+        }
       }
       
       // Update Trainer Names in UI
@@ -668,6 +681,7 @@ function selectProfile(profileId) {
       initVault();
       initBadgeCase();
       initGuide();
+      initShop({ renderAppState: (rebuild) => renderState(rebuild) });
       
       // Re-render UI
       renderState(true);
@@ -939,8 +953,9 @@ export function renderState(rebuildGrid = false) {
   if (resetBtn) {
     resetBtn.disabled = isPastWeek;
   }
-  const family = state.partnerFamily || '25';
-  const stats = state.partnersData[family] || { level: 1, xp: 0, stageId: family };
+  const instanceId = state.activePartnerInstanceId || '25';
+  const stats = state.partnersData[instanceId] || { familyId: '25', level: 1, xp: 0, stageId: '25' };
+  const family = stats.familyId || '25';
   const stageInfo = getStageInfo(family, stats.stageId || family);
   const activePokemon = stageInfo.currentStage;
 
@@ -1345,6 +1360,8 @@ function updateDayTotalUI(day) {
     return !!state.grid[k] || !!state.excused[k];
   });
   
+  checkDayCompleted(dateStr, allCheckedOrExcused);
+  
   if (allCheckedOrExcused) {
     dayTotalCell.innerHTML = '<div class="badge-indicator unlocked">🌟</div>';
     dayTotalCell.classList.add('unlocked');
@@ -1354,8 +1371,6 @@ function updateDayTotalUI(day) {
     dayTotalCell.classList.add('locked');
     dayTotalCell.classList.remove('unlocked');
   }
-  
-  checkDayCompleted(dateStr, allCheckedOrExcused);
 }
 
 function handleCheckboxChange(e) {
@@ -1477,10 +1492,16 @@ export function renderRewardDropdowns() {
   const weeklyOptions = state.weeklyRewardOptions || [];
   const weeklyHistory = state.rewardHistory || [];
   populateSelect(rewardSelect, weeklyOptions, weeklyHistory, "Choose a Weekly Reward...");
+  if (rewardSelect) {
+    rewardSelect.value = state.reward || '';
+  }
 
   const megaOptions = state.megaRewardOptions || [];
   const megaHistory = state.megaRewardHistory || [];
   populateSelect(megaRewardSelect, megaOptions, megaHistory, "Choose a Mega Reward...");
+  if (megaRewardSelect) {
+    megaRewardSelect.value = state.megaReward || '';
+  }
 }
 
 function populateSelect(selectEl, options, history, placeholderText) {
@@ -1537,24 +1558,27 @@ function renderPartnerSelector() {
   
   container.innerHTML = '';
   
-  STARTER_OPTIONS.forEach(opt => {
-    const familyId = opt.familyId;
-    const stats = state.partnersData[familyId] || { level: 1, xp: 0, stageId: opt.baseId };
-    const stageInfo = getStageInfo(familyId, stats.stageId || opt.baseId);
+  if (!state.partnersData) return;
+  
+  Object.keys(state.partnersData).forEach(instanceId => {
+    const pData = state.partnersData[instanceId];
+    const familyId = pData.familyId || '25';
+    const stageInfo = getStageInfo(familyId, pData.stageId || familyId);
     const activePokemon = stageInfo.currentStage;
 
     const optionDiv = document.createElement('div');
     optionDiv.className = 'pokemon-option';
-    optionDiv.dataset.id = familyId;
+    optionDiv.dataset.id = instanceId;
 
     optionDiv.innerHTML = `
       <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png" alt="${activePokemon.name}">
       <span class="partner-select-name">${activePokemon.name}</span>
-      <span class="partner-select-stats">LV ${stats.level}<br>${stats.xp}/100 XP</span>
+      <span class="partner-select-stats">LV ${pData.level}<br>${pData.xp}/100 XP</span>
     `;
 
     optionDiv.addEventListener('click', () => {
-      state.partnerFamily = familyId;
+      state.activePartnerInstanceId = instanceId;
+      state.partnerFamily = familyId; // Keep for safety/compat
       saveState();
       renderState(false);
       partnerModal.classList.add('hidden');
@@ -1562,6 +1586,20 @@ function renderPartnerSelector() {
 
     container.appendChild(optionDiv);
   });
+
+  // Add Get New Pokemon (+) card at the end of the list
+  const addOptionDiv = document.createElement('div');
+  addOptionDiv.className = 'pokemon-option add-new-partner';
+  addOptionDiv.innerHTML = `
+    <div class="add-partner-plus">+</div>
+    <span class="partner-select-name">Get Partner</span>
+    <span class="partner-select-stats">Spend Stars! ⭐</span>
+  `;
+  addOptionDiv.addEventListener('click', () => {
+    partnerModal.classList.add('hidden');
+    openPokemonShop();
+  });
+  container.appendChild(addOptionDiv);
 }
 
 function setupEventListeners() {
@@ -1998,8 +2036,6 @@ function setupEventListeners() {
           state.weeklyRewardOptions = [...tempWeeklyRewards];
           state.megaRewardOptions = [...tempMegaRewards];
           renderRewardDropdowns();
-          rewardSelect.value = state.reward || '';
-          megaRewardSelect.value = state.megaReward || '';
         }
         
         showCustomNotification("Saved ✨", "Rewards customized successfully!");
@@ -2199,8 +2235,10 @@ function setMegaMilestoneMinusOne() {
 }
 
 function setNearEvolution() {
-  const family = state.partnerFamily;
-  const stats = state.partnersData[family];
+  const instanceId = state.activePartnerInstanceId || '25';
+  const stats = state.partnersData[instanceId];
+  if (!stats) return;
+  const family = stats.familyId || '25';
   const evo = EVOLUTIONS[family];
   
   let targetLevel = 4;
@@ -2223,8 +2261,9 @@ function setNearEvolution() {
 }
 
 function setNearLevelUp() {
-  const family = state.partnerFamily;
-  const stats = state.partnersData[family];
+  const instanceId = state.activePartnerInstanceId || '25';
+  const stats = state.partnersData[instanceId];
+  if (!stats) return;
   stats.xp = XP_LEVEL_THRESHOLD - XP_PER_TASK;
   saveState();
   renderState(false);
@@ -2246,13 +2285,18 @@ function setWeek(weekNum) {
 function addXp(amount) {
   if (amount === 0) return;
   
-  const family = state.partnerFamily;
-  const stats = state.partnersData[family];
+  const instanceId = state.activePartnerInstanceId || '25';
+  const stats = state.partnersData[instanceId];
+  if (!stats) return;
+  const family = stats.familyId || '25';
   const oldLevel = stats.level;
   let totalXp = stats.xp + amount;
   
   let levelIncreased = false;
+  let levelDecreased = false;
   let evolved = false;
+  let devolved = false;
+  let oldStageId = stats.stageId;
   
   if (totalXp >= XP_LEVEL_THRESHOLD) {
     stats.level += 1;
@@ -2262,6 +2306,7 @@ function addXp(amount) {
     if (stats.level > 1) {
       stats.level -= 1;
       totalXp = XP_LEVEL_THRESHOLD + totalXp;
+      levelDecreased = true;
     } else {
       totalXp = 0;
     }
@@ -2269,33 +2314,59 @@ function addXp(amount) {
   
   stats.xp = totalXp;
   
-  const evo = EVOLUTIONS[family];
-  if (evo && family !== '133' && levelIncreased) {
-    let stageIdx = 0;
-    for (let i = 1; i < evo.stages.length; i++) {
-      if (stats.level >= evo.stages[i].level) {
-        stageIdx = i;
+  const levelChanged = oldLevel !== stats.level;
+  
+  if (levelChanged) {
+    const evo = EVOLUTIONS[family];
+    if (evo) {
+      if (family === '133') {
+        // Eevee special case
+        if (stats.level < 5 && stats.stageId !== '133') {
+          stats.stageId = '133';
+          devolved = true;
+        }
       } else {
-        break;
+        // Regular Pokemon
+        let stageIdx = 0;
+        for (let i = 1; i < evo.stages.length; i++) {
+          if (stats.level >= evo.stages[i].level) {
+            stageIdx = i;
+          } else {
+            break;
+          }
+        }
+        const targetStageId = evo.stages[stageIdx].id;
+        if (stats.stageId !== targetStageId) {
+          stats.stageId = targetStageId;
+          if (stats.level < oldLevel) {
+            devolved = true;
+          } else {
+            evolved = true;
+          }
+        }
       }
-    }
-    const targetStageId = evo.stages[stageIdx].id;
-    if (stats.stageId !== targetStageId) {
-      stats.stageId = targetStageId;
-      evolved = true;
     }
   }
 
   if (levelIncreased) {
     if (family === '133' && stats.level >= 5 && stats.stageId === '133') {
-      // Eevee evolution choice handles dynamically
+      // Eevee evolution choice handles dynamically in renderState
     } else if (evolved) {
       const activePokemon = getStageInfo(family, stats.stageId).currentStage;
       CelebrationEngine.triggerCelebration(true);
       playSound('badge');
+      
+      // Determine previous stage name for notification
+      let prevStageName = 'partner';
+      const evo = EVOLUTIONS[family];
+      if (evo) {
+        const oldStageInfo = getStageInfo(family, oldStageId);
+        prevStageName = oldStageInfo.currentStage.name;
+      }
+      
       showCustomNotification(
         "✨ POKÉMON EVOLVED! ✨",
-        `Amazing job! ${state.childName || 'Trainer'}'s ${getStageInfo(family, oldLevel >= 5 ? evo.stages[0].id : family).currentStage.name} evolved into ${activePokemon.name}!`,
+        `Amazing job! ${state.childName || 'Trainer'}'s ${prevStageName} evolved into ${activePokemon.name}!`,
         `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`,
         false,
         null,
@@ -2304,6 +2375,17 @@ function addXp(amount) {
     } else {
       triggerLevelUpAnimation();
       playSound('levelUp');
+    }
+  } else if (levelDecreased) {
+    if (devolved) {
+      const activePokemon = getStageInfo(family, stats.stageId).currentStage;
+      const oldPokemon = getStageInfo(family, oldStageId).currentStage;
+      
+      showCustomNotification(
+        "😢 POKÉMON DEVOLVED 😢",
+        `Oh no! ${state.childName || 'Trainer'}'s ${oldPokemon.name} devolved back into ${activePokemon.name} because level dropped.`,
+        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`
+      );
     }
   }
 }
@@ -2327,8 +2409,9 @@ function checkAndTriggerWeeklySuccess() {
     state.weeklyClaimed = true;
     awardCurrentWeeklyBadge();
     
-    const family = state.partnerFamily;
-    const stats = state.partnersData[family];
+    const instanceId = state.activePartnerInstanceId || '25';
+    const stats = state.partnersData[instanceId];
+    const family = stats ? stats.familyId : '25';
     const activePokemon = getStageInfo(family, stats.stageId).currentStage;
     
     if (!state.claimedRewardsHistory) state.claimedRewardsHistory = [];
@@ -2442,17 +2525,14 @@ function renderProgress() {
     const allChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${dateStr}-${task.id}`] || !!state.excused[`${dateStr}-${task.id}`]);
     const totalCell = domCache.dayTotals[day];
     if (totalCell) {
-      const indicator = totalCell.querySelector('.badge-indicator');
-      if (indicator) {
-        if (allChecked) {
-          indicator.textContent = '🌟';
-          indicator.classList.remove('locked');
-          indicator.classList.add('unlocked');
-        } else {
-          indicator.textContent = '❌';
-          indicator.classList.remove('unlocked');
-          indicator.classList.add('locked');
-        }
+      if (allChecked) {
+        totalCell.innerHTML = '<div class="badge-indicator unlocked">🌟</div>';
+        totalCell.classList.add('unlocked');
+        totalCell.classList.remove('locked');
+      } else {
+        totalCell.innerHTML = '<div class="badge-indicator locked">❌</div>';
+        totalCell.classList.add('locked');
+        totalCell.classList.remove('unlocked');
       }
     }
   });
@@ -2665,6 +2745,9 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
       resetStateToDefault();
       currentViewingWeekStartDate = null;
       gridRebuildCount = 0;
+      document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+      const confirmModal = document.getElementById('confirm-modal');
+      if (confirmModal) confirmModal.classList.add('hidden');
       renderState(true);
     },
     renderState: (rebuildGrid) => renderState(rebuildGrid),
@@ -2672,10 +2755,12 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     resetWeekGrid: (carryOver) => resetWeekGrid(carryOver),
     renderBadgeCaseGrid: () => renderBadgeCaseGrid(),
     loadState: () => loadState(),
+    saveState: () => saveState(),
     renderVault: () => renderVault(),
     syncVaultStarsWithGrid: () => syncVaultStarsWithGrid(),
     openGuide: () => openGuide(),
     renderGuide: () => renderGuide(),
+    openPokemonShop: () => openPokemonShop(),
     setProfilesList: (list) => { profilesList = list; },
     getProfilesList: () => profilesList,
     renderAdminProfilesList: () => renderAdminProfilesList(),
@@ -2687,7 +2772,8 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     setReloadMock: (fn) => { reloadFn = fn || (() => location.reload()); },
     setActiveProfileId: (id) => { activeProfileId = id; },
     getActiveProfileId: () => activeProfileId,
-    triggerProfilesUpdate: (profiles) => handleProfilesUpdate(profiles)
+    triggerProfilesUpdate: (profiles) => handleProfilesUpdate(profiles),
+    selectProfile: (id) => selectProfile(id)
   };
   
   if (location.search.includes('runTests=true')) {

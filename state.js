@@ -1,4 +1,4 @@
-import { TIER_1_IDS, TIER_2_IDS, getPokemonName, MEGA_POKEMON, STARTER_OPTIONS, STARTER_FAMILIES, EVOLUTIONS } from './pokemon_data.js';
+import { TIER_1_IDS, TIER_2_IDS, getPokemonName, MEGA_POKEMON, STARTER_OPTIONS, STARTER_FAMILIES, EVOLUTIONS, POKEMON_MAP, EVOLVED_POKEMON_IDS } from './pokemon_data.js';
 import { formatLocalDate, getWeekStart, getSunday, getDateOfColumn } from './date_utils.js';
 import { runMigrations, DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS } from './migrations.js';
 
@@ -11,7 +11,10 @@ export const XP_PER_TASK = 5;
 
 export function getStageInfo(familyId, stageId) {
   const evo = EVOLUTIONS[familyId];
-  if (!evo) return { currentStage: { id: familyId, name: 'Unknown' }, nextStage: null, startLevel: 1, endLevel: null };
+  if (!evo) {
+    const name = getPokemonName(familyId);
+    return { currentStage: { id: familyId, name: name }, nextStage: null, startLevel: 1, endLevel: null };
+  }
   
   // Special case for Eevee family
   if (familyId === '133' && stageId !== '133') {
@@ -54,10 +57,11 @@ export function getStageInfo(familyId, stageId) {
 }
 
 
-// State V15 (Historical Weeks & Date-Keyed Grid)
+// State V16 (Star Vault & Partner Unlock Shop)
 export let state = {
-  version: 15,
-  partnerFamily: '25', // Default Pikachu Family
+  version: 16,
+  activePartnerInstanceId: '25',
+  partnerFamily: '25', // Default Pikachu Family (kept for compatibility)
   weekStartDay: 0, // Default Sunday (0) to Saturday (6)
   idleTimeout: 10, // Default 10 minutes
   weeklyRewardOptions: [...DEFAULT_WEEKLY_REWARDS],
@@ -65,11 +69,11 @@ export let state = {
   excused: {}, // key format: "YYYY-MM-DD-task" -> boolean
   weeklyHistory: {}, // key format: "YYYY-MM-DD" -> { weekStartDay, reward, megaReward, weeklyClaimed, badgeId, xpEarned }
   partnersData: {
-    '25': { level: 1, xp: 0, stageId: '25' },
-    '4': { level: 1, xp: 0, stageId: '4' },
-    '1': { level: 1, xp: 0, stageId: '1' },
-    '7': { level: 1, xp: 0, stageId: '7' },
-    '133': { level: 1, xp: 0, stageId: '133' }
+    '25': { familyId: '25', level: 1, xp: 0, stageId: '25' },
+    '4': { familyId: '4', level: 1, xp: 0, stageId: '4' },
+    '1': { familyId: '1', level: 1, xp: 0, stageId: '1' },
+    '7': { familyId: '7', level: 1, xp: 0, stageId: '7' },
+    '133': { familyId: '133', level: 1, xp: 0, stageId: '133' }
   },
   reward: '',
   megaReward: '',
@@ -156,18 +160,19 @@ export function loadState() {
 
 export function getDefaultStateTemplate() {
   const t = {
-    version: 15,
+    version: 16,
+    activePartnerInstanceId: '25',
     partnerFamily: '25',
     weekStartDay: 0,
     idleTimeout: 10,
     weeklyRewardOptions: [...DEFAULT_WEEKLY_REWARDS],
     megaRewardOptions: [...DEFAULT_MEGA_REWARDS],
     partnersData: {
-      '25': { level: 1, xp: 0, stageId: '25' },
-      '4': { level: 1, xp: 0, stageId: '4' },
-      '1': { level: 1, xp: 0, stageId: '1' },
-      '7': { level: 1, xp: 0, stageId: '7' },
-      '133': { level: 1, xp: 0, stageId: '133' }
+      '25': { familyId: '25', level: 1, xp: 0, stageId: '25' },
+      '4': { familyId: '4', level: 1, xp: 0, stageId: '4' },
+      '1': { familyId: '1', level: 1, xp: 0, stageId: '1' },
+      '7': { familyId: '7', level: 1, xp: 0, stageId: '7' },
+      '133': { familyId: '133', level: 1, xp: 0, stageId: '133' }
     },
     reward: '',
     megaReward: '',
@@ -269,7 +274,7 @@ export function applyBackup(index) {
   const history = getBackupHistory();
   const backup = history[index];
   if (backup) {
-    state = backup.state;
+    replaceState(backup.state);
     saveState();
     return true;
   }
@@ -292,24 +297,59 @@ export function runStateDiagnostics() {
     fixed.push("Initialized empty partnersData.");
   }
   
+  // Validate activePartnerInstanceId
+  if (!state.activePartnerInstanceId) {
+    state.activePartnerInstanceId = state.partnerFamily || '25';
+    issues.push("Missing activePartnerInstanceId.");
+    fixed.push(`Initialized activePartnerInstanceId to '${state.activePartnerInstanceId}'.`);
+  }
+
   const families = ['25', '4', '1', '7', '133'];
-  families.forEach(fid => {
-    if (!state.partnersData[fid]) {
-      state.partnersData[fid] = { level: 1, xp: 0, stageId: fid };
-      issues.push(`Missing partner data for family ${fid}.`);
-      fixed.push(`Initialized default data for family ${fid}.`);
-    } else {
-      const pData = state.partnersData[fid];
+  
+  if (state.partnersData) {
+    Object.keys(state.partnersData).forEach(instanceId => {
+      const pData = state.partnersData[instanceId];
+      if (!pData) {
+        delete state.partnersData[instanceId];
+        issues.push(`Null partner data for instance ${instanceId}.`);
+        fixed.push(`Removed null partner instance ${instanceId}.`);
+        return;
+      }
+
+      if (!pData.familyId) {
+        if (families.includes(instanceId)) {
+          pData.familyId = instanceId;
+        } else {
+          const baseId = instanceId.split('_')[0];
+          if (POKEMON_MAP[baseId] && !EVOLVED_POKEMON_IDS.has(Number(baseId))) {
+            pData.familyId = baseId;
+          } else {
+            pData.familyId = '25';
+          }
+        }
+        issues.push(`Missing familyId for instance ${instanceId}.`);
+        fixed.push(`Set familyId to '${pData.familyId}' for instance ${instanceId}.`);
+      }
+
+      const fid = pData.familyId;
+      const isValid = POKEMON_MAP[fid] && !EVOLVED_POKEMON_IDS.has(Number(fid));
+      if (!isValid) {
+        issues.push(`Invalid familyId '${fid}' for instance ${instanceId}.`);
+        pData.familyId = '25';
+        fixed.push(`Reset familyId to '25' for instance ${instanceId}.`);
+      }
+
       if (typeof pData.level !== 'number' || pData.level < 1) {
-        issues.push(`Invalid level for family ${fid}: ${pData.level}`);
+        issues.push(`Invalid level for instance ${instanceId}: ${pData.level}`);
         pData.level = 1;
-        fixed.push(`Reset level to 1 for family ${fid}.`);
+        fixed.push(`Reset level to 1 for instance ${instanceId}.`);
       }
       if (typeof pData.xp !== 'number' || pData.xp < 0 || pData.xp >= 100) {
-        issues.push(`Invalid XP for family ${fid}: ${pData.xp}`);
+        issues.push(`Invalid XP for instance ${instanceId}: ${pData.xp}`);
         pData.xp = Math.max(0, Math.min(99, pData.xp));
-        fixed.push(`Clamped XP for family ${fid} between 0 and 99.`);
+        fixed.push(`Clamped XP for instance ${instanceId} between 0 and 99.`);
       }
+      
       if (!pData.stageId) {
         const evo = EVOLUTIONS[fid];
         let index = 0;
@@ -325,28 +365,38 @@ export function runStateDiagnostics() {
         } else {
           pData.stageId = fid;
         }
-        issues.push(`Missing stageId for family ${fid}.`);
+        issues.push(`Missing stageId for instance ${instanceId}.`);
         fixed.push(`Set stageId to ${pData.stageId} based on level.`);
       } else {
         const evo = EVOLUTIONS[fid];
         if (fid === '133') {
-          const isValidEeveeStage = pData.stageId === '133' || evo.options.some(opt => opt.id === pData.stageId);
+          const isValidEeveeStage = pData.stageId === '133' || (evo && evo.options.some(opt => opt.id === pData.stageId));
           if (!isValidEeveeStage) {
-            issues.push(`Invalid stageId for Eevee family: ${pData.stageId}`);
+            issues.push(`Invalid stageId for Eevee instance ${instanceId}: ${pData.stageId}`);
             pData.stageId = '133';
             fixed.push(`Reset Eevee stageId to '133'.`);
           }
         } else if (evo) {
           const isValidStage = evo.stages.some(s => s.id === pData.stageId);
           if (!isValidStage) {
-            issues.push(`Invalid stageId for family ${fid}: ${pData.stageId}`);
+            issues.push(`Invalid stageId for instance ${instanceId} (family ${fid}): ${pData.stageId}`);
             pData.stageId = fid;
-            fixed.push(`Reset stageId to ${fid} for family ${fid}.`);
+            fixed.push(`Reset stageId to ${fid}.`);
           }
         }
       }
+    });
+  }
+
+  // Ensure activePartnerInstanceId exists in partnersData
+  if (state.partnersData && !state.partnersData[state.activePartnerInstanceId]) {
+    issues.push(`activePartnerInstanceId '${state.activePartnerInstanceId}' not found in partnersData.`);
+    state.activePartnerInstanceId = Object.keys(state.partnersData)[0] || '25';
+    if (!state.partnersData[state.activePartnerInstanceId]) {
+      state.partnersData[state.activePartnerInstanceId] = { familyId: '25', level: 1, xp: 0, stageId: '25' };
     }
-  });
+    fixed.push(`Reset active partner to '${state.activePartnerInstanceId}'.`);
+  }
   
   if (!state.grid || typeof state.grid !== 'object') {
     state.grid = {};
@@ -445,10 +495,6 @@ export function runStateDiagnostics() {
       state.starVault.totalTraded = 0;
       issues.push("Negative starVault.totalTraded.");
       fixed.push("Reset starVault.totalTraded to 0.");
-    } else if (state.starVault.totalTraded > state.starVault.earnedDates.length) {
-      issues.push(`totalTraded (${state.starVault.totalTraded}) exceeds total earned stars (${state.starVault.earnedDates.length}).`);
-      state.starVault.totalTraded = state.starVault.earnedDates.length;
-      fixed.push(`Clamped totalTraded to match earned stars count.`);
     }
   }
 
@@ -517,10 +563,10 @@ export function runStateDiagnostics() {
     fixed.push("Reset megaRewardOptions to defaults.");
   }
 
-  if (state.version !== 15) {
-    issues.push(`State version mismatch. Current: ${state.version}, Expected: 15`);
-    state.version = 15;
-    fixed.push("Forced state version to 15.");
+  if (state.version !== 16) {
+    issues.push(`State version mismatch. Current: ${state.version}, Expected: 16`);
+    state.version = 16;
+    fixed.push("Forced state version to 16.");
   }
 
   if (fixed.length > 0) {

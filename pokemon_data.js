@@ -183,3 +183,173 @@ export const EVOLUTIONS = {
     ]
   }
 };
+
+export const EVOLVED_POKEMON_IDS = new Set([
+  2, 3,       // Ivysaur, Venusaur
+  5, 6,       // Charmeleon, Charizard
+  8, 9,       // Wartortle, Blastoise
+  12,         // Butterfree
+  26,         // Raichu
+  38,         // Ninetales
+  40,         // Wigglytuff
+  53,         // Persian
+  55,         // Golduck
+  59,         // Arcanine
+  65,         // Alakazam
+  68,         // Machamp
+  80,         // Slowbro
+  94,         // Gengar
+  130,        // Gyarados
+  134, 135, 136, 196, 197, 470, 471, 700, // Eeveelutions
+  149,        // Dragonite
+  153, 154,   // Bayleef, Meganium
+  156, 157,   // Quilava, Typhlosion
+  159, 160,   // Croconaw, Feraligatr
+  176,        // Togetic
+  180, 181,   // Flaaffy, Ampharos
+  229,        // Houndoom
+  247, 248,   // Pupitar, Tyranitar
+  253, 254,   // Grovyle, Sceptile
+  256, 257,   // Combusken, Blaziken
+  259, 260,   // Marshtomp, Swampert
+  282,        // Gardevoir
+  330,        // Flygon
+  376,        // Metagross
+  388, 389,   // Grotle, Torterra
+  391, 392,   // Monferno, Infernape
+  394, 395,   // Prinplup, Empoleon
+  404, 405,   // Luxio, Luxray
+  444, 445,   // Gabite, Garchomp
+  448,        // Lucario
+  475,        // Gallade
+  496, 497,   // Servine, Serperior
+  499, 500,   // Pignite, Emboar
+  502, 503,   // Dewott, Samurott
+  611, 612,   // Fraxure, Haxorus
+  634, 635,   // Zweilous, Hydreigon
+  654, 655,   // Braixen, Delphox
+  657, 658,   // Frogadier, Greninja
+  705, 706,   // Sliggoo, Goodra
+  723, 724,   // Dartrix, Decidueye
+  726, 727,   // Torracat, Incineroar
+  738,        // Vikavolt
+  745,        // Lycanroc
+  758,        // Salazzle
+  790, 791, 792, // Cosmoem, Solgaleo, Lunala
+  811, 812,   // Thwackey, Rillaboom
+  814, 815,   // Raboot, Cinderace
+  832,        // Dubwool
+  873,        // Frosmoth
+  886, 887,   // Drakloak, Dragapult
+  907, 908,   // Floragato, Meowscarada
+  910, 911,   // Crocalor, Skeledirge
+  913, 914,   // Quaxwell, Quaquaval
+]);
+
+export const POKEMON_TYPES = {
+  1: "Grass", 2: "Grass", 3: "Grass",
+  4: "Fire", 5: "Fire", 6: "Fire",
+  7: "Water", 8: "Water", 9: "Water",
+  12: "Bug",
+  25: "Electric", 26: "Electric",
+  35: "Fairy",
+  37: "Fire", 38: "Fire",
+  39: "Normal", 40: "Normal",
+  52: "Normal", 53: "Normal",
+  54: "Water", 55: "Water",
+  58: "Fire", 59: "Fire",
+  63: "Psychic", 65: "Psychic",
+  66: "Fighting", 68: "Fighting",
+  79: "Water", 80: "Water",
+  94: "Ghost",
+  95: "Rock",
+  130: "Water",
+  131: "Water",
+  133: "Normal", 134: "Water", 135: "Electric", 136: "Fire",
+  143: "Normal",
+  149: "Dragon",
+  150: "Psychic", 151: "Psychic",
+  152: "Grass", 153: "Grass", 154: "Grass",
+  155: "Fire", 156: "Fire", 157: "Fire",
+  158: "Water", 159: "Water", 160: "Water",
+  172: "Electric",
+  175: "Fairy", 176: "Fairy",
+  179: "Electric", 180: "Electric", 181: "Electric",
+  194: "Water",
+  196: "Psychic", 197: "Dark",
+  212: "Bug", 214: "Bug",
+  228: "Dark", 229: "Dark",
+  246: "Rock", 247: "Rock", 248: "Rock",
+  249: "Psychic", 250: "Fire", 251: "Grass",
+  252: "Grass", 253: "Grass", 254: "Grass",
+  255: "Fire", 256: "Fire", 257: "Fire",
+  258: "Water", 259: "Water", 260: "Water",
+  282: "Psychic",
+  303: "Steel",
+  330: "Ground",
+  359: "Dark",
+  376: "Steel",
+  380: "Dragon", 381: "Dragon", 382: "Water", 383: "Ground", 384: "Dragon", 385: "Steel", 386: "Psychic",
+  387: "Grass", 388: "Grass", 389: "Grass",
+  390: "Fire", 391: "Fire", 392: "Fire",
+  393: "Water", 394: "Water", 395: "Water",
+  403: "Electric", 404: "Electric", 405: "Electric",
+  443: "Dragon", 444: "Dragon", 445: "Dragon",
+  447: "Fighting", 448: "Fighting",
+  470: "Grass", 471: "Ice",
+  475: "Psychic",
+  483: "Steel", 484: "Water", 487: "Ghost", 493: "Normal",
+  494: "Psychic",
+  495: "Grass", 496: "Grass", 497: "Grass",
+  498: "Fire", 499: "Fire", 500: "Fire",
+  501: "Water", 502: "Water", 503: "Water",
+  610: "Dragon", 611: "Dragon", 612: "Dragon",
+  633: "Dark", 634: "Dark", 635: "Dark",
+  637: "Bug",
+  643: "Dragon", 644: "Dragon", 646: "Dragon",
+  649: "Bug",
+  653: "Fire", 654: "Fire", 655: "Fire",
+  656: "Water", 657: "Water", 658: "Water",
+  681: "Steel",
+  700: "Fairy",
+  704: "Dragon", 705: "Dragon", 706: "Dragon",
+  716: "Fairy", 717: "Dark", 718: "Dragon",
+  719: "Rock", 720: "Psychic",
+  722: "Grass", 723: "Grass", 724: "Grass",
+  725: "Fire", 726: "Fire", 727: "Fire",
+  736: "Bug", 738: "Bug",
+  744: "Rock", 745: "Rock",
+  757: "Poison", 758: "Poison",
+  778: "Ghost",
+  789: "Psychic", 790: "Psychic", 791: "Psychic", 792: "Psychic", 800: "Psychic",
+  807: "Electric",
+  810: "Grass", 811: "Grass", 812: "Grass",
+  813: "Fire", 814: "Fire", 815: "Fire",
+  823: "Flying",
+  831: "Normal", 832: "Normal",
+  849: "Electric",
+  863: "Dark",
+  872: "Ice", 873: "Ice",
+  885: "Dragon", 886: "Dragon", 887: "Dragon",
+  888: "Fairy", 889: "Fighting",
+  892: "Fighting", 898: "Psychic",
+  906: "Grass", 907: "Grass", 908: "Grass",
+  909: "Fire", 910: "Fire", 911: "Fire",
+  912: "Water", 913: "Water", 914: "Water",
+  926: "Fairy", 927: "Fairy",
+  936: "Fire", 937: "Fire",
+  959: "Fairy",
+  1007: "Dragon", 1008: "Dragon", 1017: "Grass"
+};
+
+export const LEGENDARY_POKEMON_IDS = new Set([
+  150, 151,             // Mewtwo, Mew
+  249, 250, 251,        // Lugia, Ho-Oh, Celebi
+  380, 381, 382, 383, 384, 385, 386, // Gen 3 Legendaries
+  483, 484, 487, 493, 494, // Gen 4 Legendaries
+  643, 644, 646, 649,   // Gen 5 Legendaries
+  716, 717, 718, 719, 720, // Gen 6 Legendaries
+  789, 790, 791, 792, 800, 807, // Gen 7 Legendaries
+  888, 889, 892, 898,   // Gen 8 Legendaries
+  1007, 1008, 1017      // Gen 9 Legendaries
+]);
