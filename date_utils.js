@@ -23,3 +23,16 @@ export function getDateOfColumn(weekStartDateStr, d) {
   baseDate.setDate(baseDate.getDate() + d);
   return formatLocalDate(baseDate);
 }
+
+export function getLocalDate(timeZone = 'default') {
+  const d = new Date();
+  if (timeZone && timeZone !== 'default') {
+    try {
+      const tzString = d.toLocaleString("en-US", { timeZone });
+      return new Date(tzString);
+    } catch (e) {
+      console.error("Invalid timezone:", timeZone);
+    }
+  }
+  return d;
+}

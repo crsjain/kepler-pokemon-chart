@@ -20,7 +20,7 @@ import {
   registerOnSave,
   getEarliestDataWeekStartDate
 } from './state.js';
-import { formatLocalDate, getWeekStart, getDateOfColumn } from './date_utils.js';
+import { formatLocalDate, getWeekStart, getDateOfColumn, getLocalDate } from './date_utils.js';
 import { 
   loginFamily, 
   logoutFamily, 
@@ -34,10 +34,20 @@ import {
   importFamilyData,
   saveProfileRewardsToCloud,
   useEmulator,
-  useProd
+  useProd,
+  useStaging,
+  saveAdminPasswordToCloud
 } from './firebase.js';
 let deleteChildProfileFn = deleteChildProfile;
 let saveProfileRewardsToCloudFn = saveProfileRewardsToCloud;
+let subscribeToProfileStateFn = (profileId, callback, errorCallback) => {
+  if (location.search.includes('runTests=true')) {
+    // In test mode, immediately callback with local state copy
+    setTimeout(() => callback(JSON.parse(JSON.stringify(state))), 0);
+    return () => {};
+  }
+  return subscribeToProfileState(profileId, callback, errorCallback);
+};
 import { promptParentPassword } from './admin.js';
 import { DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS } from './migrations.js';
 
@@ -65,7 +75,7 @@ function getIdleTimeoutMs() {
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault, getStarsFromDates } from './vault.js';
-import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS } from './pokemon_data.js';
+import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES } from './pokemon_data.js';
 import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
 import { initAdmin } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
@@ -112,6 +122,7 @@ const closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
 const toggleDebugSidebar = document.getElementById('toggle-debug-sidebar');
 const adminWeekStartSelect = document.getElementById('admin-week-start-select');
 const adminIdleTimeoutSelect = document.getElementById('admin-idle-timeout-select');
+const adminTimezoneSelect = document.getElementById('admin-timezone-select');
 
 const editRewardsModal = document.getElementById('edit-rewards-modal');
 const editRewardsTitle = document.getElementById('edit-rewards-title');
@@ -245,11 +256,34 @@ function handleProfilesUpdate(profiles) {
   }
 }
 
+function initEnvBanner() {
+  const banner = document.getElementById('env-banner');
+  if (!banner) return;
+
+  if (useEmulator) {
+    banner.textContent = "🔌 Running in Emulator Mode. Do not use with production credentials.";
+    banner.className = "emulator-banner";
+    document.body.classList.add('has-banner');
+  } else if (useStaging) {
+    banner.textContent = "⚠️ Running in Staging Environment. Do not use with production credentials.";
+    banner.className = "staging-banner";
+    document.body.classList.add('has-banner');
+  } else {
+    banner.classList.add('hidden');
+    banner.classList.remove('emulator-banner', 'staging-banner');
+    document.body.classList.remove('has-banner');
+  }
+}
+
 function initFirebaseUI() {
+  initEnvBanner();
   const isTestMode = location.search.includes('runTests=true');
   if (isTestMode) {
     console.log("Test mode active. Bypassing Firebase Auth and loading local state...");
     loadState();
+    profilesList = [
+      { id: 'kepler_test', name: 'Kepler', avatarId: '25', state: JSON.parse(JSON.stringify(state)) }
+    ];
     
     // Setup Trainer Name static label for tests
     document.querySelectorAll('.trainer-name-label').forEach(el => {
@@ -642,7 +676,7 @@ function selectProfile(profileId) {
   
   let isProfileFirstLoad = true;
   
-  subscribeToProfileState(profileId, (cloudState) => {
+  subscribeToProfileStateFn(profileId, (cloudState) => {
     if (cloudState) {
       if (isCloudSavePending) {
         console.log("Ignoring cloud state update because local write is pending.");
@@ -653,7 +687,7 @@ function selectProfile(profileId) {
       
       if (isProfileFirstLoad) {
         isProfileFirstLoad = false;
-        const todayDay = new Date().getDay();
+        const todayDay = getLocalDate(state?.timezoneOffset).getDay();
         if (state.activeDay !== todayDay) {
           console.log("Auto-aligning activeDay from " + state.activeDay + " to today (" + todayDay + ") on startup.");
           state.activeDay = todayDay;
@@ -661,7 +695,7 @@ function selectProfile(profileId) {
         }
         
         // Notify if today belongs to a later week than the grid week start
-        const currentRealWeekStart = formatLocalDate(getWeekStart(new Date(), state.weekStartDay || 0));
+        const currentRealWeekStart = formatLocalDate(getWeekStart(getLocalDate(state?.timezoneOffset), state.weekStartDay || 0));
         if (state.weekStartDate && currentRealWeekStart > state.weekStartDate) {
           showCustomNotification(
             "New Week Training! 📅",
@@ -729,7 +763,10 @@ initAdmin({
   exportCloudData: () => exportCloudDataFn(),
   importCloudData: (data) => importCloudDataFn(data),
   wipeData: () => wipeCloudDataFn(),
-  reload: () => reloadFn()
+  reload: () => reloadFn(),
+  saveAdminPassword: async (newPassword) => {
+    await saveAdminPasswordToCloud(newPassword, profilesList);
+  }
 });
 initFirebaseUI();
 preloadImages();
@@ -848,7 +885,7 @@ export function showCustomConfirm(title, message, onYesCallback, onNoCallback, y
   };
 }
 
-export function showCustomNotification(title, message, imageUrl = null, isMega = false, callback = null, extraClass = '') {
+export function showCustomNotification(title, message, imageUrl = null, isMega = false, callback = null, extraClass = '', buttonLabel = 'Awesome!', buttonClass = '') {
   const notifModal = document.createElement('div');
   notifModal.className = `modal notif-modal ${isMega ? 'mega-celebration' : ''} ${extraClass}`;
   
@@ -893,7 +930,7 @@ export function showCustomNotification(title, message, imageUrl = null, isMega =
       <h2>${title}</h2>
       ${imageHtml}
       <div class="notif-body-text">${message}</div>
-      <button class="pixel-btn notif-close-btn">Awesome!</button>
+      <button class="pixel-btn notif-close-btn ${buttonClass}">${buttonLabel}</button>
     </div>
   `;
   
@@ -983,7 +1020,7 @@ export function renderState(rebuildGrid = false) {
   if (evolutionHelper) {
     if (stageInfo.nextStage) {
       const levelsLeft = stageInfo.endLevel - stats.level;
-      if (family === '133') {
+      if (stageInfo.nextStage.id === 'choice') {
         evolutionHelper.innerHTML = `✨ Evolves at LV&nbsp;${stageInfo.endLevel} (${levelsLeft} ${levelsLeft === 1 ? 'level' : 'levels'} to go!)`;
       } else {
         evolutionHelper.innerHTML = `✨ Next Evolution: <strong>${stageInfo.nextStage.name}</strong> at LV&nbsp;${stageInfo.endLevel} (${levelsLeft} ${levelsLeft === 1 ? 'level' : 'levels'} to go!)`;
@@ -1019,6 +1056,9 @@ export function renderState(rebuildGrid = false) {
   if (adminIdleTimeoutSelect) {
     adminIdleTimeoutSelect.value = state.idleTimeout !== undefined ? state.idleTimeout.toString() : '10';
   }
+  if (adminTimezoneSelect) {
+    adminTimezoneSelect.value = state.timezoneOffset !== undefined ? state.timezoneOffset.toString() : 'default';
+  }
 
   // 5. Render Grid Table (conditional build vs update)
   if (rebuildGrid) {
@@ -1030,9 +1070,13 @@ export function renderState(rebuildGrid = false) {
   updateActiveColumnUI();
 
 
-  // Auto-trigger Eevee evolution if they are in inconsistent state (Level >= 5 but not evolved)
-  if (family === '133' && stats.level >= 5 && stats.stageId === '133') {
-    showEeveeEvolutionDialog();
+  // Auto-trigger branching evolution if partner is at or above threshold but still in base stage
+  const currentEvo = EVOLUTIONS[family];
+  if (currentEvo && currentEvo.options) {
+    const branchThreshold = currentEvo.options[0]?.level || 5;
+    if (stats.level >= branchThreshold && String(stats.stageId) === String(family)) {
+      showBranchEvolutionDialog(family, instanceId);
+    }
   }
 
   // Render Star Vault
@@ -1059,8 +1103,17 @@ function renderDebugSidebarVisibility() {
 function updateActiveColumnUI() {
   const isPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
   
-  const activeDay = state.activeDay !== undefined ? state.activeDay : new Date().getDay();
-  const activeColumn = isPastWeek ? -1 : (activeDay - state.weekStartDay + 7) % 7;
+  // Calculate if today's calendar date actually falls within the week being viewed
+  const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
+  const viewStart = new Date(currentViewingWeekStartDate + 'T00:00:00');
+  const viewEnd = new Date(viewStart.getTime());
+  viewEnd.setDate(viewStart.getDate() + 6);
+  const viewEndStr = formatLocalDate(viewEnd);
+  
+  const isTodayInViewingWeek = (todayStr >= currentViewingWeekStartDate && todayStr <= viewEndStr) || location.search.includes('runTests=true');
+  
+  const activeDay = state.activeDay !== undefined ? state.activeDay : getLocalDate(state?.timezoneOffset).getDay();
+  const activeColumn = (isPastWeek || !isTodayInViewingWeek) ? -1 : (activeDay - state.weekStartDay + 7) % 7;
   
   const headers = document.querySelectorAll('.day-header');
   headers.forEach(th => {
@@ -1078,7 +1131,7 @@ function updateActiveColumnUI() {
     }
 
     const dateStr = getDateOfColumn(currentViewingWeekStartDate, day);
-    const todayStr = formatLocalDate(new Date());
+    const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
     const isFutureDay = dateStr > todayStr;
     const allowFutureEdits = areFutureEditsAllowed();
 
@@ -1195,7 +1248,7 @@ function renderGridTable() {
       const excused = !!state.excused[stateKey];
       const isOutOfRange = (task.createdAt && dateStr < task.createdAt) || (task.deletedAt && dateStr >= task.deletedAt);
       
-      const todayStr = formatLocalDate(new Date());
+      const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
       const isFutureDay = dateStr > todayStr;
       const allowFutureEdits = areFutureEditsAllowed();
       const shouldDisable = isPastWeek || isOutOfRange || (isFutureDay && !allowFutureEdits);
@@ -1385,7 +1438,7 @@ function handleCheckboxChange(e) {
   }
 
   const dateStr = getDateOfColumn(currentViewingWeekStartDate, day);
-  const todayStr = formatLocalDate(new Date());
+  const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
   const isFutureDay = dateStr > todayStr;
   const allowFutureEdits = areFutureEditsAllowed();
 
@@ -1725,7 +1778,7 @@ function setupEventListeners() {
 
       const clickedColumn = parseInt(th.dataset.day);
       const dateStr = getDateOfColumn(currentViewingWeekStartDate, clickedColumn);
-      const todayStr = formatLocalDate(new Date());
+      const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
       const isFutureDay = dateStr > todayStr;
       const allowFutureEdits = areFutureEditsAllowed();
 
@@ -1739,7 +1792,7 @@ function setupEventListeners() {
           updateActiveColumnUI();
           return;
         }
-        const today = new Date().getDay();
+        const today = getLocalDate(state?.timezoneOffset).getDay();
         if (clickedRealDay !== today) {
           const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
           const dayName = daysOfWeek[clickedRealDay];
@@ -1797,7 +1850,7 @@ function setupEventListeners() {
       const dates = state.starVault.earnedDates;
       let nextDateStr;
       if (dates.length === 0) {
-        nextDateStr = formatLocalDate(new Date());
+        nextDateStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
       } else {
         const sorted = [...dates].sort();
         const lastDate = new Date(sorted[sorted.length - 1] + 'T00:00:00');
@@ -1818,7 +1871,7 @@ function setupEventListeners() {
       const dates = state.starVault.earnedDates;
       let nextDateStr;
       if (dates.length === 0) {
-        nextDateStr = formatLocalDate(new Date());
+        nextDateStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
       } else {
         const sorted = [...dates].sort();
         const lastDate = new Date(sorted[sorted.length - 1] + 'T00:00:00');
@@ -1840,7 +1893,7 @@ function setupEventListeners() {
       const dates = state.starVault.earnedDates;
       let baseDate;
       if (dates.length === 0) {
-        baseDate = new Date();
+        baseDate = getLocalDate(state?.timezoneOffset);
         baseDate.setDate(baseDate.getDate() - 9); // start 9 days ago
       } else {
         const sorted = [...dates].sort();
@@ -1946,7 +1999,7 @@ function setupEventListeners() {
             `Are you sure you want to change the week start day? This will update your weekly calendar headers starting today.`,
             () => {
               state.weekStartDay = newStartDay;
-              state.weekStartDate = formatLocalDate(getWeekStart(new Date(), newStartDay));
+              state.weekStartDate = formatLocalDate(getWeekStart(getLocalDate(state?.timezoneOffset), newStartDay));
               currentViewingWeekStartDate = null;
               saveState();
               renderState(true);
@@ -1966,7 +2019,7 @@ function setupEventListeners() {
             </div>`,
             () => {
               state.weekStartDay = newStartDay;
-              state.weekStartDate = formatLocalDate(getWeekStart(new Date(), newStartDay));
+              state.weekStartDate = formatLocalDate(getWeekStart(getLocalDate(state?.timezoneOffset), newStartDay));
               currentViewingWeekStartDate = null;
               saveState();
               renderState(true);
@@ -1989,6 +2042,15 @@ function setupEventListeners() {
       state.idleTimeout = parseInt(adminIdleTimeoutSelect.value);
       saveState();
       resetIdleTimer();
+    });
+  }
+  if (adminTimezoneSelect) {
+    adminTimezoneSelect.addEventListener('change', () => {
+      state.timezoneOffset = adminTimezoneSelect.value;
+      saveState();
+      renderState(true);
+      const tzText = adminTimezoneSelect.options[adminTimezoneSelect.selectedIndex].text;
+      showCustomNotification("Timezone Updated 🌐", `App timezone set to ${tzText}.`);
     });
   }
 
@@ -2032,9 +2094,18 @@ function setupEventListeners() {
         
         await saveProfileRewardsToCloudFn(editingProfileId, tempWeeklyRewards, tempMegaRewards);
         
+        // Update profilesList in memory immediately to prevent stale reads on quick reopen
+        const profile = profilesList.find(p => p.id === editingProfileId);
+        if (profile) {
+          if (!profile.state) profile.state = {};
+          profile.state.weeklyRewardOptions = [...tempWeeklyRewards];
+          profile.state.megaRewardOptions = [...tempMegaRewards];
+        }
+        
         if (editingProfileId === activeProfileId) {
           state.weeklyRewardOptions = [...tempWeeklyRewards];
           state.megaRewardOptions = [...tempMegaRewards];
+          saveState();
           renderRewardDropdowns();
         }
         
@@ -2101,12 +2172,26 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
   let flashMega = false;
   
   const oldWeekStartDate = state.weekStartDate;
+  const currentRealWeekStart = formatLocalDate(getWeekStart(getLocalDate(state?.timezoneOffset), state.weekStartDay || 0));
+  const isOldWeek = oldWeekStartDate && (currentRealWeekStart > oldWeekStartDate);
+  const oldBadgeId = state.activeWeeklyBadgeId;
 
   if (state.weeklyClaimed) {
     const alreadyAwarded = state.collectedBadges.some(b => b.id === state.activeWeeklyBadgeId);
     if (!alreadyAwarded) {
       awardCurrentWeeklyBadge();
     }
+    
+    // Archive to weeklyHistory before rolling new badge & advancing date
+    state.weeklyHistory[oldWeekStartDate] = {
+      weekStartDay: state.weekStartDay,
+      reward: state.reward,
+      megaReward: state.megaReward,
+      weeklyClaimed: true,
+      badgeId: oldBadgeId,
+      xpEarned: calculateWeekXpEarned(oldWeekStartDate)
+    };
+
     rollNewWeeklyBadge();
     state.megaWeeks += 1;
     if (state.megaWeeks >= 4) {
@@ -2114,21 +2199,12 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
       state.megaReward = '';
       flashMega = true;
     }
-    
-    // Archive to weeklyHistory before advancing date
-    state.weeklyHistory[oldWeekStartDate] = {
-      weekStartDay: state.weekStartDay,
-      reward: state.reward,
-      megaReward: state.megaReward,
-      weeklyClaimed: true,
-      badgeId: state.activeWeeklyBadgeId,
-      xpEarned: calculateWeekXpEarned(oldWeekStartDate)
-    };
 
-    // Advance weekStartDate by 7 days
-    const currentWeekStart = new Date(oldWeekStartDate + 'T00:00:00');
-    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-    const newWeekStartDate = formatLocalDate(currentWeekStart);
+    // Advance weekStartDate by 7 days or to current real week start
+    const nextWeekStart = new Date(oldWeekStartDate + 'T00:00:00');
+    nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+    const nextWeekStartDateStr = formatLocalDate(nextWeekStart);
+    const newWeekStartDate = isOldWeek ? currentRealWeekStart : nextWeekStartDateStr;
     state.weekStartDate = newWeekStartDate;
 
     // Carry over exceptions to the new week (shift by 7 days)
@@ -2149,6 +2225,38 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
     state.weeklyClaimed = false;
     state.reward = '';
     flashWeekly = true;
+  } else if (isOldWeek) {
+    // Advancing from a past unearned week to current real week start
+    state.weeklyHistory[oldWeekStartDate] = {
+      weekStartDay: state.weekStartDay,
+      reward: state.reward,
+      megaReward: state.megaReward,
+      weeklyClaimed: false,
+      badgeId: oldBadgeId,
+      xpEarned: calculateWeekXpEarned(oldWeekStartDate)
+    };
+    
+    rollNewWeeklyBadge();
+    
+    const newWeekStartDate = currentRealWeekStart;
+    state.weekStartDate = newWeekStartDate;
+
+    if (carryOverExceptions) {
+      DAYS.forEach(dayIndex => {
+        const oldDateStr = getDateOfColumn(oldWeekStartDate, dayIndex);
+        const newDateStr = getDateOfColumn(newWeekStartDate, dayIndex);
+        state.tasks.forEach(task => {
+          const oldKey = `${oldDateStr}-${task.id}`;
+          const newKey = `${newDateStr}-${task.id}`;
+          if (state.excused[oldKey]) {
+            state.excused[newKey] = true;
+          }
+        });
+      });
+    }
+
+    state.weeklyClaimed = false;
+    state.reward = '';
   } else {
     // Manual Reset (same week)
     // Clear only the current week's keys from grid and excused
@@ -2164,7 +2272,7 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
     });
     
     // Reset weekStartDate to current calendar week start
-    state.weekStartDate = formatLocalDate(getWeekStart(new Date(), state.weekStartDay));
+    state.weekStartDate = formatLocalDate(getWeekStart(getLocalDate(state?.timezoneOffset), state.weekStartDay));
   }
   
   currentViewingWeekStartDate = state.weekStartDate;
@@ -2242,10 +2350,10 @@ function setNearEvolution() {
   const evo = EVOLUTIONS[family];
   
   let targetLevel = 4;
-  if (family === '133') {
-    targetLevel = 4;
-  } else if (evo) {
-    const stageIdx = evo.stages.findIndex(s => s.id === stats.stageId);
+  if (evo && evo.options) {
+    targetLevel = (evo.options[0]?.level || 5) - 1;
+  } else if (evo && evo.stages) {
+    const stageIdx = evo.stages.findIndex(s => String(s.id) === String(stats.stageId));
     if (stageIdx !== -1 && stageIdx < evo.stages.length - 1) {
       targetLevel = evo.stages[stageIdx + 1].level - 1;
     } else if (stageIdx === evo.stages.length - 1) {
@@ -2319,14 +2427,15 @@ function addXp(amount) {
   if (levelChanged) {
     const evo = EVOLUTIONS[family];
     if (evo) {
-      if (family === '133') {
-        // Eevee special case
-        if (stats.level < 5 && stats.stageId !== '133') {
-          stats.stageId = '133';
+      if (evo.options) {
+        // Branching Pokemon (Eevee, Mewtwo, Kyurem, Calyrex, etc.)
+        const threshold = evo.options[0]?.level || 5;
+        if (stats.level < threshold && String(stats.stageId) !== String(family)) {
+          stats.stageId = String(family);
           devolved = true;
         }
-      } else {
-        // Regular Pokemon
+      } else if (evo.stages) {
+        // Linear Pokemon
         let stageIdx = 0;
         for (let i = 1; i < evo.stages.length; i++) {
           if (stats.level >= evo.stages[i].level) {
@@ -2335,8 +2444,8 @@ function addXp(amount) {
             break;
           }
         }
-        const targetStageId = evo.stages[stageIdx].id;
-        if (stats.stageId !== targetStageId) {
+        const targetStageId = String(evo.stages[stageIdx].id);
+        if (String(stats.stageId) !== targetStageId) {
           stats.stageId = targetStageId;
           if (stats.level < oldLevel) {
             devolved = true;
@@ -2349,8 +2458,9 @@ function addXp(amount) {
   }
 
   if (levelIncreased) {
-    if (family === '133' && stats.level >= 5 && stats.stageId === '133') {
-      // Eevee evolution choice handles dynamically in renderState
+    const evo = EVOLUTIONS[family];
+    if (evo && evo.options && stats.level >= (evo.options[0]?.level || 5) && String(stats.stageId) === String(family)) {
+      // Branching evolution choice handles dynamically in renderState
     } else if (evolved) {
       const activePokemon = getStageInfo(family, stats.stageId).currentStage;
       CelebrationEngine.triggerCelebration(true);
@@ -2358,7 +2468,6 @@ function addXp(amount) {
       
       // Determine previous stage name for notification
       let prevStageName = 'partner';
-      const evo = EVOLUTIONS[family];
       if (evo) {
         const oldStageInfo = getStageInfo(family, oldStageId);
         prevStageName = oldStageInfo.currentStage.name;
@@ -2384,7 +2493,12 @@ function addXp(amount) {
       showCustomNotification(
         "😢 POKÉMON DEVOLVED 😢",
         `Oh no! ${state.childName || 'Trainer'}'s ${oldPokemon.name} devolved back into ${activePokemon.name} because level dropped.`,
-        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`
+        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`,
+        false,
+        null,
+        '',
+        "Let's get it back! 🚀",
+        'info'
       );
     }
   }
@@ -2494,6 +2608,20 @@ function renderProgress() {
     const history = state.weeklyHistory[currentViewingWeekStartDate] || {};
     isClaimed = history.weeklyClaimed || false;
     badgeId = history.badgeId || null;
+
+    // Fallback: cross-reference collectedBadges by earned date for legacy weeks
+    if (!badgeId && state.collectedBadges && state.collectedBadges.length > 0) {
+      const wStart = new Date(currentViewingWeekStartDate + 'T00:00:00').getTime();
+      const wEnd = wStart + 7 * 24 * 60 * 60 * 1000;
+      const match = state.collectedBadges.find(b => {
+        const t = new Date(b.dateEarned).getTime();
+        return t >= wStart && t < wEnd;
+      });
+      if (match) {
+        badgeId = match.id;
+        isClaimed = true;
+      }
+    }
   }
 
   const taskTotals = {};
@@ -2541,45 +2669,68 @@ function renderProgress() {
     weeklyBadgeSlot.classList.remove(`badge-theme-${i}`);
   }
 
-  if (isClaimed) {
-    const badgeName = getPokemonName(badgeId);
-    if (badgeId) {
-      weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="${badgeName}" class="mega-slot-img">`;
-      badgeStatusEl.textContent = `${badgeName} Badge Earned!`;
-    }
-    weeklyBadgeSlot.classList.remove('locked');
-    weeklyBadgeSlot.classList.add('unlocked');
-    weeklyBadgeSlot.classList.add(`badge-theme-${state.megaWeeks + 1}`);
-    rewardSelectContainer.classList.add('earned');
-  } else {
-    const badgeName = getPokemonName(badgeId);
-    if (badgeId) {
-      weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="Who's that Pokémon?" class="mega-slot-img silhouette">`;
-    } else {
-      weeklyBadgeSlot.innerHTML = `<div class="badge-placeholder">?</div>`;
-    }
-    weeklyBadgeSlot.classList.remove('unlocked');
-    weeklyBadgeSlot.classList.add('locked');
+  if (isPastWeek) {
     rewardSelectContainer.classList.remove('earned');
-
-    // Dynamic requirements summary
-    if (tasks.length === 0) {
-      badgeStatusEl.textContent = "No activities configured. Add some in Admin Panel!";
+    if (isClaimed && badgeId) {
+      const badgeName = getPokemonName(badgeId);
+      weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="${badgeName}" class="mega-slot-img">`;
+      badgeStatusEl.textContent = `🏆 ${badgeName} Badge Earned!`;
+      weeklyBadgeSlot.classList.remove('locked');
+      weeklyBadgeSlot.classList.add('unlocked');
+      weeklyBadgeSlot.classList.add(`badge-theme-${state.megaWeeks + 1}`);
+    } else if (badgeId) {
+      const badgeName = getPokemonName(badgeId);
+      weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="${badgeName}" class="mega-slot-img silhouette">`;
+      badgeStatusEl.textContent = "🏃 The Pokémon Fled! (Goal Not Reached)";
+      weeklyBadgeSlot.classList.remove('unlocked');
+      weeklyBadgeSlot.classList.add('locked');
     } else {
-      const groups = {};
-      tasks.forEach(t => {
-        const days = getTaskRequiredDays(t.id);
-        if (!groups[days]) groups[days] = [];
-        groups[days].push(t.name);
-      });
-      const summaryParts = Object.keys(groups)
-        .map(Number)
-        .sort((a, b) => b - a)
-        .map(days => {
-          const names = groups[days].join(', ');
-          return `${names}: ${days} day${days > 1 ? 's' : ''}`;
+      weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Archived" class="mega-slot-img locked">`;
+      badgeStatusEl.textContent = "📅 Archived Training Week";
+      weeklyBadgeSlot.classList.remove('unlocked');
+      weeklyBadgeSlot.classList.add('locked');
+    }
+  } else {
+    if (isClaimed) {
+      const badgeName = getPokemonName(badgeId);
+      if (badgeId) {
+        weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="${badgeName}" class="mega-slot-img">`;
+        badgeStatusEl.textContent = `${badgeName} Badge Earned!`;
+      }
+      weeklyBadgeSlot.classList.remove('locked');
+      weeklyBadgeSlot.classList.add('unlocked');
+      weeklyBadgeSlot.classList.add(`badge-theme-${state.megaWeeks + 1}`);
+      rewardSelectContainer.classList.add('earned');
+    } else {
+      const badgeName = getPokemonName(badgeId);
+      if (badgeId) {
+        weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="Who's that Pokémon?" class="mega-slot-img silhouette">`;
+      } else {
+        weeklyBadgeSlot.innerHTML = `<div class="badge-placeholder">?</div>`;
+      }
+      weeklyBadgeSlot.classList.remove('unlocked');
+      weeklyBadgeSlot.classList.add('locked');
+      rewardSelectContainer.classList.remove('earned');
+
+      // Dynamic requirements summary
+      if (tasks.length === 0) {
+        badgeStatusEl.textContent = "No activities configured. Add some in Admin Panel!";
+      } else {
+        const groups = {};
+        tasks.forEach(t => {
+          const days = getTaskRequiredDays(t.id);
+          if (!groups[days]) groups[days] = [];
+          groups[days].push(t.name);
         });
-      badgeStatusEl.innerHTML = summaryParts.join('. ') + '.';
+        const summaryParts = Object.keys(groups)
+          .map(Number)
+          .sort((a, b) => b - a)
+          .map(days => {
+            const names = groups[days].join(', ');
+            return `${names}: ${days} day${days > 1 ? 's' : ''}`;
+          });
+        badgeStatusEl.innerHTML = summaryParts.join('. ') + '.';
+      }
     }
   }
 
@@ -2634,22 +2785,42 @@ function triggerLevelUpAnimation() {
 }
 
 function showEeveeEvolutionDialog() {
+  const instanceId = state.activePartnerInstanceId || '133';
+  const stats = state.partnersData[instanceId];
+  const family = stats ? (stats.familyId || '133') : '133';
+  showBranchEvolutionDialog(family, instanceId);
+}
+
+function showBranchEvolutionDialog(familyId, instanceId) {
+  if (!eeveeModal) return;
   const grid = eeveeModal.querySelector('.eevee-options-grid');
   if (!grid) return;
   grid.innerHTML = '';
   
-  const options = EVOLUTIONS['133'].options;
+  const evo = EVOLUTIONS[familyId];
+  if (!evo || !evo.options) return;
   
-  options.forEach(opt => {
+  const familyName = getPokemonName(familyId);
+  const titleEl = eeveeModal.querySelector('h2');
+  if (titleEl) {
+    titleEl.textContent = `Evolve ${familyName}! ✨`;
+  }
+  const subtitleEl = eeveeModal.querySelector('.eevee-subtitle');
+  if (subtitleEl) {
+    subtitleEl.textContent = `Choose your ${familyName}'s evolution form:`;
+  }
+  
+  evo.options.forEach(opt => {
     const optDiv = document.createElement('div');
-    optDiv.className = 'eevee-option';
+    const type = POKEMON_TYPES[opt.id] || 'Normal';
+    optDiv.className = `eevee-option type-${type.toLowerCase()}`;
     optDiv.innerHTML = `
       <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${opt.id}.png" alt="${opt.name}">
       <span class="eevee-option-name">${opt.name}</span>
     `;
     
     optDiv.addEventListener('click', () => {
-      selectEeveeEvolution(opt.id, opt.name);
+      selectBranchEvolution(familyId, instanceId, String(opt.id), opt.name);
     });
     
     grid.appendChild(optDiv);
@@ -2659,19 +2830,32 @@ function showEeveeEvolutionDialog() {
 }
 
 function selectEeveeEvolution(evolvedId, evolvedName) {
-  eeveeModal.classList.add('hidden');
+  const instanceId = state.activePartnerInstanceId || '133';
+  const stats = state.partnersData[instanceId];
+  const family = stats ? (stats.familyId || '133') : '133';
+  selectBranchEvolution(family, instanceId, evolvedId, evolvedName);
+}
+
+function selectBranchEvolution(familyId, instanceId, evolvedId, evolvedName) {
+  if (eeveeModal) {
+    eeveeModal.classList.add('hidden');
+  }
   
-  const stats = state.partnersData['133'];
-  stats.stageId = evolvedId;
+  const targetInstanceId = instanceId || state.activePartnerInstanceId;
+  const stats = state.partnersData[targetInstanceId];
+  if (stats) {
+    stats.stageId = String(evolvedId);
+  }
   
   saveState();
   renderState(false);
   
+  const familyName = getPokemonName(familyId);
   CelebrationEngine.triggerCelebration(true);
   playSound('badge');
   showCustomNotification(
-    "✨ EEVEE EVOLVED! ✨",
-    `Congratulations! ${state.childName || 'Trainer'}'s Eevee evolved into ${evolvedName}!`,
+    `✨ ${familyName.toUpperCase()} EVOLVED! ✨`,
+    `Congratulations! ${state.childName || 'Trainer'}'s ${familyName} evolved into ${evolvedName}!`,
     `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${evolvedId}.png`,
     false,
     null,
@@ -2751,6 +2935,7 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
       renderState(true);
     },
     renderState: (rebuildGrid) => renderState(rebuildGrid),
+    setViewingWeekStartDate: (dateStr) => { currentViewingWeekStartDate = dateStr; },
     ADMIN_PASSWORD: ADMIN_PASSWORD,
     resetWeekGrid: (carryOver) => resetWeekGrid(carryOver),
     renderBadgeCaseGrid: () => renderBadgeCaseGrid(),

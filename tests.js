@@ -612,7 +612,7 @@ async function runSuite() {
         const holdBtn = document.getElementById('shop-hold-unlock-btn');
         assert(holdBtn && holdBtn.disabled, "Hold button should be disabled when stars < 10");
         const holdBtnText = document.getElementById('shop-hold-btn-text');
-        assert(holdBtnText && holdBtnText.textContent.includes("Earn 9 more stars"), "Hold button should show needed stars");
+        assert(holdBtnText && holdBtnText.textContent.includes("Earn 14 more stars"), "Hold button should show needed stars for Mew (15 Stars)");
 
         // Click Back
         const backBtn = document.getElementById('back-to-browse-btn');
@@ -626,8 +626,8 @@ async function runSuite() {
         await sleep(100);
         assert(shopModal.classList.contains('hidden'), "Shop modal should close");
 
-        // Inject 10 stars (remaining is 10)
-        state.starVault.earnedDates = Array.from({length: 10}, (_, i) => `2026-07-${10+i}`);
+        // Inject 15 stars (remaining is 15)
+        state.starVault.earnedDates = Array.from({length: 15}, (_, i) => `2026-07-${10+i}`);
         state.starVault.totalTraded = 0;
         saveState();
 
@@ -635,18 +635,18 @@ async function runSuite() {
         window.__test_helpers__.openPokemonShop();
         await sleep(100);
         assert(!shopModal.classList.contains('hidden'), "Shop modal should open");
-        assert(shopAvailableStars.textContent === '10', "Shop should report 10 stars");
+        assert(shopAvailableStars.textContent === '15', "Shop should report 15 stars");
 
         // Verify cards are affordable
         const newFirstCard = document.getElementById('shop-items-grid').querySelector('.shop-item-card');
-        assert(newFirstCard && newFirstCard.classList.contains('affordable'), "Cards should be affordable when stars >= 10");
+        assert(newFirstCard && newFirstCard.classList.contains('affordable'), "Cards should be affordable when stars >= 15");
 
         // Select Mew again
         const mewCardAffordable = document.querySelector('.shop-item-card[data-id="151"]');
         mewCardAffordable.click();
         await sleep(100);
 
-        assert(!holdBtn.disabled, "Hold button should be enabled when stars >= 10");
+        assert(!holdBtn.disabled, "Hold button should be enabled when stars >= 15");
         assert(holdBtnText.textContent === 'Hold Down to Unlock! 🔓', "Hold button text should be ready");
 
         // Test early release (hold for 100ms < 300ms)
@@ -674,7 +674,7 @@ async function runSuite() {
         assert(animOverlay.classList.contains('hidden'), "Animation overlay should close when done");
         
         // State should be committed
-        assert(state.starVault.totalTraded === 10, "Should have spent 10 stars");
+        assert(state.starVault.totalTraded === 15, "Should have spent 15 stars for Mew");
         
         const partnerKeys = Object.keys(state.partnersData);
         assert(partnerKeys.length === initialPartnerCount + 1, "Should have added 1 new partner instance");
@@ -2929,22 +2929,23 @@ async function runSuite() {
           assert(POKEMON_TYPES[id] === "Fire", `Card ID ${id} should be Fire type, but got ${POKEMON_TYPES[id]}`);
         });
 
-        // 3. Filter by Legendary Only (with Fire still selected)
-        const legendaryCheckbox = document.getElementById('shop-filter-legendary');
-        assert(legendaryCheckbox, "Legendary filter checkbox should exist");
-        legendaryCheckbox.checked = true;
-        legendaryCheckbox.dispatchEvent(new Event('change'));
+        // 3. Filter by Cost: 15 Stars (Legendary) (with Fire still selected)
+        const costSelect = document.getElementById('shop-filter-cost');
+        assert(costSelect, "Cost filter select should exist");
+        costSelect.value = "15";
+        costSelect.dispatchEvent(new Event('change'));
         await sleep(50);
 
         cards = document.querySelectorAll('#shop-items-grid .shop-item-card');
-        assert(cards.length > 0, "Should have visible Fire Legendaries");
+        assert(cards.length > 0, "Should have visible Fire 15-star Legendaries");
         cards.forEach(card => {
           const id = Number(card.dataset.id);
           assert(POKEMON_TYPES[id] === "Fire", `Card ID ${id} should be Fire type`);
           assert(LEGENDARY_POKEMON_IDS.has(id), `Card ID ${id} should be Legendary`);
+          assert(card.dataset.cost === "15", `Card ID ${id} cost attribute should be 15`);
         });
 
-        // 4. Change Type filter back to "all" (Legendary Only still checked)
+        // 4. Change Type filter back to "all" (15 Stars still selected)
         typeSelect.value = "all";
         typeSelect.dispatchEvent(new Event('change'));
         await sleep(50);
@@ -2963,7 +2964,7 @@ async function runSuite() {
         await sleep(50);
 
         assert(typeSelect.value === 'all', "Type filter should be reset to 'all' after clear click");
-        assert(legendaryCheckbox.checked === false, "Legendary filter should be reset to false after clear click");
+        assert(costSelect.value === 'all', "Cost filter should be reset to 'all' after clear click");
 
         cards = document.querySelectorAll('#shop-items-grid .shop-item-card');
         assert(cards.length > 20, `After clear filters, should show all cards (actual: ${cards.length})`);
@@ -2980,7 +2981,7 @@ async function runSuite() {
 
         // Verify filters are reset
         assert(typeSelect.value === 'all', "Type filter should be reset to 'all'");
-        assert(legendaryCheckbox.checked === false, "Legendary filter should be reset to false");
+        assert(costSelect.value === 'all', "Cost filter should be reset to 'all'");
 
         // Verify all cards are visible again
         cards = document.querySelectorAll('#shop-items-grid .shop-item-card');
@@ -3077,7 +3078,15 @@ async function runSuite() {
         stateObj.grid = {}; // Clear checked tasks to prevent Weekly Milestone pop
         stateObj.weeklyClaimed = false;
         helpers.saveState();
-        await sleep(800);
+        // Set up mock profile list for this test
+        helpers.setProfilesList([
+          {
+            id: 'kepler_test',
+            name: 'Kepler',
+            avatarId: '25',
+            state: JSON.parse(JSON.stringify(stateObj))
+          }
+        ]);
 
         // Trigger profile reload (reselects Kepler profile robustly)
         const profiles = helpers.getProfilesList();
@@ -3111,6 +3120,562 @@ async function runSuite() {
         window.Date = OriginalDate;
 
         // Clean up
+        helpers.resetState();
+        await sleep(50);
+      }
+
+      // 46. Test Case 46: Customize Rewards UI propagation
+      console.log("Running Test Case 46: Customize Rewards UI propagation...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        const mockProfileId = 'kepler_test';
+        helpers.setActiveProfileId(mockProfileId);
+        const stateObj = window.__app_state__;
+        helpers.setProfilesList([
+          {
+            id: mockProfileId,
+            name: 'Kepler',
+            avatarId: '25',
+            state: JSON.parse(JSON.stringify(stateObj))
+          }
+        ]);
+
+        // Mock save function
+        helpers.setSaveProfileRewardsMock((profileId, weekly, mega) => {
+          const p = helpers.getProfilesList().find(p => p.id === profileId);
+          if (p) {
+            p.state.weeklyRewardOptions = weekly;
+            p.state.megaRewardOptions = mega;
+          }
+          return Promise.resolve();
+        });
+
+        // Open Admin Panel
+        const adminBtn = document.getElementById('admin-btn');
+        adminBtn.click();
+        await sleep(100);
+        
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmit = document.getElementById('password-submit-btn');
+        passwordInput.value = helpers.ADMIN_PASSWORD;
+        passwordSubmit.click();
+        await sleep(100);
+
+        // Click Rewards
+        const editRewardsBtn = document.querySelector(`.edit-rewards-btn[data-id="${mockProfileId}"]`);
+        assert(editRewardsBtn !== null, "Rewards button should exist for profile");
+        editRewardsBtn.click();
+        await sleep(100);
+
+        // Add a new reward
+        const newWeeklyInput = document.getElementById('new-weekly-reward-input');
+        const addWeeklyBtn = document.getElementById('add-weekly-reward-btn');
+        newWeeklyInput.value = "🎁 Test Custom Reward";
+        addWeeklyBtn.click();
+        await sleep(50);
+
+        // Click Save Rewards
+        const saveBtn = document.getElementById('edit-rewards-save-btn');
+        saveBtn.click();
+        await sleep(100);
+
+        // Verify it is updated in state
+        assert(stateObj.weeklyRewardOptions.some(r => r.text === "🎁 Test Custom Reward"), "Reward should be in state");
+
+        // Verify it is updated in dropdown
+        const rewardSelect = document.getElementById('reward-select');
+        let options = Array.from(rewardSelect.options).map(opt => opt.text);
+        assert(options.includes("🎁 Test Custom Reward"), "New reward should be in dropdown options");
+
+        // Open Admin Panel again to delete it
+        adminBtn.click();
+        await sleep(100);
+        passwordInput.value = helpers.ADMIN_PASSWORD;
+        passwordSubmit.click();
+        await sleep(100);
+        
+        editRewardsBtn.click();
+        await sleep(100);
+
+        // Find the "Test Custom Reward" in the modal list and delete it
+        const weeklyList = document.getElementById('weekly-rewards-list');
+        const items = weeklyList.querySelectorAll('.reward-list-item');
+        let deleteBtn = null;
+        items.forEach(item => {
+          if (item.querySelector('.reward-item-text').textContent === "🎁 Test Custom Reward") {
+            deleteBtn = item.querySelector('.delete-reward-btn');
+          }
+        });
+        assert(deleteBtn !== null, "Delete button for custom reward should exist");
+        deleteBtn.click();
+        await sleep(50);
+
+        // Save again
+        saveBtn.click();
+        await sleep(100);
+
+        // Verify it is removed from state
+        assert(!stateObj.weeklyRewardOptions.some(r => r.text === "🎁 Test Custom Reward"), "Reward should be removed from state");
+
+        // Verify it is removed from dropdown
+        const optionsPostDelete = Array.from(rewardSelect.options).map(opt => opt.text);
+        assert(!optionsPostDelete.includes("🎁 Test Custom Reward"), "Deleted reward should not be in dropdown options");
+
+        // Clean up
+        helpers.resetState();
+        helpers.setSaveProfileRewardsMock(null);
+        helpers.setProfilesList([]);
+        helpers.setActiveProfileId(null);
+        
+        // Close admin modal if still open
+        const closeAdminBtn = document.getElementById('close-admin-modal-btn');
+        if (closeAdminBtn) closeAdminBtn.click();
+        await sleep(100);
+      }
+
+
+      // ==========================================
+      // Test Case 47: Legendary Mega & Branching Evolution Lifecycle
+      // ==========================================
+      {
+        console.log("Running Test Case 47: Legendary Mega & Branching Evolution Lifecycle...");
+        const helpers = window.__test_helpers__;
+        const state = window.__app_state__;
+        helpers.resetState();
+        state.reward = "Bonus Tablet Time";
+        state.megaReward = "Booster Pack";
+        
+        // 1. Non-Mega Legendary (Mew 151)
+        state.activePartnerInstanceId = '151_test';
+        state.partnersData['151_test'] = {
+          familyId: '151',
+          level: 1,
+          xp: 0,
+          stageId: '151'
+        };
+        helpers.renderState(false);
+        
+        const evoHelper = document.getElementById('evolution-helper');
+        assert(evoHelper && evoHelper.textContent.includes('Fully Evolved form!'), 'Mew should be marked as Fully Evolved form');
+        
+        // Level up Mew to Level 10
+        state.partnersData['151_test'].level = 10;
+        helpers.renderState(false);
+        assert(state.partnersData['151_test'].stageId === '151', 'Mew stageId should remain 151 at level 10');
+        assert(evoHelper && evoHelper.textContent.includes('Fully Evolved form!'), 'Mew should still be marked Fully Evolved at level 10');
+        
+        // 2. Linear Canonical Mega Legendary (Rayquaza 384)
+        state.activePartnerInstanceId = '384_test';
+        state.partnersData['384_test'] = {
+          familyId: '384',
+          level: 9,
+          xp: 95,
+          stageId: '384'
+        };
+        state.activeDay = 2;
+        helpers.renderState(false);
+        
+        const rayEvoText = evoHelper ? evoHelper.textContent.replace(/\u00a0/g, ' ') : '';
+        assert(rayEvoText.includes('Mega Rayquaza'), 'Rayquaza evolution helper should show Mega Rayquaza');
+        assert(rayEvoText.includes('LV 10'), 'Rayquaza evolution helper should indicate LV 10');
+        
+        // Ensure Day 2 Piano is unchecked
+        const pianoCb = document.querySelector('input[data-day="2"][data-task="piano"]');
+        if (pianoCb.checked) {
+          pianoCb.click();
+          await sleep(50);
+        }
+        
+        // Gain 5 XP -> Level 10 -> Evolves to Mega Rayquaza (10079)
+        pianoCb.click();
+        await sleep(300);
+        
+        assert(state.partnersData['384_test'].level === 10, 'Rayquaza should level up to 10');
+        assert(state.partnersData['384_test'].stageId === '10079', 'Rayquaza should evolve to Mega Rayquaza (10079)');
+        assert(document.getElementById('partner-name').textContent === 'Mega Rayquaza', 'Partner name should be Mega Rayquaza');
+        
+        // Dismiss evolution notification
+        const notifModal = document.querySelector('.notif-modal');
+        if (notifModal && !notifModal.classList.contains('hidden')) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+        
+        // Level up past 10 (Level 11) -> should maintain Mega Rayquaza
+        state.partnersData['384_test'].level = 11;
+        state.partnersData['384_test'].xp = 50;
+        helpers.renderState(false);
+        assert(state.partnersData['384_test'].stageId === '10079', 'Mega Rayquaza should remain Mega at Level 11');
+        
+        // Uncheck box -> Level 9, 95 XP -> Devolve to base Rayquaza (384)
+        state.partnersData['384_test'].level = 10;
+        state.partnersData['384_test'].xp = 0;
+        pianoCb.click(); // Uncheck (lose 5 XP -> Level 9, 95 XP)
+        await sleep(300);
+        
+        assert(state.partnersData['384_test'].level === 9, 'Rayquaza should level down to 9');
+        assert(state.partnersData['384_test'].stageId === '384', 'Rayquaza should devolve to base Rayquaza (384)');
+        assert(document.getElementById('partner-name').textContent === 'Rayquaza', 'Partner name should revert to Rayquaza');
+        
+        // Dismiss devolution notification
+        const devModal = document.querySelector('.notif-modal');
+        if (devModal && !devModal.classList.contains('hidden')) {
+          const closeBtn = devModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+        
+        // 3. Branching Canonical Mega Legendary (Mewtwo 150 -> Mega Mewtwo X / Y)
+        state.activePartnerInstanceId = '150_test';
+        state.partnersData['150_test'] = {
+          familyId: '150',
+          level: 9,
+          xp: 95,
+          stageId: '150'
+        };
+        state.activeDay = 2;
+        helpers.renderState(false);
+        
+        const m2EvoText = evoHelper ? evoHelper.textContent.replace(/\u00a0/g, ' ') : '';
+        assert(m2EvoText.includes('Evolves at LV 10'), 'Mewtwo helper should indicate evolution choice at LV 10');
+        
+        // Check piano to reach Level 10
+        pianoCb.click();
+        await sleep(600); // Wait for modal to open
+        
+        const branchModal = document.getElementById('eevee-modal');
+        assert(branchModal && !branchModal.classList.contains('hidden'), 'Branch evolution modal should open for Mewtwo');
+        assert(branchModal.querySelector('h2').textContent.includes('Mewtwo'), 'Modal title should say Evolve Mewtwo');
+        
+        // Find Mega Mewtwo Y option (10044)
+        const mewtwoYOption = branchModal.querySelector('.eevee-option img[alt="Mega Mewtwo Y"]');
+        assert(mewtwoYOption !== null, 'Mega Mewtwo Y option should exist in modal');
+        
+        mewtwoYOption.closest('.eevee-option').click();
+        await sleep(200);
+        
+        assert(branchModal.classList.contains('hidden'), 'Branch modal should close after selection');
+        assert(state.partnersData['150_test'].stageId === '10044', 'Mewtwo stageId should be Mega Mewtwo Y (10044)');
+        assert(document.getElementById('partner-name').textContent === 'Mega Mewtwo Y', 'Partner name should be Mega Mewtwo Y');
+        
+        // Dismiss evolution celebration notification
+        const m2Notif = document.querySelector('.notif-modal');
+        if (m2Notif && !m2Notif.classList.contains('hidden')) {
+          const closeBtn = m2Notif.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+        
+        // Uncheck to devolve Mewtwo
+        pianoCb.click();
+        await sleep(300);
+        
+        assert(state.partnersData['150_test'].level === 9, 'Mewtwo should level down to 9');
+        assert(state.partnersData['150_test'].stageId === '150', 'Mewtwo should devolve back to base Mewtwo (150)');
+        
+        // Dismiss devolution notification
+        const m2Dev = document.querySelector('.notif-modal');
+        if (m2Dev && !m2Dev.classList.contains('hidden')) {
+          const closeBtn = m2Dev.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+        
+        // Clean up
+        helpers.resetState();
+      }
+
+      // 48. Test Case 48: Active Day Highlighting on Sunday (Monday-Start)
+      {
+        console.log("Running Test Case 48: Active Day Highlighting on Sunday (Monday-Start)...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        const stateObj = window.__app_state__;
+        stateObj.weekStartDate = '2026-08-03'; // Monday Aug 3
+        stateObj.weekStartDay = 1; // Monday start
+        stateObj.activeDay = 0; // Sunday (Aug 9)
+        helpers.saveState();
+
+        // Render with rebuild to apply weekStartDay changes to headers
+        helpers.renderState(true);
+        await sleep(100);
+
+        // Verify column headers: first should be MON (day 0), last should be SUN (day 6)
+        const headers = document.querySelectorAll('.day-header');
+        assert(headers.length === 7, `Should have 7 day headers, got ${headers.length}`);
+        
+        assert(headers[0].textContent === 'MON', `First header should be MON, got ${headers[0].textContent}`);
+        assert(parseInt(headers[0].dataset.day) === 0, `First header dataset.day should be 0, got ${headers[0].dataset.day}`);
+        
+        assert(headers[6].textContent === 'SUN', `Last header should be SUN, got ${headers[6].textContent}`);
+        assert(parseInt(headers[6].dataset.day) === 6, `Last header dataset.day should be 6, got ${headers[6].dataset.day}`);
+
+        // Verify active day highlight
+        // Since activeDay is 0 (Sunday) and weekStartDay is 1 (Monday), activeColumn is 6 (Sunday).
+        // Only Sunday header (index 6) should have 'active-day' class.
+        // Monday header (index 0) should NOT have it.
+        assert(headers[6].classList.contains('active-day'), "Sunday header (last column) should be highlighted active");
+        assert(!headers[0].classList.contains('active-day'), "Monday header (first column) should NOT be highlighted active");
+
+        // Clean up
+        helpers.resetState();
+        await sleep(50);
+      }
+
+
+
+      // ==========================================
+      // Test Case 48: 3-Tier Star Pricing & Accelerando Swarm Validation
+      // ==========================================
+      {
+        console.log("Running Test Case 48: 3-Tier Star Pricing & Accelerando Swarm Validation...");
+        const helpers = window.__test_helpers__;
+        const state = window.__app_state__;
+        helpers.resetState();
+
+        // 1. Verify Star Vault shortcut text threshold (5 stars)
+        state.starVault.earnedDates = ["2026-07-01", "2026-07-02", "2026-07-03"]; // 3 stars
+        state.starVault.totalTraded = 0;
+        helpers.renderState(false);
+
+        const tradeBtn = document.getElementById('vault-trade-open-btn');
+        assert(tradeBtn && tradeBtn.textContent.includes('Earn 2 more stars'), 'Vault shortcut button should show 2 stars needed at 3 stars');
+
+        state.starVault.earnedDates.push("2026-07-04", "2026-07-05"); // 5 stars
+        helpers.renderState(false);
+        assert(tradeBtn && tradeBtn.textContent.includes('(Ready to Unlock!)'), 'Vault shortcut button should show Ready to Unlock at 5 stars');
+
+        // 2. Open Shop and verify pricing tiers on cards
+        helpers.openPokemonShop();
+        await sleep(100);
+
+        // Verify visual evolution indicators (Sparkles)
+        const pikachuCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="25"]');
+        assert(pikachuCard && pikachuCard.querySelector('.shop-item-name').textContent.includes('✨'), 'Pikachu card should have sparkle emoji');
+
+        const charmanderCardObj = document.querySelector('#shop-items-grid .shop-item-card[data-id="4"]');
+        assert(charmanderCardObj && charmanderCardObj.querySelector('.shop-item-name').textContent.includes('✨'), 'Charmander card should have sparkle emoji');
+
+        const snorlaxCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="143"]');
+        assert(snorlaxCard && !snorlaxCard.querySelector('.shop-item-name').textContent.includes('✨'), 'Snorlax card should not have sparkle emoji');
+
+        const mewCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="151"]');
+        assert(mewCard && !mewCard.querySelector('.shop-item-name').textContent.includes('✨'), 'Mew card should not have sparkle emoji');
+
+        const costSelect = document.getElementById('shop-filter-cost');
+        assert(costSelect !== null, 'Cost filter select should exist in shop');
+
+        // Filter 5 Stars (Normal)
+        costSelect.value = "5";
+        costSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        let cards5 = document.querySelectorAll('#shop-items-grid .shop-item-card');
+        assert(cards5.length > 0, 'Should display 5-star cards');
+        cards5.forEach(card => {
+          assert(card.dataset.cost === "5", `Card ${card.dataset.id} should cost 5 stars`);
+        });
+
+        // Filter 10 Stars (Rare)
+        costSelect.value = "10";
+        costSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        let cards10 = document.querySelectorAll('#shop-items-grid .shop-item-card');
+        assert(cards10.length > 0, 'Should display 10-star cards');
+        cards10.forEach(card => {
+          assert(card.dataset.cost === "10", `Card ${card.dataset.id} should cost 10 stars`);
+        });
+
+        // Filter 15 Stars (Legendary)
+        costSelect.value = "15";
+        costSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        let cards15 = document.querySelectorAll('#shop-items-grid .shop-item-card');
+        assert(cards15.length > 0, 'Should display 15-star cards');
+        cards15.forEach(card => {
+          assert(card.dataset.cost === "15", `Card ${card.dataset.id} should cost 15 stars`);
+        });
+
+        // 3. Test unlocking a 5-star Normal Pokemon (Charmander 4) with 5 stars
+        costSelect.value = "all";
+        costSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        const charmanderCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="4"]');
+        assert(charmanderCard && charmanderCard.classList.contains('affordable'), 'Charmander should be affordable with 5 stars');
+        charmanderCard.click();
+        await sleep(100);
+
+        const holdBtn = document.getElementById('shop-hold-unlock-btn');
+        assert(!holdBtn.disabled, 'Hold button should be enabled for Charmander with 5 stars');
+
+        holdBtn.dispatchEvent(new MouseEvent('mousedown'));
+        await sleep(400); // Trigger complete hold
+
+        const animOverlay = document.getElementById('shop-unlock-animation-overlay');
+        assert(animOverlay && !animOverlay.classList.contains('hidden'), 'Unlock overlay should open');
+
+        // Verify exactly 5 star slots generated
+        const slots = animOverlay.querySelectorAll('.anim-star-slot');
+        assert(slots.length === 5, `Expected 5 star slots for Charmander, got ${slots.length}`);
+
+        await sleep(1500); // Wait for animation
+
+        assert(state.starVault.totalTraded === 5, `Expected 5 stars spent, got ${state.starVault.totalTraded}`);
+
+        // Clean up
+        helpers.resetState();
+      }
+
+      // ==========================================
+      // Test Case 49: Historical Week Badge Display Logic (Option 1)
+      // ==========================================
+      {
+        console.log("Running Test Case 49: Historical Week Badge Display Logic (Option 1)...");
+        const helpers = window.__test_helpers__;
+        const state = window.__app_state__;
+        helpers.resetState();
+
+        state.weekStartDate = '2026-07-27';
+        state.weeklyHistory = {
+          '2026-07-20': {
+            weekStartDay: 0,
+            weeklyClaimed: true,
+            badgeId: 25, // Pikachu
+            reward: 'Bonus Time'
+          },
+          '2026-07-13': {
+            weekStartDay: 0,
+            weeklyClaimed: false,
+            badgeId: 4, // Charmander
+            reward: ''
+          }
+        };
+        helpers.saveState();
+
+        // Set viewing week to match test state weekStartDate
+        helpers.setViewingWeekStartDate('2026-07-27');
+        helpers.renderState(true);
+        await sleep(50);
+
+        const prevBtn = document.getElementById('prev-week-btn');
+        assert(prevBtn !== null, "Prev week button should exist");
+        
+        // 1. Click prevWeekBtn to step back to 2026-07-20 (Completed)
+        prevBtn.click();
+        await sleep(100);
+
+        const badgeSlot = document.getElementById('weekly-badge-slot');
+        const badgeStatus = document.getElementById('badge-status');
+
+        assert(badgeSlot && badgeSlot.classList.contains('unlocked'), "Completed past week slot should have unlocked class");
+        assert(badgeStatus && badgeStatus.textContent.includes('🏆 Pikachu Badge Earned!'), "Completed past week status should say Pikachu Badge Earned!");
+
+        // 2. Click prevWeekBtn again for 2026-07-13 (Unearned)
+        prevBtn.click();
+        await sleep(100);
+
+        assert(badgeSlot && badgeSlot.classList.contains('locked'), "Unearned past week slot should have locked class");
+        assert(badgeStatus && badgeStatus.textContent.includes('The Pokémon Fled!'), "Unearned past week status should say The Pokémon Fled!");
+        assert(badgeSlot.querySelector('img.silhouette') !== null, "Unearned past week should show silhouette image");
+
+        // 3. Set viewing week to legacy archived week (before earliest history entry)
+        helpers.setViewingWeekStartDate('2026-07-06');
+        helpers.renderState(false);
+        await sleep(100);
+
+        assert(badgeSlot && badgeSlot.classList.contains('locked'), "Legacy past week slot should have locked class");
+        assert(badgeStatus && badgeStatus.textContent.includes('Archived Training Week'), "Legacy past week status should say Archived Training Week");
+        assert(badgeSlot.querySelector('img[alt="Archived"]') !== null, "Legacy past week should show Pokéball archived image");
+
+        // Clean up
+        helpers.resetState();
+        await sleep(50);
+      }
+
+      // ==========================================
+      // Test Case 50: Parent Admin Passcode Update Lifecycle
+      // ==========================================
+      {
+        console.log("Running Test Case 50: Parent Admin Passcode Update Lifecycle...");
+        const helpers = window.__test_helpers__;
+        const state = window.__app_state__;
+        helpers.resetState();
+
+        const adminBtn = document.getElementById('admin-btn');
+        const passwordModal = document.getElementById('password-modal');
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmit = document.getElementById('password-submit-btn');
+        const adminModal = document.getElementById('admin-modal');
+
+        assert(adminBtn !== null, "Admin button should exist");
+        assert(passwordModal !== null, "Password modal should exist");
+
+        // 1. Attempt wrong password
+        adminBtn.click();
+        await sleep(50);
+        assert(!passwordModal.classList.contains('hidden'), "Password verification modal should open");
+        
+        passwordInput.value = "wrong_passcode";
+        passwordSubmit.click();
+        await sleep(50);
+        assert(adminModal.classList.contains('hidden'), "Admin panel should remain hidden on wrong password");
+        const passwordError = document.getElementById('password-error');
+        assert(passwordError && !passwordError.classList.contains('hidden'), "Wrong password message should show");
+
+        // 2. Open with default password
+        passwordInput.value = "zxcv";
+        passwordSubmit.click();
+        await sleep(100);
+        assert(!adminModal.classList.contains('hidden'), "Admin panel should open on correct password");
+
+        // 3. Change passcode in Admin Panel
+        const newPasscodeInput = document.getElementById('admin-new-passcode-input');
+        const updatePasscodeBtn = document.getElementById('admin-change-passcode-btn');
+
+        assert(newPasscodeInput !== null, "New passcode input should exist in admin panel");
+        assert(updatePasscodeBtn !== null, "Update passcode button should exist in admin panel");
+
+        newPasscodeInput.value = "abcd";
+        
+        updatePasscodeBtn.click();
+        await sleep(100);
+
+        // Verify local state updated
+        assert(state.adminPassword === "abcd", `Local state adminPassword should update to abcd, got ${state.adminPassword}`);
+
+        // Close Admin Modal
+        const closeAdminBtn = document.getElementById('close-admin-modal-btn');
+        if (closeAdminBtn) closeAdminBtn.click();
+        await sleep(50);
+
+        // 4. Try opening again - verify old password fails
+        adminBtn.click();
+        await sleep(50);
+        
+        passwordInput.value = "zxcv";
+        passwordSubmit.click();
+        await sleep(50);
+        assert(adminModal.classList.contains('hidden'), "Admin panel should remain hidden on old password zxcv");
+
+        // 5. Verify new password abcd successfully opens the admin panel
+        passwordInput.value = "abcd";
+        passwordSubmit.click();
+        await sleep(100);
+        assert(!adminModal.classList.contains('hidden'), "Admin panel should open on new passcode abcd");
+
+        // Clean up and restore default passcode zxcv
+        state.adminPassword = "zxcv";
+        helpers.saveState();
+        if (closeAdminBtn) closeAdminBtn.click();
         helpers.resetState();
         await sleep(50);
       }

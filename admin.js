@@ -54,7 +54,6 @@ let adminForceUpdateBtn = null;
 let closeAdminModalBtn = null;
 let adminAddTaskBtn = null;
 let adminSaveTasksBtn = null;
-let adminPartnersList = null;
 let passwordSuccessCallback = null;
 
 export function promptParentPassword(onSuccess, customDescription = 'Enter Parent Password to open Admin Panel:') {
@@ -95,7 +94,6 @@ export function initAdmin(callbacks) {
   closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
   adminAddTaskBtn = document.getElementById('admin-add-task-btn');
   adminSaveTasksBtn = document.getElementById('admin-save-tasks-btn');
-  adminPartnersList = document.getElementById('admin-partners-list');
 
   if (adminBtn) {
     adminBtn.addEventListener('click', () => {
@@ -104,7 +102,6 @@ export function initAdmin(callbacks) {
         renderAdminTasksList();
         renderBackupHistory();
         renderClaimedRewardsHistory();
-        renderAdminPartnersList();
         appCallbacks.renderAdminProfilesList();
       });
     });
@@ -207,11 +204,49 @@ export function initAdmin(callbacks) {
   if (adminSaveTasksBtn) {
     adminSaveTasksBtn.addEventListener('click', saveAdminTasks);
   }
+
+  // Passcode Update handler
+  const changePasscodeBtn = document.getElementById('admin-change-passcode-btn');
+  const newPasscodeInput = document.getElementById('admin-new-passcode-input');
+  
+  if (changePasscodeBtn && newPasscodeInput) {
+    changePasscodeBtn.addEventListener('click', () => {
+      const newPasscode = newPasscodeInput.value.trim();
+      if (!newPasscode) {
+        appCallbacks.showCustomNotification("Passcode Error ❌", "Passcode cannot be empty!");
+        return;
+      }
+      if (newPasscode.length < 4) {
+        appCallbacks.showCustomNotification("Passcode Error ❌", "Passcode must be at least 4 characters!");
+        return;
+      }
+      
+      // Save local state
+      state.adminPassword = newPasscode;
+      saveState();
+      
+      newPasscodeInput.value = '';
+      
+      if (appCallbacks.saveAdminPassword) {
+        appCallbacks.saveAdminPassword(newPasscode)
+          .then(() => {
+            appCallbacks.showCustomNotification("Passcode Updated 🔑", "Parent Admin passcode updated successfully!");
+          })
+          .catch(err => {
+            console.error("Cloud passcode update failed:", err);
+            appCallbacks.showCustomNotification("Passcode Warning ⚠️", "Passcode saved locally, but failed to sync to database: " + err.message);
+          });
+      } else {
+        appCallbacks.showCustomNotification("Passcode Updated 🔑", "Parent Admin passcode updated successfully!");
+      }
+    });
+  }
 }
 
 function handlePasswordSubmit() {
   const password = passwordInput.value;
-  if (password === ADMIN_PASSWORD) {
+  const currentPassword = state.adminPassword || ADMIN_PASSWORD;
+  if (password === currentPassword) {
     passwordModal.classList.add('hidden');
     if (passwordSuccessCallback) {
       passwordSuccessCallback();
@@ -624,35 +659,5 @@ function forceAppUpdate() {
   );
 }
 
-function renderAdminPartnersList() {
-  if (!adminPartnersList) return;
-  adminPartnersList.innerHTML = '';
-  
-  if (!state.partnersData || Object.keys(state.partnersData).length === 0) {
-    adminPartnersList.innerHTML = '<p class="no-partners">No Pokémon unlocked yet.</p>';
-    return;
-  }
-  
-  Object.keys(state.partnersData).forEach(instanceId => {
-    const pData = state.partnersData[instanceId];
-    const familyId = pData.familyId || '25';
-    const stageInfo = getStageInfo(familyId, pData.stageId || familyId);
-    const activePokemon = stageInfo.currentStage;
-    
-    const row = document.createElement('div');
-    row.className = 'admin-partner-row';
-    
-    row.innerHTML = `
-      <div class="admin-partner-info">
-        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png" class="admin-partner-sprite" alt="${activePokemon.name}">
-        <div class="admin-partner-details">
-          <span class="admin-partner-name">${activePokemon.name}</span>
-          <span class="admin-partner-meta">LV ${pData.level} | ID: ${instanceId}</span>
-        </div>
-      </div>
-    `;
-    
-    adminPartnersList.appendChild(row);
-  });
-}
+
 

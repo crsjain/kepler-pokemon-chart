@@ -46,6 +46,7 @@
   </script>
 </head>
 <body>
+  <div id="env-banner" class="hidden"></div>
   <canvas id="celebration-canvas"></canvas>
 
   <div class="layout-container">
@@ -303,13 +304,13 @@
             <span id="vault-stat-remaining" class="stat-value" style="display: block; font-family: 'Fredoka One', cursive; font-size: 2.1rem; color: #10b981; margin-top: 4px;">0</span>
           </div>
           <div class="vault-stat-card stat-spent" style="flex: 1; text-align: center; border: 3px solid var(--border-color); border-radius: 8px; padding: 10px; background: #f8fafc;">
-            <span class="stat-label" style="font-family: 'Fredoka One', cursive; font-size: 0.85rem; color: #64748b;">🎁 Spent on Prizes</span>
+            <span class="stat-label" style="font-family: 'Fredoka One', cursive; font-size: 0.85rem; color: #64748b;">🤝 Traded for Pokémon</span>
             <span id="vault-stat-traded" class="stat-value" style="display: block; font-family: 'Fredoka One', cursive; font-size: 1.8rem; color: #64748b; margin-top: 4px;">0</span>
           </div>
         </div>
 
         <div style="margin-bottom: 20px; display: flex; justify-content: center; width: 100%;">
-          <button id="vault-trade-open-btn" class="pixel-btn warning" style="width: 100%; padding: 12px; font-size: 1.1rem; font-family: 'Fredoka One', cursive; text-shadow: 1px 1px 0 rgba(0,0,0,0.2); box-shadow: 0 4px 0 #d97706, 0 6px 10px rgba(0,0,0,0.15);">
+          <button id="vault-trade-open-btn" class="pixel-btn warning">
             ✨ Spend Stars for a Reward! ✨
           </button>
         </div>
@@ -407,10 +408,12 @@
               <option value="Normal">Normal 🔘</option>
               <option value="Poison">Poison ☠️</option>
             </select>
-            <label class="filter-toggle-label" id="shop-filter-legendary-label">
-              <input type="checkbox" id="shop-filter-legendary">
-              <span>⭐ Legendary Only</span>
-            </label>
+            <select id="shop-filter-cost">
+              <option value="all">All Costs</option>
+              <option value="5">⭐ 5 Stars (Normal)</option>
+              <option value="10">⭐ 10 Stars (Rare)</option>
+              <option value="15">⭐ 15 Stars (Legendary)</option>
+            </select>
             <button id="shop-filter-clear-btn" class="pixel-btn small info hidden-opacity">Clear 🔄</button>
           </div>
           
@@ -553,6 +556,16 @@
                   </select>
                 </div>
                 <div class="admin-option-row">
+                  <span>App Timezone:</span>
+                  <select id="admin-timezone-select" class="pixel-select">
+                    <option value="default">Automatic (Use Device Time)</option>
+                    <option value="America/Los_Angeles">Pacific Time (US & Canada)</option>
+                    <option value="America/Denver">Mountain Time (US & Canada)</option>
+                    <option value="America/Chicago">Central Time (US & Canada)</option>
+                    <option value="America/New_York">Eastern Time (US & Canada)</option>
+                  </select>
+                </div>
+                <div class="admin-option-row">
                   <span>Screensaver:</span>
                   <select id="admin-idle-timeout-select" class="pixel-select">
                     <option value="1">1 min</option>
@@ -589,6 +602,14 @@
                   </label>
                 </div>
               </div>
+
+              <div class="admin-action-group">
+                <h4>Parent Passcode</h4>
+                <div class="admin-option-row">
+                  <input type="password" id="admin-new-passcode-input" class="pixel-input" placeholder="New passcode" minlength="4" style="width: 100%; box-sizing: border-box; text-align: center;">
+                </div>
+                <button id="admin-change-passcode-btn" class="pixel-btn warning" style="width: 100%; margin-top: 8px;">Update Passcode</button>
+              </div>
               
             </div>
             
@@ -618,14 +639,6 @@
             </div>
           </div>
 
-          <!-- Manage Partners -->
-          <div class="admin-section manage-partners-section">
-            <h3>🦖 Unlocked Pokémon Partners</h3>
-            <div id="admin-partners-list" class="admin-partners-list">
-              <!-- Populated dynamically via JS -->
-              <p class="no-partners">No Pokémon unlocked yet.</p>
-            </div>
-          </div>
 
           <!-- Auto-Backup History -->
           <div class="admin-section backup-section">

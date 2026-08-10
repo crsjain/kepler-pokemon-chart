@@ -35,30 +35,37 @@ Consecutive daily completions increase the streak count, upgrading the star's co
 *   **Pagination**: Displays 40 slots per page (20 on mobile) with "Prev/Next" buttons to scroll through history.
 *   **Spend Shortcut (UX Link)**:
     *   An active button is always present at the bottom to visit the shop.
-    *   If the child has **10 or more remaining stars**: Shows a glowing, pulsing button: **"Go to Pokémon Shop! 🚀 (Ready to Unlock!)"**.
-    *   If they have **less than 10 stars**: Shows the button with text: **"Go to Pokémon Shop! 🚀 (Earn [X] more stars to unlock Pokemon! 💪)"** (where X is `10 - remainingStars`).
+    *   If the child has **5 or more remaining stars**: Shows a glowing, pulsing button: **"Go to Pokémon Shop! 🚀 (Ready to Unlock!)"**.
+    *   If they have **less than 5 stars**: Shows the button with text: **"Go to Pokémon Shop! 🚀 (Earn [X] more stars to unlock Pokemon! 💪)"** (where X is `5 - remainingStars`).
 
-### 3.4. Pokémon Partner Unlock Shop (Star Spending)
+### 3.4. Pokémon Partner Unlock Shop (Tiered Star Spending)
 *   **Access**: Accessible at all times by clicking the "+" (Get New Pokémon) card inside the "Choose Your Partner" modal, or via the Star Vault Spend Shortcut.
-*   **Cost**: A flat rate of **10 Stars** to unlock any Pokémon from the Pokédex pool.
+*   **Pricing Tiers**:
+    *   **Normal / Starter Pokémon (⭐ 5 Stars)**: Standard base Pokémon & starters (*Pikachu, Charmander, Bulbasaur, Squirtle, Eevee, Vulpix, Psyduck, etc.*).
+    *   **Rare Pokémon (⭐ 10 Stars)**: Pseudo-legendaries and fan-favorites (*Larvitar, Riolu, Togepi, Lapras, Snorlax, Gible, Axew, Dreepy, Tinkatink, etc.*).
+    *   **Legendary / Mythical Pokémon (⭐ 15 Stars)**: All species in `LEGENDARY_POKEMON_IDS` (*Mewtwo, Rayquaza, Kyogre, Groudon, Mew, Lugia, Dialga, Calyrex, etc.*).
+*   **Shop Filters**:
+    *   **Type Dropdown**: Filter by Pokémon type (*Fire, Water, Grass, Electric, etc.*).
+    *   **Cost Dropdown**: Filter by star pricing tier (*All Costs / ⭐ 5 Stars / ⭐ 10 Stars / ⭐ 15 Stars*).
 *   **Locked State (Browse Mode)**:
-    *   If the child has less than 10 stars, the shop remains open for browsing.
-    *   Pokémon cards show a Lock icon and a progress bar (e.g., `7/10 Stars` earned).
-    *   They can click a Pokémon to view its details, but the "Unlock" action is disabled.
+    *   Cards show dynamic progress bars scaling to that card's cost (e.g., `3/5 Stars`, `7/10 Stars`, `12/15 Stars`).
+    *   Cards with `remainingStars >= cardCost` are styled as **affordable** (glowing border, hold button active).
+    *   Pokémon cards with evolution configurations in the app display a bouncing sparkle emoji `✨` next to their name (in both browse grid and details screens) to visually signal their evolution potential.
 *   **No Parent Gate**: Unlocking does NOT require a parent password.
 *   **Confirmation Gesture (Hold-to-Unlock)**:
-    *   When they have >= 10 stars and select a Pokémon, it opens a details screen with a **"Hold to Unlock"** button.
+    *   When the child has sufficient stars and selects a Pokémon, it opens a details screen with a **"Hold to Unlock"** button.
     *   The child must press and hold the button for **3 seconds**.
-    *   A circular progress meter fills during the hold. If they release early, the meter resets to prevent accidental "fat-finger" unlocks.
-*   **Duplicate Support**: Children can unlock Pokémon they already have (e.g. multiple Eevees or Pikachus) to level and evolve them differently.
+    *   A circular progress meter fills during the hold. If they release early, the meter resets to prevent accidental unlocks.
+*   **Duplicate Support**: Children can unlock Pokémon they already have to level and evolve them differently.
 
-### 3.5. Star Deduction & Unlock Animation
+### 3.5. Star Deduction & Accelerando Star Swarm Animation (Option A)
 Once the Hold-to-Unlock meter fills, it triggers this visual sequence:
-1.  **Deduction Stage**: An overlay shows the target Pokémon silhouette behind a lock, with 10 empty star contours.
-2.  **Animation**: 10 stars fly sequentially from the "You have X Stars" counter into the empty contours.
-3.  **Audio**: Each star landing plays a satisfying sound with progressive pitch dings.
-4.  **Reveal**: The lock shatters, the silhouette is replaced by the full-color Pokémon sprite, and celebration particles (confetti) trigger.
-5.  **State Commit**: Stars are deducted, the new partner instance is added to `state.partnersData`, and it is set as active.
+1.  **Deduction Stage**: An overlay displays the target Pokémon silhouette behind a lock, with $N$ star slots ($N \in \{5, 10, 15\}$).
+2.  **Accelerando Swarm**: $N$ stars rapidly stream into the slots with an exponential acceleration curve ($< 2.0	ext{s}$ total).
+3.  **Progressive Audio**: Ascending pitch dings scale smoothly across the $N$ stars ($C_5 
+ightarrow C_6$).
+4.  **Lock Rattle & Shatter**: The lock vibrates with tension (`.rattling`) for 350ms, then shatters with an explosion of confetti particles.
+5.  **Reveal & State Commit**: The full-color Pokémon artwork is revealed, stars are deducted from the vault (`state.starVault.totalTraded += cost`), the new partner instance is registered in `state.partnersData`, and it is set as the active partner.
 
 ---
 

@@ -266,15 +266,15 @@ export function renderVault() {
     tradeBtn.disabled = false; // Always enabled to allow browsing
     tradeBtn.classList.remove('disabled');
     
-    if (remainingCount >= 10) {
+    if (remainingCount >= 5) {
       tradeBtn.classList.add('ready-to-unlock');
       tradeBtn.classList.remove('locked-shop');
-      tradeBtn.textContent = 'Go to Pokémon Shop! 🚀 (Ready to Unlock!)';
+      tradeBtn.innerHTML = 'Go to Pokémon Shop! 🚀 <span class="subtext">(Ready to Unlock!)</span>';
     } else {
       tradeBtn.classList.remove('ready-to-unlock');
       tradeBtn.classList.add('locked-shop');
-      const needed = 10 - remainingCount;
-      tradeBtn.textContent = `Go to Pokémon Shop! 🚀 (Earn ${needed} more stars to unlock Pokemon! 💪)`;
+      const needed = 5 - remainingCount;
+      tradeBtn.innerHTML = `Go to Pokémon Shop! 🚀 <span class="subtext">(Earn ${needed} more stars to unlock Pokemon! 💪)</span>`;
     }
   }
 

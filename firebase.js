@@ -34,18 +34,23 @@ const firebaseConfigProd = {
 // TODO: Create a separate personal Firebase project for staging, 
 // register a web app, and paste its config keys here.
 const firebaseConfigStaging = {
-  apiKey: "YOUR_STAGING_API_KEY",
-  authDomain: "YOUR_STAGING_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_STAGING_PROJECT_ID",
-  storageBucket: "YOUR_STAGING_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "YOUR_STAGING_SENDER_ID",
-  appId: "YOUR_STAGING_APP_ID"
+  apiKey: "AIzaSyDPEaSo8nZuVMcQ6dSGqbP8eqA6ZSo7fH4",
+  authDomain: "kepler-pokemon-chart-staging.firebaseapp.com",
+  projectId: "kepler-pokemon-chart-staging",
+  storageBucket: "kepler-pokemon-chart-staging.firebasestorage.app",
+  messagingSenderId: "737806184726",
+  appId: "1:737806184726:web:6509a0284af6323e8e2037"
 };
 
 const params = new URLSearchParams(window.location.search);
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const isLocal = window.location.hostname === 'localhost' || 
+                window.location.hostname === '127.0.0.1' || 
+                window.location.hostname === '0.0.0.0' || 
+                window.location.hostname.endsWith('.googlers.com') || 
+                window.location.hostname.endsWith('.corp.google.com') ||
+                window.location.port === '8085';
 
-const useStaging = params.get('useStaging') === 'true' || window.location.hostname.includes('staging');
+export const useStaging = params.get('useStaging') === 'true' || window.location.hostname.includes('staging');
 export const useProd = params.get('useProd') === 'true' || (!isLocal && !useStaging);
 export const useEmulator = isLocal && !useProd && !useStaging;
 
@@ -227,6 +232,25 @@ export async function saveProfileStateToCloud(profileId, localState) {
     [`profiles.${profileId}.updatedAt`]: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
+}
+
+// Save Admin Passcode across all family profiles
+export async function saveAdminPasswordToCloud(newPassword, profilesList) {
+  if (!currentFamilyUid) return;
+  const userDocRef = doc(db, 'users', currentFamilyUid);
+  
+  const updates = {
+    adminPassword: newPassword,
+    updatedAt: new Date().toISOString()
+  };
+  
+  if (profilesList) {
+    profilesList.forEach(p => {
+      updates[`profiles.${p.id}.state.adminPassword`] = newPassword;
+    });
+  }
+  
+  await updateDoc(userDocRef, updates);
 }
 
 // Export the entire family JSON blob (all profiles)

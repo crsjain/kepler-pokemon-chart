@@ -1303,41 +1303,132 @@ input:checked + .slider:before {
 }
 
 .eevee-options-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
   margin-bottom: 10px;
 }
 
-@media (max-width: 480px) {
-  .eevee-options-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 .eevee-option {
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 8px;
+  flex: 0 1 120px;
+  border: 3px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 12px 8px;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  transition: all 0.2s;
+  gap: 8px;
   background: white;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .eevee-option:hover {
-  background: #faf5ff;
   border-color: #9f7aea;
-  transform: translateY(-2px);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px rgba(107, 70, 193, 0.12);
 }
 
 .eevee-option img {
-  width: 55px;
-  height: 55px;
+  width: 65px;
+  height: 65px;
   object-fit: contain;
+  transition: transform 0.25s ease-out;
+}
+
+.eevee-option:hover img {
+  transform: scale(1.15) translateY(-3px);
+}
+
+/* Evolution Option Card Type Gradients */
+.eevee-option.type-water {
+  background: radial-gradient(circle, #ffffff 0%, #e0f2fe 100%);
+  border-color: #7dd3fc;
+}
+.eevee-option.type-water:hover {
+  border-color: #0284c7;
+}
+
+.eevee-option.type-electric {
+  background: radial-gradient(circle, #ffffff 0%, #fef9c3 100%);
+  border-color: #fde047;
+}
+.eevee-option.type-electric:hover {
+  border-color: #eab308;
+}
+
+.eevee-option.type-fire {
+  background: radial-gradient(circle, #ffffff 0%, #fee2e2 100%);
+  border-color: #fca5a5;
+}
+.eevee-option.type-fire:hover {
+  border-color: #ef4444;
+}
+
+.eevee-option.type-grass {
+  background: radial-gradient(circle, #ffffff 0%, #dcfce7 100%);
+  border-color: #86efac;
+}
+.eevee-option.type-grass:hover {
+  border-color: #22c55e;
+}
+
+.eevee-option.type-psychic {
+  background: radial-gradient(circle, #ffffff 0%, #fce7f3 100%);
+  border-color: #fbcfe8;
+}
+.eevee-option.type-psychic:hover {
+  border-color: #ec4899;
+}
+
+.eevee-option.type-dark {
+  background: radial-gradient(circle, #ffffff 0%, #f1f5f9 100%);
+  border-color: #cbd5e1;
+}
+.eevee-option.type-dark:hover {
+  border-color: #64748b;
+}
+
+.eevee-option.type-fighting {
+  background: radial-gradient(circle, #ffffff 0%, #ffedd5 100%);
+  border-color: #fed7aa;
+}
+.eevee-option.type-fighting:hover {
+  border-color: #f97316;
+}
+
+.eevee-option.type-steel {
+  background: radial-gradient(circle, #ffffff 0%, #f3f4f6 100%);
+  border-color: #cbd5e1;
+}
+.eevee-option.type-steel:hover {
+  border-color: #94a3b8;
+}
+
+.eevee-option.type-ghost {
+  background: radial-gradient(circle, #ffffff 0%, #f3e8ff 100%);
+  border-color: #d8b4fe;
+}
+.eevee-option.type-ghost:hover {
+  border-color: #a855f7;
+}
+
+.eevee-option.type-ice {
+  background: radial-gradient(circle, #ffffff 0%, #ecfeff 100%);
+  border-color: #a5f3fc;
+}
+.eevee-option.type-ice:hover {
+  border-color: #06b6d4;
+}
+
+.eevee-option.type-fairy {
+  background: radial-gradient(circle, #ffffff 0%, #fae8ff 100%);
+  border-color: #f5d0fe;
+}
+.eevee-option.type-fairy:hover {
+  border-color: #d946ef;
 }
 
 .eevee-option-name {
@@ -1790,9 +1881,13 @@ input:checked + .slider:before {
 }
 
 .day-header.active-day {
-  background-color: #3b82f6 !important;
-  color: white !important;
-  text-shadow: 1px 1px 0px #1d4ed8;
+  background-color: var(--poke-yellow) !important;
+  color: var(--text-color) !important;
+  text-shadow: none !important;
+}
+
+.day-header.active-day:hover {
+  background-color: #e5b600 !important; /* Slightly darker yellow on hover */
 }
 
 .weekly-grid td.checkbox-cell:not(.active-column),
@@ -2093,6 +2188,24 @@ input:checked + .slider:before {
   font-family: 'Fredoka One', cursive;
   font-size: 1.8rem;
   color: var(--poke-red);
+}
+
+#vault-trade-open-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 1.1rem;
+  font-family: 'Fredoka One', cursive;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+  box-shadow: 0 4px 0 #d97706, 0 6px 10px rgba(0,0,0,0.15);
+  white-space: normal;
+  line-height: 1.4;
+}
+
+#vault-trade-open-btn .subtext {
+  font-size: 0.85rem;
+  font-weight: normal;
+  display: block;
+  margin-top: 4px;
 }
 
 /* Royal Velvet Gym Badge Case Container (No Scrollbars, Rich Velvet Cushion) */
@@ -3700,7 +3813,7 @@ body.idle-mode * {
 }
 
 .flying-star {
-  position: absolute;
+  position: fixed;
   font-size: 2.2rem;
   z-index: 120020;
   user-select: none;
@@ -3717,6 +3830,19 @@ body.idle-mode * {
   filter: brightness(1) contrast(1);
 }
 
+@keyframes lockRattle {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-4px, 3px) rotate(-6deg); }
+  40% { transform: translate(4px, -3px) rotate(6deg); }
+  60% { transform: translate(-5px, 2px) rotate(-8deg); }
+  80% { transform: translate(5px, -2px) rotate(8deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+#anim-lock-container.rattling {
+  animation: lockRattle 0.35s ease-in-out infinite;
+}
+
 #anim-lock-container.shattered {
   opacity: 0;
   transform: scale(2.5) rotate(45deg);
@@ -3728,63 +3854,6 @@ body.idle-mode * {
   transform: translateY(50px) rotate(-90deg) scale(0.1);
 }
 
-/* Admin Manage Partners section */
-.admin-partners-list {
-  max-height: 250px;
-  overflow-y: auto;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 8px;
-  background: #f8fafc;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.admin-partner-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: white;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #cbd5e1;
-}
-
-.admin-partner-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.admin-partner-sprite {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-}
-
-.admin-partner-details {
-  display: flex;
-  flex-direction: column;
-}
-
-.admin-partner-name {
-  font-family: 'Fredoka One', cursive;
-  font-size: 0.9rem;
-  color: #1e293b;
-}
-
-.admin-partner-meta {
-  font-size: 0.75rem;
-  color: #64748b;
-}
-
-.no-partners {
-  text-align: center;
-  color: #94a3b8;
-  font-size: 0.9rem;
-  padding: 15px 0;
-}
 
 /* ==========================================
    Pokémon Shop Modal Styling (Rule 8 compliance)
@@ -4093,4 +4162,62 @@ body.idle-mode * {
   }
 }
 
+/* Environment Banner */
+#env-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.85rem;
+  z-index: 990; /* Just below modal backdrop (1000) */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  pointer-events: auto;
+}
 
+#env-banner.hidden {
+  display: none !important;
+}
+
+#env-banner.emulator-banner {
+  background-color: #1e293b; /* Slate 800 */
+  color: #fbbf24; /* Amber 400 */
+  border-bottom: 2px solid #fbbf24;
+}
+
+#env-banner.staging-banner {
+  background-color: #ea580c; /* Orange 600 */
+  color: #ffffff;
+  border-bottom: 2px solid #f97316;
+}
+
+/* Adjust body padding when banner is visible */
+body.has-banner {
+  padding-top: 56px !important; /* 36px banner + 20px default padding */
+}
+
+
+
+
+/* Evolution Indicator in Pokemon Shop */
+@keyframes bounceSubtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.animate-bounce-subtle {
+  display: inline-block;
+  animation: bounceSubtle 1.8s infinite ease-in-out;
+}
+
+.shop-item-sparkle {
+  margin-left: 4px;
+  font-size: 0.9rem;
+  color: #fbbf24; /* yellow-400 */
+  text-shadow: 0 0 4px rgba(251, 191, 36, 0.4);
+}

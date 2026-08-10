@@ -1,5 +1,5 @@
 import { TIER_1_IDS, TIER_2_IDS, getPokemonName, MEGA_POKEMON, STARTER_OPTIONS, STARTER_FAMILIES, EVOLUTIONS, POKEMON_MAP, EVOLVED_POKEMON_IDS } from './pokemon_data.js';
-import { formatLocalDate, getWeekStart, getSunday, getDateOfColumn } from './date_utils.js';
+import { formatLocalDate, getWeekStart, getSunday, getDateOfColumn, getLocalDate } from './date_utils.js';
 import { runMigrations, DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS } from './migrations.js';
 
 export const ADMIN_PASSWORD = "zxcv";
@@ -13,38 +13,42 @@ export function getStageInfo(familyId, stageId) {
   const evo = EVOLUTIONS[familyId];
   if (!evo) {
     const name = getPokemonName(familyId);
-    return { currentStage: { id: familyId, name: name }, nextStage: null, startLevel: 1, endLevel: null };
+    return { currentStage: { id: String(familyId), name: name }, nextStage: null, startLevel: 1, endLevel: null };
   }
   
-  // Special case for Eevee family
-  if (familyId === '133' && stageId !== '133') {
-    const chosen = evo.options.find(opt => opt.id === stageId);
-    if (chosen) {
-      return {
-        currentStage: { level: 5, id: chosen.id, name: chosen.name },
-        nextStage: null,
-        startLevel: 5,
-        endLevel: null
-      };
+  // Branching evolution families (Eevee, Mewtwo, Kyurem, Calyrex, etc.)
+  if (evo.options) {
+    if (String(stageId) !== String(familyId)) {
+      const chosen = evo.options.find(opt => String(opt.id) === String(stageId));
+      if (chosen) {
+        return {
+          currentStage: { level: chosen.level || 5, id: String(chosen.id), name: chosen.name },
+          nextStage: null,
+          startLevel: chosen.level || 5,
+          endLevel: null
+        };
+      }
     }
+    const name = getPokemonName(familyId);
+    const branchLevel = (evo.options[0] && evo.options[0].level) || 5;
+    return {
+      currentStage: { level: 1, id: String(familyId), name: name },
+      nextStage: { level: branchLevel, id: 'choice', name: 'Evolution Choice' },
+      startLevel: 1,
+      endLevel: branchLevel
+    };
   }
   
   let currentStageIndex = 0;
   if (evo.stages) {
-    const idx = evo.stages.findIndex(s => s.id === stageId);
+    const idx = evo.stages.findIndex(s => String(s.id) === String(stageId));
     if (idx !== -1) {
       currentStageIndex = idx;
     }
   }
   
   const currentStage = evo.stages[currentStageIndex];
-  let nextStage = null;
-  if (familyId === '133' && stageId === '133') {
-    nextStage = { level: 5, id: 'choice', name: 'Evolution Choice' };
-  } else {
-    nextStage = evo.stages[currentStageIndex + 1] || null;
-  }
-  
+  const nextStage = evo.stages[currentStageIndex + 1] || null;
   const startLevel = currentStage.level;
   const endLevel = nextStage ? nextStage.level : null;
   
@@ -64,6 +68,8 @@ export let state = {
   partnerFamily: '25', // Default Pikachu Family (kept for compatibility)
   weekStartDay: 0, // Default Sunday (0) to Saturday (6)
   idleTimeout: 10, // Default 10 minutes
+  adminPassword: 'zxcv', // Default parent admin passcode
+  timezoneOffset: 'default',
   weeklyRewardOptions: [...DEFAULT_WEEKLY_REWARDS],
   megaRewardOptions: [...DEFAULT_MEGA_REWARDS],
   excused: {}, // key format: "YYYY-MM-DD-task" -> boolean
@@ -92,8 +98,8 @@ export let state = {
   megaRewardHistory: [],
   volume: 50,
   claimedRewardsHistory: [],
-  activeDay: new Date().getDay(),
-  weekStartDate: formatLocalDate(getWeekStart(new Date(), 0)),
+  activeDay: getLocalDate('default').getDay(),
+  weekStartDate: formatLocalDate(getWeekStart(getLocalDate('default'), 0)),
   starVault: {
     earnedDates: [],
     totalTraded: 0
@@ -133,10 +139,10 @@ export function loadState() {
         const migratedState = runMigrations(parsed);
 
         // Merge migrated state into template default to guarantee key structure
-        state = { ...state, ...migratedState };
+        Object.assign(state, migratedState);
 
         if (state.activeDay === undefined) {
-          state.activeDay = new Date().getDay();
+          state.activeDay = getLocalDate(state.timezoneOffset).getDay();
         }
         
         const versionChanged = (migratedState.version !== parsed.version);
@@ -165,6 +171,8 @@ export function getDefaultStateTemplate() {
     partnerFamily: '25',
     weekStartDay: 0,
     idleTimeout: 10,
+    adminPassword: 'zxcv',
+    timezoneOffset: 'default',
     weeklyRewardOptions: [...DEFAULT_WEEKLY_REWARDS],
     megaRewardOptions: [...DEFAULT_MEGA_REWARDS],
     partnersData: {
@@ -193,8 +201,8 @@ export function getDefaultStateTemplate() {
     megaRewardHistory: [],
     volume: 50,
     claimedRewardsHistory: [],
-    activeDay: new Date().getDay(),
-    weekStartDate: formatLocalDate(getWeekStart(new Date(), 0)),
+    activeDay: getLocalDate('default').getDay(),
+    weekStartDate: formatLocalDate(getWeekStart(getLocalDate('default'), 0)),
     starVault: {
       earnedDates: [],
       totalTraded: 0
@@ -353,7 +361,7 @@ export function runStateDiagnostics() {
       if (!pData.stageId) {
         const evo = EVOLUTIONS[fid];
         let index = 0;
-        if (evo && fid !== '133') {
+        if (evo && evo.stages) {
           for (let i = 1; i < evo.stages.length; i++) {
             if (pData.level >= evo.stages[i].level) {
               index = i;
@@ -361,7 +369,7 @@ export function runStateDiagnostics() {
               break;
             }
           }
-          pData.stageId = evo.stages[index].id;
+          pData.stageId = String(evo.stages[index].id);
         } else {
           pData.stageId = fid;
         }
@@ -369,15 +377,22 @@ export function runStateDiagnostics() {
         fixed.push(`Set stageId to ${pData.stageId} based on level.`);
       } else {
         const evo = EVOLUTIONS[fid];
-        if (fid === '133') {
-          const isValidEeveeStage = pData.stageId === '133' || (evo && evo.options.some(opt => opt.id === pData.stageId));
-          if (!isValidEeveeStage) {
-            issues.push(`Invalid stageId for Eevee instance ${instanceId}: ${pData.stageId}`);
-            pData.stageId = '133';
-            fixed.push(`Reset Eevee stageId to '133'.`);
+        if (evo && evo.options) {
+          const threshold = evo.options[0]?.level || 5;
+          if (pData.level < threshold && String(pData.stageId) !== String(fid)) {
+            issues.push(`Stage ${pData.stageId} invalid for level ${pData.level} in branching family ${fid}.`);
+            pData.stageId = fid;
+            fixed.push(`Devolved stageId to '${fid}' for instance ${instanceId}.`);
+          } else {
+            const isValidBranchStage = String(pData.stageId) === String(fid) || evo.options.some(opt => String(opt.id) === String(pData.stageId));
+            if (!isValidBranchStage) {
+              issues.push(`Invalid stageId for branching instance ${instanceId}: ${pData.stageId}`);
+              pData.stageId = fid;
+              fixed.push(`Reset stageId to '${fid}'.`);
+            }
           }
-        } else if (evo) {
-          const isValidStage = evo.stages.some(s => s.id === pData.stageId);
+        } else if (evo && evo.stages) {
+          const isValidStage = evo.stages.some(s => String(s.id) === String(pData.stageId));
           if (!isValidStage) {
             issues.push(`Invalid stageId for instance ${instanceId} (family ${fid}): ${pData.stageId}`);
             pData.stageId = fid;
@@ -448,7 +463,7 @@ export function runStateDiagnostics() {
   }
 
   if (!state.weekStartDate) {
-    state.weekStartDate = formatLocalDate(getWeekStart(new Date(), state.weekStartDay));
+    state.weekStartDate = formatLocalDate(getWeekStart(getLocalDate(state.timezoneOffset), state.weekStartDay));
     issues.push("Missing weekStartDate.");
     fixed.push(`Initialized weekStartDate to ${state.weekStartDate}.`);
   }

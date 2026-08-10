@@ -37,3 +37,15 @@ Never use inline `style="..."` attributes on modal wrappers, inner views, filter
 
 ## 9. Visual Affirmation and Unlock Highlights
 When executing critical actions that update active selections or unlock permanent collection assets (like purchasing or evolving a partner Pokémon), apply clear and immediate visual feedback on the main layout. For example, apply a temporary scaling animation (`transform: scale(...)`) or a highlight outline on the newly unlocked partner block, ensuring that children receive instant, delightful validation of their achievement.
+
+## 10. Avoid Awkward Text Wrapping in Buttons and Labels
+For buttons or labels containing long descriptive text, subtext, or emojis, prevent awkward single-word or single-character wrapping (especially orphan emojis or brackets).
+- Use `white-space: normal` combined with structural elements (like `<br>` or `display: block` on nested spans) to split the text into logical rows (e.g., primary action on top, subtext/requirements on bottom).
+- When using dynamic subtext inside buttons, wrap the subtext in a span with a slightly smaller font size (e.g., `0.85rem` or `0.9em`) to create a clear visual hierarchy and ensure it fits comfortably.
+- Avoid inline styles for formatting these wraps; use semantic class names (e.g., `.subtext`) and define their layout in `style.css`.
+
+
+## 11. Tonal Matching & Action-Oriented CTA Microcopy
+For modal notifications or alert dialogs, the primary action or confirmation button (CTA) must match the emotional tone and context of the event:
+- **Positive Milestones / Achievements** (e.g., Level Up, Unlock, Claiming Rewards): Use celebratory copy (e.g., `"Awesome!"`, `"Woohoo! 🎉"`) and high-excitement brand colors (like bright yellow/gold).
+- **Warnings / Setbacks / System Alerts** (e.g., Devolution, Validation Errors, Task Unchecking): Avoid celebratory language. Use neutral, action-oriented, or motivational microcopy (e.g., `"Let's get it back! 🚀"`, `"I'll train harder! 💪"`, or `"Got it"`) and style the button in a neutral or warning color (like slate-blue, gray, or orange) to provide correct feedback.

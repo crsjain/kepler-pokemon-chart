@@ -1,5 +1,5 @@
 import { state, saveState } from './state.js';
-import { POKEMON_MAP, EVOLUTIONS, getPokemonName, EVOLVED_POKEMON_IDS, POKEMON_TYPES, LEGENDARY_POKEMON_IDS } from './pokemon_data.js';
+import { POKEMON_MAP, EVOLUTIONS, getPokemonName, EVOLVED_POKEMON_IDS, POKEMON_TYPES, LEGENDARY_POKEMON_IDS, RARE_POKEMON_IDS, getPokemonCost } from './pokemon_data.js';
 import { playSound } from './audio.js';
 
 // DOM elements
@@ -11,8 +11,7 @@ let backToBrowseBtn;
 let itemsGrid;
 let availableStarsText;
 let filterTypeSelect;
-let filterLegendaryCheckbox;
-let filterLegendaryLabel;
+let filterCostSelect;
 let filterClearBtn;
 
 let confirmSprite;
@@ -55,8 +54,7 @@ export function initShop(callbacks = {}) {
   itemsGrid = document.getElementById('shop-items-grid');
   availableStarsText = document.getElementById('shop-available-stars');
   filterTypeSelect = document.getElementById('shop-filter-type');
-  filterLegendaryCheckbox = document.getElementById('shop-filter-legendary');
-  filterLegendaryLabel = document.getElementById('shop-filter-legendary-label');
+  filterCostSelect = document.getElementById('shop-filter-cost');
   filterClearBtn = document.getElementById('shop-filter-clear-btn');
 
   confirmSprite = document.getElementById('shop-confirm-sprite');
@@ -85,13 +83,13 @@ export function initShop(callbacks = {}) {
   if (filterTypeSelect) {
     filterTypeSelect.addEventListener('change', showBrowse);
   }
-  if (filterLegendaryCheckbox) {
-    filterLegendaryCheckbox.addEventListener('change', showBrowse);
+  if (filterCostSelect) {
+    filterCostSelect.addEventListener('change', showBrowse);
   }
   if (filterClearBtn) {
     filterClearBtn.addEventListener('click', () => {
       if (filterTypeSelect) filterTypeSelect.value = 'all';
-      if (filterLegendaryCheckbox) filterLegendaryCheckbox.checked = false;
+      if (filterCostSelect) filterCostSelect.value = 'all';
       showBrowse();
     });
   }
@@ -115,7 +113,7 @@ export function openPokemonShop() {
   if (!shopModal) initShop();
   if (shopModal) {
     if (filterTypeSelect) filterTypeSelect.value = 'all';
-    if (filterLegendaryCheckbox) filterLegendaryCheckbox.checked = false;
+    if (filterCostSelect) filterCostSelect.value = 'all';
     shopModal.classList.remove('hidden');
     showBrowse();
   }
@@ -152,38 +150,45 @@ function showBrowse() {
 
   const buyableIds = getBuyablePokemonIds();
   const selectedType = filterTypeSelect ? filterTypeSelect.value : 'all';
-  const legendaryOnly = filterLegendaryCheckbox ? filterLegendaryCheckbox.checked : false;
+  const selectedCost = filterCostSelect ? filterCostSelect.value : 'all';
 
   let filteredIds = buyableIds;
   if (selectedType !== 'all') {
     filteredIds = filteredIds.filter(id => POKEMON_TYPES[id] === selectedType);
   }
-  if (legendaryOnly) {
-    filteredIds = filteredIds.filter(id => LEGENDARY_POKEMON_IDS.has(id));
+  if (selectedCost !== 'all') {
+    const targetCost = parseInt(selectedCost, 10);
+    filteredIds = filteredIds.filter(id => getPokemonCost(id) === targetCost);
   }
-
-  const isLocked = remainingStars < 10;
 
   filteredIds.forEach(id => {
     const name = getPokemonName(id);
+    const cost = getPokemonCost(id);
+    const isLocked = remainingStars < cost;
+    const progressPct = Math.min(100, Math.round((remainingStars / cost) * 100));
+
     const card = document.createElement('div');
     card.className = `shop-item-card ${isLocked ? 'locked' : 'affordable'}`;
     card.dataset.id = id;
+    card.dataset.cost = cost;
+
+    const canEvolve = !!EVOLUTIONS[String(id)] || !!EVOLUTIONS[id];
+    const sparkleHtml = canEvolve ? '<span class="shop-item-sparkle animate-bounce-subtle" title="Can evolve! ✨">✨</span>' : '';
 
     card.innerHTML = `
       <div class="shop-item-sprite-container">
         <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png" class="shop-item-sprite" alt="${name}" loading="lazy">
         ${isLocked ? '<div class="shop-item-lock-badge">🔒</div>' : ''}
       </div>
-      <span class="shop-item-name">${name}</span>
+      <span class="shop-item-name">${name}${sparkleHtml}</span>
       <div class="shop-item-price-container">
         ${isLocked ? `
           <div class="shop-item-progress-bg">
-            <div class="shop-item-progress-fill" style="width: ${remainingStars * 10}%;"></div>
+            <div class="shop-item-progress-fill" style="width: ${progressPct}%;"></div>
           </div>
-          <span class="shop-item-progress-text">${remainingStars}/10 Stars</span>
+          <span class="shop-item-progress-text">${Math.min(remainingStars, cost)}/${cost} Stars</span>
         ` : `
-          <span class="shop-item-price-tag">⭐ 10</span>
+          <span class="shop-item-price-tag">⭐ ${cost}</span>
         `}
       </div>
     `;
@@ -198,17 +203,9 @@ function showBrowse() {
 
 function updateFilterUI() {
   const selectedType = filterTypeSelect ? filterTypeSelect.value : 'all';
-  const legendaryOnly = filterLegendaryCheckbox ? filterLegendaryCheckbox.checked : false;
+  const selectedCost = filterCostSelect ? filterCostSelect.value : 'all';
 
-  if (filterLegendaryLabel) {
-    if (legendaryOnly) {
-      filterLegendaryLabel.classList.add('active');
-    } else {
-      filterLegendaryLabel.classList.remove('active');
-    }
-  }
-
-  const isDirty = selectedType !== 'all' || legendaryOnly;
+  const isDirty = selectedType !== 'all' || selectedCost !== 'all';
   if (filterClearBtn) {
     if (isDirty) {
       filterClearBtn.classList.remove('hidden-opacity');
@@ -221,15 +218,17 @@ function updateFilterUI() {
 function selectPokemon(id) {
   selectedPokemonId = id;
   const name = getPokemonName(id);
+  const cost = getPokemonCost(id);
 
   if (confirmSprite) {
     confirmSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
   }
   if (confirmName) {
-    confirmName.textContent = name;
+    const canEvolve = !!EVOLUTIONS[String(id)] || !!EVOLUTIONS[id];
+    confirmName.innerHTML = `${name}${canEvolve ? ' <span class="shop-item-sparkle animate-bounce-subtle">✨</span>' : ''}`;
   }
   if (confirmDesc) {
-    confirmDesc.textContent = `Ready to welcome ${name} to your team for 10 Stars? 🌟`;
+    confirmDesc.textContent = `Ready to welcome ${name} to your team for ${cost} Stars? 🌟`;
   }
 
   const earnedCount = state.starVault.earnedDates.length;
@@ -237,10 +236,10 @@ function selectPokemon(id) {
   const remainingStars = Math.max(0, earnedCount - tradedCount);
 
   if (holdBtn) {
-    if (remainingStars < 10) {
+    if (remainingStars < cost) {
       holdBtn.disabled = true;
       holdBtn.classList.add('disabled');
-      if (holdBtnText) holdBtnText.textContent = `Earn ${10 - remainingStars} more stars!`;
+      if (holdBtnText) holdBtnText.textContent = `Earn ${cost - remainingStars} more stars!`;
       const svg = holdBtn.querySelector('svg');
       if (svg) svg.style.display = 'none';
     } else {
@@ -259,10 +258,11 @@ function selectPokemon(id) {
 
 function startHold() {
   if (!selectedPokemonId) return;
+  const cost = getPokemonCost(selectedPokemonId);
   const earnedCount = state.starVault.earnedDates.length;
   const tradedCount = state.starVault.totalTraded || 0;
   const remainingStars = Math.max(0, earnedCount - tradedCount);
-  if (remainingStars < 10) return;
+  if (remainingStars < cost) return;
 
   playSound('hold_start');
   
@@ -319,9 +319,11 @@ function completeUnlock() {
 }
 
 function triggerUnlockFlow(pokemonId) {
-  playUnlockAnimation(pokemonId, () => {
-    // Spend 10 stars
-    state.starVault.totalTraded = (state.starVault.totalTraded || 0) + 10;
+  const cost = getPokemonCost(pokemonId);
+  
+  playUnlockAnimation(pokemonId, cost, () => {
+    // Spend stars
+    state.starVault.totalTraded = (state.starVault.totalTraded || 0) + cost;
     
     const instanceId = `${pokemonId}_${Date.now()}`;
     
@@ -358,12 +360,12 @@ function triggerUnlockFlow(pokemonId) {
 function getAnimDuration(baseMs) {
   const isTest = location.search.includes('runTests=true') || location.search.includes('headless=true');
   if (isTest) {
-    return Math.min(50, baseMs / 20); // Scale down by 20x, max 50ms
+    return Math.min(40, baseMs / 25); // Fast execution in test mode
   }
   return baseMs;
 }
 
-function playDing(index) {
+function playDing(index, totalCount) {
   try {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -372,10 +374,10 @@ function playDing(index) {
       audioCtx.resume();
     }
     
-    // Scale pitches for 10 dings: C5 (523.25) to C6 (1046.50)
+    // Scale pitches for totalCount dings: C5 (523.25) to C6 (1046.50) or higher
     const startFreq = 523.25; // C5
     const endFreq = 1046.50; // C6
-    const step = (endFreq - startFreq) / 9;
+    const step = totalCount > 1 ? (endFreq - startFreq) / (totalCount - 1) : 0;
     const freq = startFreq + step * index;
     
     const osc = audioCtx.createOscillator();
@@ -390,23 +392,23 @@ function playDing(index) {
     
     const volumeMultiplier = 0.5;
     gain.gain.setValueAtTime(0.04 * volumeMultiplier, now);
-    gain.gain.exponentialRampToValueAtTime(0.001 * volumeMultiplier, now + 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.001 * volumeMultiplier, now + 0.25);
     
     osc.start(now);
-    osc.stop(now + 0.3);
+    osc.stop(now + 0.25);
   } catch (e) {
     console.warn("Ding sound failed:", e);
   }
 }
 
-function playUnlockAnimation(pokemonId, onComplete) {
+function playUnlockAnimation(pokemonId, starCount, onComplete) {
   if (!animOverlay) return onComplete(); // Safety
   
   animOverlay.classList.remove('hidden');
   
   animPokemonSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`;
   animPokemonSprite.classList.remove('revealed');
-  animLockContainer.classList.remove('shattered');
+  animLockContainer.classList.remove('shattered', 'rattling');
   animLockIcon.classList.remove('shattered');
   animTitle.classList.add('hidden');
   
@@ -418,14 +420,14 @@ function playUnlockAnimation(pokemonId, onComplete) {
   animStarSourceCount.textContent = remainingStars;
   animStarSourceContainer.classList.remove('hidden');
   
-  // Clear and generate slots
+  // Clear and generate starCount slots
   animStarSlotsCircle.innerHTML = '';
   const wrapper = document.querySelector('.anim-lock-wrapper');
   const R = wrapper ? (wrapper.offsetWidth * 0.45) : 115;
   const slots = [];
   
-  for (let i = 0; i < 10; i++) {
-    const angle = (2 * Math.PI * i) / 10 - Math.PI / 2;
+  for (let i = 0; i < starCount; i++) {
+    const angle = (2 * Math.PI * i) / starCount - Math.PI / 2;
     const x = R * Math.cos(angle);
     const y = R * Math.sin(angle);
     
@@ -435,24 +437,62 @@ function playUnlockAnimation(pokemonId, onComplete) {
     slot.style.left = `calc(50% + ${x}px)`;
     slot.style.top = `calc(50% + ${y}px)`;
     
+    // Scale slot size slightly for 15 stars to fit comfortably
+    if (starCount >= 15) {
+      slot.style.fontSize = '1.35rem';
+    }
+    
     animStarSlotsCircle.appendChild(slot);
     slots.push(slot);
   }
   
-  const introDelay = getAnimDuration(600);
+  // Generate distinct rhythmic timings based on Star Pricing Tier
+  const starParams = [];
+  for (let i = 0; i < starCount; i++) {
+    if (starCount <= 5) {
+      // 5 Stars: Steady energy, no acceleration, taking ~1.2s total
+      starParams.push({ launchDelay: 240, flightDuration: 400 });
+    } else if (starCount <= 10) {
+      // 10 Stars: Starts steady, then accelerates rapidly into lock
+      let delay = 200;
+      let duration = 380;
+      if (i >= 3) {
+        delay = Math.max(50, Math.round(200 * Math.pow(0.78, i - 2)));
+        duration = Math.max(220, Math.round(380 - (i - 2) * 20));
+      }
+      starParams.push({ launchDelay: delay, flightDuration: duration });
+    } else {
+      // 15 Stars: Starts with 3 distinct stars, then cascades into an exponential Star Swarm torrent over ~2.0s
+      let delay = 260;
+      let duration = 420;
+      if (i >= 3) {
+        delay = Math.max(35, Math.round(260 * Math.pow(0.70, i - 2)));
+        duration = Math.max(180, Math.round(420 - (i - 2) * 22));
+      }
+      starParams.push({ launchDelay: delay, flightDuration: duration });
+    }
+  }
+
+  const introDelay = getAnimDuration(400);
   setTimeout(async () => {
-    // Sequentially fly 10 stars
-    for (let i = 0; i < 10; i++) {
-      await flyStar(i, slots[i]);
-      animStarSourceCount.textContent = remainingStars - 1 - i;
-      // Slight delay between fly starts
-      await new Promise(resolve => setTimeout(resolve, getAnimDuration(150)));
+    for (let i = 0; i < starCount; i++) {
+      const params = starParams[i];
+      const flightDuration = getAnimDuration(params.flightDuration);
+      const launchDelay = getAnimDuration(params.launchDelay);
+      
+      await flyStar(i, slots[i], starCount, flightDuration);
+      animStarSourceCount.textContent = Math.max(0, remainingStars - 1 - i);
+      await new Promise(resolve => setTimeout(resolve, launchDelay));
     }
     
     animStarSourceContainer.classList.add('hidden');
     
-    const revealDelay = getAnimDuration(500);
+    // Lock rattle tension
+    animLockContainer.classList.add('rattling');
+    const rattleDelay = getAnimDuration(350);
+    
     setTimeout(() => {
+      animLockContainer.classList.remove('rattling');
       animLockContainer.classList.add('shattered');
       animLockIcon.classList.add('shattered');
       animPokemonSprite.classList.add('revealed');
@@ -466,18 +506,18 @@ function playUnlockAnimation(pokemonId, onComplete) {
       animTitle.textContent = `${getPokemonName(pokemonId)} Unlocked! 🎉`;
       animTitle.classList.remove('hidden');
       
-      const celebrationDelay = getAnimDuration(3500);
+      const celebrationDelay = getAnimDuration(3000);
       setTimeout(() => {
         animOverlay.classList.add('hidden');
         onComplete();
       }, celebrationDelay);
       
-    }, revealDelay);
+    }, rattleDelay);
     
   }, introDelay);
 }
 
-function flyStar(index, slotElement) {
+function flyStar(index, slotElement, totalCount, duration) {
   return new Promise((resolve) => {
     const sourceRect = animStarSourceContainer.getBoundingClientRect();
     const sourceX = sourceRect.left + sourceRect.width / 2;
@@ -497,27 +537,22 @@ function flyStar(index, slotElement) {
     
     star.offsetWidth; // Reflow
     
-    const duration = getAnimDuration(600);
     star.style.transition = `all ${duration}ms cubic-bezier(0.175, 0.885, 0.32, 1.275)`;
     star.style.left = `${targetX}px`;
     star.style.top = `${targetY}px`;
-    star.style.transform = 'translate(-50%, -50%) scale(1.5) rotate(360deg)';
+    star.style.transform = 'translate(-50%, -50%) scale(1.4) rotate(360deg)';
     
-    star.addEventListener('transitionend', () => {
-      star.remove();
+    let resolved = false;
+    const onEnd = () => {
+      if (resolved) return;
+      resolved = true;
+      if (star.parentNode) star.remove();
       slotElement.classList.add('filled');
-      playDing(index);
+      playDing(index, totalCount);
       resolve();
-    }, { once: true });
+    };
     
-    // Safety fallback in case transitionend doesn't fire
-    setTimeout(() => {
-      if (star.parentNode) {
-        star.remove();
-        slotElement.classList.add('filled');
-        playDing(index);
-        resolve();
-      }
-    }, duration + 50);
+    star.addEventListener('transitionend', onEnd, { once: true });
+    setTimeout(onEnd, duration + 40);
   });
 }

@@ -19,6 +19,7 @@ export const POKEMON_MAP = {
   94: "Gengar", 95: "Onix",
   130: "Gyarados", 131: "Lapras",
   133: "Eevee", 134: "Vaporeon", 135: "Jolteon", 136: "Flareon",
+  123: "Scyther",
   143: "Snorlax",
   149: "Dragonite", 150: "Mewtwo", 151: "Mew",
   152: "Chikorita", 153: "Bayleef", 154: "Meganium",
@@ -56,11 +57,13 @@ export const POKEMON_MAP = {
   501: "Oshawott", 502: "Dewott", 503: "Samurott",
   610: "Axew", 611: "Fraxure", 612: "Haxorus",
   633: "Deino", 634: "Zweilous", 635: "Hydreigon",
+  636: "Larvesta",
   637: "Volcarona",
   643: "Reshiram", 644: "Zekrom", 646: "Kyurem",
   649: "Genesect",
   653: "Fennekin", 654: "Braixen", 655: "Delphox",
   656: "Froakie", 657: "Frogadier", 658: "Greninja",
+  679: "Honedge", 680: "Doublade",
   681: "Aegislash",
   700: "Sylveon",
   704: "Goomy", 705: "Sliggoo", 706: "Goodra",
@@ -77,8 +80,10 @@ export const POKEMON_MAP = {
   807: "Zeraora",
   810: "Grookey", 811: "Thwackey", 812: "Rillaboom",
   813: "Scorbunny", 814: "Raboot", 815: "Cinderace",
+  821: "Rookidee", 822: "Corvisquire",
   823: "Corviknight",
   831: "Wooloo", 832: "Dubwool",
+  847: "Toxel",
   849: "Toxtricity",
   863: "Obstagoon",
   872: "Snom", 873: "Frosmoth",
@@ -89,9 +94,25 @@ export const POKEMON_MAP = {
   909: "Fuecoco", 910: "Crocalor", 911: "Skeledirge",
   912: "Quaxly", 913: "Quaxwell", 914: "Quaquaval",
   926: "Fidough", 927: "Dachsbun",
+  935: "Charcadet",
   936: "Armarouge", 937: "Ceruledge",
+  957: "Tinkatink", 958: "Tinkatuff",
   959: "Tinkaton",
-  1007: "Koraidon", 1008: "Miraidon", 1017: "Ogerpon"
+  1007: "Koraidon", 1008: "Miraidon", 1017: "Ogerpon",
+
+  // Mega / Primal / Origin / Alternate Formes for Canonical Legendaries
+  10043: "Mega Mewtwo X", 10044: "Mega Mewtwo Y",
+  10062: "Mega Latios", 10063: "Mega Latias",
+  10077: "Primal Kyogre", 10078: "Primal Groudon",
+  10079: "Mega Rayquaza",
+  10245: "Origin Dialga", 10246: "Origin Palkia", 10007: "Origin Giratina",
+  10022: "Black Kyurem", 10023: "White Kyurem",
+  10120: "Complete Zygarde",
+  10075: "Mega Diancie",
+  10086: "Hoopa Unbound",
+  10157: "Ultra Necrozma",
+  10188: "Crowned Sword Zacian", 10189: "Crowned Shield Zamazenta",
+  10193: "Ice Rider Calyrex", 10194: "Shadow Rider Calyrex"
 };
 
 export const TIER_1_IDS = [
@@ -172,14 +193,180 @@ export const EVOLUTIONS = {
       { level: 1, id: '133', name: 'Eevee' }
     ],
     options: [
-      { id: '134', name: 'Vaporeon' },
-      { id: '135', name: 'Jolteon' },
-      { id: '136', name: 'Flareon' },
-      { id: '196', name: 'Espeon' },
-      { id: '197', name: 'Umbreon' },
-      { id: '470', name: 'Leafeon' },
-      { id: '471', name: 'Glaceon' },
-      { id: '700', name: 'Sylveon' }
+      { id: '134', name: 'Vaporeon', level: 5 },
+      { id: '135', name: 'Jolteon', level: 5 },
+      { id: '136', name: 'Flareon', level: 5 },
+      { id: '196', name: 'Espeon', level: 5 },
+      { id: '197', name: 'Umbreon', level: 5 },
+      { id: '470', name: 'Leafeon', level: 5 },
+      { id: '471', name: 'Glaceon', level: 5 },
+      { id: '700', name: 'Sylveon', level: 5 }
+    ]
+  },
+  // Canonical Legendary Mega / Primal / Origin Lines (Level 1-9 Base -> Level 10 Mega/Primal/Origin)
+  '150': {
+    stages: [
+      { level: 1, id: '150', name: 'Mewtwo' }
+    ],
+    options: [
+      { id: '10043', name: 'Mega Mewtwo X', level: 10 },
+      { id: '10044', name: 'Mega Mewtwo Y', level: 10 }
+    ]
+  },
+  '380': {
+    stages: [
+      { level: 1, id: '380', name: 'Latias' },
+      { level: 10, id: '10063', name: 'Mega Latias' }
+    ]
+  },
+  '381': {
+    stages: [
+      { level: 1, id: '381', name: 'Latios' },
+      { level: 10, id: '10062', name: 'Mega Latios' }
+    ]
+  },
+  '382': {
+    stages: [
+      { level: 1, id: '382', name: 'Kyogre' },
+      { level: 10, id: '10077', name: 'Primal Kyogre' }
+    ]
+  },
+  '383': {
+    stages: [
+      { level: 1, id: '383', name: 'Groudon' },
+      { level: 10, id: '10078', name: 'Primal Groudon' }
+    ]
+  },
+  '384': {
+    stages: [
+      { level: 1, id: '384', name: 'Rayquaza' },
+      { level: 10, id: '10079', name: 'Mega Rayquaza' }
+    ]
+  },
+  '483': {
+    stages: [
+      { level: 1, id: '483', name: 'Dialga' },
+      { level: 10, id: '10245', name: 'Origin Dialga' }
+    ]
+  },
+  '484': {
+    stages: [
+      { level: 1, id: '484', name: 'Palkia' },
+      { level: 10, id: '10246', name: 'Origin Palkia' }
+    ]
+  },
+  '487': {
+    stages: [
+      { level: 1, id: '487', name: 'Giratina' },
+      { level: 10, id: '10007', name: 'Origin Giratina' }
+    ]
+  },
+  '646': {
+    stages: [
+      { level: 1, id: '646', name: 'Kyurem' }
+    ],
+    options: [
+      { id: '10022', name: 'Black Kyurem', level: 10 },
+      { id: '10023', name: 'White Kyurem', level: 10 }
+    ]
+  },
+  '718': {
+    stages: [
+      { level: 1, id: '718', name: 'Zygarde' },
+      { level: 10, id: '10120', name: 'Complete Zygarde' }
+    ]
+  },
+  '719': {
+    stages: [
+      { level: 1, id: '719', name: 'Diancie' },
+      { level: 10, id: '10075', name: 'Mega Diancie' }
+    ]
+  },
+  '720': {
+    stages: [
+      { level: 1, id: '720', name: 'Hoopa' },
+      { level: 10, id: '10086', name: 'Hoopa Unbound' }
+    ]
+  },
+  '800': {
+    stages: [
+      { level: 1, id: '800', name: 'Necrozma' },
+      { level: 10, id: '10157', name: 'Ultra Necrozma' }
+    ]
+  },
+  '888': {
+    stages: [
+      { level: 1, id: '888', name: 'Zacian' },
+      { level: 10, id: '10188', name: 'Crowned Sword Zacian' }
+    ]
+  },
+  '889': {
+    stages: [
+      { level: 1, id: '889', name: 'Zamazenta' },
+      { level: 10, id: '10189', name: 'Crowned Shield Zamazenta' }
+    ]
+  },
+  '898': {
+    stages: [
+      { level: 1, id: '898', name: 'Calyrex' }
+    ],
+    options: [
+      { id: '10193', name: 'Ice Rider Calyrex', level: 10 },
+      { id: '10194', name: 'Shadow Rider Calyrex', level: 10 }
+    ]
+  },
+  '123': {
+    stages: [
+      { level: 1, id: '123', name: 'Scyther' },
+      { level: 5, id: '212', name: 'Scizor' }
+    ]
+  },
+  '636': {
+    stages: [
+      { level: 1, id: '636', name: 'Larvesta' },
+      { level: 5, id: '637', name: 'Volcarona' }
+    ]
+  },
+  '679': {
+    stages: [
+      { level: 1, id: '679', name: 'Honedge' },
+      { level: 5, id: '680', name: 'Doublade' },
+      { level: 10, id: '681', name: 'Aegislash' }
+    ]
+  },
+  '821': {
+    stages: [
+      { level: 1, id: '821', name: 'Rookidee' },
+      { level: 5, id: '822', name: 'Corvisquire' },
+      { level: 10, id: '823', name: 'Corviknight' }
+    ]
+  },
+  '847': {
+    stages: [
+      { level: 1, id: '847', name: 'Toxel' },
+      { level: 5, id: '849', name: 'Toxtricity' }
+    ]
+  },
+  '926': {
+    stages: [
+      { level: 1, id: '926', name: 'Fidough' },
+      { level: 5, id: '927', name: 'Dachsbun' }
+    ]
+  },
+  '957': {
+    stages: [
+      { level: 1, id: '957', name: 'Tinkatink' },
+      { level: 5, id: '958', name: 'Tinkatuff' },
+      { level: 10, id: '959', name: 'Tinkaton' }
+    ]
+  },
+  '935': {
+    stages: [
+      { level: 1, id: '935', name: 'Charcadet' }
+    ],
+    options: [
+      { id: '936', name: 'Armarouge', level: 5 },
+      { id: '937', name: 'Ceruledge', level: 5 }
     ]
   }
 };
@@ -207,6 +394,7 @@ export const EVOLVED_POKEMON_IDS = new Set([
   159, 160,   // Croconaw, Feraligatr
   176,        // Togetic
   180, 181,   // Flaaffy, Ampharos
+  212,        // Scizor (Evolved form of Scyther)
   229,        // Houndoom
   247, 248,   // Pupitar, Tyranitar
   253, 254,   // Grovyle, Sceptile
@@ -227,8 +415,10 @@ export const EVOLVED_POKEMON_IDS = new Set([
   502, 503,   // Dewott, Samurott
   611, 612,   // Fraxure, Haxorus
   634, 635,   // Zweilous, Hydreigon
+  637,        // Volcarona (Evolved form of Larvesta)
   654, 655,   // Braixen, Delphox
   657, 658,   // Frogadier, Greninja
+  680, 681,   // Doublade, Aegislash (Evolved forms of Honedge)
   705, 706,   // Sliggoo, Goodra
   723, 724,   // Dartrix, Decidueye
   726, 727,   // Torracat, Incineroar
@@ -238,12 +428,32 @@ export const EVOLVED_POKEMON_IDS = new Set([
   790, 791, 792, // Cosmoem, Solgaleo, Lunala
   811, 812,   // Thwackey, Rillaboom
   814, 815,   // Raboot, Cinderace
+  822, 823,   // Corvisquire, Corviknight (Evolved forms of Rookidee)
   832,        // Dubwool
+  849,        // Toxtricity (Evolved form of Toxel)
   873,        // Frosmoth
   886, 887,   // Drakloak, Dragapult
   907, 908,   // Floragato, Meowscarada
   910, 911,   // Crocalor, Skeledirge
   913, 914,   // Quaxwell, Quaquaval
+  927,        // Dachsbun (Evolved form of Fidough)
+  936, 937,   // Armarouge, Ceruledge (Evolved forms of Charcadet)
+  958, 959,   // Tinkatuff, Tinkaton (Evolved forms of Tinkatink)
+
+  // Mega / Primal / Origin Forms (Evolved)
+  10043, 10044, // Mega Mewtwo X, Mega Mewtwo Y
+  10062, 10063, // Mega Latios, Mega Latias
+  10077, 10078, // Primal Kyogre, Primal Groudon
+  10079,        // Mega Rayquaza
+  10245, 10246, // Origin Dialga, Origin Palkia
+  10007,        // Origin Giratina
+  10022, 10023, // Black Kyurem, White Kyurem
+  10120,        // Complete Zygarde
+  10075,        // Mega Diancie
+  10086,        // Hoopa Unbound
+  10157,        // Ultra Necrozma
+  10188, 10189, // Crowned Sword Zacian, Crowned Shield Zamazenta
+  10193, 10194, // Ice Rider Calyrex, Shadow Rider Calyrex
 ]);
 
 export const POKEMON_TYPES = {
@@ -277,6 +487,7 @@ export const POKEMON_TYPES = {
   179: "Electric", 180: "Electric", 181: "Electric",
   194: "Water",
   196: "Psychic", 197: "Dark",
+  123: "Bug",
   212: "Bug", 214: "Bug",
   228: "Dark", 229: "Dark",
   246: "Rock", 247: "Rock", 248: "Rock",
@@ -305,11 +516,13 @@ export const POKEMON_TYPES = {
   501: "Water", 502: "Water", 503: "Water",
   610: "Dragon", 611: "Dragon", 612: "Dragon",
   633: "Dark", 634: "Dark", 635: "Dark",
+  636: "Bug",
   637: "Bug",
   643: "Dragon", 644: "Dragon", 646: "Dragon",
   649: "Bug",
   653: "Fire", 654: "Fire", 655: "Fire",
   656: "Water", 657: "Water", 658: "Water",
+  679: "Steel", 680: "Steel",
   681: "Steel",
   700: "Fairy",
   704: "Dragon", 705: "Dragon", 706: "Dragon",
@@ -325,8 +538,10 @@ export const POKEMON_TYPES = {
   807: "Electric",
   810: "Grass", 811: "Grass", 812: "Grass",
   813: "Fire", 814: "Fire", 815: "Fire",
+  821: "Flying", 822: "Flying",
   823: "Flying",
   831: "Normal", 832: "Normal",
+  847: "Electric",
   849: "Electric",
   863: "Dark",
   872: "Ice", 873: "Ice",
@@ -336,10 +551,26 @@ export const POKEMON_TYPES = {
   906: "Grass", 907: "Grass", 908: "Grass",
   909: "Fire", 910: "Fire", 911: "Fire",
   912: "Water", 913: "Water", 914: "Water",
-  926: "Fairy", 927: "Fairy",
+  926: "Fairy", 927: "Fairy", 927: "Fairy",
+  935: "Fire",
   936: "Fire", 937: "Fire",
+  957: "Fairy", 958: "Fairy",
   959: "Fairy",
-  1007: "Dragon", 1008: "Dragon", 1017: "Grass"
+  1007: "Dragon", 1008: "Dragon", 1017: "Grass",
+
+  // Mega / Primal / Origin Types
+  10043: "Psychic", 10044: "Psychic",
+  10062: "Dragon", 10063: "Dragon",
+  10077: "Water", 10078: "Ground",
+  10079: "Dragon",
+  10245: "Steel", 10246: "Water", 10007: "Ghost",
+  10022: "Dragon", 10023: "Dragon",
+  10120: "Dragon",
+  10075: "Rock",
+  10086: "Psychic",
+  10157: "Psychic",
+  10188: "Fairy", 10189: "Fighting",
+  10193: "Psychic", 10194: "Psychic"
 };
 
 export const LEGENDARY_POKEMON_IDS = new Set([
@@ -353,3 +584,16 @@ export const LEGENDARY_POKEMON_IDS = new Set([
   888, 889, 892, 898,   // Gen 8 Legendaries
   1007, 1008, 1017      // Gen 9 Legendaries
 ]);
+
+export const RARE_POKEMON_IDS = new Set([
+  123, 131, 143, 175, 214, 246, 303, 359, 
+  443, 447, 610, 633, 636, 679, 704, 778, 
+  821, 847, 885, 935, 957
+]);
+
+export function getPokemonCost(id) {
+  const numId = Number(id);
+  if (LEGENDARY_POKEMON_IDS.has(numId)) return 15;
+  if (RARE_POKEMON_IDS.has(numId)) return 10;
+  return 5;
+}
