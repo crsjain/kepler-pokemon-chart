@@ -1281,6 +1281,7 @@ function renderGridTable() {
       const allowFutureEdits = areFutureEditsAllowed();
       const shouldDisable = isPastWeek || isOutOfRange || (isFutureDay && !allowFutureEdits);
 
+
       html += `
         <td class="checkbox-cell ${excused ? 'excused-cell' : ''} ${isOutOfRange ? 'out-of-range-cell' : ''} ${(isFutureDay && !allowFutureEdits) ? 'future-cell' : ''}">
           <label class="pokeball-checkbox">
@@ -1874,7 +1875,7 @@ function setupEventListeners() {
   if (debugAllowFutureEditsCheckbox) {
     debugAllowFutureEditsCheckbox.addEventListener('change', () => {
       window.__mock_allow_future_edits__ = debugAllowFutureEditsCheckbox.checked;
-      renderState(false);
+      renderState(true);
     });
   }
 
