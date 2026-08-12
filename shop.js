@@ -12,6 +12,7 @@ let itemsGrid;
 let availableStarsText;
 let filterTypeSelect;
 let filterCostSelect;
+let shopSortSelect;
 let filterClearBtn;
 
 let confirmSprite;
@@ -37,7 +38,7 @@ let selectedPokemonId = null;
 let holdTimer = null;
 let holdProgressInterval = null;
 let holdStartTime = null;
-let HOLD_DURATION = (location.search.includes('runTests=true') || location.search.includes('headless=true')) ? 300 : 3000; // 3s, or 300ms for tests
+let HOLD_DURATION = (location.search.includes('runTests=true') || location.search.includes('headless=true')) ? 50 : 3000; // 3s, or 50ms for tests
 
 let renderAppStateCallback = null;
 
@@ -55,6 +56,7 @@ export function initShop(callbacks = {}) {
   availableStarsText = document.getElementById('shop-available-stars');
   filterTypeSelect = document.getElementById('shop-filter-type');
   filterCostSelect = document.getElementById('shop-filter-cost');
+  shopSortSelect = document.getElementById('shop-sort-by');
   filterClearBtn = document.getElementById('shop-filter-clear-btn');
 
   confirmSprite = document.getElementById('shop-confirm-sprite');
@@ -86,10 +88,14 @@ export function initShop(callbacks = {}) {
   if (filterCostSelect) {
     filterCostSelect.addEventListener('change', showBrowse);
   }
+  if (shopSortSelect) {
+    shopSortSelect.addEventListener('change', showBrowse);
+  }
   if (filterClearBtn) {
     filterClearBtn.addEventListener('click', () => {
       if (filterTypeSelect) filterTypeSelect.value = 'all';
       if (filterCostSelect) filterCostSelect.value = 'all';
+      if (shopSortSelect) shopSortSelect.value = 'number';
       showBrowse();
     });
   }
@@ -161,6 +167,21 @@ function showBrowse() {
     filteredIds = filteredIds.filter(id => getPokemonCost(id) === targetCost);
   }
 
+  // Sort logic
+  const sortBy = shopSortSelect ? shopSortSelect.value : 'number';
+  if (sortBy === 'name') {
+    filteredIds.sort((a, b) => {
+      const nameA = getPokemonName(a).toLowerCase();
+      const nameB = getPokemonName(b).toLowerCase();
+      if (nameA < nameB) return -1;
+      if (nameA > nameB) return 1;
+      return a - b; // Secondary sort by ID (number)
+    });
+  } else {
+    // Default sort by number (ID)
+    filteredIds.sort((a, b) => a - b);
+  }
+
   filteredIds.forEach(id => {
     const name = getPokemonName(id);
     const cost = getPokemonCost(id);
@@ -204,8 +225,9 @@ function showBrowse() {
 function updateFilterUI() {
   const selectedType = filterTypeSelect ? filterTypeSelect.value : 'all';
   const selectedCost = filterCostSelect ? filterCostSelect.value : 'all';
+  const selectedSort = shopSortSelect ? shopSortSelect.value : 'number';
 
-  const isDirty = selectedType !== 'all' || selectedCost !== 'all';
+  const isDirty = selectedType !== 'all' || selectedCost !== 'all' || selectedSort !== 'number';
   if (filterClearBtn) {
     if (isDirty) {
       filterClearBtn.classList.remove('hidden-opacity');

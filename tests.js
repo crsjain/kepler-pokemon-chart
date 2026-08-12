@@ -1,8 +1,8 @@
 import { getStarsFromDates } from './vault.js';
 import { saveState, rollNewWeeklyBadge, getDefaultStateTemplate, DAYS, getTaskRequiredDays } from './state.js';
-import { getSunday, formatLocalDate, getDateOfColumn, getWeekStart } from './date_utils.js';
+import { getSunday, formatLocalDate, getDateOfColumn, getWeekStart, getLocalDate } from './date_utils.js';
 import { runMigrations } from './migrations.js';
-import { POKEMON_TYPES, LEGENDARY_POKEMON_IDS } from './pokemon_data.js';
+import { POKEMON_TYPES, LEGENDARY_POKEMON_IDS, getPokemonName } from './pokemon_data.js';
 
 function getGridKey(dayIndex, taskId) {
   return `${getDateOfColumn(window.__app_state__.weekStartDate, dayIndex)}-${taskId}`;
@@ -19,8 +19,10 @@ function assert(condition, message) {
   }
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+function sleep(ms, force = false) {
+  const isHeadless = location.search.includes('headless=true');
+  const scale = (isHeadless && !force) ? 0.2 : 1.0;
+  return new Promise(resolve => setTimeout(resolve, ms * scale));
 }
 
 async function runSuite() {
@@ -46,7 +48,7 @@ async function runSuite() {
 
     let state = window.__app_state__;
     console.log("DEBUG: state before assert:", JSON.stringify(state));
-    assert(state.version === 16, "State version should be 16 (actual: " + state.version + ")");
+    assert(state.version === 18, "State version should be 18 (actual: " + state.version + ")");
     assert(state.weeklyClaimed === false, "Weekly claimed should be false");
     assert(window.__grid_rebuild_count__ === 1, `Grid should have been built exactly once on reset (actual: ${window.__grid_rebuild_count__})`);
 
@@ -57,7 +59,7 @@ async function runSuite() {
       // Verify Version Indicator
       const versionLabel = document.getElementById('app-version-label');
       assert(versionLabel !== null, "App version indicator should exist");
-      assert(versionLabel.textContent.includes('v1.7.1'), "App version label should display v1.7.1");
+      assert(versionLabel.textContent.includes('v1.8.0'), "App version label should display v1.8.0");
       
       // Select rewards (needed to check boxes)
       const rewardSelect = document.getElementById('reward-select');
@@ -147,8 +149,8 @@ async function runSuite() {
       }
       await sleep(300); // Wait for CSS transition
 
-      // Restore back to Pikachu for subsequent tests
-      state.activePartnerInstanceId = '25';
+      // Restore back to Pichu for subsequent tests
+      state.activePartnerInstanceId = '172';
       window.__test_helpers__.renderState(false);
 
       // 4. Test Dynamic Task Customization (Save, Edit, Delete)
@@ -268,8 +270,8 @@ async function runSuite() {
       console.log("Testing State Diagnostics...");
       
       // Corrupt state
-      state.partnersData['25'].xp = 180; // Invalid XP
-      state.partnersData['25'].stageId = 'invalid_id'; // Invalid evolution stage ID
+      state.partnersData['172'].xp = 180; // Invalid XP
+      state.partnersData['172'].stageId = 'invalid_id'; // Invalid evolution stage ID
 
       // Run Diagnostics via admin button
       const adminDiagnosticsBtn = document.getElementById('admin-diagnostics-btn');
@@ -277,8 +279,8 @@ async function runSuite() {
       await sleep(200);
 
       // Verify heals
-      assert(state.partnersData['25'].xp === 99, "XP should clamp to 99");
-      assert(state.partnersData['25'].stageId === '25', "Stage ID should recover to default Pikachu");
+      assert(state.partnersData['172'].xp === 99, "XP should clamp to 99");
+      assert(state.partnersData['172'].stageId === '172', "Stage ID should recover to default Pichu");
 
       // Test Force App Update Button (UI Flow only to avoid reload loop)
       {
@@ -336,10 +338,11 @@ async function runSuite() {
       assert(state.grid[getGridKey(0, 'piano')] === undefined, "Grid should be cleared after 1st reset");
 
       // Check a box again
-      const pianoCb2 = document.querySelector('input[data-day="0"][data-task="piano"]');
+      const todayCol = (state.activeDay - state.weekStartDay + 7) % 7;
+      const pianoCb2 = document.querySelector(`input[data-day="${todayCol}"][data-task="piano"]`);
       if (pianoCb2 && !pianoCb2.checked) pianoCb2.click();
       await sleep(50);
-      assert(state.grid[getGridKey(0, 'piano')] === true, "Piano checkbox should be checked again");
+      assert(state.grid[getGridKey(todayCol, 'piano')] === true, "Piano checkbox should be checked again");
 
       // 2nd click on Reset button (Subsequent click!)
       resetBtn.click();
@@ -348,7 +351,7 @@ async function runSuite() {
       confirmYesBtn.click();
       await sleep(100);
       assert(confirmModal.classList.contains('hidden'), "Confirm Modal should close after 2nd confirmation");
-      assert(state.grid[getGridKey(0, 'piano')] === undefined, "Grid should be cleared after 2nd reset");
+      assert(state.grid[getGridKey(todayCol, 'piano')] === undefined, "Grid should be cleared after 2nd reset");
 
       // 7. Test Focused Active Day Column Restrictions with Friction Warning
       {
@@ -668,7 +671,7 @@ async function runSuite() {
         assert(animOverlay && !animOverlay.classList.contains('hidden'), "Unlock animation overlay should be visible");
         
         // Wait for animation to finish in test mode
-        await sleep(1500);
+        await sleep(1500, true);
         
         // Overlay should now be hidden again
         assert(animOverlay.classList.contains('hidden'), "Animation overlay should close when done");
@@ -689,7 +692,7 @@ async function runSuite() {
         console.log("Running Test Case 11: Badge Case & Collection...");
         
         // Verify state initial V10 fields
-        assert(state.version === 16, "State version should be 16");
+        assert(state.version === 18, "State version should be 18");
         assert(Array.isArray(state.collectedBadges), "collectedBadges should be an array");
         assert(state.collectedBadges.length === 0, "Initially collected badges should be empty");
         assert(Array.isArray(state.badgePool), "badgePool should be an array");
@@ -817,7 +820,7 @@ async function runSuite() {
         window.__test_helpers__.loadState();
         let migratedState = window.__app_state__;
         
-        assert(migratedState.version === 16, "Migrated state version should be 16");
+        assert(migratedState.version === 18, "Migrated state version should be 18");
         assert(migratedState.idleTimeout === 10, "Migrated state should have default idleTimeout 10");
         assert(Array.isArray(migratedState.weeklyRewardOptions), "weeklyRewardOptions should be initialized on migration");
         assert(Array.isArray(migratedState.megaRewardOptions), "megaRewardOptions should be initialized on migration");
@@ -859,7 +862,7 @@ async function runSuite() {
         window.__test_helpers__.loadState();
         migratedState = window.__app_state__;
         
-        assert(migratedState.version === 16, "Migrated state version should be 16");
+        assert(migratedState.version === 18, "Migrated state version should be 18");
         assert(migratedState.idleTimeout === 10, "Migrated state should have default idleTimeout 10");
         assert(Array.isArray(migratedState.weeklyRewardOptions), "weeklyRewardOptions should be initialized on migration");
         assert(Array.isArray(migratedState.megaRewardOptions), "megaRewardOptions should be initialized on migration");
@@ -2219,7 +2222,7 @@ async function runSuite() {
         assert(document.body.classList.contains('idle-mode') === false, "Should not be in idle mode initially");
 
         // Wait for IDLE_TIMEOUT (200ms in test mode) + some buffer
-        await sleep(300);
+        await sleep(300, true);
         assert(document.body.classList.contains('idle-mode') === true, "Should enter idle mode after timeout");
 
         // Simulate interaction (click)
@@ -2228,7 +2231,7 @@ async function runSuite() {
         assert(document.body.classList.contains('idle-mode') === false, "Should leave idle mode on interaction");
 
         // Wait again to verify it re-enters idle mode
-        await sleep(300);
+        await sleep(300, true);
         assert(document.body.classList.contains('idle-mode') === true, "Should re-enter idle mode after timeout");
 
         // Clean up: return to active
@@ -2447,7 +2450,7 @@ async function runSuite() {
 
         const migrated = runMigrations(v14State);
 
-        assert(migrated.version === 16, "Migrated state version should be 16");
+        assert(migrated.version === 18, "Migrated state version should be 18");
         assert(migrated.weeklyHistory !== undefined, "weeklyHistory should be initialized");
         
         assert(migrated.grid["2026-07-26-piano"] === true, "Day 0 piano should migrate to 2026-07-26-piano");
@@ -2708,9 +2711,9 @@ async function runSuite() {
         await sleep(100);
         state = window.__app_state__;
 
-        // --- Part 1: Regular Pokemon (Pikachu -> Raichu -> Pikachu) ---
-        state.activePartnerInstanceId = '25';
-        state.partnersData['25'] = { familyId: '25', level: 4, xp: 95, stageId: '25' };
+        // --- Part 1: Regular Pokemon (Pichu -> Pikachu -> Pichu) ---
+        state.activePartnerInstanceId = '172';
+        state.partnersData['172'] = { familyId: '172', level: 4, xp: 95, stageId: '172' };
         
         const rewardSelect = document.getElementById('reward-select');
         rewardSelect.value = "Bonus Tablet Time";
@@ -2727,21 +2730,21 @@ async function runSuite() {
         assert(firstCheckbox !== null, "Piano checkbox should exist");
         assert(firstCheckbox.checked === false, "Checkbox should be unchecked initially");
 
-        // Click to check (Gain 5 XP -> Level 5, 0 XP -> Evolve to Raichu '26')
+        // Click to check (Gain 5 XP -> Level 5, 0 XP -> Evolve to Pikachu '25')
         firstCheckbox.click();
         await sleep(100);
 
-        assert(state.partnersData['25'].level === 5, `Pikachu should level up to 5 (actual: ${state.partnersData['25'].level})`);
-        assert(state.partnersData['25'].xp === 0, `Pikachu XP should be 0 (actual: ${state.partnersData['25'].xp})`);
-        assert(state.partnersData['25'].stageId === '26', `Pikachu should evolve to Raichu (stageId '26') (actual: ${state.partnersData['25'].stageId})`);
+        assert(state.partnersData['172'].level === 5, `Pichu should level up to 5 (actual: ${state.partnersData['172'].level})`);
+        assert(state.partnersData['172'].xp === 0, `Pichu XP should be 0 (actual: ${state.partnersData['172'].xp})`);
+        assert(state.partnersData['172'].stageId === '25', `Pichu should evolve to Pikachu (stageId '25') (actual: ${state.partnersData['172'].stageId})`);
 
-        // Click to uncheck (Lose 5 XP -> Level 4, 95 XP -> Devolve to Pikachu '25')
+        // Click to uncheck (Lose 5 XP -> Level 4, 95 XP -> Devolve to Pichu '172')
         firstCheckbox.click();
         await sleep(100);
 
-        assert(state.partnersData['25'].level === 4, `Pikachu should level down to 4 (actual: ${state.partnersData['25'].level})`);
-        assert(state.partnersData['25'].xp === 95, `Pikachu XP should be 95 (actual: ${state.partnersData['25'].xp})`);
-        assert(state.partnersData['25'].stageId === '25', `Pikachu should devolve back to Pikachu (stageId '25') (actual: ${state.partnersData['25'].stageId})`);
+        assert(state.partnersData['172'].level === 4, `Pichu should level down to 4 (actual: ${state.partnersData['172'].level})`);
+        assert(state.partnersData['172'].xp === 95, `Pichu XP should be 95 (actual: ${state.partnersData['172'].xp})`);
+        assert(state.partnersData['172'].stageId === '172', `Pichu should devolve back to Pichu (stageId '172') (actual: ${state.partnersData['172'].stageId})`);
 
         // --- Part 2: Eevee Special Case (Vaporeon -> Eevee) ---
         state.activePartnerInstanceId = '133';
@@ -2789,11 +2792,12 @@ async function runSuite() {
 
         const migrated = runMigrations(v15State);
 
-        assert(migrated.version === 16, "Migrated state version should be 16");
+        assert(migrated.version === 18, "Migrated state version should be 18");
         assert(migrated.activePartnerInstanceId === '4', "activePartnerInstanceId should be set to partnerFamily '4'");
-        assert(migrated.partnersData['25'].familyId === '25', "Pikachu should get familyId '25'");
+        assert(migrated.partnersData['172'].familyId === '172', "Pikachu should be migrated to Pichu family '172'");
+        assert(migrated.partnersData['172'].stageId === '172', "Pikachu level 2 should devolve to Pichu stage '172' to match level");
         assert(migrated.partnersData['4'].familyId === '4', "Charmander should get familyId '4'");
-        assert(migrated.partnersData['25'].level === 2, "Pikachu level should be preserved");
+        assert(migrated.partnersData['172'].level === 2, "Pichu level should be preserved");
         assert(migrated.partnersData['4'].level === 3, "Charmander level should be preserved");
         assert(migrated.starVault.totalTraded === 1, "totalTraded should be preserved");
         assert(migrated.starVault.earnedDates.length === 1, "earnedDates should be preserved");
@@ -3031,7 +3035,7 @@ async function runSuite() {
         holdBtn.dispatchEvent(new MouseEvent('mouseup'));
         
         // Wait for celebration fade and modal close (animation delay scaled down in test mode)
-        await sleep(2000);
+        await sleep(2000, true);
 
         // 5. Assert Eevee is now the active partner
         const activeInstanceId = window.__app_state__.activePartnerInstanceId;
@@ -3396,10 +3400,25 @@ async function runSuite() {
         helpers.resetState();
         await sleep(50);
 
+        const OriginalDate = window.Date;
+        class MockedDate extends OriginalDate {
+          constructor(...args) {
+            if (args.length === 0) {
+              return new OriginalDate('2026-08-09T12:00:00'); // Sunday Aug 9
+            }
+            return new OriginalDate(...args);
+          }
+          static now() {
+            return new OriginalDate('2026-08-09T12:00:00').getTime();
+          }
+        }
+        window.Date = MockedDate;
+
         const stateObj = window.__app_state__;
         stateObj.weekStartDate = '2026-08-03'; // Monday Aug 3
         stateObj.weekStartDay = 1; // Monday start
         stateObj.activeDay = 0; // Sunday (Aug 9)
+        helpers.setViewingWeekStartDate(null);
         helpers.saveState();
 
         // Render with rebuild to apply weekStartDay changes to headers
@@ -3422,6 +3441,9 @@ async function runSuite() {
         // Monday header (index 0) should NOT have it.
         assert(headers[6].classList.contains('active-day'), "Sunday header (last column) should be highlighted active");
         assert(!headers[0].classList.contains('active-day'), "Monday header (first column) should NOT be highlighted active");
+
+        // Restore Date
+        window.Date = OriginalDate;
 
         // Clean up
         helpers.resetState();
@@ -3456,14 +3478,17 @@ async function runSuite() {
         await sleep(100);
 
         // Verify visual evolution indicators (Sparkles)
-        const pikachuCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="25"]');
-        assert(pikachuCard && pikachuCard.querySelector('.shop-item-name').textContent.includes('✨'), 'Pikachu card should have sparkle emoji');
+        const pichuCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="172"]');
+        assert(pichuCard && pichuCard.querySelector('.shop-item-name').textContent.includes('✨'), 'Pichu card should have sparkle emoji');
 
         const charmanderCardObj = document.querySelector('#shop-items-grid .shop-item-card[data-id="4"]');
         assert(charmanderCardObj && charmanderCardObj.querySelector('.shop-item-name').textContent.includes('✨'), 'Charmander card should have sparkle emoji');
 
         const snorlaxCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="143"]');
-        assert(snorlaxCard && !snorlaxCard.querySelector('.shop-item-name').textContent.includes('✨'), 'Snorlax card should not have sparkle emoji');
+        assert(!snorlaxCard, 'Snorlax card should not be in shop (evolved form)');
+
+        const munchlaxCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="446"]');
+        assert(munchlaxCard && munchlaxCard.querySelector('.shop-item-name').textContent.includes('✨'), 'Munchlax card should have sparkle emoji');
 
         const mewCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="151"]');
         assert(mewCard && !mewCard.querySelector('.shop-item-name').textContent.includes('✨'), 'Mew card should not have sparkle emoji');
@@ -3527,7 +3552,7 @@ async function runSuite() {
         const slots = animOverlay.querySelectorAll('.anim-star-slot');
         assert(slots.length === 5, `Expected 5 star slots for Charmander, got ${slots.length}`);
 
-        await sleep(1500); // Wait for animation
+        await sleep(1500, true); // Wait for animation
 
         assert(state.starVault.totalTraded === 5, `Expected 5 stars spent, got ${state.starVault.totalTraded}`);
 
@@ -3677,6 +3702,271 @@ async function runSuite() {
         helpers.saveState();
         if (closeAdminBtn) closeAdminBtn.click();
         helpers.resetState();
+        await sleep(50);
+      }
+
+      // ==========================================
+      // Test Case 51: Pokémon Shop Sorting (Alphabetical vs Number)
+      // ==========================================
+      {
+        console.log("Running Test Case 51: Pokémon Shop Sorting...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        // 1. Open Shop
+        helpers.openPokemonShop();
+        await sleep(100);
+
+        const sortSelect = document.getElementById('shop-sort-by');
+        assert(sortSelect !== null, "Sort select should exist in shop");
+
+        // Helper to get current visible card IDs
+        const getVisibleCardIds = () => {
+          const cards = document.querySelectorAll('#shop-items-grid .shop-item-card');
+          return Array.from(cards).map(card => parseInt(card.dataset.id, 10));
+        };
+
+        // 2. Default Sort (should be by Number)
+        assert(sortSelect.value === 'number', "Default sort option should be 'number'");
+        const defaultIds = getVisibleCardIds();
+        
+        // Verify default IDs are sorted numerically
+        const sortedDefaultIds = [...defaultIds].sort((a, b) => a - b);
+        assert(JSON.stringify(defaultIds) === JSON.stringify(sortedDefaultIds), "Default sort should be numerical");
+
+        // 3. Switch to Alphabetical Sort
+        sortSelect.value = 'name';
+        sortSelect.dispatchEvent(new Event('change'));
+        await sleep(100);
+
+        const alphabeticalIds = getVisibleCardIds();
+        
+        // Verify alphabetical IDs are sorted by name
+        const expectedAlphabeticalIds = [...alphabeticalIds].sort((a, b) => {
+          const nameA = getPokemonName(a).toLowerCase();
+          const nameB = getPokemonName(b).toLowerCase();
+          if (nameA < nameB) return -1;
+          if (nameA > nameB) return 1;
+          return a - b;
+        });
+        
+        assert(JSON.stringify(alphabeticalIds) === JSON.stringify(expectedAlphabeticalIds), "Shop cards should be sorted alphabetically");
+
+        // 4. Switch back to Number Sort
+        sortSelect.value = 'number';
+        sortSelect.dispatchEvent(new Event('change'));
+        await sleep(100);
+
+        const refilteredIds = getVisibleCardIds();
+        assert(JSON.stringify(refilteredIds) === JSON.stringify(defaultIds), "Switching back to number sort should restore default numerical order");
+
+        // 5. Test Clear Filters resets sort to number
+        sortSelect.value = 'name';
+        sortSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+        
+        const clearBtn = document.getElementById('shop-filter-clear-btn');
+        assert(clearBtn && !clearBtn.classList.contains('hidden-opacity'), "Clear button should be visible when sorted alphabetically");
+        
+        clearBtn.click();
+        await sleep(100);
+        
+        assert(sortSelect.value === 'number', "Clear button should reset sort to 'number'");
+        const clearedIds = getVisibleCardIds();
+        assert(JSON.stringify(clearedIds) === JSON.stringify(defaultIds), "Numerical order should be restored after clear");
+
+        // Clean up
+        const closeShopBtn = document.getElementById('close-shop-modal-btn');
+        if (closeShopBtn) closeShopBtn.click();
+        await sleep(50);
+      }
+
+      // Test Case 52: Historical Week Badge Theme Alignment
+      {
+        console.log("Running Test Case 52: Historical Week Badge Theme Alignment...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        
+        const state = window.__app_state__;
+        state.weekStartDate = '2026-08-17'; // Current week
+        state.megaWeeks = 1; // Current megaWeeks (Week 2 of cycle)
+        state.weeklyHistory = {
+          '2026-08-10': {
+            weekStartDay: 0,
+            weeklyClaimed: true,
+            badgeId: 25, // Pikachu
+            reward: 'Bonus Time',
+            megaWeeks: 0 // Stored megaWeeks for this week was 0 (Week 1)
+          }
+        };
+        helpers.saveState();
+        
+        // Set viewing week to past week (2026-08-10)
+        helpers.setViewingWeekStartDate('2026-08-10');
+        helpers.renderState(true);
+        await sleep(100);
+        
+        const badgeSlot = document.getElementById('weekly-badge-slot');
+        assert(badgeSlot !== null, "Badge slot should exist");
+        assert(badgeSlot.classList.contains('unlocked'), "Past week slot should be unlocked");
+        
+        // Assert it has badge-theme-1 (Blue), and NOT badge-theme-2 (Cyan)
+        assert(badgeSlot.classList.contains('badge-theme-1'), "Past week badge should have badge-theme-1 (Blue)");
+        assert(!badgeSlot.classList.contains('badge-theme-2'), "Past week badge should NOT have badge-theme-2 (Cyan)");
+        
+        // Reset viewing week
+        helpers.setViewingWeekStartDate(null);
+        helpers.renderState(true);
+        await sleep(50);
+      }
+
+      // Test Case 53: Edit Past Week Before Reset
+      {
+        console.log("Running Test Case 53: Edit Past Week Before Reset...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        
+        const state = window.__app_state__;
+        const realToday = getLocalDate(state?.timezoneOffset);
+        // Set weekStartDate to 10 days ago, so today is definitely in the next week (or later)
+        const tenDaysAgo = new Date(realToday.getTime() - 10 * 24 * 60 * 60 * 1000);
+        const pastWeekStartStr = formatLocalDate(getWeekStart(tenDaysAgo, state.weekStartDay));
+        
+        state.weekStartDate = pastWeekStartStr;
+        state.weeklyHistory = {}; // No history yet (haven't reset)
+        
+        // Find a day to click that is NOT today's day of week
+        const todayDay = realToday.getDay();
+        const targetRealDay = (todayDay + 1) % 7;
+        const targetCol = (targetRealDay - state.weekStartDay + 7) % 7;
+        
+        state.activeDay = todayDay; // Set to today, so target is different
+        helpers.saveState();
+        
+        // We are viewing the week of interest
+        helpers.setViewingWeekStartDate(pastWeekStartStr);
+        helpers.renderState(true);
+        await sleep(100);
+        
+        // Try to switch active day to the target column
+        const targetHeader = document.querySelector(`.day-header[data-day="${targetCol}"]`);
+        assert(targetHeader !== null, `Target header (col ${targetCol}) should exist`);
+        
+        // Click it. It should prompt to switch day.
+        targetHeader.click();
+        await sleep(100);
+        
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmBtn = document.getElementById('confirm-yes-btn');
+        assert(confirmModal !== null && !confirmModal.classList.contains('hidden'), "Confirm modal should be visible");
+        confirmBtn.click();
+        await sleep(100);
+        
+        // Now check if target column is active and inputs are NOT disabled
+        const targetCells = document.querySelectorAll(`td.checkbox-cell label input[data-day="${targetCol}"]`);
+        assert(targetCells.length > 0, `Should find target cells (col ${targetCol})`);
+        
+        targetCells.forEach(input => {
+          assert(!input.disabled, `Target cells (col ${targetCol}) should NOT be disabled`);
+          const cell = input.closest('td');
+          assert(cell.classList.contains('active-column'), `Target cell (col ${targetCol}) should have active-column class`);
+        });
+        
+        // Reset viewing week
+        helpers.setViewingWeekStartDate(null);
+        helpers.renderState(true);
+        await sleep(50);
+      }
+
+      // Test Case 54: No Default Yellow Header in Past Week & Reset Behavior
+      {
+        console.log("Running Test Case 54: No Default Yellow Header in Past Week & Reset Behavior...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        
+        const state = window.__app_state__;
+        const realToday = getLocalDate(state?.timezoneOffset);
+        // Set weekStartDate to 10 days ago (past week)
+        const tenDaysAgo = new Date(realToday.getTime() - 10 * 24 * 60 * 60 * 1000);
+        const pastWeekStartStr = formatLocalDate(getWeekStart(tenDaysAgo, state.weekStartDay));
+        
+        state.weekStartDate = pastWeekStartStr;
+        state.weeklyHistory = {};
+        
+        // Simulating profile load with past week.
+        const currentRealWeekStart = formatLocalDate(getWeekStart(realToday, state.weekStartDay || 0));
+        const isTodayInActiveWeek = state.weekStartDate && (currentRealWeekStart === state.weekStartDate);
+        
+        assert(!isTodayInActiveWeek, "Today should not be in active week for this test");
+        
+        // This is what selectProfile does on startup if today is not in active week
+        state.activeDay = -1;
+        helpers.saveState();
+        
+        helpers.setViewingWeekStartDate(pastWeekStartStr);
+        helpers.renderState(true);
+        await sleep(100);
+        
+        // Assert no header is yellow (active-day class)
+        const yellowHeaders = document.querySelectorAll('.day-header.active-day');
+        assert(yellowHeaders.length === 0, "No header should be yellow by default in past week");
+        
+        // Assert no cells have active-column class
+        const activeColumns = document.querySelectorAll('td.active-column');
+        assert(activeColumns.length === 0, "No cells should have active-column class");
+        
+        // Click Wednesday to activate it
+        const wednesdayHeader = document.querySelector(`.day-header[data-day="3"]`);
+        assert(wednesdayHeader !== null, "Wednesday header should exist");
+        wednesdayHeader.click();
+        await sleep(100);
+        
+        // Confirm Switch
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmBtn = document.getElementById('confirm-yes-btn');
+        assert(confirmModal !== null && !confirmModal.classList.contains('hidden'), "Confirm modal should show");
+        confirmBtn.click();
+        await sleep(100);
+        
+        // Assert Wednesday header is NOT yellow (since it is a past week)
+        assert(!wednesdayHeader.classList.contains('active-day'), "Wednesday header should NOT become yellow (since it is a past week)");
+        
+        // Assert Wednesday cells have active-column class
+        const wednesdayCells = document.querySelectorAll(`td.checkbox-cell label input[data-day="3"]`);
+        wednesdayCells.forEach(input => {
+          const cell = input.closest('td');
+          assert(cell.classList.contains('active-column'), "Wednesday cell should have active-column class");
+        });
+        
+        // Now test Reset behavior: it should restore activeDay to today
+        const resetBtn = document.getElementById('reset-btn');
+        assert(resetBtn !== null, "Reset button should exist");
+        
+        resetBtn.click();
+        await sleep(100);
+        
+        // Confirm reset
+        const resetConfirmBtn = document.getElementById('confirm-yes-btn');
+        assert(resetConfirmBtn !== null, "Reset confirm button should exist");
+        resetConfirmBtn.click();
+        await sleep(150); // Wait for reset to complete and render
+        
+        // Assert state.weekStartDate is now currentRealWeekStart
+        assert(state.weekStartDate === currentRealWeekStart, "Week start date should be advanced to current week");
+        
+        // Assert activeDay is today
+        const todayDay = realToday.getDay();
+        assert(state.activeDay === todayDay, "activeDay should be reset to today");
+        
+        // Assert today's header is yellow
+        const todayColumnIndex = (todayDay - state.weekStartDay + 7) % 7;
+        const todayHeader = document.querySelector(`.day-header[data-day="${todayColumnIndex}"]`);
+        assert(todayHeader.classList.contains('active-day'), "Today's header should be yellow after reset");
+        
+        // Reset viewing week
+        helpers.setViewingWeekStartDate(null);
+        helpers.renderState(true);
         await sleep(50);
       }
 

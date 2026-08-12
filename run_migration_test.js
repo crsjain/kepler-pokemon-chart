@@ -23,6 +23,8 @@ async function main() {
     '--headless=new',
     '--remote-debugging-port=9224', // Use a different port to avoid conflicts
     `--user-data-dir=${profileDir}`,
+    '--password-store=basic',
+    '--use-mock-keychain',
     '--disable-gpu',
     '--no-sandbox',
     '--ignore-certificate-errors',
@@ -34,7 +36,7 @@ async function main() {
     '--no-first-run',
     '--no-default-browser-check',
     '--no-proxy-server',
-    'http://127.0.0.1:8085/index.html?runMigrationTest=true&headless=true'
+    'http://127.0.0.1:8000/index.html?runMigrationTest=true&headless=true'
   ]);
 
   chrome.on('error', (err) => {
@@ -164,7 +166,7 @@ async function main() {
       if (runtimeEnabled && pageEnabled && networkEnabled && !initialized) {
         initialized = true;
         console.log("CDP initialized. Navigating to test page...");
-        send('Page.navigate', { url: 'http://127.0.0.1:8085/index.html?runMigrationTest=true&headless=true' }); 
+        send('Page.navigate', { url: 'http://127.0.0.1:8000/index.html?runMigrationTest=true&headless=true' }); 
       }
       
       // Capture screenshot if navigation fails

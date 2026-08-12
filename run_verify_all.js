@@ -14,6 +14,8 @@ async function main() {
     '--headless=new',
     '--remote-debugging-port=9228',
     `--user-data-dir=${profileDir}`,
+    '--password-store=basic',
+    '--use-mock-keychain',
     '--disable-gpu',
     '--no-sandbox',
     '--ignore-certificate-errors',
@@ -25,7 +27,7 @@ async function main() {
     '--no-first-run',
     '--no-default-browser-check',
     '--no-proxy-server',
-    'http://127.0.0.1:8085/verify_all.html?useProd=true'
+    'http://127.0.0.1:8000/verify_all.html?useProd=true'
   ]);
 
   await new Promise(r => setTimeout(r, 2000));
@@ -66,7 +68,7 @@ async function main() {
   ws.onmessage = (event) => {
     const msg = JSON.parse(event.data);
     
-    if (msg.id === 1) send('Page.navigate', { url: 'http://127.0.0.1:8085/verify_all.html?useProd=true' });
+    if (msg.id === 1) send('Page.navigate', { url: 'http://127.0.0.1:8000/verify_all.html?useProd=true' });
 
     if (msg.method === 'Runtime.consoleAPICalled') {
       const args = msg.params.args.map(arg => arg.value || JSON.stringify(arg)).join(' ');

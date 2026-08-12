@@ -291,6 +291,214 @@ export const MIGRATIONS = [
       s.starVault.earnedDates = s.starVault.earnedDates || [];
       return s;
     }
+  },
+  {
+    version: 17,
+    migrate: (s) => {
+      // Migrate Pikachu family (25) to Pichu family (172)
+      if (s.partnersData) {
+        const updatedPartnersData = {};
+        Object.keys(s.partnersData).forEach(instId => {
+          const partner = s.partnersData[instId];
+          if (partner.familyId === '25') {
+            partner.familyId = '172';
+            const lvl = partner.level || 1;
+            if (lvl >= 10) {
+              partner.stageId = '26'; // Raichu
+            } else if (lvl >= 5) {
+              partner.stageId = '25'; // Pikachu
+            } else {
+              partner.stageId = '172'; // Pichu
+            }
+            if (instId === '25') {
+              updatedPartnersData['172'] = partner;
+              if (s.activePartnerInstanceId === '25') {
+                s.activePartnerInstanceId = '172';
+              }
+            } else {
+              updatedPartnersData[instId] = partner;
+            }
+          } else {
+            updatedPartnersData[instId] = partner;
+          }
+        });
+        s.partnersData = updatedPartnersData;
+      }
+      if (s.partnerFamily === '25') {
+        s.partnerFamily = '172';
+      }
+      if (s.unlockedPartners) {
+        const updatedUnlocked = {};
+        Object.keys(s.unlockedPartners).forEach(instId => {
+          const partner = s.unlockedPartners[instId];
+          if (partner.familyId === '25') {
+            partner.familyId = '172';
+            const lvl = partner.level || 1;
+            if (lvl >= 10) {
+              partner.stageId = '26';
+            } else if (lvl >= 5) {
+              partner.stageId = '25';
+            } else {
+              partner.stageId = '172';
+            }
+            if (instId === '25') {
+              updatedUnlocked['172'] = partner;
+            } else {
+              updatedUnlocked[instId] = partner;
+            }
+          } else {
+            updatedUnlocked[instId] = partner;
+          }
+        });
+        s.unlockedPartners = updatedUnlocked;
+      }
+
+      // Jigglypuff (39) to Igglybuff (174)
+      if (s.partnersData) {
+        const updatedPartnersData = {};
+        Object.keys(s.partnersData).forEach(instId => {
+          const partner = s.partnersData[instId];
+          if (partner.familyId === '39') {
+            partner.familyId = '174';
+            const lvl = partner.level || 1;
+            if (lvl >= 10) {
+              partner.stageId = '40'; // Wigglytuff
+            } else if (lvl >= 5) {
+              partner.stageId = '39'; // Jigglypuff
+            } else {
+              partner.stageId = '174'; // Igglybuff
+            }
+            if (instId === '39') {
+              updatedPartnersData['174'] = partner;
+              if (s.activePartnerInstanceId === '39') {
+                s.activePartnerInstanceId = '174';
+              }
+            } else {
+              updatedPartnersData[instId] = partner;
+            }
+          } else {
+            if (!updatedPartnersData[instId]) {
+              updatedPartnersData[instId] = partner;
+            }
+          }
+        });
+        s.partnersData = updatedPartnersData;
+      }
+      if (s.partnerFamily === '39') {
+        s.partnerFamily = '174';
+      }
+      if (s.unlockedPartners) {
+        const updatedUnlocked = {};
+        Object.keys(s.unlockedPartners).forEach(instId => {
+          const partner = s.unlockedPartners[instId];
+          if (partner.familyId === '39') {
+            partner.familyId = '174';
+            const lvl = partner.level || 1;
+            if (lvl >= 10) {
+              partner.stageId = '40';
+            } else if (lvl >= 5) {
+              partner.stageId = '39';
+            } else {
+              partner.stageId = '174';
+            }
+            if (instId === '39') {
+              updatedUnlocked['174'] = partner;
+            } else {
+              updatedUnlocked[instId] = partner;
+            }
+          } else {
+            if (!updatedUnlocked[instId]) {
+              updatedUnlocked[instId] = partner;
+            }
+          }
+        });
+        s.unlockedPartners = updatedUnlocked;
+      }
+
+      // Snorlax (143) to Munchlax (446)
+      if (s.partnersData) {
+        const updatedPartnersData = {};
+        Object.keys(s.partnersData).forEach(instId => {
+          const partner = s.partnersData[instId];
+          if (partner.familyId === '143') {
+            partner.familyId = '446';
+            const lvl = partner.level || 1;
+            if (lvl >= 5) {
+              partner.stageId = '143'; // Snorlax
+            } else {
+              partner.stageId = '446'; // Munchlax
+            }
+            if (instId === '143') {
+              updatedPartnersData['446'] = partner;
+              if (s.activePartnerInstanceId === '143') {
+                s.activePartnerInstanceId = '446';
+              }
+            } else {
+              updatedPartnersData[instId] = partner;
+            }
+          } else {
+            if (!updatedPartnersData[instId]) {
+              updatedPartnersData[instId] = partner;
+            }
+          }
+        });
+        s.partnersData = updatedPartnersData;
+      }
+      if (s.partnerFamily === '143') {
+        s.partnerFamily = '446';
+      }
+      if (s.unlockedPartners) {
+        const updatedUnlocked = {};
+        Object.keys(s.unlockedPartners).forEach(instId => {
+          const partner = s.unlockedPartners[instId];
+          if (partner.familyId === '143') {
+            partner.familyId = '446';
+            const lvl = partner.level || 1;
+            if (lvl >= 5) {
+              partner.stageId = '143';
+            } else {
+              partner.stageId = '446';
+            }
+            if (instId === '143') {
+              updatedUnlocked['446'] = partner;
+            } else {
+              updatedUnlocked[instId] = partner;
+            }
+          } else {
+            if (!updatedUnlocked[instId]) {
+              updatedUnlocked[instId] = partner;
+            }
+          }
+        });
+        s.unlockedPartners = updatedUnlocked;
+      }
+
+      // Update badgePool
+      const newTier1Ids = [10, 174, 280];
+      if (s.badgePool) {
+        newTier1Ids.forEach(id => {
+          if (!s.badgePool.includes(id) && !s.collectedBadges.some(b => b.id === id)) {
+            s.badgePool.push(id);
+          }
+        });
+      }
+      return s;
+    }
+  },
+  {
+    version: 18,
+    migrate: (s) => {
+      if (s.weeklyHistory) {
+        const claimedWeeks = Object.keys(s.weeklyHistory)
+          .filter(k => s.weeklyHistory[k].weeklyClaimed)
+          .sort();
+        
+        claimedWeeks.forEach((dateStr, index) => {
+          s.weeklyHistory[dateStr].megaWeeks = index % 4;
+        });
+      }
+      return s;
+    }
   }
 ];
 

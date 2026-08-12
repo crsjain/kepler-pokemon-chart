@@ -90,6 +90,14 @@ async function runMigrationTest() {
         earnedDates: ['2026-07-13'],
         totalTraded: 0
       },
+      weeklyHistory: {
+        '2026-07-06': {
+          weekStartDay: 0,
+          weeklyClaimed: true,
+          badgeId: 658, // Greninja
+          reward: 'Tablet Time'
+        }
+      },
       claimedRewardsHistory: []
     };
 
@@ -176,13 +184,15 @@ async function runMigrationTest() {
     
     const state = window.__app_state__;
     assert(state !== undefined, "App state should be accessible");
-    assert(state.version === 15, "State version should be migrated to 15");
+    assert(state.version === 18, "State version should be migrated to 18");
     assert(state.childName === testProfileName, "Child name should match");
-    assert(state.partnerFamily === '25', "Partner family should be Pikachu");
-    assert(state.partnersData['25'].level === 2, "Pikachu level should be 2");
+    assert(state.partnerFamily === '172', "Partner family should be Pichu (172)");
+    assert(state.partnersData['172'].level === 2, "Pichu level should be 2");
     
     // Verify V15 fields
     assert(state.weeklyHistory !== undefined, "weeklyHistory should be defined");
+    assert(state.weeklyHistory['2026-07-06'] !== undefined, "weeklyHistory entry for 2026-07-06 should exist");
+    assert(state.weeklyHistory['2026-07-06'].megaWeeks === 0, "weeklyHistory entry should have megaWeeks set to 0");
     assert(state.tasks.every(t => t.active !== undefined && t.createdAt !== undefined && t.deletedAt !== undefined), "All tasks should have V15 lifecycle metadata");
 
     // Check collected badges
@@ -195,7 +205,7 @@ async function runMigrationTest() {
     assert(uiLevel === '2', `UI Level should be 2, got ${uiLevel}`);
     
     const uiPartnerName = document.getElementById('partner-name').textContent;
-    assert(uiPartnerName === 'Pikachu', `UI Partner name should be Pikachu, got ${uiPartnerName}`);
+    assert(uiPartnerName === 'Pichu', `UI Partner name should be Pichu, got ${uiPartnerName}`);
     
     // Verify grid completions migrated to date keys in state (UI verification is disabled until Phase 2)
     const targetDate = "2026-07-13"; // v9State.weekStartDate
@@ -204,9 +214,13 @@ async function runMigrationTest() {
       assert(state.grid[`${targetDate}-${taskId}`] === true, `State grid for ${targetDate}-${taskId} should be true`);
     });
 
-    // Check localStorage cleanup
-    const oldData = localStorage.getItem('kepler_pokemon_training_v2');
-    assert(oldData === null, "Old local storage key should be removed");
+    // Check localStorage contains migrated state (old unassociated state was removed, new profile state cached)
+    const currentLocalDataStr = localStorage.getItem('kepler_pokemon_training_v2');
+    if (currentLocalDataStr) {
+      const currentLocalData = JSON.parse(currentLocalDataStr);
+      assert(currentLocalData.childName === testProfileName, "Local storage should contain the migrated profile state name");
+      assert(currentLocalData.version === 18, "Local storage state should be version 18");
+    }
     
     const backupDataStr = localStorage.getItem('kepler_pokemon_training_v2_backup');
     assert(backupDataStr !== null, "Backup local storage key should exist");

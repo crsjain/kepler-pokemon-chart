@@ -18,13 +18,16 @@ async function main() {
     if (fs.existsSync(authFile)) fs.unlinkSync(authFile);
   } catch(e){}
 
-  console.log("Starting Chrome in headless mode with fresh profile...");
+  console.log("Starting Chrome in headless mode...");
   const chrome = spawn('google-chrome', [
     '--headless=new',
     '--remote-debugging-port=9223',
     `--user-data-dir=${profileDir}`,
+    '--password-store=basic',
+    '--use-mock-keychain',
     '--disable-gpu',
     '--no-sandbox',
+    '--disable-dev-shm-usage',
     '--ignore-certificate-errors',
     '--allow-insecure-localhost',
     '--disable-extensions',
@@ -33,7 +36,7 @@ async function main() {
     '--no-first-run',
     '--no-default-browser-check',
     '--no-proxy-server',
-    'http://127.0.0.1:8085/index.html?runTests=true&headless=true'
+    'http://127.0.0.1:8000/index.html?runTests=true&headless=true'
   ]);
 
   chrome.on('error', (err) => {
@@ -110,17 +113,35 @@ async function main() {
   let runtimeEnabled = false;
   let pageEnabled = false;
   let networkEnabled = false;
+  let fetchEnabled = false;
 
   ws.onopen = () => {
     console.log("WebSocket connected. Enabling events...");
     send('Runtime.enable'); // Will have ID 1
     send('Page.enable');    // Will have ID 2
     send('Network.enable'); // Will have ID 3
+    send('Fetch.enable', { patterns: [{ urlPattern: '*raw.githubusercontent.com*' }] }); // Will have ID 4
   };
 
   ws.onmessage = (event) => {
     const msg = JSON.parse(event.data);
     
+    // Intercept and mock raw.githubusercontent.com requests (PokeAPI sprites)
+    if (msg.method === 'Fetch.requestPaused') {
+      const requestId = msg.params.requestId;
+      const base64Body = 'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // 1x1 transparent GIF
+      send('Fetch.fulfillRequest', {
+        requestId,
+        responseCode: 200,
+        responseHeaders: [
+          { name: 'Content-Type', value: 'image/gif' },
+          { name: 'Access-Control-Allow-Origin', value: '*' }
+        ],
+        body: base64Body
+      });
+      return;
+    }
+
     // Log important events
     if (msg.method) {
       console.log(`[CDP Event] ${msg.method}`);
@@ -156,15 +177,16 @@ async function main() {
       if (msg.id === 1) runtimeEnabled = true;
       if (msg.id === 2) pageEnabled = true;
       if (msg.id === 3) networkEnabled = true;
+      if (msg.id === 4) fetchEnabled = true;
       
-      if (runtimeEnabled && pageEnabled && networkEnabled && !initialized) {
+      if (runtimeEnabled && pageEnabled && networkEnabled && fetchEnabled && !initialized) {
         initialized = true;
         console.log("CDP initialized. Navigating to test page...");
-        send('Page.navigate', { url: 'http://127.0.0.1:8085/index.html?runTests=true&headless=true' }); // Will have ID 4
+        send('Page.navigate', { url: 'http://127.0.0.1:8000/index.html?runTests=true&headless=true' }); // Will have ID 5
       }
       
-      // Capture screenshot if navigation fails (now ID 4)
-      if (msg.id === 4 && (msg.error || (msg.result && msg.result.errorText))) {
+      // Capture screenshot if navigation fails (now ID 5)
+      if (msg.id === 5 && (msg.error || (msg.result && msg.result.errorText))) {
         console.log("Navigation failed. Capturing CDP screenshot...");
         screenshotPathToSave = '/usr/local/google/home/crsjain/kepler-pokemon-chart/screenshot.png';
         screenshotCmdId = commandId;

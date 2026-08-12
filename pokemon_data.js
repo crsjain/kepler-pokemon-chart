@@ -5,6 +5,7 @@ export const POKEMON_MAP = {
   1: "Bulbasaur", 2: "Ivysaur", 3: "Venusaur",
   4: "Charmander", 5: "Charmeleon", 6: "Charizard",
   7: "Squirtle", 8: "Wartortle", 9: "Blastoise",
+  10: "Caterpie", 11: "Metapod",
   12: "Butterfree",
   25: "Pikachu", 26: "Raichu",
   35: "Clefairy",
@@ -16,16 +17,20 @@ export const POKEMON_MAP = {
   63: "Abra", 65: "Alakazam",
   66: "Machop", 68: "Machamp",
   79: "Slowpoke", 80: "Slowbro",
+  92: "Gastly", 93: "Haunter",
   94: "Gengar", 95: "Onix",
+  129: "Magikarp",
   130: "Gyarados", 131: "Lapras",
   133: "Eevee", 134: "Vaporeon", 135: "Jolteon", 136: "Flareon",
   123: "Scyther",
   143: "Snorlax",
+  147: "Dratini", 148: "Dragonair",
   149: "Dragonite", 150: "Mewtwo", 151: "Mew",
   152: "Chikorita", 153: "Bayleef", 154: "Meganium",
   155: "Cyndaquil", 156: "Quilava", 157: "Typhlosion",
   158: "Totodile", 159: "Croconaw", 160: "Feraligatr",
   172: "Pichu",
+  174: "Igglybuff",
   175: "Togepi", 176: "Togetic",
   179: "Mareep", 180: "Flaaffy", 181: "Ampharos",
   194: "Wooper",
@@ -37,12 +42,18 @@ export const POKEMON_MAP = {
   252: "Treecko", 253: "Grovyle", 254: "Sceptile",
   255: "Torchic", 256: "Combusken", 257: "Blaziken",
   258: "Mudkip", 259: "Marshtomp", 260: "Swampert",
-  282: "Gardevoir", 303: "Mawile", 330: "Flygon",
-  359: "Absol", 376: "Metagross",
+  280: "Ralts",
+  282: "Gardevoir", 303: "Mawile",
+  328: "Trapinch", 329: "Vibrava",
+  330: "Flygon",
+  359: "Absol",
+  374: "Beldum", 375: "Metang",
+  376: "Metagross",
   380: "Latias", 381: "Latios", 382: "Kyogre", 383: "Groudon", 384: "Rayquaza", 385: "Jirachi", 386: "Deoxys",
   387: "Turtwig", 388: "Grotle", 389: "Torterra",
   390: "Chimchar", 391: "Monferno", 392: "Infernape",
   393: "Piplup", 394: "Prinplup", 395: "Empoleon",
+  446: "Munchlax",
   447: "Riolu", 448: "Lucario",
   470: "Leafeon", 471: "Glaceon",
   483: "Dialga", 484: "Palkia", 487: "Giratina", 493: "Arceus",
@@ -116,23 +127,23 @@ export const POKEMON_MAP = {
 };
 
 export const TIER_1_IDS = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 25, 26, 35, 37, 38, 39, 40, 52, 53, 54, 
-  55, 58, 59, 63, 65, 66, 68, 79, 80, 94, 95, 130, 131, 133, 134, 135, 136, 
-  143, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 172, 
-  175, 176, 179, 180, 181, 194, 196, 197, 212, 214, 228, 229, 246, 247, 
-  248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 282, 
-  303, 330, 359, 376, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 
-  390, 391, 392, 393, 394, 395, 447, 448, 470, 471, 483, 484, 487, 493
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 25, 26, 35, 37, 38, 39, 40, 52, 53, 54, 
+  55, 58, 59, 63, 65, 66, 68, 79, 80, 92, 93, 94, 95, 129, 130, 131, 133, 134, 135, 136, 
+  143, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 172, 
+  174, 175, 176, 179, 180, 181, 194, 196, 197, 212, 214, 228, 229, 246, 247, 
+  248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 280, 282, 
+  303, 328, 329, 330, 359, 374, 375, 376, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 
+  390, 391, 392, 393, 394, 395, 446, 447, 448, 470, 471, 483, 484, 487, 493
 ];
 
 export const TIER_2_IDS = [
   403, 404, 405, 443, 444, 445, 475, 494, 495, 496, 497, 498, 499, 500, 
-  501, 502, 503, 610, 611, 612, 633, 634, 635, 637, 643, 644, 646, 649, 
-  653, 654, 655, 656, 657, 658, 681, 700, 704, 705, 706, 716, 717, 718, 
+  501, 502, 503, 610, 611, 612, 633, 634, 635, 636, 637, 643, 644, 646, 649, 
+  653, 654, 655, 656, 657, 658, 679, 680, 681, 700, 704, 705, 706, 716, 717, 718, 
   719, 720, 722, 723, 724, 725, 726, 727, 736, 738, 744, 745, 757, 758, 
-  778, 789, 790, 791, 792, 800, 807, 810, 811, 812, 813, 814, 815, 823, 
-  831, 832, 849, 863, 872, 873, 885, 886, 887, 888, 889, 892, 898, 906, 
-  907, 908, 909, 910, 911, 912, 913, 914, 926, 927, 936, 937, 959, 1007, 
+  778, 789, 790, 791, 792, 800, 807, 810, 811, 812, 813, 814, 815, 821, 822, 823, 
+  831, 832, 847, 849, 863, 872, 873, 885, 886, 887, 888, 889, 892, 898, 906, 
+  907, 908, 909, 910, 911, 912, 913, 914, 926, 927, 935, 936, 937, 957, 958, 959, 1007, 
   1008, 1017
 ];
 
@@ -161,10 +172,11 @@ export const STARTER_FAMILIES = STARTER_OPTIONS.map(o => o.familyId);
 
 // Evolution configurations
 export const EVOLUTIONS = {
-  '25': {
+  '172': {
     stages: [
-      { level: 1, id: '25', name: 'Pikachu' },
-      { level: 5, id: '26', name: 'Raichu' }
+      { level: 1, id: '172', name: 'Pichu' },
+      { level: 5, id: '25', name: 'Pikachu' },
+      { level: 10, id: '26', name: 'Raichu' }
     ]
   },
   '4': {
@@ -315,6 +327,372 @@ export const EVOLUTIONS = {
       { id: '10194', name: 'Shadow Rider Calyrex', level: 10 }
     ]
   },
+  '10': {
+    stages: [
+      { level: 1, id: '10', name: 'Caterpie' },
+      { level: 3, id: '11', name: 'Metapod' },
+      { level: 5, id: '12', name: 'Butterfree' }
+    ]
+  },
+  '37': {
+    stages: [
+      { level: 1, id: '37', name: 'Vulpix' },
+      { level: 5, id: '38', name: 'Ninetales' }
+    ]
+  },
+  '174': {
+    stages: [
+      { level: 1, id: '174', name: 'Igglybuff' },
+      { level: 5, id: '39', name: 'Jigglypuff' },
+      { level: 10, id: '40', name: 'Wigglytuff' }
+    ]
+  },
+  '52': {
+    stages: [
+      { level: 1, id: '52', name: 'Meowth' },
+      { level: 5, id: '53', name: 'Persian' }
+    ]
+  },
+  '54': {
+    stages: [
+      { level: 1, id: '54', name: 'Psyduck' },
+      { level: 5, id: '55', name: 'Golduck' }
+    ]
+  },
+  '58': {
+    stages: [
+      { level: 1, id: '58', name: 'Growlithe' },
+      { level: 5, id: '59', name: 'Arcanine' }
+    ]
+  },
+  '63': {
+    stages: [
+      { level: 1, id: '63', name: 'Abra' },
+      { level: 5, id: '65', name: 'Alakazam' }
+    ]
+  },
+  '66': {
+    stages: [
+      { level: 1, id: '66', name: 'Machop' },
+      { level: 5, id: '68', name: 'Machamp' }
+    ]
+  },
+  '79': {
+    stages: [
+      { level: 1, id: '79', name: 'Slowpoke' },
+      { level: 5, id: '80', name: 'Slowbro' }
+    ]
+  },
+  '92': {
+    stages: [
+      { level: 1, id: '92', name: 'Gastly' },
+      { level: 5, id: '93', name: 'Haunter' },
+      { level: 10, id: '94', name: 'Gengar' }
+    ]
+  },
+  '129': {
+    stages: [
+      { level: 1, id: '129', name: 'Magikarp' },
+      { level: 10, id: '130', name: 'Gyarados' }
+    ]
+  },
+  '147': {
+    stages: [
+      { level: 1, id: '147', name: 'Dratini' },
+      { level: 5, id: '148', name: 'Dragonair' },
+      { level: 10, id: '149', name: 'Dragonite' }
+    ]
+  },
+  '152': {
+    stages: [
+      { level: 1, id: '152', name: 'Chikorita' },
+      { level: 5, id: '153', name: 'Bayleef' },
+      { level: 10, id: '154', name: 'Meganium' }
+    ]
+  },
+  '155': {
+    stages: [
+      { level: 1, id: '155', name: 'Cyndaquil' },
+      { level: 5, id: '156', name: 'Quilava' },
+      { level: 10, id: '157', name: 'Typhlosion' }
+    ]
+  },
+  '158': {
+    stages: [
+      { level: 1, id: '158', name: 'Totodile' },
+      { level: 5, id: '159', name: 'Croconaw' },
+      { level: 10, id: '160', name: 'Feraligatr' }
+    ]
+  },
+  '175': {
+    stages: [
+      { level: 1, id: '175', name: 'Togepi' },
+      { level: 5, id: '176', name: 'Togetic' }
+    ]
+  },
+  '179': {
+    stages: [
+      { level: 1, id: '179', name: 'Mareep' },
+      { level: 5, id: '180', name: 'Flaaffy' },
+      { level: 10, id: '181', name: 'Ampharos' }
+    ]
+  },
+  '228': {
+    stages: [
+      { level: 1, id: '228', name: 'Houndour' },
+      { level: 5, id: '229', name: 'Houndoom' }
+    ]
+  },
+  '246': {
+    stages: [
+      { level: 1, id: '246', name: 'Larvitar' },
+      { level: 5, id: '247', name: 'Pupitar' },
+      { level: 10, id: '248', name: 'Tyranitar' }
+    ]
+  },
+  '252': {
+    stages: [
+      { level: 1, id: '252', name: 'Treecko' },
+      { level: 5, id: '253', name: 'Grovyle' },
+      { level: 10, id: '254', name: 'Sceptile' }
+    ]
+  },
+  '255': {
+    stages: [
+      { level: 1, id: '255', name: 'Torchic' },
+      { level: 5, id: '256', name: 'Combusken' },
+      { level: 10, id: '257', name: 'Blaziken' }
+    ]
+  },
+  '258': {
+    stages: [
+      { level: 1, id: '258', name: 'Mudkip' },
+      { level: 5, id: '259', name: 'Marshtomp' },
+      { level: 10, id: '260', name: 'Swampert' }
+    ]
+  },
+  '280': {
+    stages: [
+      { level: 1, id: '280', name: 'Ralts' }
+    ],
+    options: [
+      { id: '282', name: 'Gardevoir', level: 5 },
+      { id: '475', name: 'Gallade', level: 5 }
+    ]
+  },
+  '328': {
+    stages: [
+      { level: 1, id: '328', name: 'Trapinch' },
+      { level: 5, id: '329', name: 'Vibrava' },
+      { level: 10, id: '330', name: 'Flygon' }
+    ]
+  },
+  '374': {
+    stages: [
+      { level: 1, id: '374', name: 'Beldum' },
+      { level: 5, id: '375', name: 'Metang' },
+      { level: 10, id: '376', name: 'Metagross' }
+    ]
+  },
+  '387': {
+    stages: [
+      { level: 1, id: '387', name: 'Turtwig' },
+      { level: 5, id: '388', name: 'Grotle' },
+      { level: 10, id: '389', name: 'Torterra' }
+    ]
+  },
+  '390': {
+    stages: [
+      { level: 1, id: '390', name: 'Chimchar' },
+      { level: 5, id: '391', name: 'Monferno' },
+      { level: 10, id: '392', name: 'Infernape' }
+    ]
+  },
+  '393': {
+    stages: [
+      { level: 1, id: '393', name: 'Piplup' },
+      { level: 5, id: '394', name: 'Prinplup' },
+      { level: 10, id: '395', name: 'Empoleon' }
+    ]
+  },
+  '403': {
+    stages: [
+      { level: 1, id: '403', name: 'Shinx' },
+      { level: 5, id: '404', name: 'Luxio' },
+      { level: 10, id: '405', name: 'Luxray' }
+    ]
+  },
+  '443': {
+    stages: [
+      { level: 1, id: '443', name: 'Gible' },
+      { level: 5, id: '444', name: 'Gabite' },
+      { level: 10, id: '445', name: 'Garchomp' }
+    ]
+  },
+  '446': {
+    stages: [
+      { level: 1, id: '446', name: 'Munchlax' },
+      { level: 5, id: '143', name: 'Snorlax' }
+    ]
+  },
+  '447': {
+    stages: [
+      { level: 1, id: '447', name: 'Riolu' },
+      { level: 5, id: '448', name: 'Lucario' }
+    ]
+  },
+  '495': {
+    stages: [
+      { level: 1, id: '495', name: 'Snivy' },
+      { level: 5, id: '496', name: 'Servine' },
+      { level: 10, id: '497', name: 'Serperior' }
+    ]
+  },
+  '498': {
+    stages: [
+      { level: 1, id: '498', name: 'Tepig' },
+      { level: 5, id: '499', name: 'Pignite' },
+      { level: 10, id: '500', name: 'Emboar' }
+    ]
+  },
+  '501': {
+    stages: [
+      { level: 1, id: '501', name: 'Oshawott' },
+      { level: 5, id: '502', name: 'Dewott' },
+      { level: 10, id: '503', name: 'Samurott' }
+    ]
+  },
+  '610': {
+    stages: [
+      { level: 1, id: '610', name: 'Axew' },
+      { level: 5, id: '611', name: 'Fraxure' },
+      { level: 10, id: '612', name: 'Haxorus' }
+    ]
+  },
+  '633': {
+    stages: [
+      { level: 1, id: '633', name: 'Deino' },
+      { level: 5, id: '634', name: 'Zweilous' },
+      { level: 10, id: '635', name: 'Hydreigon' }
+    ]
+  },
+  '653': {
+    stages: [
+      { level: 1, id: '653', name: 'Fennekin' },
+      { level: 5, id: '654', name: 'Braixen' },
+      { level: 10, id: '655', name: 'Delphox' }
+    ]
+  },
+  '656': {
+    stages: [
+      { level: 1, id: '656', name: 'Froakie' },
+      { level: 5, id: '657', name: 'Frogadier' },
+      { level: 10, id: '658', name: 'Greninja' }
+    ]
+  },
+  '704': {
+    stages: [
+      { level: 1, id: '704', name: 'Goomy' },
+      { level: 5, id: '705', name: 'Sliggoo' },
+      { level: 10, id: '706', name: 'Goodra' }
+    ]
+  },
+  '722': {
+    stages: [
+      { level: 1, id: '722', name: 'Rowlet' },
+      { level: 5, id: '723', name: 'Dartrix' },
+      { level: 10, id: '724', name: 'Decidueye' }
+    ]
+  },
+  '725': {
+    stages: [
+      { level: 1, id: '725', name: 'Litten' },
+      { level: 5, id: '726', name: 'Torracat' },
+      { level: 10, id: '727', name: 'Incineroar' }
+    ]
+  },
+  '736': {
+    stages: [
+      { level: 1, id: '736', name: 'Grubbin' },
+      { level: 5, id: '738', name: 'Vikavolt' }
+    ]
+  },
+  '744': {
+    stages: [
+      { level: 1, id: '744', name: 'Rockruff' },
+      { level: 5, id: '745', name: 'Lycanroc' }
+    ]
+  },
+  '757': {
+    stages: [
+      { level: 1, id: '757', name: 'Salandit' },
+      { level: 5, id: '758', name: 'Salazzle' }
+    ]
+  },
+  '789': {
+    stages: [
+      { level: 1, id: '789', name: 'Cosmog' },
+      { level: 5, id: '790', name: 'Cosmoem' }
+    ],
+    options: [
+      { id: '791', name: 'Solgaleo', level: 10 },
+      { id: '792', name: 'Lunala', level: 10 }
+    ]
+  },
+  '810': {
+    stages: [
+      { level: 1, id: '810', name: 'Grookey' },
+      { level: 5, id: '811', name: 'Thwackey' },
+      { level: 10, id: '812', name: 'Rillaboom' }
+    ]
+  },
+  '813': {
+    stages: [
+      { level: 1, id: '813', name: 'Scorbunny' },
+      { level: 5, id: '814', name: 'Raboot' },
+      { level: 10, id: '815', name: 'Cinderace' }
+    ]
+  },
+  '831': {
+    stages: [
+      { level: 1, id: '831', name: 'Wooloo' },
+      { level: 5, id: '832', name: 'Dubwool' }
+    ]
+  },
+  '872': {
+    stages: [
+      { level: 1, id: '872', name: 'Snom' },
+      { level: 5, id: '873', name: 'Frosmoth' }
+    ]
+  },
+  '885': {
+    stages: [
+      { level: 1, id: '885', name: 'Dreepy' },
+      { level: 5, id: '886', name: 'Drakloak' },
+      { level: 10, id: '887', name: 'Dragapult' }
+    ]
+  },
+  '906': {
+    stages: [
+      { level: 1, id: '906', name: 'Sprigatito' },
+      { level: 5, id: '907', name: 'Floragato' },
+      { level: 10, id: '908', name: 'Meowscarada' }
+    ]
+  },
+  '909': {
+    stages: [
+      { level: 1, id: '909', name: 'Fuecoco' },
+      { level: 5, id: '910', name: 'Crocalor' },
+      { level: 10, id: '911', name: 'Skeledirge' }
+    ]
+  },
+  '912': {
+    stages: [
+      { level: 1, id: '912', name: 'Quaxly' },
+      { level: 5, id: '913', name: 'Quaxwell' },
+      { level: 10, id: '914', name: 'Quaquaval' }
+    ]
+  },
   '123': {
     stages: [
       { level: 1, id: '123', name: 'Scyther' },
@@ -375,20 +753,21 @@ export const EVOLVED_POKEMON_IDS = new Set([
   2, 3,       // Ivysaur, Venusaur
   5, 6,       // Charmeleon, Charizard
   8, 9,       // Wartortle, Blastoise
-  12,         // Butterfree
-  26,         // Raichu
+  11, 12,     // Metapod, Butterfree
+  25, 26,     // Pikachu, Raichu
   38,         // Ninetales
-  40,         // Wigglytuff
+  39, 40,     // Jigglypuff, Wigglytuff
   53,         // Persian
   55,         // Golduck
   59,         // Arcanine
   65,         // Alakazam
   68,         // Machamp
   80,         // Slowbro
-  94,         // Gengar
+  93, 94,     // Haunter, Gengar
   130,        // Gyarados
   134, 135, 136, 196, 197, 470, 471, 700, // Eeveelutions
-  149,        // Dragonite
+  143,        // Snorlax (Evolved form of Munchlax)
+  148, 149,   // Dragonair, Dragonite
   153, 154,   // Bayleef, Meganium
   156, 157,   // Quilava, Typhlosion
   159, 160,   // Croconaw, Feraligatr
@@ -401,8 +780,8 @@ export const EVOLVED_POKEMON_IDS = new Set([
   256, 257,   // Combusken, Blaziken
   259, 260,   // Marshtomp, Swampert
   282,        // Gardevoir
-  330,        // Flygon
-  376,        // Metagross
+  329, 330,   // Vibrava, Flygon
+  375, 376,   // Metang, Metagross
   388, 389,   // Grotle, Torterra
   391, 392,   // Monferno, Infernape
   394, 395,   // Prinplup, Empoleon
@@ -460,6 +839,7 @@ export const POKEMON_TYPES = {
   1: "Grass", 2: "Grass", 3: "Grass",
   4: "Fire", 5: "Fire", 6: "Fire",
   7: "Water", 8: "Water", 9: "Water",
+  10: "Bug", 11: "Bug",
   12: "Bug",
   25: "Electric", 26: "Electric",
   35: "Fairy",
@@ -471,18 +851,22 @@ export const POKEMON_TYPES = {
   63: "Psychic", 65: "Psychic",
   66: "Fighting", 68: "Fighting",
   79: "Water", 80: "Water",
+  92: "Ghost", 93: "Ghost",
   94: "Ghost",
   95: "Rock",
+  129: "Water",
   130: "Water",
   131: "Water",
   133: "Normal", 134: "Water", 135: "Electric", 136: "Fire",
   143: "Normal",
+  147: "Dragon", 148: "Dragon",
   149: "Dragon",
   150: "Psychic", 151: "Psychic",
   152: "Grass", 153: "Grass", 154: "Grass",
   155: "Fire", 156: "Fire", 157: "Fire",
   158: "Water", 159: "Water", 160: "Water",
   172: "Electric",
+  174: "Normal",
   175: "Fairy", 176: "Fairy",
   179: "Electric", 180: "Electric", 181: "Electric",
   194: "Water",
@@ -495,10 +879,13 @@ export const POKEMON_TYPES = {
   252: "Grass", 253: "Grass", 254: "Grass",
   255: "Fire", 256: "Fire", 257: "Fire",
   258: "Water", 259: "Water", 260: "Water",
+  280: "Psychic",
   282: "Psychic",
   303: "Steel",
+  328: "Ground", 329: "Ground",
   330: "Ground",
   359: "Dark",
+  374: "Steel", 375: "Steel",
   376: "Steel",
   380: "Dragon", 381: "Dragon", 382: "Water", 383: "Ground", 384: "Dragon", 385: "Steel", 386: "Psychic",
   387: "Grass", 388: "Grass", 389: "Grass",
@@ -586,8 +973,8 @@ export const LEGENDARY_POKEMON_IDS = new Set([
 ]);
 
 export const RARE_POKEMON_IDS = new Set([
-  123, 131, 143, 175, 214, 246, 303, 359, 
-  443, 447, 610, 633, 636, 679, 704, 778, 
+  123, 131, 147, 175, 214, 246, 303, 359, 
+  374, 443, 446, 447, 610, 633, 636, 679, 704, 778, 
   821, 847, 885, 935, 957
 ]);
 

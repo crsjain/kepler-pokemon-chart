@@ -53,7 +53,7 @@ import { DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS } from './migrations.js';
 
 let currentViewingWeekStartDate = null;
 
-const APP_VERSION = 'v1.7.1 (v57)';
+const APP_VERSION = 'v1.8.0 (v58)';
 
 function areFutureEditsAllowed() {
   if (window.__mock_allow_future_edits__ !== undefined) {
@@ -144,6 +144,7 @@ const testWeek1Btn = document.getElementById('test-week-1');
 const testWeek2Btn = document.getElementById('test-week-2');
 const testWeek3Btn = document.getElementById('test-week-3');
 const testWeek4Btn = document.getElementById('test-week-4');
+const debugAllowFutureEditsCheckbox = document.getElementById('debug-allow-future-edits');
 
 // Confirm Modal Elements
 const confirmModal = document.getElementById('confirm-modal');
@@ -298,6 +299,7 @@ function initFirebaseUI() {
     return;
   }
 
+  const saveDebounceTime = (location.search.includes('runTests=true') || location.search.includes('runMigrationTest=true')) ? 50 : 1500;
   const debouncedCloudSave = debounceWithFlush((profileId, updatedState) => {
     saveProfileStateToCloud(profileId, updatedState)
       .then(() => {
@@ -307,7 +309,7 @@ function initFirebaseUI() {
         console.error("Cloud save failed:", err);
         isCloudSavePending = false;
       });
-  }, 1500); // 1.5 seconds debounce
+  }, saveDebounceTime);
 
   // Hook up save observer to sync local state back to Firestore
   registerOnSave((updatedState) => {
@@ -688,14 +690,25 @@ function selectProfile(profileId) {
       if (isProfileFirstLoad) {
         isProfileFirstLoad = false;
         const todayDay = getLocalDate(state?.timezoneOffset).getDay();
-        if (state.activeDay !== todayDay) {
-          console.log("Auto-aligning activeDay from " + state.activeDay + " to today (" + todayDay + ") on startup.");
-          state.activeDay = todayDay;
-          saveState();
+        const currentRealWeekStart = formatLocalDate(getWeekStart(getLocalDate(state?.timezoneOffset), state.weekStartDay || 0));
+        const isTodayInActiveWeek = state.weekStartDate && (currentRealWeekStart === state.weekStartDate);
+        console.log(`INSTRUMENTATION: startup check: weekStartDate=${state.weekStartDate}, realWeekStart=${currentRealWeekStart}, isTodayInActiveWeek=${isTodayInActiveWeek}, runTests=${location.search.includes('runTests=true')}`);
+
+        if (isTodayInActiveWeek || location.search.includes('runTests=true')) {
+          if (state.activeDay !== todayDay) {
+            console.log("Auto-aligning activeDay from " + state.activeDay + " to today (" + todayDay + ") on startup.");
+            state.activeDay = todayDay;
+            saveState();
+          }
+        } else {
+          if (state.activeDay !== -1) {
+            console.log("Today is not in active week. Setting activeDay to -1.");
+            state.activeDay = -1;
+            saveState();
+          }
         }
         
         // Notify if today belongs to a later week than the grid week start
-        const currentRealWeekStart = formatLocalDate(getWeekStart(getLocalDate(state?.timezoneOffset), state.weekStartDay || 0));
         if (state.weekStartDate && currentRealWeekStart > state.weekStartDate) {
           showCustomNotification(
             "New Week Training! 📅",
@@ -968,6 +981,9 @@ function getWeekRangeString(startDateStr) {
 }
 
 export function renderState(rebuildGrid = false) {
+  if (debugAllowFutureEditsCheckbox) {
+    debugAllowFutureEditsCheckbox.checked = areFutureEditsAllowed();
+  }
   if (!currentViewingWeekStartDate && state.weekStartDate) {
     currentViewingWeekStartDate = state.weekStartDate;
   }
@@ -1070,11 +1086,12 @@ export function renderState(rebuildGrid = false) {
   updateActiveColumnUI();
 
 
-  // Auto-trigger branching evolution if partner is at or above threshold but still in base stage
+  // Auto-trigger branching evolution if partner is at or above threshold but still in pre-branch stage
   const currentEvo = EVOLUTIONS[family];
   if (currentEvo && currentEvo.options) {
     const branchThreshold = currentEvo.options[0]?.level || 5;
-    if (stats.level >= branchThreshold && String(stats.stageId) === String(family)) {
+    const preBranchStageId = currentEvo.stages ? String(currentEvo.stages[currentEvo.stages.length - 1].id) : String(family);
+    if (stats.level >= branchThreshold && String(stats.stageId) === preBranchStageId) {
       showBranchEvolutionDialog(family, instanceId);
     }
   }
@@ -1103,22 +1120,33 @@ function renderDebugSidebarVisibility() {
 function updateActiveColumnUI() {
   const isPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
   
-  // Calculate if today's calendar date actually falls within the week being viewed
-  const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
-  const viewStart = new Date(currentViewingWeekStartDate + 'T00:00:00');
-  const viewEnd = new Date(viewStart.getTime());
-  viewEnd.setDate(viewStart.getDate() + 6);
-  const viewEndStr = formatLocalDate(viewEnd);
+  const activeDay = state.activeDay !== undefined ? state.activeDay : -1;
+  const activeColumn = (isPastWeek || activeDay === -1) ? -1 : (activeDay - state.weekStartDay + 7) % 7;
   
-  const isTodayInViewingWeek = (todayStr >= currentViewingWeekStartDate && todayStr <= viewEndStr) || location.search.includes('runTests=true');
-  
-  const activeDay = state.activeDay !== undefined ? state.activeDay : getLocalDate(state?.timezoneOffset).getDay();
-  const activeColumn = (isPastWeek || !isTodayInViewingWeek) ? -1 : (activeDay - state.weekStartDay + 7) % 7;
+  // Calculate if the viewing week is calendar-wise in the past
+  const currentRealWeekStart = formatLocalDate(getWeekStart(getLocalDate(state?.timezoneOffset), state.weekStartDay || 0));
+  const isViewingWeekInPast = currentViewingWeekStartDate < currentRealWeekStart;
+
+  console.log("INSTRUMENTATION: updateActiveColumnUI", {
+    isPastWeek,
+    currentViewingWeekStartDate,
+    state_weekStartDate: state.weekStartDate,
+    activeDay,
+    state_weekStartDay: state.weekStartDay,
+    activeColumn,
+    currentRealWeekStart,
+    isViewingWeekInPast
+  });
   
   const headers = document.querySelectorAll('.day-header');
+  console.log(`INSTRUMENTATION: headers count ${headers.length}, activeColumn ${activeColumn}, isViewingWeekInPast ${isViewingWeekInPast}, viewWeekStart ${currentViewingWeekStartDate}, realWeekStart ${currentRealWeekStart}, tzOffset ${state?.timezoneOffset}, localDate ${getLocalDate(state?.timezoneOffset).toString()}, weekStartObj ${getWeekStart(getLocalDate(state?.timezoneOffset), state.weekStartDay || 0).toString()}`);
   headers.forEach(th => {
     const day = parseInt(th.dataset.day); // column index
-    if (day === activeColumn) {
+    console.log(`INSTRUMENTATION: checking header ${th.textContent}, day=${day}, activeColumn=${activeColumn}`);
+    
+    // Highlight active column header ONLY if the viewing week is NOT in the past
+    if (day === activeColumn && !isViewingWeekInPast) {
+      console.log(`INSTRUMENTATION: adding active-day to ${th.textContent} (day ${day})`);
       th.classList.add('active-day');
     } else {
       th.classList.remove('active-day');
@@ -1793,7 +1821,7 @@ function setupEventListeners() {
           return;
         }
         const today = getLocalDate(state?.timezoneOffset).getDay();
-        if (clickedRealDay !== today) {
+        if (dateStr !== todayStr) {
           const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
           const dayName = daysOfWeek[clickedRealDay];
           showCustomConfirm(
@@ -1842,6 +1870,13 @@ function setupEventListeners() {
   testWeek2Btn.addEventListener('click', () => { setWeek(2); });
   testWeek3Btn.addEventListener('click', () => { setWeek(3); });
   testWeek4Btn.addEventListener('click', () => { setWeek(4); });
+
+  if (debugAllowFutureEditsCheckbox) {
+    debugAllowFutureEditsCheckbox.addEventListener('change', () => {
+      window.__mock_allow_future_edits__ = debugAllowFutureEditsCheckbox.checked;
+      renderState(false);
+    });
+  }
 
 
   const addTodayBtn = document.getElementById('debug-vault-add-today');
@@ -2189,7 +2224,8 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
       megaReward: state.megaReward,
       weeklyClaimed: true,
       badgeId: oldBadgeId,
-      xpEarned: calculateWeekXpEarned(oldWeekStartDate)
+      xpEarned: calculateWeekXpEarned(oldWeekStartDate),
+      megaWeeks: state.megaWeeks
     };
 
     rollNewWeeklyBadge();
@@ -2233,7 +2269,8 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
       megaReward: state.megaReward,
       weeklyClaimed: false,
       badgeId: oldBadgeId,
-      xpEarned: calculateWeekXpEarned(oldWeekStartDate)
+      xpEarned: calculateWeekXpEarned(oldWeekStartDate),
+      megaWeeks: state.megaWeeks
     };
     
     rollNewWeeklyBadge();
@@ -2275,6 +2312,7 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
     state.weekStartDate = formatLocalDate(getWeekStart(getLocalDate(state?.timezoneOffset), state.weekStartDay));
   }
   
+  state.activeDay = getLocalDate(state?.timezoneOffset).getDay();
   currentViewingWeekStartDate = state.weekStartDate;
   saveState();
   renderState(true);
@@ -2427,30 +2465,33 @@ function addXp(amount) {
   if (levelChanged) {
     const evo = EVOLUTIONS[family];
     if (evo) {
-      if (evo.options) {
-        // Branching Pokemon (Eevee, Mewtwo, Kyurem, Calyrex, etc.)
-        const threshold = evo.options[0]?.level || 5;
-        if (stats.level < threshold && String(stats.stageId) !== String(family)) {
-          stats.stageId = String(family);
-          devolved = true;
-        }
-      } else if (evo.stages) {
-        // Linear Pokemon
-        let stageIdx = 0;
-        for (let i = 1; i < evo.stages.length; i++) {
-          if (stats.level >= evo.stages[i].level) {
-            stageIdx = i;
-          } else {
-            break;
+      const hasBranching = !!evo.options;
+      const branchThreshold = hasBranching ? (evo.options[0]?.level || 5) : Infinity;
+
+      if (stats.level < branchThreshold) {
+        if (evo.stages) {
+          let stageIdx = 0;
+          for (let i = 1; i < evo.stages.length; i++) {
+            if (stats.level >= evo.stages[i].level) {
+              stageIdx = i;
+            } else {
+              break;
+            }
           }
-        }
-        const targetStageId = String(evo.stages[stageIdx].id);
-        if (String(stats.stageId) !== targetStageId) {
-          stats.stageId = targetStageId;
-          if (stats.level < oldLevel) {
+          const targetStageId = String(evo.stages[stageIdx].id);
+          if (String(stats.stageId) !== targetStageId) {
+            const isDevolvingFromBranch = hasBranching && evo.options.some(opt => String(opt.id) === String(stats.stageId));
+            stats.stageId = targetStageId;
+            if (stats.level < oldLevel || isDevolvingFromBranch) {
+              devolved = true;
+            } else {
+              evolved = true;
+            }
+          }
+        } else {
+          if (String(stats.stageId) !== String(family)) {
+            stats.stageId = String(family);
             devolved = true;
-          } else {
-            evolved = true;
           }
         }
       }
@@ -2459,7 +2500,8 @@ function addXp(amount) {
 
   if (levelIncreased) {
     const evo = EVOLUTIONS[family];
-    if (evo && evo.options && stats.level >= (evo.options[0]?.level || 5) && String(stats.stageId) === String(family)) {
+    const preBranchStageId = (evo && evo.stages) ? String(evo.stages[evo.stages.length - 1].id) : String(family);
+    if (evo && evo.options && stats.level >= (evo.options[0]?.level || 5) && String(stats.stageId) === preBranchStageId) {
       // Branching evolution choice handles dynamically in renderState
     } else if (evolved) {
       const activePokemon = getStageInfo(family, stats.stageId).currentStage;
@@ -2677,7 +2719,11 @@ function renderProgress() {
       badgeStatusEl.textContent = `🏆 ${badgeName} Badge Earned!`;
       weeklyBadgeSlot.classList.remove('locked');
       weeklyBadgeSlot.classList.add('unlocked');
-      weeklyBadgeSlot.classList.add(`badge-theme-${state.megaWeeks + 1}`);
+      const historyEntry = state.weeklyHistory[currentViewingWeekStartDate];
+      const themeIndex = (historyEntry && historyEntry.megaWeeks !== undefined) ? 
+        historyEntry.megaWeeks + 1 : 
+        (state.megaWeeks + 1);
+      weeklyBadgeSlot.classList.add(`badge-theme-${themeIndex}`);
     } else if (badgeId) {
       const badgeName = getPokemonName(badgeId);
       weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="${badgeName}" class="mega-slot-img silhouette">`;

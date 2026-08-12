@@ -206,6 +206,11 @@
           <button id="test-week-3" class="pixel-btn info small">W3</button>
           <button id="test-week-4" class="pixel-btn info small">W4</button>
         </div>
+        <div class="testing-row" style="margin-top: 5px; display: flex; align-items: center; gap: 8px; width: 100%;">
+          <label style="font-family: 'Fredoka One', cursive; font-size: 0.8rem; color: #5c3a21; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="debug-allow-future-edits"> Future Edits
+          </label>
+        </div>
         <div class="testing-row" style="margin-top: 10px; border-top: 1px dashed #cbd5e1; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; width: 100%;">
           <span style="font-family: 'Fredoka One', cursive; font-size: 0.8rem; color: #5c3a21; text-align: left; align-self: flex-start;">🏅 Badges:</span>
           <div style="display: flex; gap: 6px; flex-wrap: wrap;">
@@ -413,6 +418,10 @@
               <option value="5">⭐ 5 Stars (Normal)</option>
               <option value="10">⭐ 10 Stars (Rare)</option>
               <option value="15">⭐ 15 Stars (Legendary)</option>
+            </select>
+            <select id="shop-sort-by">
+              <option value="number">Sort: No. 🔢</option>
+              <option value="name">Sort: A-Z 🔤</option>
             </select>
             <button id="shop-filter-clear-btn" class="pixel-btn small info hidden-opacity">Clear 🔄</button>
           </div>

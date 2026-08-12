@@ -63,9 +63,9 @@ export function getStageInfo(familyId, stageId) {
 
 // State V16 (Star Vault & Partner Unlock Shop)
 export let state = {
-  version: 16,
-  activePartnerInstanceId: '25',
-  partnerFamily: '25', // Default Pikachu Family (kept for compatibility)
+  version: 18,
+  activePartnerInstanceId: '172',
+  partnerFamily: '172', // Default Pichu Family
   weekStartDay: 0, // Default Sunday (0) to Saturday (6)
   idleTimeout: 10, // Default 10 minutes
   adminPassword: 'zxcv', // Default parent admin passcode
@@ -73,9 +73,9 @@ export let state = {
   weeklyRewardOptions: [...DEFAULT_WEEKLY_REWARDS],
   megaRewardOptions: [...DEFAULT_MEGA_REWARDS],
   excused: {}, // key format: "YYYY-MM-DD-task" -> boolean
-  weeklyHistory: {}, // key format: "YYYY-MM-DD" -> { weekStartDay, reward, megaReward, weeklyClaimed, badgeId, xpEarned }
+  weeklyHistory: {}, // key format: "YYYY-MM-DD" -> { weekStartDay, reward, megaReward, weeklyClaimed, badgeId, xpEarned, megaWeeks }
   partnersData: {
-    '25': { familyId: '25', level: 1, xp: 0, stageId: '25' },
+    '172': { familyId: '172', level: 1, xp: 0, stageId: '172' },
     '4': { familyId: '4', level: 1, xp: 0, stageId: '4' },
     '1': { familyId: '1', level: 1, xp: 0, stageId: '1' },
     '7': { familyId: '7', level: 1, xp: 0, stageId: '7' },
@@ -105,8 +105,8 @@ export let state = {
     totalTraded: 0
   },
   collectedBadges: [],
-  badgePool: TIER_1_IDS.filter(id => id !== 25),
-  activeWeeklyBadgeId: 25
+  badgePool: TIER_1_IDS.filter(id => id !== 172),
+  activeWeeklyBadgeId: 172
 };
 
 // Storage Keys
@@ -307,12 +307,12 @@ export function runStateDiagnostics() {
   
   // Validate activePartnerInstanceId
   if (!state.activePartnerInstanceId) {
-    state.activePartnerInstanceId = state.partnerFamily || '25';
+    state.activePartnerInstanceId = state.partnerFamily || '172';
     issues.push("Missing activePartnerInstanceId.");
     fixed.push(`Initialized activePartnerInstanceId to '${state.activePartnerInstanceId}'.`);
   }
 
-  const families = ['25', '4', '1', '7', '133'];
+  const families = ['172', '4', '1', '7', '133'];
   
   if (state.partnersData) {
     Object.keys(state.partnersData).forEach(instanceId => {
@@ -332,7 +332,7 @@ export function runStateDiagnostics() {
           if (POKEMON_MAP[baseId] && !EVOLVED_POKEMON_IDS.has(Number(baseId))) {
             pData.familyId = baseId;
           } else {
-            pData.familyId = '25';
+            pData.familyId = '172';
           }
         }
         issues.push(`Missing familyId for instance ${instanceId}.`);
@@ -343,8 +343,8 @@ export function runStateDiagnostics() {
       const isValid = POKEMON_MAP[fid] && !EVOLVED_POKEMON_IDS.has(Number(fid));
       if (!isValid) {
         issues.push(`Invalid familyId '${fid}' for instance ${instanceId}.`);
-        pData.familyId = '25';
-        fixed.push(`Reset familyId to '25' for instance ${instanceId}.`);
+        pData.familyId = '172';
+        fixed.push(`Reset familyId to '172' for instance ${instanceId}.`);
       }
 
       if (typeof pData.level !== 'number' || pData.level < 1) {
@@ -379,16 +379,36 @@ export function runStateDiagnostics() {
         const evo = EVOLUTIONS[fid];
         if (evo && evo.options) {
           const threshold = evo.options[0]?.level || 5;
-          if (pData.level < threshold && String(pData.stageId) !== String(fid)) {
-            issues.push(`Stage ${pData.stageId} invalid for level ${pData.level} in branching family ${fid}.`);
-            pData.stageId = fid;
-            fixed.push(`Devolved stageId to '${fid}' for instance ${instanceId}.`);
+          if (pData.level < threshold) {
+            if (evo.stages) {
+              let expectedIndex = 0;
+              for (let i = 1; i < evo.stages.length; i++) {
+                if (pData.level >= evo.stages[i].level) {
+                  expectedIndex = i;
+                } else {
+                  break;
+                }
+              }
+              const expectedStageId = String(evo.stages[expectedIndex].id);
+              if (String(pData.stageId) !== expectedStageId) {
+                issues.push(`Stage ${pData.stageId} invalid for level ${pData.level} (expected ${expectedStageId}) in mixed family ${fid}.`);
+                pData.stageId = expectedStageId;
+                fixed.push(`Corrected stageId to '${expectedStageId}' for instance ${instanceId}.`);
+              }
+            } else {
+              if (String(pData.stageId) !== String(fid)) {
+                issues.push(`Stage ${pData.stageId} invalid for level ${pData.level} in branching family ${fid}.`);
+                pData.stageId = fid;
+                fixed.push(`Devolved stageId to '${fid}' for instance ${instanceId}.`);
+              }
+            }
           } else {
-            const isValidBranchStage = String(pData.stageId) === String(fid) || evo.options.some(opt => String(opt.id) === String(pData.stageId));
+            const preBranchStageId = evo.stages ? String(evo.stages[evo.stages.length - 1].id) : String(fid);
+            const isValidBranchStage = String(pData.stageId) === preBranchStageId || evo.options.some(opt => String(opt.id) === String(pData.stageId));
             if (!isValidBranchStage) {
               issues.push(`Invalid stageId for branching instance ${instanceId}: ${pData.stageId}`);
-              pData.stageId = fid;
-              fixed.push(`Reset stageId to '${fid}'.`);
+              pData.stageId = preBranchStageId;
+              fixed.push(`Reset stageId to '${preBranchStageId}'.`);
             }
           }
         } else if (evo && evo.stages) {
@@ -406,9 +426,9 @@ export function runStateDiagnostics() {
   // Ensure activePartnerInstanceId exists in partnersData
   if (state.partnersData && !state.partnersData[state.activePartnerInstanceId]) {
     issues.push(`activePartnerInstanceId '${state.activePartnerInstanceId}' not found in partnersData.`);
-    state.activePartnerInstanceId = Object.keys(state.partnersData)[0] || '25';
+    state.activePartnerInstanceId = Object.keys(state.partnersData)[0] || '172';
     if (!state.partnersData[state.activePartnerInstanceId]) {
-      state.partnersData[state.activePartnerInstanceId] = { familyId: '25', level: 1, xp: 0, stageId: '25' };
+      state.partnersData[state.activePartnerInstanceId] = { familyId: '172', level: 1, xp: 0, stageId: '172' };
     }
     fixed.push(`Reset active partner to '${state.activePartnerInstanceId}'.`);
   }
@@ -553,9 +573,9 @@ export function runStateDiagnostics() {
     fixed.push("Reset badgePool to Tier 1 IDs.");
   }
   if (state.activeWeeklyBadgeId === undefined || state.activeWeeklyBadgeId === null) {
-    state.activeWeeklyBadgeId = 25; // Default Pikachu
+    state.activeWeeklyBadgeId = 172; // Default Pichu
     issues.push("Missing activeWeeklyBadgeId.");
-    fixed.push("Set activeWeeklyBadgeId to default 25.");
+    fixed.push("Set activeWeeklyBadgeId to default 172.");
   }
 
   if (state.idleTimeout === undefined || typeof state.idleTimeout !== 'number' || ![0, 1, 5, 10, 15, 30].includes(state.idleTimeout)) {
@@ -578,10 +598,10 @@ export function runStateDiagnostics() {
     fixed.push("Reset megaRewardOptions to defaults.");
   }
 
-  if (state.version !== 16) {
-    issues.push(`State version mismatch. Current: ${state.version}, Expected: 16`);
-    state.version = 16;
-    fixed.push("Forced state version to 16.");
+  if (state.version !== 18) {
+    issues.push(`State version mismatch. Current: ${state.version}, Expected: 18`);
+    state.version = 18;
+    fixed.push("Forced state version to 18.");
   }
 
   if (fixed.length > 0) {
