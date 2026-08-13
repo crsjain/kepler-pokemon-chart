@@ -169,8 +169,9 @@ const evolutionHelper = document.getElementById('evolution-helper');
 
 
 
-// Debug Sidebar Element
+// Debug Sidebar Elements
 const debugSidebar = document.getElementById('debug-sidebar');
+const closeDebugSidebarBtn = document.getElementById('close-debug-sidebar-btn');
 
 // Audio control footer elements
 
@@ -1903,6 +1904,14 @@ function setupEventListeners() {
     debugAllowFutureEditsCheckbox.addEventListener('change', () => {
       window.__mock_allow_future_edits__ = debugAllowFutureEditsCheckbox.checked;
       renderState(true);
+    });
+  }
+
+  if (closeDebugSidebarBtn) {
+    closeDebugSidebarBtn.addEventListener('click', () => {
+      state.debugSidebarEnabled = false;
+      saveState();
+      renderDebugSidebarVisibility();
     });
   }
 

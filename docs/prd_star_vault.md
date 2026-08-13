@@ -132,7 +132,7 @@ Open your browser's Developer Tools Console (`F12` or `Cmd+Option+I`) alongside 
    - Confirm that evolved stages of all species (e.g. Charizard, Blastoise, Raichu, Gengar, Pupitar) are **not** present in the grid, preserving their evolution-only progression.
    - Use the **Type Filter dropdown** (e.g., select "Fire"). Verify only basic Fire-type Pokémon (like Charmander or Vulpix) are shown.
    - Check the **Legendary Only checkbox**. Verify only basic Legendary Pokémon (like Mew, Kyogre, or Reshiram) are shown.
-   - Reset the filters by clicking the **Clear 🔄** button. Verify all base cards are displayed again. Also check that closing and reopening the shop modal resets them as well.
+   - Reset the filters by selecting "All Types" and "All Costs" (or close and reopen the shop modal). Verify all base cards are displayed again.
 5. **Disabled Hold gesture**:
    - Click any locked Pokémon card (e.g., Mew). It should show details, and the unlock button should be disabled, showing: **"Earn [X] more stars!"**
    - Click **◀ Back** to return to browse.

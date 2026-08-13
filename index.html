@@ -202,6 +202,7 @@
 
     <!-- Debug Sidebar -->
     <div id="debug-sidebar" class="debug-sidebar hidden">
+      <button id="close-debug-sidebar-btn" class="debug-close-btn" aria-label="Close Debug Panel">&times;</button>
       <h3>🧪 Debug Panel</h3>
       <div class="testing-buttons">
         <div class="testing-row">
@@ -330,22 +331,22 @@
         <h2><span class="trainer-name-label">Kepler</span>'s Star Vault 🏆</h2>
         <button id="close-vault-modal-btn" class="modal-close-btn">&times;</button>
         
-        <div class="vault-stats" style="display: flex; gap: 10px; margin-bottom: 15px; width: 100%;">
-          <div class="vault-stat-card stat-all-time" style="flex: 1; text-align: center; border: 3px solid var(--border-color); border-radius: 8px; padding: 10px; background: #f8fafc;">
-            <span class="stat-label" style="font-family: 'Fredoka One', cursive; font-size: 0.85rem; color: #64748b;">🏆 Total Collected</span>
-            <span id="vault-stat-earned" class="stat-value" style="display: block; font-family: 'Fredoka One', cursive; font-size: 1.8rem; color: var(--text-color); margin-top: 4px;">0</span>
+        <div class="vault-stats">
+          <div class="vault-stat-card stat-all-time">
+            <span class="stat-label">🏆 Total Collected</span>
+            <span id="vault-stat-earned" class="stat-value">0</span>
           </div>
-          <div class="vault-stat-card stat-spendable" style="flex: 1.2; text-align: center; border: 3px solid #10b981; border-radius: 8px; padding: 10px; background: #ecfdf5; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1);">
-            <span class="stat-label" style="font-family: 'Fredoka One', cursive; font-size: 0.9rem; color: #047857;">⭐ Stars to Spend</span>
-            <span id="vault-stat-remaining" class="stat-value" style="display: block; font-family: 'Fredoka One', cursive; font-size: 2.1rem; color: #10b981; margin-top: 4px;">0</span>
+          <div class="vault-stat-card stat-spendable">
+            <span class="stat-label">⭐ Stars to Spend</span>
+            <span id="vault-stat-remaining" class="stat-value">0</span>
           </div>
-          <div class="vault-stat-card stat-spent" style="flex: 1; text-align: center; border: 3px solid var(--border-color); border-radius: 8px; padding: 10px; background: #f8fafc;">
-            <span class="stat-label" style="font-family: 'Fredoka One', cursive; font-size: 0.85rem; color: #64748b;">🤝 Traded for Pokémon</span>
-            <span id="vault-stat-traded" class="stat-value" style="display: block; font-family: 'Fredoka One', cursive; font-size: 1.8rem; color: #64748b; margin-top: 4px;">0</span>
+          <div class="vault-stat-card stat-spent">
+            <span class="stat-label">🤝 Traded for Pokémon</span>
+            <span id="vault-stat-traded" class="stat-value">0</span>
           </div>
         </div>
 
-        <div style="margin-bottom: 20px; display: flex; justify-content: center; width: 100%;">
+        <div class="vault-trade-btn-container">
           <button id="vault-trade-open-btn" class="pixel-btn warning">
             ✨ Spend Stars for a Reward! ✨
           </button>
@@ -454,7 +455,6 @@
               <option value="number">Sort: No. 🔢</option>
               <option value="name">Sort: A-Z 🔤</option>
             </select>
-            <button id="shop-filter-clear-btn" class="pixel-btn small info hidden-opacity">Clear 🔄</button>
           </div>
           
           <div id="shop-items-grid" class="shop-items-grid">

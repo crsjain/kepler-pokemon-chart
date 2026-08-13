@@ -2961,18 +2961,6 @@ async function runSuite() {
           assert(LEGENDARY_POKEMON_IDS.has(id), `Card ID ${id} should be Legendary`);
         });
 
-        // 4.5. Test Clear Filters button
-        const clearBtn = document.getElementById('shop-filter-clear-btn');
-        assert(clearBtn, "Clear filters button should exist");
-        clearBtn.click();
-        await sleep(50);
-
-        assert(typeSelect.value === 'all', "Type filter should be reset to 'all' after clear click");
-        assert(costSelect.value === 'all', "Cost filter should be reset to 'all' after clear click");
-
-        cards = document.querySelectorAll('#shop-items-grid .shop-item-card');
-        assert(cards.length > 20, `After clear filters, should show all cards (actual: ${cards.length})`);
-
         // 5. Close Shop and verify filters reset when reopening
         const closeShopBtn = document.getElementById('close-shop-modal-btn');
         closeShopBtn.click();
@@ -3761,21 +3749,6 @@ async function runSuite() {
         const refilteredIds = getVisibleCardIds();
         assert(JSON.stringify(refilteredIds) === JSON.stringify(defaultIds), "Switching back to number sort should restore default numerical order");
 
-        // 5. Test Clear Filters resets sort to number
-        sortSelect.value = 'name';
-        sortSelect.dispatchEvent(new Event('change'));
-        await sleep(50);
-        
-        const clearBtn = document.getElementById('shop-filter-clear-btn');
-        assert(clearBtn && !clearBtn.classList.contains('hidden-opacity'), "Clear button should be visible when sorted alphabetically");
-        
-        clearBtn.click();
-        await sleep(100);
-        
-        assert(sortSelect.value === 'number', "Clear button should reset sort to 'number'");
-        const clearedIds = getVisibleCardIds();
-        assert(JSON.stringify(clearedIds) === JSON.stringify(defaultIds), "Numerical order should be restored after clear");
-
         // Clean up
         const closeShopBtn = document.getElementById('close-shop-modal-btn');
         if (closeShopBtn) closeShopBtn.click();
@@ -3968,6 +3941,38 @@ async function runSuite() {
         helpers.setViewingWeekStartDate(null);
         helpers.renderState(true);
         await sleep(50);
+      }
+
+      // Test Case 55: Debug Panel Close Button Lifecycle
+      {
+        console.log("Running Test Case 55: Debug Panel Close Button Lifecycle...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+
+        const state = window.__app_state__;
+        const debugSidebar = document.getElementById('debug-sidebar');
+        const toggleCheckbox = document.getElementById('toggle-debug-sidebar');
+        const closeBtn = document.getElementById('close-debug-sidebar-btn');
+
+        assert(closeBtn !== null, "Debug panel close button should exist");
+
+        // 1. Enable Debug Sidebar
+        state.debugSidebarEnabled = true;
+        helpers.saveState();
+        helpers.renderState(true);
+        await sleep(50);
+
+        assert(!debugSidebar.classList.contains('hidden'), "Debug sidebar should be visible when enabled");
+        assert(toggleCheckbox.checked === true, "Admin toggle checkbox should be checked");
+
+        // 2. Click the Close button directly on the Debug Panel
+        closeBtn.click();
+        await sleep(50);
+
+        // 3. Verify Debug Sidebar is hidden, state is false, and admin toggle is unchecked
+        assert(state.debugSidebarEnabled === false, "state.debugSidebarEnabled should be false after closing");
+        assert(debugSidebar.classList.contains('hidden'), "Debug sidebar should be hidden after clicking close");
+        assert(toggleCheckbox.checked === false, "Admin toggle checkbox should be unchecked after closing debug sidebar");
       }
 
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");

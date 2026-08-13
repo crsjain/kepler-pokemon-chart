@@ -9,8 +9,8 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - **Eevee Branching Evolution**: Reaching Level 5 with Eevee unlocks a branching evolution modal allowing Kepler to choose between 8 different evolutions (Vaporeon, Jolteon, Flareon, Espeon, Umbreon, Leafeon, Glaceon, Sylveon) with individual sprites.
 - 🪙 **Star Vault & Partner Shop**:
   - Daily totals completed are saved as stars in the **Star Vault**.
-  - Spend 10 stars from your vault to purchase and unlock new partners from the **Partner Shop** featuring 100+ different Pokémon!
-  - Filter shop items dynamically by type (Fire, Water, Grass, etc.) or search for rare Legendaries.
+  - Spend 5, 10, or 15 stars from your vault to purchase and unlock new partners from the **Partner Shop** featuring 100+ different Pokémon!
+  - Filter shop items dynamically by type (Fire, Water, Grass, etc.), cost tier, or sort alphabetically / numerically.
 - 📈 **XP & Evolution System**: 
   - Each task checked adds **5 XP**.
   - Clearing all tasks in a day unlocks the **Daily Total (⭐)** and grants a **+15 XP Bonus**.
@@ -33,7 +33,7 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - **Profile Management**: Manage profiles directly from the list, including deleting profiles or opening a dedicated **Spacious Dashboard Modal** to customize lists of available weekly/mega rewards per-child.
   - **Screensaver Inactivity Timeout**: Adjust the inactivity timer (10m, 5m, or off) before the idle screensaver kicks in to pause animations and conserve battery.
   - **Diagnostics & Healing**: Click "Run Diagnostics" to auto-detect and heal any state schema inconsistency.
-  - **Developer Debug Mode**: Toggle the right-aligned Debug Sidebar to test milestones, level up instantly, or force devolution for testing.
+  - **Developer Debug Mode**: Toggle the right-aligned Debug Sidebar to test milestones, level up instantly, or force devolution for testing (includes a convenient direct close button on the panel).
 - 📋 **Integrated Restore Guide**: A quick FAQ inside the Admin Panel details exactly when to use Auto-Backup (accidental resets) vs. Manual Imports (cache clearance/device migration).
 - ✍️ **Reward Choice**: Dedicated drop-down options for Kepler to select his weekly and mega (4-week loop) target rewards. Available rewards can be customized per profile, and "Recent Rewards" are automatically suggested.
 

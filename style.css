@@ -1083,6 +1083,7 @@ button:disabled,
 }
 
 .debug-sidebar {
+  position: relative;
   background: white;
   border: var(--pixel-border);
   border-radius: 12px;
@@ -1093,6 +1094,28 @@ button:disabled,
   flex-direction: column;
   gap: 15px;
   z-index: 5;
+}
+
+.debug-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--border-color);
+  font-size: 1.6rem;
+  font-family: inherit;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s, transform 0.1s;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.debug-close-btn:hover {
+  color: var(--poke-red);
+  transform: scale(1.15);
 }
 
 .debug-sidebar.hidden {
@@ -2162,6 +2185,7 @@ input:checked + .slider:before {
   gap: 12px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .vault-stat-card {
@@ -2174,21 +2198,58 @@ input:checked + .slider:before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  justify-content: space-between;
   box-shadow: inset 1px 1px 0 #fff;
+  text-align: center;
 }
 
 .vault-stat-card .stat-label {
   font-family: 'Fredoka One', cursive;
   font-size: 0.85rem;
   color: #64748b;
+  min-height: 2.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 4px;
 }
 
 .vault-stat-card .stat-value {
   font-family: 'Fredoka One', cursive;
   font-size: 1.8rem;
-  color: var(--poke-red);
+  color: var(--text-color);
+  display: block;
 }
+
+.vault-stat-card.stat-spendable {
+  flex: 1.2;
+  border-color: #10b981;
+  background: #ecfdf5;
+  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1), inset 1px 1px 0 #fff;
+}
+
+.vault-stat-card.stat-spendable .stat-label {
+  font-size: 0.9rem;
+  color: #047857;
+}
+
+.vault-stat-card.stat-spendable .stat-value {
+  font-size: 2.1rem;
+  color: #10b981;
+}
+
+.vault-stat-card.stat-spent .stat-value {
+  color: #64748b;
+}
+
+.vault-trade-btn-container {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
 
 #vault-trade-open-btn {
   width: 100%;
@@ -2396,6 +2457,12 @@ input:checked + .slider:before {
   }
   .vault-stat-card .stat-value {
     font-size: 1.4rem;
+  }
+  .vault-stat-card.stat-spendable .stat-label {
+    font-size: 0.8rem;
+  }
+  .vault-stat-card.stat-spendable .stat-value {
+    font-size: 1.6rem;
   }
   .vault-grid-container {
     padding: 12px; /* Uniform mobile padding */
@@ -3987,33 +4054,6 @@ body.idle-mode * {
   box-shadow: 0 2px 4px rgba(245, 158, 11, 0.15);
 }
 
-#shop-filter-clear-btn {
-  height: 36px;
-  padding: 0 14px;
-  font-size: 0.85rem;
-  font-family: inherit;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  white-space: nowrap;
-  transition: all 0.2s ease-in-out;
-}
-
-/* Hidden state with scale and opacity fade */
-#shop-filter-clear-btn.hidden-opacity {
-  opacity: 0;
-  pointer-events: none;
-  transform: scale(0.9);
-  width: 0;
-  padding: 0;
-  margin: 0;
-  border: none;
-  overflow: hidden;
-}
-
 .shop-items-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -4135,10 +4175,6 @@ body.idle-mode * {
   .filter-toggle-label {
     flex-grow: 1;
     justify-content: center;
-  }
-  
-  #shop-filter-clear-btn {
-    flex-grow: 1;
   }
   
   #shop-screen-confirm {

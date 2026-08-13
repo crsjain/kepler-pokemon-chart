@@ -13,7 +13,6 @@ let availableStarsText;
 let filterTypeSelect;
 let filterCostSelect;
 let shopSortSelect;
-let filterClearBtn;
 
 let confirmSprite;
 let confirmName;
@@ -57,7 +56,6 @@ export function initShop(callbacks = {}) {
   filterTypeSelect = document.getElementById('shop-filter-type');
   filterCostSelect = document.getElementById('shop-filter-cost');
   shopSortSelect = document.getElementById('shop-sort-by');
-  filterClearBtn = document.getElementById('shop-filter-clear-btn');
 
   confirmSprite = document.getElementById('shop-confirm-sprite');
   confirmName = document.getElementById('shop-confirm-name');
@@ -90,14 +88,6 @@ export function initShop(callbacks = {}) {
   }
   if (shopSortSelect) {
     shopSortSelect.addEventListener('change', showBrowse);
-  }
-  if (filterClearBtn) {
-    filterClearBtn.addEventListener('click', () => {
-      if (filterTypeSelect) filterTypeSelect.value = 'all';
-      if (filterCostSelect) filterCostSelect.value = 'all';
-      if (shopSortSelect) shopSortSelect.value = 'number';
-      showBrowse();
-    });
   }
 
   // Setup hold-to-unlock gesture events
@@ -142,8 +132,6 @@ function showBrowse() {
   if (confirmScreen) confirmScreen.classList.add('hidden');
   selectedPokemonId = null;
   cancelHold();
-  
-  updateFilterUI();
 
   const earnedCount = state.starVault.earnedDates.length;
   const tradedCount = state.starVault.totalTraded || 0;
@@ -220,21 +208,6 @@ function showBrowse() {
 
     itemsGrid.appendChild(card);
   });
-}
-
-function updateFilterUI() {
-  const selectedType = filterTypeSelect ? filterTypeSelect.value : 'all';
-  const selectedCost = filterCostSelect ? filterCostSelect.value : 'all';
-  const selectedSort = shopSortSelect ? shopSortSelect.value : 'number';
-
-  const isDirty = selectedType !== 'all' || selectedCost !== 'all' || selectedSort !== 'number';
-  if (filterClearBtn) {
-    if (isDirty) {
-      filterClearBtn.classList.remove('hidden-opacity');
-    } else {
-      filterClearBtn.classList.add('hidden-opacity');
-    }
-  }
 }
 
 function selectPokemon(id) {
