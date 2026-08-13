@@ -15,6 +15,7 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - Each task checked adds **5 XP**.
   - Clearing all tasks in a day unlocks the **Daily Total (⭐)** and grants a **+15 XP Bonus**.
   - **Milestone XP Bar**: The XP bar displays vertical segment milestones representing levels. Leveling up triggers a bounce animation.
+  - 📲 **Sticky Mini-HUD (Mobile/Tablet)**: When scrolling down on smaller viewports (under `1024px` wide), a sticky HUD slides in at the top showing the partner's sprite, name, level, and XP progress bar, allowing Kepler to track progress without scrolling back up. Tapping it smoothly scrolls back to the top.
   - 📅 **Focused Active Day Interactions**: To prevent accidental clicks across different days, checking and unchecking tasks is restricted to the **currently active day** column. To record tasks for a different day, simply click that day's column header (e.g. MON, TUE) to activate it. The active column will light up, allowing inputs.
   - **Evolution Celebrations**: Reaching Level 5 (and Level 10 for Charmander, Bulbasaur, and Squirtle) triggers a full-screen evolution event! The Pokémon transforms into its next stage (e.g., Pikachu -> Raichu, or Charmander -> Charmeleon -> Charizard) with a custom modal.
 - 🏆 **Weekly Badges & Collection**: Reaching the weekly task goals awards Kepler the active weekly badge.
