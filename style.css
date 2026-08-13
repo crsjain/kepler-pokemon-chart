@@ -4221,3 +4221,262 @@ body.has-banner {
   color: #fbbf24; /* yellow-400 */
   text-shadow: 0 0 4px rgba(251, 191, 36, 0.4);
 }
+
+/* --- Mobile UX Upgrades --- */
+
+/* 1. XP Float Animation */
+.xp-float {
+  position: fixed;
+  pointer-events: none;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.85rem;
+  color: var(--xp-color);
+  text-shadow: 
+    -1.5px -1.5px 0 var(--border-color),  
+     1.5px -1.5px 0 var(--border-color),
+    -1.5px  1.5px 0 var(--border-color),
+     1.5px  1.5px 0 var(--border-color);
+  z-index: 10000;
+  animation: float-up-fade 0.8s cubic-bezier(0.25, 1, 0.50, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes float-up-fade {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.8);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+    transform: translate3d(0, -10px, 0) scale(1.1);
+  }
+  100% {
+    transform: translate3d(0, -60px, 0) scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* 2. Level-Up Modal */
+#level-up-modal .modal-content {
+  background: radial-gradient(circle, #fffbeb 0%, #fef3c7 100%); /* Warm Amber */
+  border: var(--pixel-border); /* Consistent thick dark slate border */
+  border-radius: 8px; /* Tighter pixel feel */
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 8px 8px 0 rgba(45, 55, 72, 0.15); /* Blocky retro shadow */
+  animation: modal-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  position: relative;
+  overflow: hidden;
+
+  /* Transition to Flexbox Column Layout */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+}
+
+#level-up-modal h2 {
+  font-family: 'Fredoka One', cursive;
+  font-size: 2.2rem;
+  color: var(--poke-yellow);
+  /* Retro text outline */
+  text-shadow: 
+    -2px -2px 0 var(--border-color),  
+     2px -2px 0 var(--border-color),
+    -2px  2px 0 var(--border-color),
+     2px  2px 0 var(--border-color),
+     4px  4px 0 rgba(0,0,0,0.15);
+  margin: 0; /* Handled by flex gap */
+}
+
+.level-up-badge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin: 0; /* Handled by flex gap */
+}
+
+#level-up-num {
+  font-family: 'Fredoka One', cursive;
+  font-size: 4.5rem;
+  color: var(--poke-red);
+  text-shadow: 
+    -3px -3px 0 var(--border-color),  
+     3px -3px 0 var(--border-color),
+    -3px  3px 0 var(--border-color),
+     3px  3px 0 var(--border-color),
+     5px  5px 0 rgba(0,0,0,0.15);
+  animation: pulse-scale 0.5s infinite alternate;
+  display: inline-block;
+}
+
+.pixel-star {
+  font-size: 2rem;
+  animation: spin 4s infinite linear;
+}
+
+/* Glow container for Pokémon sprite */
+.sprite-container-glow {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  margin: 0; /* Handled by flex gap */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.burst-glow {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(255,203,5,0.4) 0%, rgba(255,251,235,0) 70%);
+  border-radius: 50%;
+  animation: pulse-glow 2s infinite alternate;
+  z-index: 0;
+}
+
+#level-up-sprite {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  z-index: 1;
+}
+
+#level-up-message {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.2rem;
+  color: var(--border-color);
+  margin: 0; /* Handled by flex gap */
+}
+
+#level-up-ok-btn {
+  /* Standard pixel-btn style fallback */
+  width: 80%;
+  max-width: 200px;
+  margin: 8px 0 0 0; /* Extra margin-top to separate from message if gap is not enough */
+}
+
+#level-up-ok-btn.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  transform: scale(0.95);
+  box-shadow: none;
+}
+
+@keyframes modal-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse-scale {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse-glow {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  100% { transform: scale(1.1); opacity: 1; }
+}
+
+/* 3. Sticky Mini-HUD */
+.mini-hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(42, 113, 208, 0.95); /* Semi-transparent Brand Blue */
+  border-bottom: var(--pixel-border); /* Consistent dark slate border */
+  z-index: 995; /* Just above Env Banner, below modal */
+  padding: 8px 16px;
+  padding-top: calc(8px + env(safe-area-inset-top, 0px));
+  height: calc(56px + env(safe-area-inset-top, 0px));
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transform: translateY(-100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.15); /* Retro hard shadow */
+  cursor: pointer;
+}
+
+.mini-hud.visible {
+  transform: translateY(0);
+}
+
+body.has-banner .mini-hud.visible {
+  transform: translateY(36px);
+}
+
+.mini-hud-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+#mini-hud-sprite {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  background-color: var(--card-bg);
+  border-radius: 4px; /* Square retro box */
+  border: 2px solid var(--border-color);
+  padding: 2px;
+  box-sizing: border-box;
+}
+
+#mini-hud-name {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1rem;
+  color: #ffffff;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+#mini-hud-level {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.95rem;
+  color: var(--poke-yellow);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.mini-hud-xp-label {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.85rem;
+  color: #ffffff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.mini-hud-xp-container {
+  flex-grow: 1;
+  height: 12px;
+  background-color: var(--xp-bg); /* Use consistent XP background */
+  border-radius: 4px; /* Less rounded for retro feel */
+  overflow: hidden;
+  border: 2px solid var(--border-color); /* Consistent dark border */
+}
+
+.mini-hud-xp-bar {
+  height: 100%;
+  width: 0%;
+  background-color: var(--xp-color); /* Solid green for retro feel */
+  transition: width 0.3s ease-out;
+}
+
+/* Hide on desktop, show only on mobile/tablet stacked view */
+@media (min-width: 1024px) {
+  .mini-hud {
+    display: none !important;
+  }
+}

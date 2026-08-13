@@ -1031,6 +1031,25 @@ export function renderState(rebuildGrid = false) {
   const progressPercent = Math.min(100, (stats.xp / XP_LEVEL_THRESHOLD) * 100);
   xpBarFill.style.width = `${progressPercent}%`;
 
+  // Update Mini-HUD for Mobile
+  const miniHudSprite = document.getElementById('mini-hud-sprite');
+  const miniHudName = document.getElementById('mini-hud-name');
+  const miniHudLevel = document.getElementById('mini-hud-level');
+  const miniHudXpBar = document.getElementById('mini-hud-xp-bar');
+  
+  if (miniHudSprite) {
+    miniHudSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${activePokemon.id}.png`;
+  }
+  if (miniHudName) {
+    miniHudName.textContent = activePokemon.name;
+  }
+  if (miniHudLevel) {
+    miniHudLevel.textContent = `LV ${stats.level}`;
+  }
+  if (miniHudXpBar) {
+    miniHudXpBar.style.width = `${progressPercent}%`;
+  }
+
 
   // Update Evolution Helper text
   if (evolutionHelper) {
@@ -1561,6 +1580,14 @@ function handleCheckboxChange(e) {
   } else if (!isDayFullyChecked && wasDayFullyChecked) {
     xpGained -= XP_DAILY_BONUS;
     checkDayCompleted(dateStr, false);
+  }
+
+  if (isChecked) {
+    let text = `+${XP_PER_TASK} XP`;
+    if (isDayFullyChecked && !wasDayFullyChecked) {
+      text = `+${XP_PER_TASK + XP_DAILY_BONUS} XP! 🎉`;
+    }
+    spawnXpFloat(cb, text);
   }
 
   addXp(xpGained);
@@ -2158,6 +2185,34 @@ function setupEventListeners() {
       }
     });
   }
+
+  // Mobile Sticky HUD Setup
+  const miniHud = document.getElementById('mini-hud');
+  const trainerCard = document.querySelector('.trainer-card');
+  
+  if (miniHud && trainerCard) {
+    // Click to scroll up
+    miniHud.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    
+    // Intersection Observer to toggle visibility
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) {
+          miniHud.classList.add('visible');
+        } else {
+          miniHud.classList.remove('visible');
+        }
+      });
+    }, {
+      root: null,
+      threshold: 0,
+      rootMargin: '0px'
+    });
+    
+    observer.observe(trainerCard);
+  }
 }
 
 function flashElement(element) {
@@ -2526,6 +2581,7 @@ function addXp(amount) {
       );
     } else {
       triggerLevelUpAnimation();
+      showLevelUpModal(stats.level);
       playSound('levelUp');
     }
   } else if (levelDecreased) {
@@ -2535,7 +2591,7 @@ function addXp(amount) {
       
       showCustomNotification(
         "😢 POKÉMON DEVOLVED 😢",
-        `Oh no! ${state.childName || 'Trainer'}'s ${oldPokemon.name} devolved back into ${activePokemon.name} because level dropped.`,
+        `Oh no! ${state.childName || 'Trainer'}'s ${oldPokemon.name} devolved back into ${activePokemon.name} because their level dropped.`,
         `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`,
         false,
         null,
@@ -3092,4 +3148,122 @@ function resetIdleTimer() {
 function goIdle() {
   document.body.classList.add('idle-mode');
   console.log("System idle: Entered idle mode (animations paused).");
+}
+
+/* --- Mobile UX Upgrades Helpers --- */
+
+let activeXpFloats = [];
+
+function spawnXpFloat(element, text) {
+  if (!element) return;
+  const rect = element.getBoundingClientRect();
+  const x = rect.left + rect.width / 2;
+  const y = rect.top;
+  createXpFloatAtCoords(x, y, text);
+}
+
+function createXpFloatAtCoords(x, y, text) {
+  // Cap at 8 active elements
+  if (activeXpFloats.length >= 8) {
+    const oldest = activeXpFloats.shift();
+    if (oldest && oldest.parentNode) {
+      oldest.parentNode.removeChild(oldest);
+    }
+  }
+
+  const floatDiv = document.createElement('div');
+  floatDiv.className = 'xp-float';
+  floatDiv.textContent = text;
+  
+  // Apply randomized offsets
+  const offsetX = (Math.random() - 0.5) * 30; // -15px to 15px
+  const offsetY = (Math.random() - 0.5) * 20; // -10px to 10px
+  
+  // Random scale
+  const scale = 0.9 + Math.random() * 0.2; // 0.9 to 1.1
+  
+  // Account for scroll offset since position is fixed but rect is viewport-relative
+  // Actually, getBoundingClientRect() returns viewport-relative coordinates.
+  // CSS position: fixed also uses viewport-relative coordinates.
+  // So we don't need to add window.scrollY if using position: fixed.
+  // This is correct!
+  floatDiv.style.left = `${x + offsetX}px`;
+  floatDiv.style.top = `${y + offsetY}px`;
+  floatDiv.style.transform = `scale(${scale})`;
+  
+  document.body.appendChild(floatDiv);
+  activeXpFloats.push(floatDiv);
+  
+  floatDiv.addEventListener('animationend', () => {
+    if (floatDiv.parentNode) {
+      floatDiv.parentNode.removeChild(floatDiv);
+    }
+    activeXpFloats = activeXpFloats.filter(item => item !== floatDiv);
+  });
+}
+
+function showLevelUpModal(newLevel) {
+  const modal = document.getElementById('level-up-modal');
+  const levelNumSpan = document.getElementById('level-up-num');
+  const spriteImg = document.getElementById('level-up-sprite');
+  const okBtn = document.getElementById('level-up-ok-btn');
+  
+  if (!modal || !levelNumSpan || !spriteImg || !okBtn) return;
+  
+  const instanceId = state.activePartnerInstanceId || '25';
+  const stats = state.partnersData[instanceId];
+  if (!stats) return;
+  
+  const activePokemon = getStageInfo(stats.familyId, stats.stageId || stats.familyId).currentStage;
+  
+  levelNumSpan.textContent = newLevel;
+  spriteImg.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`;
+  
+  const messageEl = document.getElementById('level-up-message');
+  if (messageEl) {
+    messageEl.textContent = `${activePokemon.name} leveled up!`;
+  }
+  
+  // Reset button state (Stage 1 Lockout)
+  okBtn.classList.add('disabled');
+  okBtn.disabled = true;
+  
+  // Show modal
+  modal.classList.remove('hidden');
+  
+  // Trigger confetti
+  if (window.CelebrationEngine && window.CelebrationEngine.triggerCelebration) {
+    window.CelebrationEngine.triggerCelebration(false);
+  }
+  
+  const spawnTime = Date.now();
+  
+  // Stage 2 (600ms): Enable button
+  const enableTimeout = setTimeout(() => {
+    okBtn.classList.remove('disabled');
+    okBtn.disabled = false;
+  }, 600);
+  
+  const handleOkClick = () => {
+    cleanup();
+  };
+  
+  const handleBackdropClick = (e) => {
+    if (e.target === modal) {
+      const elapsed = Date.now() - spawnTime;
+      if (elapsed >= 1500) { // Stage 3 (1500ms): Enable backdrop click
+        cleanup();
+      }
+    }
+  };
+  
+  const cleanup = () => {
+    clearTimeout(enableTimeout);
+    modal.classList.add('hidden');
+    okBtn.removeEventListener('click', handleOkClick);
+    modal.removeEventListener('click', handleBackdropClick);
+  };
+  
+  okBtn.addEventListener('click', handleOkClick);
+  modal.addEventListener('click', handleBackdropClick);
 }

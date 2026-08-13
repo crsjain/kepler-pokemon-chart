@@ -49,6 +49,19 @@
   <div id="env-banner" class="hidden"></div>
   <canvas id="celebration-canvas"></canvas>
 
+  <!-- Sticky Mini-HUD for Mobile -->
+  <div id="mini-hud" class="mini-hud">
+    <div class="mini-hud-content">
+      <img id="mini-hud-sprite" src="" alt="Mini Pokémon">
+      <span id="mini-hud-name">Partner</span>
+      <span id="mini-hud-level">LV 1</span>
+      <span class="mini-hud-xp-label">XP</span>
+      <div class="mini-hud-xp-container">
+        <div id="mini-hud-xp-bar" class="mini-hud-xp-bar"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="layout-container">
     <div class="app-container">
     <!-- Header -->
@@ -243,6 +256,24 @@
           <p id="notification-message">Message goes here</p>
         </div>
         <button id="notification-ok-btn" class="pixel-btn">OK</button>
+      </div>
+    </div>
+
+    <!-- Level Up Modal -->
+    <div id="level-up-modal" class="modal hidden">
+      <div class="modal-content pixel-card">
+        <h2>LEVEL UP!</h2>
+        <div class="level-up-badge">
+          <span class="pixel-star">⭐</span>
+          <span id="level-up-num">2</span>
+          <span class="pixel-star">⭐</span>
+        </div>
+        <div class="sprite-container-glow">
+          <div class="burst-glow"></div>
+          <img id="level-up-sprite" src="" alt="Level Up Pokémon">
+        </div>
+        <p id="level-up-message">Your partner leveled up!</p>
+        <button id="level-up-ok-btn" class="pixel-btn disabled">Awesome! 🎉</button>
       </div>
     </div>
 
