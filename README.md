@@ -35,7 +35,10 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - **Diagnostics & Healing**: Click "Run Diagnostics" to auto-detect and heal any state schema inconsistency.
   - **Developer Debug Mode**: Toggle the right-aligned Debug Sidebar to test milestones, level up instantly, or force devolution for testing (includes a convenient direct close button on the panel).
 - 📋 **Integrated Restore Guide**: A quick FAQ inside the Admin Panel details exactly when to use Auto-Backup (accidental resets) vs. Manual Imports (cache clearance/device migration).
-- ✍️ **Reward Choice**: Dedicated drop-down options for Kepler to select his weekly and mega (4-week loop) target rewards. Available rewards can be customized per profile, and "Recent Rewards" are automatically suggested.
+- ✍️ **Reward Customization & Choice**: Dedicated drop-down options for Kepler to select his weekly and mega (4-week loop) target rewards. Available rewards can be customized per profile, and "Recent Rewards" are automatically suggested.
+  - **Inline Editing (✏️)**: Parents can edit existing rewards in place with quick save/cancel controls and keyboard shortcuts (<kbd>Enter</kbd> to save, <kbd>Escape</kbd> to cancel).
+  - **Drag-and-Drop Reordering (`⠿`)**: Reorder rewards intuitively within each column on both desktop (mouse drag) and mobile/touch devices (touch handle).
+  - **Live Main Dropdown Sync**: Dropdowns on the main chart automatically reflect the exact custom sequence and keep Kepler's active selection updated upon renaming.
 
 ---
 

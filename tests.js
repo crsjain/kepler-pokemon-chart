@@ -3975,6 +3975,189 @@ async function runSuite() {
         assert(toggleCheckbox.checked === false, "Admin toggle checkbox should be unchecked after closing debug sidebar");
       }
 
+      // Test Case 56: Sticky Mini-HUD Layout Structure and Dynamic Sync
+      {
+        console.log("Running Test Case 56: Sticky Mini-HUD Layout Structure and Dynamic Sync...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+
+        const miniHud = document.getElementById('mini-hud');
+        const layoutContainer = document.querySelector('.layout-container');
+        const miniHudSprite = document.getElementById('mini-hud-sprite');
+        const miniHudName = document.getElementById('mini-hud-name');
+        const miniHudLevel = document.getElementById('mini-hud-level');
+        const miniHudXpBar = document.getElementById('mini-hud-xp-bar');
+
+        assert(miniHud !== null, "Mini-HUD element should exist in DOM");
+        assert(layoutContainer !== null, "Layout container should exist in DOM");
+        
+        // 1. Verify Mini-HUD is placed outside .layout-container and NOT before it as a flex column sibling
+        assert(!layoutContainer.contains(miniHud), "Mini-HUD should not be inside .layout-container");
+        assert(miniHud.previousElementSibling !== null, "Mini-HUD should not precede .layout-container as an in-flow flex sibling");
+
+        // 2. Verify dynamic partner data sync
+        helpers.renderState(true);
+        await sleep(50);
+
+        assert(miniHudName.textContent !== "", "Mini-HUD name should be dynamically populated");
+        assert(miniHudLevel.textContent.startsWith("LV"), "Mini-HUD level should display LV prefix");
+        assert(miniHudSprite.src !== "", "Mini-HUD sprite source should be set");
+
+        // 3. Verify visibility class toggling
+        miniHud.classList.add('visible');
+        assert(miniHud.classList.contains('visible'), "Mini-HUD should support visible class");
+        miniHud.classList.remove('visible');
+        assert(!miniHud.classList.contains('visible'), "Mini-HUD should clear visible class");
+      }
+
+      // Test Case 57: Reward Inline Editing, Drag-and-Drop Reordering, and Dropdown Sync
+      {
+        console.log("Running Test Case 57: Reward Inline Editing, Drag-and-Drop Reordering, and Dropdown Sync...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+
+        const state = window.__app_state__;
+        const mockProfileId = "test_profile_edit_drag";
+        const initialWeekly = [
+          { value: "Reward Alpha", text: "Reward Alpha" },
+          { value: "Reward Beta", text: "Reward Beta" },
+          { value: "Reward Gamma", text: "Reward Gamma" }
+        ];
+        const initialMega = [
+          { value: "Mega 1", text: "Mega 1" },
+          { value: "Mega 2", text: "Mega 2" }
+        ];
+
+        state.weeklyRewardOptions = [...initialWeekly];
+        state.megaRewardOptions = [...initialMega];
+        state.reward = "Reward Beta"; // Select the middle item
+        state.megaReward = "Mega 1";
+
+        helpers.setProfilesList([
+          {
+            id: mockProfileId,
+            name: "Kepler",
+            state: {
+              weeklyRewardOptions: [...initialWeekly],
+              megaRewardOptions: [...initialMega]
+            }
+          }
+        ]);
+        helpers.setActiveProfileId(mockProfileId);
+        helpers.renderAdminProfilesList();
+        helpers.renderRewardDropdowns();
+        await sleep(50);
+
+        const rewardSelect = document.getElementById('reward-select');
+        const megaRewardSelect = document.getElementById('mega-reward-select');
+        assert(rewardSelect.value === "Reward Beta", "Initial reward select should be Reward Beta");
+
+        // 1. Open Customize Rewards Modal
+        const editRewardsBtn = document.querySelector(`.edit-rewards-btn[data-id="${mockProfileId}"]`);
+        assert(editRewardsBtn !== null, "Customize rewards button should exist for profile");
+        editRewardsBtn.click();
+        await sleep(50);
+
+        const modal = document.getElementById('edit-rewards-modal');
+        assert(!modal.classList.contains('hidden'), "Customize rewards modal should be open");
+
+        const weeklyList = document.getElementById('weekly-rewards-list');
+        const weeklyItems = weeklyList.querySelectorAll('.reward-list-item');
+        assert(weeklyItems.length === 3, "Modal should display 3 weekly rewards");
+
+        // 2. Verify drag handle and edit buttons exist
+        const firstItem = weeklyItems[0];
+        const dragHandle = firstItem.querySelector('.reward-drag-handle');
+        const editBtn = firstItem.querySelector('.edit-reward-btn');
+        const delBtn = firstItem.querySelector('.delete-reward-btn');
+        assert(dragHandle !== null, "Drag handle should exist on reward item");
+        assert(editBtn !== null, "Edit button should exist on reward item");
+        assert(delBtn !== null, "Delete button should exist on reward item");
+
+        // 3. Test inline edit on first item ("Reward Alpha" -> "Reward Alpha Super")
+        editBtn.click();
+        await sleep(50);
+
+        let activeInput = weeklyList.querySelector('.reward-edit-input');
+        assert(activeInput !== null, "Inline edit input should appear when clicking edit");
+        assert(activeInput.value === "Reward Alpha", "Inline edit input should have current text");
+
+        activeInput.value = "Reward Alpha Super";
+        const saveEditBtn = weeklyList.querySelector('.save-reward-edit-btn');
+        assert(saveEditBtn !== null, "Save edit button should exist");
+        saveEditBtn.click();
+        await sleep(50);
+
+        // Verify edited text in modal
+        const updatedFirstItemText = weeklyList.querySelector('.reward-list-item .reward-item-text');
+        assert(updatedFirstItemText.textContent === "Reward Alpha Super", "Reward text should be updated to Reward Alpha Super");
+
+        // 4. Test inline edit on selected item ("Reward Beta" -> "Reward Beta Renamed")
+        const secondItem = weeklyList.querySelectorAll('.reward-list-item')[1];
+        const secondEditBtn = secondItem.querySelector('.edit-reward-btn');
+        secondEditBtn.click();
+        await sleep(50);
+
+        activeInput = weeklyList.querySelector('.reward-edit-input');
+        activeInput.value = "Reward Beta Renamed";
+        const saveEditBtn2 = weeklyList.querySelector('.save-reward-edit-btn');
+        saveEditBtn2.click();
+        await sleep(50);
+
+        // 5. Test drag and drop reordering simulation (move Gamma from index 2 to index 0)
+        const lastRow = weeklyList.querySelectorAll('.reward-list-item')[2];
+        const firstRow = weeklyList.querySelectorAll('.reward-list-item')[0];
+        
+        // Dispatch drag events
+        const dataTransfer = new DataTransfer();
+        lastRow.dispatchEvent(new DragEvent('dragstart', { bubbles: true, dataTransfer }));
+        firstRow.dispatchEvent(new DragEvent('dragover', { bubbles: true, clientY: firstRow.getBoundingClientRect().top + 2, dataTransfer }));
+        firstRow.dispatchEvent(new DragEvent('drop', { bubbles: true, clientY: firstRow.getBoundingClientRect().top + 2, dataTransfer }));
+        lastRow.dispatchEvent(new DragEvent('dragend', { bubbles: true }));
+        await sleep(50);
+
+        // Verify reordered list in modal: Gamma should now be first
+        const reorderedTexts = Array.from(weeklyList.querySelectorAll('.reward-item-text')).map(el => el.textContent);
+        assert(reorderedTexts[0] === "Reward Gamma", "Reward Gamma should now be first after drag reordering");
+        assert(reorderedTexts[1] === "Reward Alpha Super", "Reward Alpha Super should now be second");
+        assert(reorderedTexts[2] === "Reward Beta Renamed", "Reward Beta Renamed should now be third");
+
+        // 6. Save modal changes
+        let savedProfileId = null;
+        let savedWeekly = null;
+        let savedMega = null;
+        helpers.setSaveProfileRewardsMock((profileId, weekly, mega) => {
+          savedProfileId = profileId;
+          savedWeekly = weekly;
+          savedMega = mega;
+          const p = helpers.getProfilesList().find(p => p.id === profileId);
+          if (p) {
+            p.state.weeklyRewardOptions = weekly;
+            p.state.megaRewardOptions = mega;
+          }
+          return Promise.resolve();
+        });
+
+        const saveModalBtn = document.getElementById('edit-rewards-save-btn');
+        saveModalBtn.click();
+        await sleep(100);
+
+        assert(modal.classList.contains('hidden'), "Modal should close after saving");
+        assert(savedProfileId === mockProfileId, "Save should be called with active profileId");
+        assert(savedWeekly[0].text === "Reward Gamma", "Saved list should have Reward Gamma as first option");
+        assert(savedWeekly[1].text === "Reward Alpha Super", "Saved list should have Reward Alpha Super as second option");
+        assert(savedWeekly[2].text === "Reward Beta Renamed", "Saved list should have Reward Beta Renamed as third option");
+
+        // 7. Verify main app dropdown options and active selection sync
+        const selectOptions = Array.from(rewardSelect.options).filter(o => !o.disabled && !o.parentElement.classList.contains('recent-rewards-group')).map(o => o.text);
+        assert(selectOptions[0] === "Reward Gamma", "Dropdown first option should be Reward Gamma");
+        assert(selectOptions[1] === "Reward Alpha Super", "Dropdown second option should be Reward Alpha Super");
+        assert(selectOptions[2] === "Reward Beta Renamed", "Dropdown third option should be Reward Beta Renamed");
+
+        assert(state.reward === "Reward Beta Renamed", "Active reward state should automatically update to renamed text");
+        assert(rewardSelect.value === "Reward Beta Renamed", "Dropdown selected value should be synced to renamed reward");
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

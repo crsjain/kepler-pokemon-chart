@@ -3475,13 +3475,37 @@ body.idle-mode * {
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 8px 10px;
   margin-bottom: 6px;
   background: white;
   border: 2px solid #cbd5e1;
   border-radius: 6px;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.reward-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  color: #94a3b8;
+  cursor: grab;
+  user-select: none;
+  padding: 0 4px;
+  flex-shrink: 0;
+  touch-action: none;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.reward-drag-handle:hover {
+  color: var(--poke-blue);
+  transform: scale(1.15);
+}
+
+.reward-drag-handle:active {
+  cursor: grabbing;
 }
 
 .reward-item-text {
@@ -3496,14 +3520,56 @@ body.idle-mode * {
   flex: 1;
 }
 
-.delete-reward-btn {
+.reward-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.reward-edit-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  border: 2px solid var(--poke-blue);
+  border-radius: 4px;
+  outline: none;
+  background: #ffffff;
+  color: var(--text-color);
+}
+
+.reward-edit-input:focus {
+  border-color: var(--poke-dark-blue);
+  box-shadow: 0 0 0 2px rgba(42, 113, 208, 0.2);
+}
+
+.edit-reward-btn,
+.delete-reward-btn,
+.save-reward-edit-btn,
+.cancel-reward-edit-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
+  width: 34px;
   height: 32px;
   padding: 0 !important;
   flex-shrink: 0;
+}
+
+.reward-list-item.dragging {
+  opacity: 0.4;
+  background: #f0f9ff;
+  border: 2px dashed var(--poke-blue);
+}
+
+.reward-list-item.drag-over-top {
+  border-top: 3px solid var(--poke-blue);
+}
+
+.reward-list-item.drag-over-bottom {
+  border-bottom: 3px solid var(--poke-blue);
 }
 
 /* Reward Modal Desktop Layout Enhancements */
@@ -4439,13 +4505,17 @@ body.has-banner {
   align-items: center;
   justify-content: space-between;
   transform: translateY(-100%);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s;
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.15); /* Retro hard shadow */
   cursor: pointer;
 }
 
 .mini-hud.visible {
   transform: translateY(0);
+  visibility: visible;
+  pointer-events: auto;
 }
 
 body.has-banner .mini-hud.visible {
