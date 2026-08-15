@@ -365,7 +365,7 @@ function saveAdminTasks() {
     const instructions = item.querySelector('.task-instructions-input').value.trim();
     
     if (!name) {
-      alert("Activity name cannot be empty!");
+      showCustomNotification("Activity Error ❌", "Activity name cannot be empty!");
       hasError = true;
       return;
     }
@@ -417,7 +417,7 @@ function saveAdminTasks() {
   saveState();
   renderState(true);
   renderAdminTasksList();
-  alert("Activities saved successfully!");
+  showCustomNotification("Activities Saved ✨", "Activities saved successfully!");
 }
 
 function exportState() {
@@ -609,7 +609,7 @@ function restoreBackupFromHistory(index) {
       () => {
         if (applyBackup(index)) {
           renderState(true);
-          alert("Restored successfully!");
+          showCustomNotification("RESTORE SUCCESS", "Progress restored successfully!");
           const adminModal = document.getElementById('admin-modal');
           if (adminModal) adminModal.classList.add('hidden');
         }

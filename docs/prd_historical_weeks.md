@@ -1,159 +1,165 @@
-# Product Requirement Document (PRD): Historical Week Archive & Restoration
+# Product Requirement Document (PRD): Historical Week Archive, Restoration & Dynamic Boundaries (v2.0)
 
-**Status:** Approved / Ready for Implementation
-**Author:** Jetski & crsjain
-**Last Updated:** 2026-07-29
+**Status:** Approved / Ready for Implementation  
+**Author:** crsjain & Jetski  
+**Last Updated:** 2026-08-15  
+**Version:** 2.0 (Dynamic Week Boundaries & Partial Week Transitions)
 
 ---
 
 ## 1. Executive Summary
-The Pokémon Training Chart currently only maintains the state of the *current* week. When the week resets, past completion data is cleared, making it difficult to recover from sync errors, track long-term progress, or verify past activity. Additionally, the Star Vault relies on a fragile date-calculation method that can easily get out of sync.
+The Pokémon Training Chart tracks daily habits, weekly rewards, badges, and partner evolution progress. Historical week browsing allows children and parents to look back at past accomplishments.
 
-This feature introduces a **Calendar-Date Keyed Grid** and a **Weekly History Archive**. By mapping task completions directly to real calendar dates (e.g., `2026-07-27-piano`) rather than relative day indexes (e.g., `0-piano`), we enable natural history tracking, robust paging through past weeks, and accurate star/streak calculations.
+In v1.0, the app used rigid 7-day fixed arithmetic navigation (`±7 days`), which assumed the `weekStartDay` never changed. If a parent shifted the start day (e.g., from Monday to Friday), past weeks were rendered using the new start day, causing past completions and earned badges to be displayed against the wrong calendar days and creating misleading historical views.
 
----
-
-## 2. Motivation / User Problem
-1.  **Fragile Recovery**: If a bug or sync issue clears the local state, there is no record of past weeks' completions to restore from, leading to frustration.
-2.  **No Progress Visibility**: Kepler cannot see his past weeks' achievements or look back at the badges he earned in context of the weeks he completed.
-3.  **Star Date Drift**: Star Vault dates are calculated relative to the current week's start date when synced, which can drift if the app is not opened regularly or if the week start day is changed.
-4.  **Task Pool Changes**: Adding or removing tasks mid-week or between weeks messes up the relative grid layout, as there is no record of which tasks were active on which days.
+**v2.0 introduces Dynamic Week Boundary Resolution**:
+- Historical weeks accurately reflect the **real calendar span** and **historical start day** under which they were completed.
+- Weeks cut short by a start-day change render as **partial weeks**: active days show true completions, and superseded days display a distinct **diagonal hatched disabled state** with tooltips (`"Moved to next week"` / `"Week ended early"`).
+- Weekly navigation (`<- Prev` / `Next ->`) seamlessly steps through the **chronological sequence of recorded historical intervals**.
+- Badges and Star Vault entries remain strictly associated with the specific days on which they were earned.
 
 ---
 
-## 3. Goals
--   Maintain a permanent, queryable record of daily task completions.
--   Allow users to page backward and forward through historical weeks via the main UI.
--   Render past weeks accurately, showing only tasks that were active during that week, and greying out days/tasks that were not yet added or were already removed.
--   Ensure changing the `weekStartDay` does not corrupt historical completion data.
--   Fix Star Vault date calculation by linking stars directly to the calendar-keyed grid completion.
+## 2. Motivation & Problem Statement
+1. **Misaligned Historical Views**: Changing the week start day in Admin caused previous weeks to shift their day columns, distorting the day on which tasks and badges were actually completed.
+2. **Missing Partial Week Representation**: When a parent changes the start day mid-cycle (e.g., Friday after 4 days of Monday-start training), the prior 4 days became awkward to view or navigate.
+3. **Rigid ±7 Day Paging**: Stepping backward by 7 fixed days caused navigation to land on incorrect non-boundary dates when start days were altered over time.
+4. **Badge Context Preservation**: Children love reviewing the specific badges they earned during specific weeks; badges must accurately match the active days of that week.
 
 ---
 
-## 4. Non-Goals
--   Providing a full-blown analytics dashboard (simple paging is enough for now).
--   Allowing children to edit past weeks (parent-gate requirements for history edits are open for discussion).
--   Supporting indefinite history if it exceeds Firestore limits (we must define a reasonable cap or verify storage scalability).
+## 3. Goals & Non-Goals
+
+### Goals
+- **True Historical Fidelity**: Each past week renders using its own historical `weekStartDay` and actual active date span.
+- **Dynamic Boundary Resolution**: Automatically infer week cutoffs from the chronological timeline without requiring brittle database migrations.
+- **Partial Week Visuals**: Render 7 columns per historical start day, with superseded/overlapping days clearly hatched and disabled.
+- **Chronological Interval Navigation**: Prev/Next buttons jump sequentially across discrete recorded week intervals.
+- **Fair Badge Qualification**: Require full 7-day completion for weekly badges, while allowing overlapping days to count toward the newly started week.
+- **Zero Data Loss & Grandfathering**: Existing claimed badges and legacy `weeklyHistory` entries remain 100% intact.
+
+### Non-Goals
+- Allowing children or unauthenticated users to edit historical weeks (history remains strictly read-only).
+- Converting the app into a complex multi-month calendar view (maintains the focused 7-day training chart experience).
 
 ---
 
-## 5. Proposed Technical Design & Schema Changes
+## 4. Technical Design & Architecture
 
-### 5.1. Calendar-Date Keyed Grid
-Currently, `state.grid` keys are format `dayIndex-taskId` (e.g., `0-piano`).
-We will transition to `YYYY-MM-DD-taskId` keys.
-
-*Example:*
+### 4.1. Data Structures & Schema
+The state maintains its calendar-keyed architecture:
 ```javascript
-state.grid = {
-  // Current Week completions
-  "2026-07-27-piano": true,
-  "2026-07-27-math": true,
-  // Past Week completions (preserved!)
-  "2026-07-20-piano": true,
-  "2026-07-21-piano": true
-};
-state.excused = {
-  "2026-07-27-chinese": true // Exceptions also keyed by date
-};
-```
-
-### 5.2. Task Lifecycle Metadata (Soft Deletion)
-To handle tasks being added or removed, we cannot simply delete them from `state.tasks`. We must introduce lifecycle metadata:
-
-```javascript
-state.tasks = [
-  {
-    id: 'piano',
-    name: 'Piano Practice',
-    emoji: '🎹',
-    active: true,
-    createdAt: '2026-07-10', // Date task was introduced
-    deletedAt: null          // Date task was removed (if applicable)
-  }
-];
-```
-
-*Rendering Logic for Week of `W_START` to `W_END`:*
--   A task is **visible** in the grid if:
-    -   It was created before or during this week (`createdAt <= W_END`).
-    -   AND it was not deleted before this week (`deletedAt === null` or `deletedAt >= W_START`).
--   A cell is **greyed out (disabled)** if:
-    -   The specific day date is before `createdAt` (prior to add).
-    -   Or the specific day date is after `deletedAt` (post removal).
-
-### 5.3. Weekly History Archive
-To track rewards and badges earned in past weeks, we introduce `state.weeklyHistory`:
-
-```javascript
-state.weeklyHistory = {
-  "2026-07-20": { // Key is the weekStartDate string
-    weekStartDay: 1, // Start day at that time (e.g., Monday)
-    reward: "Bonus Tablet Time",
-    megaReward: "Card Pack",
-    weeklyClaimed: true,
-    badgeId: 152, // Chikorita badge earned
-    xpEarned: 150
+state = {
+  version: 18,
+  weekStartDay: 5,            // Active start day (e.g., 5 = Friday)
+  weekStartDate: '2026-07-24', // Active week start date
+  grid: {
+    '2026-07-20-piano': true,  // Monday in cut-short week
+    '2026-07-24-piano': true   // Friday in new week
+  },
+  excused: { ... },
+  weeklyHistory: {
+    '2026-07-20': {
+      weekStartDay: 1,         // Historical start day (Monday)
+      reward: 'Bonus Game Time',
+      megaReward: 'Card Pack',
+      weeklyClaimed: false,
+      badgeId: 152,
+      xpEarned: 80,
+      megaWeeks: 0
+    }
   }
 };
 ```
 
----
+### 4.2. Dynamic Boundary Resolution Algorithm
+Rather than storing rigid hardcoded end-dates in storage, the active timeline of historical weeks is dynamically computed via `getHistoricalWeekIntervals(state)`:
 
-## 6. E2E Critical User Journeys (CUJs)
-
-### CUJ 1: Paging through History
-1.  Kepler opens the app. The grid shows the current week (e.g., "Mon, Jul 27 - Sun, Aug 2").
-2.  Kepler clicks the `<- Prev` button in the header.
-3.  The grid transitions to show the week of "Mon, Jul 20 - Sun, Jul 26".
-4.  The cells show the completions as they were recorded. The header shows the reward ("Bonus Tablet Time") and the badge earned that week (revealed, not a silhouette).
-5.  All cells in the past week are read-only (or locked behind Parent Gate).
-6.  Kepler clicks `Next ->` to return to the current week.
-
-### CUJ 2: Handling Task Deletion mid-week
-1.  On Wednesday, Parent decides to remove "Piano Practice".
-2.  In Admin Panel, Parent deletes "Piano Practice". The task is marked `active = false` and `deletedAt = '2026-07-29'`.
-3.  On the current week's grid:
-    -   Monday and Tuesday (before deletion) show "Piano" with whatever completion status they had.
-    -   Wednesday onwards shows "Piano" as greyed out / un-completable.
-4.  Next week, "Piano" does not show up at all in the active grid because `deletedAt` is in the past relative to the new week.
-5.  Paging back to last week shows "Piano" fully active and editable (for that historical context).
+1. **Collect all boundaries**:
+   - Gather all keys from `state.weeklyHistory` sorted chronologically in ascending order, along with `state.weekStartDate`.
+2. **Compute interval bounds**:
+   - For each historical week $W_i$ at index $i$:
+     - `startDate` = $K_i$
+     - `nominalEndDate` = `startDate + 6 days`
+     - `nextStartDate` = $K_{i+1}$ (or `state.weekStartDate` if $W_i$ is the last historical week).
+     - `actualEndDate` = `min(nominalEndDate, nextStartDate - 1 day)`.
+     - `activeDaysCount` = `(actualEndDate - startDate) + 1`.
+     - `isPartial` = `actualEndDate < nominalEndDate`.
+     - `supersededDates` = Array of dates from `actualEndDate + 1 day` to `nominalEndDate`.
+3. **Paging Timeline**:
+   - The timeline array `[W_0, W_1, ..., W_current]` forms the exact discrete steps for `#prev-week-btn` and `#next-week-btn`.
 
 ---
 
-## 7. Decisions & Alignment (Grill-Me Outcomes)
+## 5. UI & UX Specifications
 
-### 📌 Decision 1: Read-Only History
--   **Alignment**: Historical weeks are strictly **Read-Only**.
--   **Rationale**: Prevents complex retroactive synchronization bugs, double-claiming of rewards, and recalculation cascades for stars/badges.
--   **Implementation**: Clicking on cells in any week prior to the current week will be disabled in the UI.
+### 5.1. Header Date Range Display
+The main header (`#week-range-display`) dynamically reflects the real active span:
+- **Full 7-Day Week**: `"Mon, Jul 13 – Sun, Jul 19"`
+- **Partial / Cut-Short Week**: `"Mon, Jul 20 – Thu, Jul 23 (4 Days)"`
 
-### 📌 Decision 2: Migration & Seeding
--   **Alignment**: Automatically migrate the active week's grid data using `state.weekStartDate`.
--   **Seeding**: The user (parent) will provide static historical grid details for the 2 existing users (Kepler and Lyra) in a JSON format during the deployment phase to seed their history.
--   **Old History**: Pre-existing Star Vault dates remain intact as they are already stored as absolute dates, but daily grid details for weeks before the update will not be reconstructed.
+### 5.2. 7-Column Grid Rendering
+- **Column Headers**: Dynamically computed from the viewing week's `weekStartDay` (e.g., for `weekStartDay = 1`, columns are `MON, TUE, WED, THU, FRI, SAT, SUN`).
+- **Active Days** ($D \le \text{actualEndDate}$): Render task checkboxes, completions, and daily totals as normal (read-only in historical view).
+- **Superseded Days** ($D > \text{actualEndDate}$):
+  - Styled with CSS class `.superseded-cell`.
+  - Background styling: Subtle diagonal stripe pattern (`repeating-linear-gradient(...)`).
+  - Checkbox / Pokeball replaced with a disabled dashed placeholder or muted icon.
+  - Hover tooltip / title attribute: `"Moved to next week"` or `"Week ended early"`.
+  - Column total cell rendered with a muted strike/hatch icon.
 
-### 📌 Decision 3: Inline Storage (Firestore Limits)
--   **Alignment**: Keep history stored inline in the profile state for now.
--   **Rationale**: Est. ~54KB/year storage growth is well within Firestore's 1MB document limit, allowing 10+ years of operation before needing separate collections. Keeps backup/restore simple and unified.
-
-### 📌 Decision 4: Changing `weekStartDay` Mid-Week
--   **Alignment**: Do **NOT** clear the grid on start day change.
--   **Rationale**: Since completions are keyed by real calendar dates, shifting `state.weekStartDate` simply changes the rendering window. Completions that still fall within the new window remain visible, and others are preserved in history.
+### 5.3. Navigation Controls
+- `#prev-week-btn`: Moves to the immediately preceding week interval in the timeline. Disabled when at the earliest interval.
+- `#next-week-btn`: Moves to the next week interval in the timeline. Disabled when viewing the current active week (`state.weekStartDate`).
 
 ---
 
-## 8. MVP Requirements (MoSCoW)
--   **Must Have**:
-    -   Migration of grid to `YYYY-MM-DD-taskId` keys.
-    -   Paging UI (Prev/Next buttons) on main grid.
-    -   Soft-deletion metadata for tasks (`createdAt`, `deletedAt`, `active`).
-    -   Greyed out rendering for inactive tasks/days (prior to add / post removal).
-    -   `state.weeklyHistory` to track past rewards/badges.
--   **Should Have**:
-    -   Tooltips on historical week header showing the reward earned.
--   **Could Have**:
-    -   None.
--   **Won't Have**:
-    -   Any editing of historical weeks (Locked/Read-Only).
-    -   Visual progress graphs/charts (visual paging only).
+## 6. Week Transition & Archiving Lifecycle
+
+### 6.1. Changing Start Day in Parent Admin
+When a parent changes the `weekStartDay` in Admin settings:
+1. **Archive Active Slice**: The current week (`state.weekStartDate`) is archived into `state.weeklyHistory[oldWeekStartDate]` with its current `weekStartDay`, `reward`, `megaReward`, and `activeWeeklyBadgeId`.
+2. **Compute New Active Week Start**:
+   - `state.weekStartDate = formatLocalDate(getWeekStart(today, newStartDay))`.
+   - `state.weekStartDay = newStartDay`.
+3. **Carry Forward Overlapping Checks**:
+   - Since task completions are keyed by calendar dates (`YYYY-MM-DD-taskId`), completions on dates that fall within the new week range are automatically visible and counted toward the new week's total and badge.
+4. **Pruning Micro-Weeks**:
+   - If changing start days produces a historical entry with 0 completed tasks and length $\le 1$ day, it is automatically pruned from `weeklyHistory` to avoid cluttering navigation.
+
+### 6.2. Weekly Badge Qualification Rules
+- **7-Day Threshold**: To claim a weekly badge for a week, all required tasks across the full 7-day schedule must be met.
+- **Cut-Short Weeks**:
+  - If a week is cut short before 7 days, its badge is not auto-awarded in that partial historical slice.
+  - However, because completions on overlapping days remain in `state.grid`, those days immediately count toward the new active week's badge requirement.
+- **Legacy Grandfathering**: All historical weeks previously marked `weeklyClaimed: true` remain permanently unlocked and honored in the Badge Case and historical views.
+
+---
+
+## 7. Edge Cases & Decision Alignment
+
+| Edge Case | Resolution |
+| :--- | :--- |
+| **Backward Start Day Shift** | If a parent on Wednesday shifts start day from Friday to Monday, dates strictly belong to the latest assigned week cycle. |
+| **Rapid Start Day Switching** | Intermediate zero-completion micro-entries are discarded; only meaningful active intervals remain in history. |
+| **Star Vault Integrity** | Star Vault earnings are keyed by absolute `YYYY-MM-DD` and are completely decoupled from week boundaries, ensuring 100% star calculation fidelity. |
+| **Task Lifecycle (Soft Delete)** | Historical weeks continue to respect `task.createdAt` and `task.deletedAt` bounds alongside week boundary cutoffs. |
+
+---
+
+## 8. MoSCoW Implementation Plan
+
+### Must Have
+- [ ] `getHistoricalWeekIntervals()` helper in `date_utils.js` / `app.js` to compute dynamic week bounds and superseded date sets.
+- [ ] Update `renderGridTable()` to use viewing week's `weekStartDay` instead of global `state.weekStartDay`.
+- [ ] Superseded day styling in `style.css` (diagonal hatch pattern, disabled state, tooltips).
+- [ ] Interval-based paging in `#prev-week-btn` and `#next-week-btn`.
+- [ ] Header date range formatting reflecting actual active date spans.
+- [ ] Admin week start day switch logic to archive partial slice and prune micro-weeks.
+- [ ] Automated regression tests in `tests.js` covering all dynamic boundary, paging, and rendering scenarios.
+
+### Should Have
+- [ ] Visual indicator badge in header for partial weeks (e.g., `"• Partial Week"` tag).
+
+### Won't Have (Deferred)
+- [ ] Retroactive editing of historical weeks.

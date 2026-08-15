@@ -1886,21 +1886,27 @@ input:checked + .slider:before {
 }
 
 .day-header:hover {
-  background-color: #e2e8f0;
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
-.day-header.past-week-header,
-.day-header.future-day-header {
+.day-header.past-week-header {
   cursor: not-allowed !important;
   opacity: 0.6;
-  background-color: #cbd5e1 !important; /* Neutral grey background */
+  background-color: #cbd5e1 !important; /* Neutral grey background for historical weeks */
   color: #64748b !important; /* Muted slate text */
   text-shadow: none !important;
 }
 
-.day-header.past-week-header:hover,
-.day-header.future-day-header:hover {
+.day-header.past-week-header:hover {
   background-color: #cbd5e1 !important; /* Prevent hover background change */
+}
+
+.day-header.future-day-header {
+  cursor: not-allowed !important;
+}
+
+.day-header.future-day-header:hover {
+  background-color: transparent !important;
 }
 
 .day-header.active-day {

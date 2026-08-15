@@ -207,7 +207,15 @@ async function runSuite() {
       adminSaveTasksBtn.click();
       await sleep(100);
 
-      assert(alertMsg.includes("Activities saved successfully"), "Should alert save confirmation");
+      const notifModals = document.querySelectorAll('.notif-modal');
+      const saveNotifModal = notifModals[notifModals.length - 1];
+      assert(saveNotifModal !== undefined && saveNotifModal !== null, "Custom notification modal should appear after saving activities");
+      assert(saveNotifModal.textContent.includes("Activities saved successfully"), "Should display save confirmation in modal");
+      const notifCloseBtn = saveNotifModal.querySelector('.notif-close-btn');
+      if (notifCloseBtn) notifCloseBtn.click();
+      saveNotifModal.remove();
+      await sleep(100);
+
       assert(window.__grid_rebuild_count__ === 2, "Grid should have rebuilt to show new task (count: 2)");
 
       // Check task in grid
@@ -1622,10 +1630,14 @@ async function runSuite() {
         saveBtn.click();
         await sleep(100);
 
-        assert(alertMsg.includes("Activities saved successfully"), "Should alert save confirmation");
-        
-        // Restore alert
-        window.alert = originalAlert;
+        const notifModals = document.querySelectorAll('.notif-modal');
+        const saveNotifModal = notifModals[notifModals.length - 1];
+        assert(saveNotifModal !== undefined && saveNotifModal !== null, "Custom notification modal should appear after saving activities");
+        assert(saveNotifModal.textContent.includes("Activities saved successfully"), "Should display save confirmation in modal");
+        const notifCloseBtn = saveNotifModal.querySelector('.notif-close-btn');
+        if (notifCloseBtn) notifCloseBtn.click();
+        saveNotifModal.remove();
+        await sleep(100);
 
         // Close admin panel
         const closeAdminBtn = document.getElementById('close-admin-modal-btn');
@@ -4156,6 +4168,173 @@ async function runSuite() {
 
         assert(state.reward === "Reward Beta Renamed", "Active reward state should automatically update to renamed text");
         assert(rewardSelect.value === "Reward Beta Renamed", "Dropdown selected value should be synced to renamed reward");
+      }
+
+      // ----------------------------------------------------
+      // TEST CASE 58: Parent Admin "Save Activities" Custom Modal Notification & Validation
+      // ----------------------------------------------------
+      console.log("Running Test Case 58: Parent Admin Save Activities Custom Modal Notification...");
+      {
+        const adminBtn = document.getElementById('admin-btn');
+        const adminModal = document.getElementById('admin-modal');
+        const passwordModal = document.getElementById('password-modal');
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmitBtn = document.getElementById('password-submit-btn');
+        const saveTasksBtn = document.getElementById('admin-save-tasks-btn');
+        const addTaskBtn = document.getElementById('admin-add-task-btn');
+        const closeAdminBtn = document.getElementById('close-admin-modal-btn');
+
+        // Open Admin Panel
+        adminBtn.click();
+        passwordInput.value = window.__test_helpers__.ADMIN_PASSWORD;
+        passwordSubmitBtn.click();
+        await sleep(50);
+        assert(!adminModal.classList.contains('hidden'), "Admin Modal should be visible");
+
+        // Clean up any lingering notif modals
+        document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+
+        // Spy on native alert
+        let nativeAlertCalled = false;
+        const origAlert = window.alert;
+        window.alert = () => { nativeAlertCalled = true; };
+
+        // Click Save Activities
+        saveTasksBtn.click();
+        await sleep(100);
+
+        assert(!nativeAlertCalled, "Native alert should NOT be triggered on Save Activities");
+        const notifModals = document.querySelectorAll('.notif-modal');
+        const successModal = notifModals[notifModals.length - 1];
+        assert(successModal !== undefined && successModal !== null, "Custom notification modal should appear on Save Activities");
+        assert(successModal.querySelector('h2').textContent.includes("Activities Saved"), "Notification title should say Activities Saved");
+        assert(successModal.querySelector('.notif-body-text').textContent.includes("Activities saved successfully!"), "Notification body should confirm activities saved");
+        
+        // Dismiss success modal
+        const closeSuccessBtn = successModal.querySelector('.notif-close-btn');
+        assert(closeSuccessBtn !== null, "Notification close button should exist");
+        closeSuccessBtn.click();
+        successModal.remove();
+        await sleep(100);
+
+        // Test Validation Error: Add empty task and click Save Activities
+        addTaskBtn.click();
+        const taskList = document.getElementById('admin-tasks-list');
+        const items = taskList.querySelectorAll('.admin-task-item');
+        const emptyItem = items[items.length - 1];
+        emptyItem.querySelector('.task-name-input').value = ""; // Clear name
+
+        saveTasksBtn.click();
+        await sleep(100);
+
+        assert(!nativeAlertCalled, "Native alert should NOT be triggered on empty activity name error");
+        const errorModals = document.querySelectorAll('.notif-modal');
+        const errModal = errorModals[errorModals.length - 1];
+        assert(errModal !== undefined && errModal !== null, "Custom notification modal should appear for empty activity error");
+        assert(errModal.querySelector('h2').textContent.includes("Activity Error"), "Error notification title should indicate Activity Error");
+        assert(errModal.querySelector('.notif-body-text').textContent.includes("Activity name cannot be empty!"), "Error notification body should warn empty name");
+
+        // Dismiss error modal
+        const closeErrBtn = errModal.querySelector('.notif-close-btn');
+        if (closeErrBtn) closeErrBtn.click();
+        errModal.remove();
+        await sleep(100);
+
+        // Clean up: delete the temporary empty task item
+        const initialTasksCount = state.tasks.length;
+        state.tasks.pop(); // Remove temporary task
+        window.__test_helpers__.renderState(false);
+
+        closeAdminBtn.click();
+        await sleep(100);
+        assert(adminModal.classList.contains('hidden'), "Admin Modal should close");
+
+        window.alert = origAlert;
+      }
+
+      // ----------------------------------------------------
+      // TEST CASE 59: Week Start Change and Prev/Next Navigation Header Color Preservation
+      // ----------------------------------------------------
+      console.log("Running Test Case 59: Week Start Change and Prev/Next Navigation Header Color Preservation...");
+      {
+        const prevWeekBtn = document.getElementById('prev-week-btn');
+        const nextWeekBtn = document.getElementById('next-week-btn');
+        const adminWeekStartSelect = document.getElementById('admin-week-start-select');
+
+        // Save original weekStartDay
+        const originalStartDay = state.weekStartDay || 0;
+
+        // Change Week Start Day to Friday (5)
+        adminWeekStartSelect.value = "5";
+        adminWeekStartSelect.dispatchEvent(new Event('change'));
+        await sleep(100);
+
+        // Auto-confirm the dialog if confirm modal appears
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        if (confirmYesBtn && !document.getElementById('confirm-modal').classList.contains('hidden')) {
+          confirmYesBtn.click();
+          await sleep(100);
+        }
+
+        state = window.__app_state__ || state;
+        assert(state.weekStartDay === 5, "State weekStartDay should now be 5 (Friday)");
+
+        // Populate a past week history entry to enable prev button
+        state.weeklyHistory = state.weeklyHistory || {};
+        state.weeklyHistory['2026-08-07'] = {
+          weekStartDay: 5,
+          weeklyClaimed: false,
+          badgeId: null,
+          reward: ''
+        };
+        window.__test_helpers__.saveState();
+        window.__test_helpers__.renderState(true);
+        await sleep(50);
+
+        // 1. Check current week headers
+        let headers = document.querySelectorAll('.day-header');
+        assert(headers[0].textContent === 'FRI', "Column 0 header should be FRI");
+        assert(headers[1].textContent === 'SAT', "Column 1 header should be SAT");
+        assert(!headers[0].classList.contains('past-week-header'), "Current week FRI header should NOT have past-week-header class");
+        assert(!headers[1].classList.contains('past-week-header'), "Current week SAT header should NOT have past-week-header class");
+
+        // Verify computed background color is not the past-week grey (#cbd5e1 = rgb(203, 213, 225))
+        const friBg = window.getComputedStyle(headers[0]).backgroundColor;
+        assert(!friBg.includes('203, 213, 225'), "Current week FRI header should not be grey");
+
+        // 2. Click "Prev" to navigate to historical week
+        prevWeekBtn.click();
+        await sleep(100);
+
+        headers = document.querySelectorAll('.day-header');
+        assert(headers[0].classList.contains('past-week-header'), "Past week FRI header should have past-week-header class");
+        assert(headers[1].classList.contains('past-week-header'), "Past week SAT header should have past-week-header class");
+
+        // 3. Click "Next" to navigate back to current week
+        nextWeekBtn.click();
+        await sleep(100);
+
+        headers = document.querySelectorAll('.day-header');
+        assert(!headers[0].classList.contains('past-week-header'), "Returned current week FRI header should NOT have past-week-header class");
+        assert(!headers[1].classList.contains('past-week-header'), "Returned current week SAT header should NOT have past-week-header class");
+
+        // Check computed colors for current week
+        const returnedFriBg = window.getComputedStyle(headers[0]).backgroundColor;
+        assert(!returnedFriBg.includes('203, 213, 225'), "Returned current week FRI header should NOT be grey");
+
+        const todayCol = (state.activeDay - state.weekStartDay + 7) % 7;
+        const activeHeader = headers[todayCol];
+        assert(activeHeader.classList.contains('active-day'), "Active day header should have active-day class");
+
+        // Restore original weekStartDay
+        adminWeekStartSelect.value = String(originalStartDay);
+        adminWeekStartSelect.dispatchEvent(new Event('change'));
+        await sleep(100);
+        if (confirmYesBtn && !document.getElementById('confirm-modal').classList.contains('hidden')) {
+          confirmYesBtn.click();
+          await sleep(100);
+        }
+        state = window.__app_state__ || state;
       }
 
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
