@@ -20,7 +20,7 @@ import {
   registerOnSave,
   getEarliestDataWeekStartDate
 } from './state.js';
-import { formatLocalDate, getWeekStart, getDateOfColumn, getLocalDate } from './date_utils.js';
+import { formatLocalDate, getWeekStart, getDateOfColumn, getLocalDate, getFormattedDateRange, getHistoricalWeekIntervals } from './date_utils.js';
 import { 
   loginFamily, 
   logoutFamily, 
@@ -60,7 +60,7 @@ function areFutureEditsAllowed() {
     return window.__mock_allow_future_edits__;
   }
   const isTestMode = location.search.includes('runTests=true');
-  return useEmulator || isTestMode;
+  return isTestMode;
 }
 
 let idleTimer = null;
@@ -624,9 +624,21 @@ function renderAdminProfilesList() {
       const name = deleteBtn.getAttribute('data-name');
       const id = deleteBtn.getAttribute('data-id');
       
+      const deleteConfirmHtml = `
+        <div class="confirm-detail">
+          <div class="schedule-hero-card" style="background: #fef2f2; border-color: #fca5a5;">
+            <div class="schedule-hero-label" style="color: #dc2626;">🗑️ DELETE PROFILE</div>
+            <div class="schedule-hero-main" style="color: #991b1b;">${name}</div>
+          </div>
+          <div class="transition-warning-callout" style="background: #fff1f2; border-color: #f87171;">
+            <div class="transition-callout-title" style="color: #991b1b;">⚠️ Permanent Action</div>
+            <div class="transition-callout-desc" style="color: #881337;">This will erase all levels, partner Pokémon, badges, and weekly progress for this profile. This action cannot be undone.</div>
+          </div>
+        </div>
+      `;
       showCustomConfirm(
         "Delete Profile ⚠️",
-        `Are you sure you want to permanently delete profile "${name}"? This will erase all of their levels, badges, and weekly progress. This action CANNOT be undone.`,
+        deleteConfirmHtml,
         async () => {
           try {
             deleteBtn.disabled = true;
@@ -987,23 +999,29 @@ export function renderState(rebuildGrid = false) {
   if (debugAllowFutureEditsCheckbox) {
     debugAllowFutureEditsCheckbox.checked = areFutureEditsAllowed();
   }
-  if (!currentViewingWeekStartDate && state.weekStartDate) {
+  
+  const intervals = getHistoricalWeekIntervals(state, currentViewingWeekStartDate);
+  let currentIndex = intervals.findIndex(i => i.startDate === currentViewingWeekStartDate);
+  if (currentIndex === -1 && intervals.length > 0) {
+    currentIndex = intervals.length - 1;
+    currentViewingWeekStartDate = intervals[currentIndex].startDate;
+  } else if (!currentViewingWeekStartDate && state.weekStartDate) {
     currentViewingWeekStartDate = state.weekStartDate;
   }
   
+  const currentInterval = (currentIndex >= 0 && currentIndex < intervals.length) ? intervals[currentIndex] : null;
   const isPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
   
   if (weekRangeDisplay) {
-    weekRangeDisplay.textContent = getWeekRangeString(currentViewingWeekStartDate);
+    weekRangeDisplay.textContent = currentInterval ? currentInterval.rangeDisplay : getWeekRangeString(currentViewingWeekStartDate);
   }
   
   if (nextWeekBtn) {
-    nextWeekBtn.disabled = !state.weekStartDate || (currentViewingWeekStartDate >= state.weekStartDate);
+    nextWeekBtn.disabled = !state.weekStartDate || (currentIndex >= intervals.length - 1);
   }
   
   if (prevWeekBtn) {
-    const earliest = getEarliestDataWeekStartDate();
-    prevWeekBtn.disabled = !earliest || (currentViewingWeekStartDate <= earliest);
+    prevWeekBtn.disabled = (currentIndex <= 0);
   }
   
   if (resetBtn) {
@@ -1089,7 +1107,46 @@ export function renderState(rebuildGrid = false) {
   rewardSelect.value = rewardVal;
   megaRewardSelect.value = megaRewardVal;
   if (adminWeekStartSelect) {
-    adminWeekStartSelect.value = state.weekStartDay !== undefined ? state.weekStartDay : 0;
+    adminWeekStartSelect.value = state.pendingWeekStartDay !== undefined 
+      ? state.pendingWeekStartDay 
+      : (state.weekStartDay !== undefined ? state.weekStartDay : 0);
+  }
+  
+  const statusBadge = document.getElementById('admin-week-start-status');
+  if (statusBadge) {
+    const dayNamesFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    if (state.pendingWeekStartDate && state.pendingWeekStartDay !== undefined) {
+      const pendingDayName = dayNamesFull[state.pendingWeekStartDay];
+      const dayBeforeName = dayNamesFull[(state.pendingWeekStartDay + 6) % 7];
+      const origDayName = dayNamesFull[state.weekStartDay !== undefined ? state.weekStartDay : 0];
+      statusBadge.className = 'admin-status-badge pending';
+      statusBadge.innerHTML = `
+        <div class="admin-status-title">📅 Shift Scheduled (${pendingDayName})</div>
+        <div class="admin-status-desc">Current chart ends <strong>${dayBeforeName}</strong>. New <strong>${pendingDayName}</strong> chart starts <span style="white-space: nowrap;">${state.pendingWeekStartDate}</span>.</div>
+        <button id="admin-revert-schedule-btn" class="pixel-btn" style="margin-top:8px; font-size:0.75rem; padding:6px 10px; width:100%; text-align:center; background:#e2e8f0; color:#1e293b; border-color:#94a3b8; font-family:'Fredoka One', cursive;">↩️ Revert to ${origDayName}</button>
+      `;
+      statusBadge.classList.remove('hidden');
+
+      const revertBtn = document.getElementById('admin-revert-schedule-btn');
+      if (revertBtn) {
+        revertBtn.onclick = (e) => {
+          e.preventDefault();
+          delete state.pendingWeekStartDate;
+          delete state.pendingWeekStartDay;
+          saveState();
+          renderState(true);
+          const badge = document.getElementById('admin-week-start-status');
+          if (badge) {
+            badge.className = 'admin-status-badge';
+            badge.innerHTML = `
+              <div class="admin-status-title">✅ Schedule Reverted!</div>
+              <div class="admin-status-desc">Restored full ${origDayName} schedule.</div>
+            `;
+            badge.classList.remove('hidden');
+          }
+        };
+      }
+    }
   }
   if (adminIdleTimeoutSelect) {
     adminIdleTimeoutSelect.value = state.idleTimeout !== undefined ? state.idleTimeout.toString() : '10';
@@ -1180,7 +1237,19 @@ function updateActiveColumnUI() {
       th.classList.remove('past-week-header');
     }
 
+    const intervals = getHistoricalWeekIntervals(state, currentViewingWeekStartDate);
+    const currentInterval = intervals.find(i => i.startDate === currentViewingWeekStartDate) || null;
     const dateStr = getDateOfColumn(currentViewingWeekStartDate, day);
+    const isSuperseded = !!(currentInterval && currentInterval.supersededDates && currentInterval.supersededDates.includes(dateStr));
+
+    if (isSuperseded) {
+      th.classList.add('superseded-header');
+      th.title = "These days moved to your new chart! 🚀";
+    } else {
+      th.classList.remove('superseded-header');
+      th.title = "";
+    }
+
     const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
     const isFutureDay = dateStr > todayStr;
     const allowFutureEdits = areFutureEditsAllowed();
@@ -1220,6 +1289,22 @@ function updateActiveColumnUI() {
       }
     });
   });
+
+  const backToTodayBtn = document.getElementById('back-to-today-btn');
+  if (backToTodayBtn) {
+    const todayRealDay = getLocalDate(state?.timezoneOffset).getDay();
+    const isCurrentToday = (state.activeDay === todayRealDay);
+    const isViewingPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const todayName = daysOfWeek[todayRealDay];
+
+    if (!isViewingPastWeek && !isCurrentToday && state.activeDay !== -1) {
+      backToTodayBtn.textContent = `⚡ Back to Today (${todayName})`;
+      backToTodayBtn.classList.remove('hidden');
+    } else {
+      backToTodayBtn.classList.add('hidden');
+    }
+  }
 }
 
 function updateGridCheckboxes() {
@@ -1253,12 +1338,15 @@ function renderGridTable() {
   }
   
   const isPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
+  const intervals = getHistoricalWeekIntervals(state, currentViewingWeekStartDate);
+  const currentInterval = intervals.find(i => i.startDate === currentViewingWeekStartDate) || null;
+  const viewingStartDay = currentInterval ? currentInterval.weekStartDay : (state.weekStartDay !== undefined ? state.weekStartDay : 0);
 
-  // Update header text based on weekStartDay
+  // Update header text based on viewing week's weekStartDay
   const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   const headers = document.querySelectorAll('.day-header');
   headers.forEach((th, index) => {
-    const dayOfWeek = (state.weekStartDay + index) % 7;
+    const dayOfWeek = (viewingStartDay + index) % 7;
     th.textContent = dayNames[dayOfWeek];
     th.dataset.day = index; // Ensure it is column index
   });
@@ -1297,18 +1385,19 @@ function renderGridTable() {
       const checked = !!state.grid[stateKey];
       const excused = !!state.excused[stateKey];
       const isOutOfRange = (task.createdAt && dateStr < task.createdAt) || (task.deletedAt && dateStr >= task.deletedAt);
+      const isSuperseded = !!(currentInterval && currentInterval.supersededDates && currentInterval.supersededDates.includes(dateStr));
       
       const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
       const isFutureDay = dateStr > todayStr;
       const allowFutureEdits = areFutureEditsAllowed();
-      const shouldDisable = isPastWeek || isOutOfRange || (isFutureDay && !allowFutureEdits);
-
+      const shouldDisable = isPastWeek || isOutOfRange || isSuperseded || (isFutureDay && !allowFutureEdits);
+      const cellTitle = isSuperseded ? "These days moved to your new chart! 🚀" : "";
 
       html += `
-        <td class="checkbox-cell ${excused ? 'excused-cell' : ''} ${isOutOfRange ? 'out-of-range-cell' : ''} ${(isFutureDay && !allowFutureEdits) ? 'future-cell' : ''}">
-          <label class="pokeball-checkbox">
+        <td class="checkbox-cell ${excused ? 'excused-cell' : ''} ${isOutOfRange ? 'out-of-range-cell' : ''} ${isSuperseded ? 'superseded-cell' : ''} ${(isFutureDay && !allowFutureEdits) ? 'future-cell' : ''}" ${cellTitle ? `title="${cellTitle}"` : ''}>
+          <label class="pokeball-checkbox" ${cellTitle ? `title="${cellTitle}"` : ''}>
             <input type="checkbox" data-day="${d}" data-task="${task.id}" ${checked ? 'checked' : ''} ${shouldDisable ? 'disabled' : ''}>
-            <span class="pokeball"></span>
+            <span class="pokeball" ${cellTitle ? `title="${cellTitle}"` : ''}></span>
           </label>
         </td>
       `;
@@ -1336,7 +1425,13 @@ function renderGridTable() {
   `;
   
   for (let d = 0; d < 7; d++) {
-    totalHtml += `<td class="day-total-cell" data-day="${d}"><div class="badge-indicator locked">❌</div></td>`;
+    const dateStr = getDateOfColumn(currentViewingWeekStartDate, d);
+    const isSuperseded = currentInterval && currentInterval.supersededDates && currentInterval.supersededDates.includes(dateStr);
+    if (isSuperseded) {
+      totalHtml += `<td class="day-total-cell superseded-total" data-day="${d}" title="These days moved to your new chart! 🚀"><div class="badge-indicator locked" title="These days moved to your new chart! 🚀">➖</div></td>`;
+    } else {
+      totalHtml += `<td class="day-total-cell" data-day="${d}"><div class="badge-indicator locked">❌</div></td>`;
+    }
   }
   
   totalHtml += `<td class="vault-cell"><button id="open-vault-btn" class="pixel-btn small warning">⭐ Vault</button></td>`;
@@ -1406,7 +1501,7 @@ function handleGridClick(e) {
   if (isPastWeek) return;
   
   const cell = e.target.closest('.checkbox-cell');
-  if (!cell) return;
+  if (!cell || cell.classList.contains('superseded-cell')) return;
   
   e.preventDefault(); // Prevent default checkbox toggle behavior from label click
   
@@ -1416,6 +1511,11 @@ function handleGridClick(e) {
   const day = parseInt(input.dataset.day);
   const taskId = input.dataset.task;
   const dateStr = getDateOfColumn(state.weekStartDate, day);
+  if (state.pendingWeekStartDate && dateStr >= state.pendingWeekStartDate) return;
+  const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
+  const isFutureDay = dateStr > todayStr;
+  const allowFutureEdits = areFutureEditsAllowed();
+  if (isFutureDay && !allowFutureEdits) return;
   const key = `${dateStr}-${taskId}`;
   
   // Toggle excused state
@@ -1489,6 +1589,11 @@ function handleCheckboxChange(e) {
   }
 
   const dateStr = getDateOfColumn(currentViewingWeekStartDate, day);
+  if (state.pendingWeekStartDate && dateStr >= state.pendingWeekStartDate) {
+    e.preventDefault();
+    cb.checked = !cb.checked;
+    return;
+  }
   const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
   const isFutureDay = dateStr > todayStr;
   const allowFutureEdits = areFutureEditsAllowed();
@@ -1504,10 +1609,23 @@ function handleCheckboxChange(e) {
     cb.checked = !cb.checked; // Revert visually first
     
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const dayName = daysOfWeek[clickedRealDay];
+    const targetDayName = daysOfWeek[clickedRealDay];
+    const todayRealDay = getLocalDate(state?.timezoneOffset).getDay();
+    const isCurrentToday = (state.activeDay === todayRealDay);
+    const currentActiveDayName = (state.activeDay !== undefined && state.activeDay !== -1) ? daysOfWeek[state.activeDay] : "Today";
+    
+    const switchDayHtml = `
+      <div class="confirm-detail">
+        <div class="schedule-hero-card">
+          <div class="schedule-hero-label">📅 SWITCH ACTIVE DAY</div>
+          <div class="schedule-hero-main">${targetDayName}</div>
+          <div class="schedule-hero-sub">Switch active day to <strong>${targetDayName}</strong> to check this task?</div>
+        </div>
+      </div>
+    `;
     showCustomConfirm(
       "Switch Day? 📅",
-      `Are you sure you want to switch to ${dayName} to check this task?\nThis is different from today.`,
+      switchDayHtml,
       () => {
         state.activeDay = clickedRealDay;
         saveState();
@@ -1520,10 +1638,10 @@ function handleCheckboxChange(e) {
         handleCheckboxChange(e);
       },
       null,
-      "Switch Anyway",
-      "Keep Today",
-      "pixel-btn greyed-out",
-      "pixel-btn info"
+      `Switch to ${targetDayName}`,
+      isCurrentToday ? "Stay on Today" : `Stay on ${currentActiveDayName}`,
+      "pixel-btn info",
+      "pixel-btn greyed-out"
     );
     return;
   }
@@ -1767,9 +1885,18 @@ function setupEventListeners() {
 
     if (resetBtn) {
     resetBtn.addEventListener('click', () => {
+      const resetConfirmHtml = `
+        <div class="confirm-detail">
+          <div class="schedule-hero-card">
+            <div class="schedule-hero-label">🔄 RESET TRAINING GRID</div>
+            <div class="schedule-hero-main">Start Fresh Week of Training</div>
+            <div class="schedule-hero-sub">Your level, XP, Pokémon badges, and Vault stars will not be affected.</div>
+          </div>
+        </div>
+      `;
       showCustomConfirm(
         "Reset Week Grid? 📅",
-        "Are you ready to reset the training grid for this week?\nYour level, XP, and badges will not be affected.",
+        resetConfirmHtml,
         (carryOver) => {
           resetWeekGrid(carryOver);
         },
@@ -1791,26 +1918,27 @@ function setupEventListeners() {
   }
   if (prevWeekBtn) {
     prevWeekBtn.addEventListener('click', () => {
-      if (!currentViewingWeekStartDate) return;
-      const viewingDate = new Date(currentViewingWeekStartDate + 'T00:00:00');
-      viewingDate.setDate(viewingDate.getDate() - 7);
-      currentViewingWeekStartDate = formatLocalDate(viewingDate);
-      stopExceptionMode();
-      renderState(true);
+      const intervals = getHistoricalWeekIntervals(state, currentViewingWeekStartDate);
+      if (intervals.length === 0) return;
+      const currentIndex = intervals.findIndex(i => i.startDate === currentViewingWeekStartDate);
+      if (currentIndex > 0) {
+        currentViewingWeekStartDate = intervals[currentIndex - 1].startDate;
+        stopExceptionMode();
+        renderState(true);
+      }
     });
   }
 
   if (nextWeekBtn) {
     nextWeekBtn.addEventListener('click', () => {
-      if (!currentViewingWeekStartDate) return;
-      const viewingDate = new Date(currentViewingWeekStartDate + 'T00:00:00');
-      viewingDate.setDate(viewingDate.getDate() + 7);
-      currentViewingWeekStartDate = formatLocalDate(viewingDate);
-      if (state.weekStartDate && currentViewingWeekStartDate > state.weekStartDate) {
-        currentViewingWeekStartDate = state.weekStartDate;
+      const intervals = getHistoricalWeekIntervals(state, currentViewingWeekStartDate);
+      if (intervals.length === 0) return;
+      const currentIndex = intervals.findIndex(i => i.startDate === currentViewingWeekStartDate);
+      if (currentIndex >= 0 && currentIndex < intervals.length - 1) {
+        currentViewingWeekStartDate = intervals[currentIndex + 1].startDate;
+        stopExceptionMode();
+        renderState(true);
       }
-      stopExceptionMode();
-      renderState(true);
     });
   }
 
@@ -1835,8 +1963,13 @@ function setupEventListeners() {
       const isPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
       if (isPastWeek) return; // Prevent switching active day in historical weeks!
 
+      if (th.classList.contains('superseded-header')) return; // Prevent switching active day to forward-hashed / superseded days!
+
       const clickedColumn = parseInt(th.dataset.day);
       const dateStr = getDateOfColumn(currentViewingWeekStartDate, clickedColumn);
+
+      if (state.pendingWeekStartDate && dateStr >= state.pendingWeekStartDate) return;
+
       const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
       const isFutureDay = dateStr > todayStr;
       const allowFutureEdits = areFutureEditsAllowed();
@@ -1854,20 +1987,32 @@ function setupEventListeners() {
         const today = getLocalDate(state?.timezoneOffset).getDay();
         if (dateStr !== todayStr) {
           const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-          const dayName = daysOfWeek[clickedRealDay];
+          const targetDayName = daysOfWeek[clickedRealDay];
+          const isCurrentToday = (state.activeDay === today);
+          const currentActiveDayName = (state.activeDay !== undefined && state.activeDay !== -1) ? daysOfWeek[state.activeDay] : "Today";
+          
+          const switchHeaderHtml = `
+            <div class="confirm-detail">
+              <div class="schedule-hero-card">
+                <div class="schedule-hero-label">📅 SWITCH ACTIVE DAY</div>
+                <div class="schedule-hero-main">${targetDayName}</div>
+                <div class="schedule-hero-sub">Switch active column highlight to <strong>${targetDayName}</strong>?</div>
+              </div>
+            </div>
+          `;
           showCustomConfirm(
             "Switch Day? 📅",
-            `Are you sure you want to switch to ${dayName}?\nThis is different from today.`,
+            switchHeaderHtml,
             () => {
               state.activeDay = clickedRealDay;
               saveState();
               updateActiveColumnUI();
             },
             null,
-            "Switch Anyway",
-            "Keep Today",
-            "pixel-btn greyed-out",
-            "pixel-btn info"
+            `Switch to ${targetDayName}`,
+            isCurrentToday ? "Stay on Today" : `Stay on ${currentActiveDayName}`,
+            "pixel-btn info",
+            "pixel-btn greyed-out"
           );
         } else {
           // Switching back to today has no friction
@@ -1878,6 +2023,16 @@ function setupEventListeners() {
       }
     });
   });
+
+  const backToTodayBtn = document.getElementById('back-to-today-btn');
+  if (backToTodayBtn) {
+    backToTodayBtn.addEventListener('click', () => {
+      const todayRealDay = getLocalDate(state?.timezoneOffset).getDay();
+      state.activeDay = todayRealDay;
+      saveState();
+      updateActiveColumnUI();
+    });
+  }
 
   // Admin Panel modal events are handled inside admin.js
 
@@ -2058,58 +2213,172 @@ function setupEventListeners() {
   if (adminWeekStartSelect) {
     adminWeekStartSelect.addEventListener('change', () => {
       const newStartDay = parseInt(adminWeekStartSelect.value);
-      if (newStartDay !== state.weekStartDay) {
-        const currentWeekDates = DAYS.map(day => getDateOfColumn(state.weekStartDate, day));
-        const hasProgress = currentWeekDates.some(dateStr => {
-          return state.tasks.some(task => {
-            const key = `${dateStr}-${task.id}`;
-            return !!state.grid[key] || !!state.excused[key];
-          });
-        });
-        
-        if (!hasProgress) {
-          showCustomConfirm(
-            "Change Week Start Day? 📅",
-            `Are you sure you want to change the week start day? This will update your weekly calendar headers starting today.`,
-            () => {
-              state.weekStartDay = newStartDay;
-              state.weekStartDate = formatLocalDate(getWeekStart(getLocalDate(state?.timezoneOffset), newStartDay));
-              currentViewingWeekStartDate = null;
-              saveState();
-              renderState(true);
-            },
-            () => {
-              adminWeekStartSelect.value = state.weekStartDay;
-            },
-            "Change Day",
-            "Cancel"
-          );
-        } else {
-          showCustomConfirm(
-            "Change Week Start Day? ⚠️",
-            `<div class="confirm-detail">
-              <p class="confirm-warning-intro">Changing the start day will shift the active week range.</p>
-              <p>Some completions from this week might be hidden if they fall outside the new week range, but they will be preserved in your history.</p>
-            </div>`,
-            () => {
-              state.weekStartDay = newStartDay;
-              state.weekStartDate = formatLocalDate(getWeekStart(getLocalDate(state?.timezoneOffset), newStartDay));
-              currentViewingWeekStartDate = null;
-              saveState();
-              renderState(true);
-            },
-            () => {
-              adminWeekStartSelect.value = state.weekStartDay;
-            },
-            "Change Day",
-            "Cancel",
-            "pixel-btn warning",
-            "pixel-btn greyed-out"
-          );
+      const dayNamesFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const newDayName = dayNamesFull[newStartDay];
+      const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
+      
+      const currentStartDay = state.weekStartDay !== undefined ? state.weekStartDay : 0;
+      const colIndexForNewDay = (newStartDay - currentStartDay + 7) % 7;
+      const targetDateForNewDay = getDateOfColumn(state.weekStartDate, colIndexForNewDay);
+      
+      const todayDayOfWeek = (state.activeDay !== undefined && state.activeDay !== -1) 
+        ? state.activeDay 
+        : getLocalDate(state?.timezoneOffset).getDay();
+      const colIndexForToday = (todayDayOfWeek - currentStartDay + 7) % 7;
+      const isFutureInCycle = colIndexForNewDay > colIndexForToday;
+      
+      // If user selected current start day
+      if (newStartDay === state.weekStartDay) {
+        if (state.pendingWeekStartDate) {
+          delete state.pendingWeekStartDate;
+          delete state.pendingWeekStartDay;
+          saveState();
+          renderState(true);
+          const statusBadge = document.getElementById('admin-week-start-status');
+          if (statusBadge) {
+            statusBadge.innerHTML = `
+              <div class="admin-status-title">✅ Schedule Reverted!</div>
+              <div class="admin-status-desc">Restored full ${dayNamesFull[state.weekStartDay]} schedule.</div>
+            `;
+            statusBadge.classList.remove('hidden');
+          }
         }
+        return;
       }
+
+      // Case A: Target Day is in the FUTURE of the current cycle (e.g. on Weds choosing Friday)
+      if (isFutureInCycle) {
+        const dayBeforeIndex = (colIndexForNewDay + 6) % 7;
+        const dayBeforeName = dayNamesFull[(newStartDay + 6) % 7];
+        
+        const confirmHtml = `
+          <div class="confirm-detail">
+            <div class="schedule-hero-card future">
+              <div class="schedule-hero-label">🗓️ UPCOMING SCHEDULE</div>
+              <div class="schedule-hero-main">Starts ${newDayName} • <span style="white-space: nowrap;">${targetDateForNewDay}</span></div>
+              <div class="schedule-hero-sub">The current chart will end early on <strong>${dayBeforeName}</strong>, and <strong>${newDayName}</strong> through the weekend will start your new chart.</div>
+            </div>
+            <div class="transition-info-callout">
+              <div class="transition-callout-title">ℹ️ Schedule Notice</div>
+              <div class="transition-callout-desc">You can modify or revert this schedule anytime in Parent Admin before ${newDayName}.</div>
+            </div>
+          </div>
+        `;
+        
+        showCustomConfirm(
+          `Schedule Change: Starting ${newDayName} 📅`,
+          confirmHtml,
+          () => {
+            state.pendingWeekStartDay = newStartDay;
+            state.pendingWeekStartDate = targetDateForNewDay;
+            saveState();
+            renderState(true);
+            
+            const statusBadge = document.getElementById('admin-week-start-status');
+            if (statusBadge) {
+              statusBadge.innerHTML = `
+                <div class="admin-status-title">✅ Schedule Updated!</div>
+                <div class="admin-status-desc">Current chart ends <strong>${dayBeforeName}</strong>. New <strong>${newDayName}</strong> chart starts <span style="white-space: nowrap;">${targetDateForNewDay}</span>.</div>
+              `;
+              statusBadge.classList.remove('hidden');
+            }
+          },
+          () => {
+            adminWeekStartSelect.value = state.pendingWeekStartDay !== undefined ? state.pendingWeekStartDay : (state.weekStartDay !== undefined ? state.weekStartDay : 0);
+          },
+          "Apply Change",
+          "Cancel",
+          "pixel-btn info",
+          "pixel-btn greyed-out"
+        );
+        return;
+      }
+      
+      // Case B: Target Day is in the PAST or TODAY of the current cycle (Immediate Shift & Archive)
+      const thisWeekStartObj = getWeekStart(getLocalDate(state?.timezoneOffset), newStartDay);
+      const thisWeekStart = formatLocalDate(thisWeekStartObj);
+      const thisWeekEndObj = new Date(thisWeekStart + 'T00:00:00');
+      thisWeekEndObj.setDate(thisWeekEndObj.getDate() + 6);
+      const thisWeekEnd = formatLocalDate(thisWeekEndObj);
+      const thisWeekRangeDisplay = getFormattedDateRange(thisWeekStart, thisWeekEnd);
+
+      const confirmHtml = `
+        <div class="confirm-detail">
+          <div class="schedule-hero-card">
+            <div class="schedule-hero-label">🗓️ NEW SCHEDULE</div>
+            <div class="schedule-hero-main">Starts ${newDayName} • <span style="white-space: nowrap;">${thisWeekRangeDisplay}</span></div>
+          </div>
+          <div class="transition-warning-callout">
+            <div class="transition-callout-title">⚠️ Permanent Schedule Change</div>
+            <div class="transition-callout-desc">Applying this change will save your current chart to history. Because past training history cannot be edited, this schedule change cannot be undone.</div>
+          </div>
+        </div>
+      `;
+
+      showCustomConfirm(
+        "Change Week Start Day? 📅",
+        confirmHtml,
+        () => {
+          const chosenStartDate = thisWeekStart;
+          const oldWeekStartDate = state.weekStartDate;
+          const oldStartDay = state.weekStartDay;
+          
+          delete state.pendingWeekStartDate;
+          delete state.pendingWeekStartDay;
+
+          // Archive current week slice into weeklyHistory with Smart Consolidation
+          if (oldWeekStartDate && oldWeekStartDate < chosenStartDate) {
+            const historyKeys = Object.keys(state.weeklyHistory).sort();
+            const recentAnchorKey = historyKeys.reverse().find(k => {
+              const kDate = new Date(k + "T00:00:00");
+              const oldDate = new Date(oldWeekStartDate + "T00:00:00");
+              const diffDays = Math.round((oldDate - kDate) / (1000 * 60 * 60 * 24));
+              return diffDays >= 0 && diffDays < 7 && !state.weeklyHistory[k].weeklyClaimed;
+            });
+
+            if (recentAnchorKey && recentAnchorKey !== oldWeekStartDate) {
+              state.weeklyHistory[recentAnchorKey].xpEarned = calculateWeekXpEarned(recentAnchorKey);
+            } else if (!state.weeklyHistory[oldWeekStartDate]) {
+              state.weeklyHistory[oldWeekStartDate] = {
+                weekStartDay: oldStartDay !== undefined ? oldStartDay : 0,
+                reward: state.reward || '',
+                megaReward: state.megaReward || '',
+                weeklyClaimed: !!state.weeklyClaimed,
+                badgeId: state.activeWeeklyBadgeId,
+                xpEarned: calculateWeekXpEarned(oldWeekStartDate),
+                megaWeeks: state.megaWeeks !== undefined ? state.megaWeeks : 0
+              };
+            }
+          }
+          
+          state.weekStartDay = newStartDay;
+          state.weekStartDate = chosenStartDate;
+          currentViewingWeekStartDate = chosenStartDate;
+          saveState();
+          renderState(true);
+
+          const statusBadge = document.getElementById('admin-week-start-status');
+          if (statusBadge) {
+            const formattedRange = getFormattedDateRange(chosenStartDate, getDateOfColumn(chosenStartDate, 6));
+            statusBadge.innerHTML = `
+              <div class="admin-status-title">✅ Schedule Updated!</div>
+              <div class="admin-status-desc">Active chart now starts <strong>${newDayName}</strong> <span style="white-space: nowrap;">(${formattedRange})</span></div>
+            `;
+            statusBadge.classList.remove('hidden');
+          }
+        },
+        () => {
+          adminWeekStartSelect.value = state.weekStartDay !== undefined ? state.weekStartDay : 0;
+        },
+        "Apply Change",
+        "Cancel",
+        "pixel-btn info",
+        "pixel-btn greyed-out"
+      );
     });
   }
+
+
 
   if (adminIdleTimeoutSelect) {
     adminIdleTimeoutSelect.addEventListener('change', () => {
@@ -2293,6 +2562,33 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
   let flashMega = false;
   
   const oldWeekStartDate = state.weekStartDate;
+  if (state.pendingWeekStartDate) {
+    const pendingDate = state.pendingWeekStartDate;
+    const pendingDay = state.pendingWeekStartDay !== undefined ? state.pendingWeekStartDay : state.weekStartDay;
+    delete state.pendingWeekStartDate;
+    delete state.pendingWeekStartDay;
+    
+    // Archive old shortened week
+    state.weeklyHistory[oldWeekStartDate] = {
+      weekStartDay: state.weekStartDay !== undefined ? state.weekStartDay : 0,
+      reward: state.reward || '',
+      megaReward: state.megaReward || '',
+      weeklyClaimed: false,
+      badgeId: state.activeWeeklyBadgeId,
+      xpEarned: calculateWeekXpEarned(oldWeekStartDate),
+      megaWeeks: state.megaWeeks !== undefined ? state.megaWeeks : 0
+    };
+    
+    state.weekStartDay = pendingDay;
+    state.weekStartDate = pendingDate;
+    currentViewingWeekStartDate = pendingDate;
+    rollNewWeeklyBadge();
+    state.weeklyClaimed = false;
+    state.reward = '';
+    saveState();
+    renderState(true);
+    return;
+  }
   const currentRealWeekStart = formatLocalDate(getWeekStart(getLocalDate(state?.timezoneOffset), state.weekStartDay || 0));
   const isOldWeek = oldWeekStartDate && (currentRealWeekStart > oldWeekStartDate);
   const oldBadgeId = state.activeWeeklyBadgeId;
@@ -2329,18 +2625,32 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
     const newWeekStartDate = isOldWeek ? currentRealWeekStart : nextWeekStartDateStr;
     state.weekStartDate = newWeekStartDate;
 
-    // Carry over exceptions to the new week (shift by 7 days)
+    // Carry over exceptions to the new week (mapped by day of week)
     if (carryOverExceptions) {
+      const oldStartDay = state.weeklyHistory[oldWeekStartDate]?.weekStartDay !== undefined ? state.weeklyHistory[oldWeekStartDate].weekStartDay : (state.weekStartDay || 0);
+      const newStartDay = state.weekStartDay !== undefined ? state.weekStartDay : 0;
+      
+      const excusedByDayOfWeek = {};
       DAYS.forEach(dayIndex => {
         const oldDateStr = getDateOfColumn(oldWeekStartDate, dayIndex);
-        const newDateStr = getDateOfColumn(newWeekStartDate, dayIndex);
-        state.tasks.forEach(task => {
+        const dayOfWeek = (oldStartDay + dayIndex) % 7;
+        (state.tasks || []).forEach(task => {
           const oldKey = `${oldDateStr}-${task.id}`;
-          const newKey = `${newDateStr}-${task.id}`;
           if (state.excused[oldKey]) {
-            state.excused[newKey] = true;
+            excusedByDayOfWeek[dayOfWeek] = excusedByDayOfWeek[dayOfWeek] || {};
+            excusedByDayOfWeek[dayOfWeek][task.id] = true;
           }
         });
+      });
+      
+      DAYS.forEach(dayIndex => {
+        const newDateStr = getDateOfColumn(newWeekStartDate, dayIndex);
+        const dayOfWeek = (newStartDay + dayIndex) % 7;
+        if (excusedByDayOfWeek[dayOfWeek]) {
+          Object.keys(excusedByDayOfWeek[dayOfWeek]).forEach(taskId => {
+            state.excused[`${newDateStr}-${taskId}`] = true;
+          });
+        }
       });
     }
 
@@ -2365,16 +2675,30 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
     state.weekStartDate = newWeekStartDate;
 
     if (carryOverExceptions) {
+      const oldStartDay = state.weeklyHistory[oldWeekStartDate]?.weekStartDay !== undefined ? state.weeklyHistory[oldWeekStartDate].weekStartDay : (state.weekStartDay || 0);
+      const newStartDay = state.weekStartDay !== undefined ? state.weekStartDay : 0;
+      
+      const excusedByDayOfWeek = {};
       DAYS.forEach(dayIndex => {
         const oldDateStr = getDateOfColumn(oldWeekStartDate, dayIndex);
-        const newDateStr = getDateOfColumn(newWeekStartDate, dayIndex);
-        state.tasks.forEach(task => {
+        const dayOfWeek = (oldStartDay + dayIndex) % 7;
+        (state.tasks || []).forEach(task => {
           const oldKey = `${oldDateStr}-${task.id}`;
-          const newKey = `${newDateStr}-${task.id}`;
           if (state.excused[oldKey]) {
-            state.excused[newKey] = true;
+            excusedByDayOfWeek[dayOfWeek] = excusedByDayOfWeek[dayOfWeek] || {};
+            excusedByDayOfWeek[dayOfWeek][task.id] = true;
           }
         });
+      });
+      
+      DAYS.forEach(dayIndex => {
+        const newDateStr = getDateOfColumn(newWeekStartDate, dayIndex);
+        const dayOfWeek = (newStartDay + dayIndex) % 7;
+        if (excusedByDayOfWeek[dayOfWeek]) {
+          Object.keys(excusedByDayOfWeek[dayOfWeek]).forEach(taskId => {
+            state.excused[`${newDateStr}-${taskId}`] = true;
+          });
+        }
       });
     }
 
@@ -2705,11 +3029,19 @@ function checkAndTriggerWeeklySuccess() {
         : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${state.activeWeeklyBadgeId}.png`,
       isMegaWeek,
       () => {
+        const nextWeekNum = weekDisplayNum === 4 ? 1 : weekDisplayNum + 1;
+        const celebConfirmHtml = `
+          <div class="confirm-detail">
+            <div class="schedule-hero-card ${isMegaWeek ? 'future' : ''}">
+              <div class="schedule-hero-label">${isMegaWeek ? '👑 MEGA MILESTONE' : '🎉 NEW WEEK CYCLE'}</div>
+              <div class="schedule-hero-main">${isMegaWeek ? 'Begin New Mega Cycle' : 'Start Week ' + nextWeekNum}</div>
+              <div class="schedule-hero-sub">${isMegaWeek ? 'Loop back to Week 1 and start working towards your NEXT Mega Milestone!' : 'Reset the grid and advance to Week ' + nextWeekNum + ' of training.'}</div>
+            </div>
+          </div>
+        `;
         showCustomConfirm(
           isMegaWeek ? "Start New Mega Cycle? 👑" : "Start New Training Week? 📅",
-          isMegaWeek
-            ? "Ready to loop back to Week 1 and start working towards a NEW Mega Milestone?"
-            : `Are you ready to reset the training grid and start Week ${weekDisplayNum === 4 ? 1 : weekDisplayNum + 1}?`,
+          celebConfirmHtml,
           (carryOver) => {
             resetWeekGrid(carryOver);
           },
@@ -2777,17 +3109,28 @@ function renderProgress() {
     }
   });
 
+  const intervals = getHistoricalWeekIntervals(state, currentViewingWeekStartDate);
+  const currentInterval = intervals.find(i => i.startDate === currentViewingWeekStartDate) || null;
+
   DAYS.forEach(day => {
     const dateStr = getDateOfColumn(currentViewingWeekStartDate, day);
+    const isSuperseded = !!(currentInterval && currentInterval.supersededDates && currentInterval.supersededDates.includes(dateStr));
     const allChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${dateStr}-${task.id}`] || !!state.excused[`${dateStr}-${task.id}`]);
     const totalCell = domCache.dayTotals[day];
     if (totalCell) {
-      if (allChecked) {
+      if (isSuperseded) {
+        totalCell.innerHTML = '<div class="badge-indicator locked" title="These days moved to your new chart! 🚀">➖</div>';
+        totalCell.classList.add('superseded-total');
+        totalCell.classList.add('locked');
+        totalCell.classList.remove('unlocked');
+      } else if (allChecked) {
         totalCell.innerHTML = '<div class="badge-indicator unlocked">🌟</div>';
+        totalCell.classList.remove('superseded-total');
         totalCell.classList.add('unlocked');
         totalCell.classList.remove('locked');
       } else {
         totalCell.innerHTML = '<div class="badge-indicator locked">❌</div>';
+        totalCell.classList.remove('superseded-total');
         totalCell.classList.add('locked');
         totalCell.classList.remove('unlocked');
       }
@@ -2813,10 +3156,17 @@ function renderProgress() {
       weeklyBadgeSlot.classList.add(`badge-theme-${themeIndex}`);
     } else if (badgeId) {
       const badgeName = getPokemonName(badgeId);
-      weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="${badgeName}" class="mega-slot-img silhouette">`;
-      badgeStatusEl.textContent = "🏃 The Pokémon Fled! (Goal Not Reached)";
-      weeklyBadgeSlot.classList.remove('unlocked');
-      weeklyBadgeSlot.classList.add('locked');
+      if (currentInterval && currentInterval.isPartial) {
+        weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="${badgeName}" class="mega-slot-img silhouette">`;
+        badgeStatusEl.textContent = "➡️ Rolled Forward to New Chart!";
+        weeklyBadgeSlot.classList.remove('unlocked');
+        weeklyBadgeSlot.classList.add('locked');
+      } else {
+        weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="${badgeName}" class="mega-slot-img silhouette">`;
+        badgeStatusEl.textContent = "🏃 The Pokémon Fled! (Goal Not Reached)";
+        weeklyBadgeSlot.classList.remove('unlocked');
+        weeklyBadgeSlot.classList.add('locked');
+      }
     } else {
       weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Archived" class="mega-slot-img locked">`;
       badgeStatusEl.textContent = "📅 Archived Training Week";

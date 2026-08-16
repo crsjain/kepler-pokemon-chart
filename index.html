@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=6.6">
+  <link rel="stylesheet" href="style.css?v=8.2">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
@@ -114,7 +114,10 @@
     <main class="chart-container">
       <div class="week-navigation-container">
         <button id="prev-week-btn" class="pixel-btn info">◀ Prev</button>
-        <span id="week-range-display" class="week-range-text">Loading Week...</span>
+        <div class="week-nav-center">
+          <span id="week-range-display" class="week-range-text">Loading Week...</span>
+          <button id="back-to-today-btn" class="pixel-btn warning small back-to-today-pill hidden" aria-label="Switch active highlight back to today">⚡ Back to Today</button>
+        </div>
         <button id="next-week-btn" class="pixel-btn info">Next ▶</button>
       </div>
       <div class="grid-scroll-wrapper">
@@ -582,6 +585,7 @@
                     <option value="6">Saturday</option>
                   </select>
                 </div>
+                <div id="admin-week-start-status" class="admin-status-badge hidden"></div>
                 <div class="admin-option-row">
                   <span>App Timezone:</span>
                   <select id="admin-timezone-select" class="pixel-select">
@@ -820,8 +824,8 @@
     </div>
   </div>
 
-  <script src="particles.js?v=6.6"></script>
-  <script type="module" src="app.js?v=6.6"></script>
+  <script src="particles.js?v=8.2"></script>
+  <script type="module" src="app.js?v=8.2"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 </body>

@@ -482,6 +482,30 @@ export function runStateDiagnostics() {
     fixed.push("Initialized empty claimed rewards history.");
   }
 
+  if (!state.weeklyHistory || typeof state.weeklyHistory !== 'object' || Array.isArray(state.weeklyHistory)) {
+    state.weeklyHistory = {};
+    issues.push("Missing or invalid weeklyHistory container.");
+    fixed.push("Initialized empty weeklyHistory.");
+  } else {
+    Object.keys(state.weeklyHistory).forEach(dateStr => {
+      const entry = state.weeklyHistory[dateStr];
+      if (!entry || typeof entry !== 'object') {
+        delete state.weeklyHistory[dateStr];
+        issues.push(`Invalid weeklyHistory entry at ${dateStr}.`);
+        fixed.push(`Removed corrupted weeklyHistory entry at ${dateStr}.`);
+        return;
+      }
+      if (typeof entry.weekStartDay !== 'number' || entry.weekStartDay < 0 || entry.weekStartDay > 6) {
+        entry.weekStartDay = 0;
+        issues.push(`Invalid weekStartDay in weeklyHistory entry at ${dateStr}.`);
+        fixed.push(`Set weekStartDay to 0 for weeklyHistory entry at ${dateStr}.`);
+      }
+      if (entry.weeklyClaimed === undefined) {
+        entry.weeklyClaimed = false;
+      }
+    });
+  }
+
   if (!state.weekStartDate) {
     state.weekStartDate = formatLocalDate(getWeekStart(getLocalDate(state.timezoneOffset), state.weekStartDay));
     issues.push("Missing weekStartDate.");

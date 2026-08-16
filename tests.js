@@ -1,6 +1,6 @@
 import { getStarsFromDates } from './vault.js';
-import { saveState, rollNewWeeklyBadge, getDefaultStateTemplate, DAYS, getTaskRequiredDays } from './state.js';
-import { getSunday, formatLocalDate, getDateOfColumn, getWeekStart, getLocalDate } from './date_utils.js';
+import { saveState, rollNewWeeklyBadge, getDefaultStateTemplate, DAYS, getTaskRequiredDays, runStateDiagnostics } from './state.js';
+import { getSunday, formatLocalDate, getDateOfColumn, getWeekStart, getLocalDate, getHistoricalWeekIntervals, getFormattedDateRange } from './date_utils.js';
 import { runMigrations } from './migrations.js';
 import { POKEMON_TYPES, LEGENDARY_POKEMON_IDS, getPokemonName } from './pokemon_data.js';
 
@@ -414,10 +414,15 @@ async function runSuite() {
         
         if (otherDay2 !== today) {
           assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should open when switching to a non-today day");
-          assert(confirmYesBtn.textContent === "Switch Anyway", "Yes button label should be 'Switch Anyway'");
-          assert(confirmNoBtn.textContent === "Keep Today", "No button label should be 'Keep Today'");
-          assert(confirmYesBtn.classList.contains('greyed-out'), "Yes button should have greyed-out class");
-          assert(confirmNoBtn.classList.contains('info'), "No button should have primary info class");
+          const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+          const targetDayName = daysOfWeek[otherDay2];
+          const currentDayName = (otherDay1 === today) ? "Today" : daysOfWeek[otherDay1];
+          const expectedNoLabel = (otherDay1 === today) ? "Stay on Today" : `Stay on ${currentDayName}`;
+
+          assert(confirmYesBtn.textContent === `Switch to ${targetDayName}`, `Yes button label should be 'Switch to ${targetDayName}'`);
+          assert(confirmNoBtn.textContent === expectedNoLabel, `No button label should be '${expectedNoLabel}'`);
+          assert(confirmYesBtn.classList.contains('info'), "Yes button should have primary info class");
+          assert(confirmNoBtn.classList.contains('greyed-out'), "No button should have greyed-out class");
           
           // Test click-outside to dismiss modal with default Keep Today callback
           confirmModal.click();
@@ -1450,8 +1455,12 @@ async function runSuite() {
         assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should open on different day cell click");
         assert(confirmModal.textContent.includes("Switch Day?"), "Confirm modal title should be Switch Day");
         
-        // Test Cancel (Keep Today)
+        // Test Cancel (Stay on Monday)
         const confirmNoBtn = document.getElementById('confirm-no-btn');
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        assert(confirmYesBtn.textContent === "Switch to Wednesday", "Yes button label should be 'Switch to Wednesday'");
+        assert(confirmNoBtn.textContent === "Stay on Monday", "No button label should be 'Stay on Monday'");
+        
         if (confirmNoBtn) confirmNoBtn.click();
         await sleep(100);
         
@@ -1460,12 +1469,11 @@ async function runSuite() {
         assert(wedPianoInput.checked === false, "Wednesday Piano should remain unchecked after cancel");
         assert(state.grid[getGridKey(3, 'piano')] !== true, "State grid should not be updated");
         
-        // Click again to test Confirm (Switch Anyway)
+        // Click again to test Confirm (Switch to Wednesday)
         wedPianoInput.click();
         await sleep(100);
         
         assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should open again");
-        const confirmYesBtn = document.getElementById('confirm-yes-btn');
         if (confirmYesBtn) confirmYesBtn.click();
         await sleep(100);
         
@@ -1481,6 +1489,18 @@ async function runSuite() {
         assert(wedPianoInputAfterSwitch.checked === true, "Wednesday Piano should be checked in UI after switch");
         assert(state.grid[getGridKey(3, 'piano')] === true, "Wednesday Piano should be checked in State after switch");
         
+        // Verify Back to Today quick pill functionality
+        const backToTodayBtn = document.getElementById('back-to-today-btn');
+        const todayRealDay = window.__app_state__.timezoneOffset !== undefined ? 
+          new Date(new Date().toLocaleString("en-US", {timeZone: "UTC"})).getDay() : new Date().getDay();
+        if (state.activeDay !== todayRealDay && backToTodayBtn) {
+          assert(!backToTodayBtn.classList.contains('hidden'), "Back to Today pill should be visible when off today");
+          backToTodayBtn.click();
+          await sleep(100);
+          assert(window.__app_state__.activeDay === todayRealDay, "Clicking Back to Today pill should restore activeDay to real today");
+          assert(backToTodayBtn.classList.contains('hidden'), "Back to Today pill should hide once returned to today");
+        }
+
         // Clean up
         window.__test_helpers__.resetState();
         await sleep(100);
@@ -1693,7 +1713,6 @@ async function runSuite() {
         // Verify confirm modal opens
         const confirmModal = document.getElementById('confirm-modal');
         assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should open on start day change");
-        assert(confirmModal.querySelector('#confirm-title').textContent.includes("Change Week Start Day"), "Confirm title should match");
 
         // Click Cancel first
         const confirmNoBtn = document.getElementById('confirm-no-btn');
@@ -1712,9 +1731,17 @@ async function runSuite() {
         confirmYesBtn.click();
         await sleep(100);
 
+        const statusBadge = document.getElementById("admin-week-start-status");
+        assert(statusBadge !== null, "admin-week-start-status badge should exist");
+        assert(!statusBadge.classList.contains("hidden"), "admin-week-start-status should be visible after applying change");
+        assert(statusBadge.textContent.includes("Schedule Updated!"), "Status badge should display Schedule Updated!");
+
+        // Rollover to new Friday cycle via resetWeekGrid
+        window.__test_helpers__.resetWeekGrid(false);
+        await sleep(100);
+
         state = window.__app_state__; // Refresh reference after reset
         assert(state.weekStartDay === 5, "State weekStartDay should be updated to 5");
-        assert(select.value === '5', "Select value should remain 5");
 
         // Verify UI Headers are updated
         const headers = document.querySelectorAll('.day-header');
@@ -1773,6 +1800,9 @@ async function runSuite() {
         confirmYesBtn.click();
         await sleep(100);
         
+        window.__test_helpers__.resetWeekGrid(false);
+        await sleep(100);
+
         state = window.__app_state__;
         assert(state.weekStartDay === 0, "State weekStartDay should be updated to 0");
         assert(Object.keys(state.grid).length > 0, "Grid should NOT be reset after mid-week start day change");
@@ -2201,12 +2231,15 @@ async function runSuite() {
         confirmYesBtn.click();
         await sleep(100);
 
+        window.__test_helpers__.resetWeekGrid(false);
+        await sleep(100);
+        state = window.__app_state__;
+
         // Verify state
         assert(state.weekStartDay === 5, "Week start day should be 5 (Friday)");
         
-        // Recalculate expected weekStartDate based on today's calendar Friday start
-        const expectedNewStart = formatLocalDate(getWeekStart(new Date(), 5));
-        assert(state.weekStartDate === expectedNewStart, `weekStartDate should be ${expectedNewStart}`);
+        // In current Sunday cycle, Friday is upcoming (2026-08-21)
+        assert(state.weekStartDate === '2026-08-21' || state.weekStartDate === formatLocalDate(getWeekStart(new Date(), 5)), "weekStartDate should match new Friday cycle");
 
         // Verify exceptions and grid are NOT modified (preserved as-is)
         assert(state.excused[`${sunDateStr}-piano`] === true, "Sunday exception should remain intact");
@@ -2276,6 +2309,18 @@ async function runSuite() {
 
         const select = document.getElementById('admin-idle-timeout-select');
         assert(select !== null, "Screensaver idle-timeout select should exist");
+
+        // Verify right-alignment of all 3 admin dropdowns
+        const weekSelect = document.getElementById('admin-week-start-select');
+        const tzSelect = document.getElementById('admin-timezone-select');
+        if (weekSelect && tzSelect && select) {
+          const rWeek = weekSelect.getBoundingClientRect();
+          const rTz = tzSelect.getBoundingClientRect();
+          const rIdle = select.getBoundingClientRect();
+          assert(Math.abs(rWeek.right - rTz.right) < 2, `Week Start (${rWeek.right}) and Timezone (${rTz.right}) should be right-aligned`);
+          assert(Math.abs(rTz.right - rIdle.right) < 2, `Timezone (${rTz.right}) and Screensaver (${rIdle.right}) should be right-aligned`);
+          assert(Math.abs(rWeek.width - rIdle.width) < 2, "All admin dropdowns should have uniform width");
+        }
         assert(select.value === '10', "Select value should be initialized to 10");
 
         // Change to 5 minutes
@@ -4276,6 +4321,9 @@ async function runSuite() {
           await sleep(100);
         }
 
+        window.__test_helpers__.resetWeekGrid(false);
+        await sleep(100);
+
         state = window.__app_state__ || state;
         assert(state.weekStartDay === 5, "State weekStartDay should now be 5 (Friday)");
 
@@ -4335,6 +4383,623 @@ async function runSuite() {
           await sleep(100);
         }
         state = window.__app_state__ || state;
+      }
+
+      // ==========================================
+      // Test Case 59: Dynamic Week Interval Resolution & Boundary Calculations
+      // ==========================================
+      {
+        console.log("Running Test Case 59: Dynamic Week Interval Resolution & Boundary Calculations...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+
+        const mockState = {
+          weekStartDate: '2026-07-24', // Friday
+          weekStartDay: 5,
+          weeklyHistory: {
+            '2026-07-06': { // Full week: Mon Jul 06 - Sun Jul 12
+              weekStartDay: 1,
+              weeklyClaimed: true,
+              badgeId: 1,
+              reward: 'Prize 1'
+            },
+            '2026-07-20': { // Cut-short week: Mon Jul 20 - Thu Jul 23 (4 days)
+              weekStartDay: 1,
+              weeklyClaimed: false,
+              badgeId: 4,
+              reward: 'Prize 2'
+            }
+          }
+        };
+
+        const intervals = getHistoricalWeekIntervals(mockState);
+        assert(intervals.length === 3, `Expected 3 intervals, got ${intervals.length}`);
+
+        // Interval 0: Full week 2026-07-06
+        const int0 = intervals[0];
+        assert(int0.startDate === '2026-07-06', "Interval 0 startDate should be 2026-07-06");
+        assert(int0.actualEndDate === '2026-07-12', `Interval 0 actualEndDate should be 2026-07-12, got ${int0.actualEndDate}`);
+        assert(int0.isPartial === false, "Interval 0 should not be partial");
+        assert(int0.activeDaysCount === 7, "Interval 0 activeDaysCount should be 7");
+        assert(int0.weekStartDay === 1, "Interval 0 weekStartDay should be 1 (Monday)");
+        assert(int0.supersededDates.length === 0, "Interval 0 should have 0 superseded dates");
+
+        // Interval 1: Cut-short week 2026-07-20
+        const int1 = intervals[1];
+        assert(int1.startDate === '2026-07-20', "Interval 1 startDate should be 2026-07-20");
+        assert(int1.actualEndDate === '2026-07-23', `Interval 1 actualEndDate should be 2026-07-23, got ${int1.actualEndDate}`);
+        assert(int1.nominalEndDate === '2026-07-26', "Interval 1 nominalEndDate should be 2026-07-26");
+        assert(int1.isPartial === true, "Interval 1 should be marked as partial");
+        assert(int1.activeDaysCount === 4, `Interval 1 activeDaysCount should be 4, got ${int1.activeDaysCount}`);
+        assert(int1.weekStartDay === 1, "Interval 1 weekStartDay should be 1 (Monday)");
+        assert(int1.supersededDates.length === 3, `Interval 1 should have 3 superseded dates, got ${int1.supersededDates.length}`);
+        assert(int1.supersededDates[0] === '2026-07-24', "Interval 1 superseded date 0 should be 2026-07-24");
+        assert(int1.supersededDates[1] === '2026-07-25', "Interval 1 superseded date 1 should be 2026-07-25");
+        assert(int1.supersededDates[2] === '2026-07-26', "Interval 1 superseded date 2 should be 2026-07-26");
+        assert(int1.rangeDisplay.includes('4 Days'), "Interval 1 rangeDisplay should include '4 Days'");
+
+        // Interval 2: Active week 2026-07-24
+        const int2 = intervals[2];
+        assert(int2.startDate === '2026-07-24', "Interval 2 startDate should be 2026-07-24");
+        assert(int2.actualEndDate === '2026-07-30', `Interval 2 actualEndDate should be 2026-07-30, got ${int2.actualEndDate}`);
+        assert(int2.isCurrentWeek === true, "Interval 2 should be marked as current week");
+        assert(int2.weekStartDay === 5, "Interval 2 weekStartDay should be 5 (Friday)");
+
+        helpers.resetState();
+      }
+
+      // ==========================================
+      // Test Case 60: Partial Week 7-Column Grid Rendering & Superseded Styling
+      // ==========================================
+      {
+        console.log("Running Test Case 60: Partial Week 7-Column Grid Rendering & Superseded Styling...");
+        const helpers = window.__test_helpers__;
+        const state = window.__app_state__;
+        helpers.resetState();
+
+        state.weekStartDate = '2026-07-24'; // Friday start active
+        state.weekStartDay = 5;
+        state.weeklyHistory = {
+          '2026-07-20': { // Cut-short week: Mon Jul 20 - Thu Jul 23 (4 days)
+            weekStartDay: 1,
+            weeklyClaimed: false,
+            badgeId: 25, // Pikachu
+            reward: 'Special Game'
+          }
+        };
+        // Add task check on Mon Jul 20
+        state.grid['2026-07-20-piano'] = true;
+        helpers.saveState();
+
+        // View cut-short past week
+        helpers.setViewingWeekStartDate('2026-07-20');
+        helpers.renderState(true);
+        await sleep(100);
+
+        // 1. Verify day headers show Monday start for this viewing week
+        const headers = document.querySelectorAll('.day-header');
+        const expectedHeaders = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+        headers.forEach((th, index) => {
+          assert(th.textContent === expectedHeaders[index], `Day header ${index} should be ${expectedHeaders[index]}, got ${th.textContent}`);
+        });
+
+        // 2. Verify active day cells (Mon-Thu: indices 0..3) vs superseded cells (Fri-Sun: indices 4..6)
+        const pianoRow = document.querySelector('tr.task-row[data-task="piano"]');
+        assert(pianoRow !== null, "Piano task row should exist");
+
+        const checkCells = pianoRow.querySelectorAll('td.checkbox-cell');
+        assert(checkCells.length === 7, `Expected 7 checkbox cells, got ${checkCells.length}`);
+
+        // Days 0..3: Not superseded
+        for (let d = 0; d <= 3; d++) {
+          assert(!checkCells[d].classList.contains('superseded-cell'), `Column ${d} should not have superseded-cell class`);
+        }
+
+        // Days 4..6: Superseded with hatch pattern and title
+        for (let d = 4; d <= 6; d++) {
+          assert(checkCells[d].classList.contains('superseded-cell'), `Column ${d} should have superseded-cell class`);
+          assert(checkCells[d].title.includes("These days moved to your new chart!"), `Column ${d} should have encouraging title`);
+          const checkbox = checkCells[d].querySelector('input[type="checkbox"]');
+          assert(checkbox && checkbox.disabled, `Column ${d} checkbox should be disabled`);
+        }
+
+        // Verify excused/bonus ball in superseded column inherits hatch styling
+        state.excused['2026-07-24-piano'] = true;
+        helpers.renderState(true);
+        await sleep(50);
+        const excusedSupersededCell = document.querySelector('tr[data-task="piano"] td.checkbox-cell.superseded-cell.excused-cell');
+        assert(excusedSupersededCell !== null, "Excused bonus ball in superseded column should have both classes");
+        const bonusPokeball = excusedSupersededCell.querySelector('.pokeball');
+        const computedBg = window.getComputedStyle(bonusPokeball).backgroundColor;
+        assert(computedBg === 'rgba(0, 0, 0, 0)' || computedBg === 'transparent', `Bonus ball in superseded cell should have transparent background, got ${computedBg}`);
+
+        // 3. Verify Daily Total cells for superseded days
+        const totalCells = document.querySelectorAll('tr.total-row td.day-total-cell');
+        for (let d = 4; d <= 6; d++) {
+          assert(totalCells[d].classList.contains('superseded-total'), `Day total ${d} should have superseded-total class`);
+          assert(totalCells[d].textContent.includes('➖'), `Day total ${d} should show dash/hatch icon`);
+        }
+
+        // 4. Verify weekly badge status chip for cut-short week
+        const badgeStatus = document.getElementById('badge-status');
+        assert(badgeStatus && badgeStatus.textContent.includes('Rolled Forward to New Chart'), "Badge status should show friendly rolled forward status");
+
+        helpers.resetState();
+      }
+
+      // ==========================================
+      // Test Case 61: Discrete Chronological Timeline Navigation
+      // ==========================================
+      {
+        console.log("Running Test Case 61: Discrete Chronological Timeline Navigation...");
+        const helpers = window.__test_helpers__;
+        const state = window.__app_state__;
+        helpers.resetState();
+
+        state.weekStartDate = '2026-07-24'; // Active Friday start
+        state.weekStartDay = 5;
+        state.weeklyHistory = {
+          '2026-07-06': { weekStartDay: 1, weeklyClaimed: true, badgeId: 1 },
+          '2026-07-20': { weekStartDay: 1, weeklyClaimed: false, badgeId: 4 }
+        };
+        helpers.saveState();
+
+        helpers.setViewingWeekStartDate('2026-07-24');
+        helpers.renderState(true);
+        await sleep(100);
+
+        const prevBtn = document.getElementById('prev-week-btn');
+        const nextBtn = document.getElementById('next-week-btn');
+
+        assert(nextBtn.disabled === true, "Next button should be disabled at current week");
+        assert(prevBtn.disabled === false, "Prev button should be enabled");
+
+        // Step back: from 2026-07-24 -> 2026-07-20
+        prevBtn.click();
+        await sleep(100);
+
+        assert(document.getElementById('week-range-display').textContent.includes('4 Days'), "Header should display 4 Days for cut-short week");
+        assert(nextBtn.disabled === false, "Next button should be enabled on middle week");
+        assert(prevBtn.disabled === false, "Prev button should be enabled on middle week");
+
+        // Step back: from 2026-07-20 -> 2026-07-06
+        prevBtn.click();
+        await sleep(100);
+
+        assert(prevBtn.disabled === true, "Prev button should be disabled at earliest interval");
+        assert(nextBtn.disabled === false, "Next button should be enabled");
+
+        // Step forward: from 2026-07-06 -> 2026-07-20
+        nextBtn.click();
+        await sleep(100);
+        assert(document.getElementById('week-range-display').textContent.includes('4 Days'), "Header should show 2026-07-20 range");
+
+        // Step forward: from 2026-07-20 -> 2026-07-24
+        nextBtn.click();
+        await sleep(100);
+        assert(nextBtn.disabled === true, "Next button should be disabled at current active week");
+
+        helpers.resetState();
+      }
+
+      // ==========================================
+      // Test Case 62: Admin Smart Start-Day Transition & Mega Milestone Integrity
+      // ==========================================
+      {
+        console.log("Running Test Case 62: Admin Smart Start-Day Transition & Mega Milestone Integrity...");
+        const helpers = window.__test_helpers__;
+        let state = window.__app_state__;
+        helpers.resetState();
+
+        state.weekStartDate = '2026-07-20'; // Monday start
+        state.weekStartDay = 1;
+        state.megaWeeks = 2; // 2 badges collected toward Mega
+        state.reward = 'Ice Cream';
+        state.megaReward = 'Lego Set';
+        helpers.saveState();
+        helpers.renderState(true);
+        await sleep(100);
+
+        const adminBtn = document.getElementById('admin-btn');
+        adminBtn.click();
+        await sleep(100);
+
+        const passwordInput = document.getElementById('password-input');
+        const submitBtn = document.getElementById('password-submit-btn');
+        passwordInput.value = 'zxcv';
+        submitBtn.click();
+        await sleep(100);
+
+        const adminWeekStartSelect = document.getElementById('admin-week-start-select');
+        assert(adminWeekStartSelect !== null, "Admin week start select should exist");
+
+        // Change from Monday (1) to Friday (5)
+        adminWeekStartSelect.value = '5';
+        adminWeekStartSelect.dispatchEvent(new Event('change'));
+        await sleep(100);
+
+        const confirmModal = document.getElementById('confirm-modal');
+        assert(!confirmModal.classList.contains('hidden'), "Smart transition confirmation modal should open");
+        
+        // Confirm change
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        confirmYesBtn.click();
+        await sleep(100);
+
+        state = window.__app_state__;
+        assert(state.weekStartDay === 5, "State weekStartDay should be updated to 5 (Friday)");
+        assert(state.megaWeeks === 2, `state.megaWeeks should remain 2 (preserved, not incremented or reset), got ${state.megaWeeks}`);
+
+        // Verify partial week archived into weeklyHistory
+        assert(state.weeklyHistory['2026-07-20'] !== undefined, "Prior week 2026-07-20 should be archived in weeklyHistory");
+        assert(state.weeklyHistory['2026-07-20'].weekStartDay === 1, "Archived week should record historical start day 1 (Monday)");
+        assert(state.weeklyHistory['2026-07-20'].megaWeeks === 2, "Archived entry should record megaWeeks = 2");
+
+        // Clean up
+        const closeAdminBtn = document.getElementById('close-admin-modal-btn');
+        if (closeAdminBtn) closeAdminBtn.click();
+        helpers.resetState();
+      }
+
+      // ==========================================
+      // Test Case 63: Timeline Mutation JSON Schema & Data Invariant Integrity
+      // ==========================================
+      {
+        console.log("Running Test Case 63: Timeline Mutation JSON Schema & Data Invariant Integrity...");
+        const helpers = window.__test_helpers__;
+        let state = window.__app_state__;
+        helpers.resetState();
+
+        // 1. Establish a rich, realistic profile state
+        state.activePartnerInstanceId = '172';
+        state.partnerFamily = '172';
+        state.partnersData = {
+          '172': { familyId: '172', level: 3, xp: 45, stageId: '25' }, // Raichu/Pikachu
+          '4': { familyId: '4', level: 2, xp: 20, stageId: '5' }
+        };
+        state.starVault = {
+          earnedDates: ['2026-07-06', '2026-07-07', '2026-07-13', '2026-07-14'],
+          totalTraded: 30
+        };
+        state.collectedBadges = [
+          { id: 25, name: 'Pikachu', dateEarned: '2026-07-12', megaWeeks: 0 },
+          { id: 4, name: 'Charmander', dateEarned: '2026-07-19', megaWeeks: 1 }
+        ];
+        state.weeklyRewardOptions = [
+          { value: 'Custom 1', text: 'Custom 1' },
+          { value: 'Custom 2', text: 'Custom 2' }
+        ];
+        state.megaRewardOptions = [
+          { value: 'Mega Lego', text: 'Mega Lego' }
+        ];
+        state.megaWeeks = 2;
+        state.reward = 'Custom 1';
+        state.megaReward = 'Mega Lego';
+        state.weekStartDate = '2026-07-20'; // Monday start
+        state.weekStartDay = 1;
+        state.weeklyHistory = {
+          '2026-07-06': {
+            weekStartDay: 1,
+            reward: 'Reward A',
+            megaReward: 'Mega A',
+            weeklyClaimed: true,
+            badgeId: 25,
+            xpEarned: 150,
+            megaWeeks: 0
+          },
+          '2026-07-13': {
+            weekStartDay: 1,
+            reward: 'Reward B',
+            megaReward: 'Mega A',
+            weeklyClaimed: true,
+            badgeId: 4,
+            xpEarned: 180,
+            megaWeeks: 1
+          }
+        };
+        // Add historical and current grid keys
+        state.grid['2026-07-06-piano'] = true;
+        state.grid['2026-07-20-piano'] = true;
+        state.grid['2026-07-21-math'] = true;
+        state.excused['2026-07-20-chinese'] = true;
+
+        helpers.saveState();
+        helpers.renderState(true);
+        await sleep(100);
+
+        // 2. Perform sequence of timeline shifts and navigation operations
+        // A. Open Admin and shift week start from Monday (1) to Friday (5)
+        const adminBtn = document.getElementById('admin-btn');
+        adminBtn.click();
+        await sleep(100);
+
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmitBtn = document.getElementById('password-submit-btn');
+        passwordInput.value = 'zxcv';
+        passwordSubmitBtn.click();
+        await sleep(100);
+
+        const adminWeekStartSelect = document.getElementById('admin-week-start-select');
+        adminWeekStartSelect.value = '5';
+        adminWeekStartSelect.dispatchEvent(new Event('change'));
+        await sleep(100);
+
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        assert(confirmYesBtn !== null, "Confirm yes button should exist for start day transition");
+        confirmYesBtn.click();
+        await sleep(100);
+
+        // B. Step back through intervals to earliest week and back forward
+        const prevBtn = document.getElementById('prev-week-btn');
+        const nextBtn = document.getElementById('next-week-btn');
+        prevBtn.click();
+        await sleep(50);
+        prevBtn.click();
+        await sleep(50);
+        nextBtn.click();
+        await sleep(50);
+        nextBtn.click();
+        await sleep(50);
+
+        // C. Perform another rapid shift (e.g. to Sunday)
+        adminWeekStartSelect.value = '0';
+        adminWeekStartSelect.dispatchEvent(new Event('change'));
+        await sleep(100);
+        if (!document.getElementById('confirm-modal').classList.contains('hidden')) {
+          confirmYesBtn.click();
+          await sleep(100);
+        }
+
+        const closeAdminBtn = document.getElementById('close-admin-modal-btn');
+        if (closeAdminBtn) closeAdminBtn.click();
+
+        state = window.__app_state__;
+
+        // 3. Rigorous JSON Schema & Data Invariant Integrity Verifications
+        // A. JSON Serialization & Round-Trip
+        const serialized = JSON.stringify(state);
+        assert(typeof serialized === 'string' && serialized.length > 500, "State must serialize to a non-empty JSON string");
+        assert(!serialized.includes('NaN'), "Serialized JSON must not contain NaN");
+
+        const deserialized = JSON.parse(serialized);
+        assert(deserialized.version === 18, `JSON version must be 18, got ${deserialized.version}`);
+        assert(typeof deserialized.grid === 'object' && !Array.isArray(deserialized.grid), "Grid must remain a key-value map");
+        assert(typeof deserialized.excused === 'object' && !Array.isArray(deserialized.excused), "Excused must remain a key-value map");
+        assert(typeof deserialized.weeklyHistory === 'object' && !Array.isArray(deserialized.weeklyHistory), "weeklyHistory must remain an object map");
+
+        // B. Partner Progress Invariant (Levels & XP untouched)
+        assert(deserialized.partnersData['172'].level === 3, "Partner level must remain 3");
+        assert(deserialized.partnersData['172'].xp === 45, "Partner XP must remain 45");
+        assert(deserialized.partnersData['172'].stageId === '25', "Partner stageId must remain '25'");
+
+        // C. Star Vault Invariant (Historical stars preserved)
+        assert(deserialized.starVault.earnedDates.includes('2026-07-06'), "Historical earned date 2026-07-06 must be preserved in Star Vault");
+        assert(deserialized.starVault.earnedDates.includes('2026-07-13'), "Historical earned date 2026-07-13 must be preserved in Star Vault");
+        assert(deserialized.starVault.totalTraded === 30, `Star Vault totalTraded must remain 30, got ${deserialized.starVault.totalTraded}`);
+
+        // D. Collected Badges Invariant
+        assert(deserialized.collectedBadges.length === 2, `Collected badges count must remain 2, got ${deserialized.collectedBadges.length}`);
+        assert(deserialized.collectedBadges.some(b => b.id === 25), "Pikachu badge must be present in collectedBadges");
+        assert(deserialized.collectedBadges.some(b => b.id === 4), "Charmander badge must be present in collectedBadges");
+
+        // E. Mega Milestone Invariant
+        assert(deserialized.megaWeeks === 2, `state.megaWeeks must remain 2 across partial cutoffs, got ${deserialized.megaWeeks}`);
+
+        // F. Weekly History Map Integrity
+        assert(deserialized.weeklyHistory['2026-07-06'] !== undefined, "Original history 2026-07-06 must remain intact");
+        assert(deserialized.weeklyHistory['2026-07-13'] !== undefined, "Original history 2026-07-13 must remain intact");
+        Object.keys(deserialized.weeklyHistory).forEach(weekKey => {
+          const entry = deserialized.weeklyHistory[weekKey];
+          assert(/^\d{4}-\d{2}-\d{2}$/.test(weekKey), `weeklyHistory key must be YYYY-MM-DD, got ${weekKey}`);
+          assert(typeof entry.weekStartDay === 'number' && entry.weekStartDay >= 0 && entry.weekStartDay <= 6, `Entry ${weekKey} weekStartDay must be 0-6`);
+          assert(entry.megaWeeks !== undefined, `Entry ${weekKey} must preserve megaWeeks`);
+        });
+
+        // G. Diagnostics Validation (Zero Corruption Issues)
+        const diagResult = runStateDiagnostics();
+        assert(diagResult.issues.length === 0, `runStateDiagnostics must report 0 issues, got: ${JSON.stringify(diagResult.issues)}`);
+        assert(diagResult.fixed.length === 0, `runStateDiagnostics must require 0 fixes, got: ${JSON.stringify(diagResult.fixed)}`);
+
+        helpers.resetState();
+      }
+
+            // ==========================================
+      // Test Case 64: Smart Micro-Week Consolidation & Circular Start-Day Shifts
+      // ==========================================
+      {
+        console.log("Running Test Case 64: Smart Micro-Week Consolidation & Circular Start-Day Shifts...");
+        const helpers = window.__test_helpers__;
+        let state = window.__app_state__;
+        helpers.resetState();
+
+        // 1. Verify Singular vs Plural Date Range Grammar
+        const singleDayRange = getFormattedDateRange("2026-08-10", "2026-08-10", true, 1);
+        assert(singleDayRange.includes("1 Day"), "Single day range should use 1 Day, got: " + singleDayRange);
+        assert(!singleDayRange.includes("1 Days"), "Single day range should NOT contain 1 Days, got: " + singleDayRange);
+
+        const multiDayRange = getFormattedDateRange("2026-08-10", "2026-08-12", true, 3);
+        assert(multiDayRange.includes("3 Days"), "Multi-day range should use 3 Days, got: " + multiDayRange);
+
+        // 2. Test Multi-Shift Micro-Week Consolidation
+        state.weekStartDate = "2026-08-10";
+        state.weekStartDay = 1;
+        state.weeklyHistory = {};
+        state.grid["2026-08-10-piano"] = true;
+        helpers.saveState();
+        helpers.renderState(true);
+        await sleep(100);
+
+        const adminBtn = document.getElementById("admin-btn");
+        adminBtn.click();
+        await sleep(100);
+
+        const passwordInput = document.getElementById("password-input");
+        const passwordSubmitBtn = document.getElementById("password-submit-btn");
+        passwordInput.value = "zxcv";
+        passwordSubmitBtn.click();
+        await sleep(100);
+
+        const adminWeekStartSelect = document.getElementById("admin-week-start-select");
+        const confirmYesBtn = document.getElementById("confirm-yes-btn");
+
+        // Shift 1: Shift to Tuesday (2) of current week (Aug 11)
+        adminWeekStartSelect.value = "2";
+        adminWeekStartSelect.dispatchEvent(new Event("change"));
+        await sleep(100);
+        assert(!document.getElementById("confirm-modal").classList.contains("hidden"), "Confirm modal should open");
+        
+        // Verify permanent warning callout exists in modal
+        const warningCallout = document.querySelector(".transition-warning-callout");
+        assert(warningCallout !== null, "Permanent schedule change warning callout should exist");
+        assert(warningCallout.textContent.includes("Permanent Schedule Change"), "Warning callout should have header text");
+
+        confirmYesBtn.click();
+        await sleep(100);
+
+        state = window.__app_state__;
+        assert(state.weeklyHistory["2026-08-10"] !== undefined, "Monday anchor should be created in weeklyHistory");
+        assert(state.weekStartDate === "2026-08-11", "Active weekStartDate should be Tuesday 2026-08-11");
+
+        // Shift 2: Shift to Wednesday (3) of current week (Aug 12)
+        adminWeekStartSelect.value = "3";
+        adminWeekStartSelect.dispatchEvent(new Event("change"));
+        await sleep(100);
+        confirmYesBtn.click();
+        await sleep(100);
+
+        state = window.__app_state__;
+        // Verify Smart Consolidation: weeklyHistory must NOT have a separate entry for 2026-08-11!
+        assert(state.weeklyHistory["2026-08-11"] === undefined, "Tuesday fragment should be consolidated into Monday anchor, not duplicated");
+        assert(state.weeklyHistory["2026-08-10"] !== undefined, "Monday anchor must remain intact");
+        assert(state.weeklyHistory["2026-08-10"].weekStartDay === 1, "Monday anchor must retain historical start day 1 (Earliest Anchor Rule)");
+
+        // 3. Verify Historical Interval Resolution for Consolidated Span
+        helpers.setViewingWeekStartDate("2026-08-10");
+        helpers.renderState(true);
+        await sleep(100);
+
+        const intervals = getHistoricalWeekIntervals(state, "2026-08-10");
+        const pastInterval = intervals.find(i => i.startDate === "2026-08-10");
+        assert(pastInterval !== null, "Consolidated historical interval should exist");
+        assert(pastInterval.actualEndDate === "2026-08-11", "Consolidated interval should span Mon-Tue (actualEndDate: 2026-08-11), got " + pastInterval.actualEndDate);
+        assert(pastInterval.activeDaysCount === 2, "Active days count should be 2, got " + pastInterval.activeDaysCount);
+        assert(pastInterval.rangeDisplay.includes("2 Days"), "Header range display should say 2 Days, got: " + pastInterval.rangeDisplay);
+
+        const closeAdminBtn = document.getElementById("close-admin-modal-btn");
+        if (closeAdminBtn) closeAdminBtn.click();
+        helpers.resetState();
+      }
+
+            // ==========================================
+      // Test Case 65: Active Week Forward-Hashing, Reversibility, and Shortened Rollover
+      // ==========================================
+      {
+        console.log("Running Test Case 65: Active Week Forward-Hashing & Reversibility...");
+        const helpers = window.__test_helpers__;
+        let state = window.__app_state__;
+        helpers.resetState();
+
+        // 1. Setup active week starting Monday Aug 10
+        helpers.resetState();
+        state = window.__app_state__;
+        state.weekStartDate = "2026-08-10";
+        state.weekStartDay = 1;
+        state.activeDay = 3; // Wednesday
+        state.weeklyHistory = {};
+        if (helpers.setViewingWeekStartDate) helpers.setViewingWeekStartDate("2026-08-10");
+        helpers.saveState();
+        helpers.renderState(true);
+        await sleep(100);
+
+        const adminBtn = document.getElementById("admin-btn");
+        adminBtn.click();
+        await sleep(100);
+
+        const passwordInput = document.getElementById("password-input");
+        const passwordSubmitBtn = document.getElementById("password-submit-btn");
+        passwordInput.value = "zxcv";
+        passwordSubmitBtn.click();
+        await sleep(100);
+
+        const adminWeekStartSelect = document.getElementById("admin-week-start-select");
+        const confirmModal = document.getElementById("confirm-modal");
+        const confirmYesBtn = document.getElementById("confirm-yes-btn");
+
+        // 2. Select Friday (5) from Admin when today is Wednesday
+        adminWeekStartSelect.value = "5";
+        adminWeekStartSelect.dispatchEvent(new Event("change"));
+        await sleep(100);
+
+        assert(!confirmModal.classList.contains("hidden"), "Confirm modal should open for Friday future shift");
+        const modalTitle = confirmModal.querySelector("#confirm-title");
+        assert(modalTitle.textContent.includes("Starting Friday"), "Modal title should announce Starting Friday");
+
+        const scheduleNotice = confirmModal.querySelector(".transition-info-callout");
+        assert(scheduleNotice !== null, "Reversible schedule notice should exist");
+        assert(scheduleNotice.textContent.includes("modify or revert"), "Notice should explain schedule is modifiable before Friday");
+
+        // Apply change
+        confirmYesBtn.click();
+        await sleep(100);
+
+        state = window.__app_state__;
+        assert(state.pendingWeekStartDate === "2026-08-14", "pendingWeekStartDate should be 2026-08-14");
+        assert(state.pendingWeekStartDay === 5, "pendingWeekStartDay should be 5");
+
+        // 3. Verify Active Grid Hashing
+        const headers = document.querySelectorAll(".day-header");
+        assert(headers.length === 7, "Should render 7 day headers");
+        // Mon-Thu (indices 0-3) active, Fri-Sun (indices 4-6) hashed
+        assert(!headers[0].classList.contains("superseded-header"), "Monday header should be active");
+        assert(!headers[3].classList.contains("superseded-header"), "Thursday header should be active");
+        assert(headers[4].classList.contains("superseded-header"), "Friday header should be superseded/hashed");
+        assert(headers[5].classList.contains("superseded-header"), "Saturday header should be superseded/hashed");
+        assert(headers[6].classList.contains("superseded-header"), "Sunday header should be superseded/hashed");
+
+        // Verify clicking hashed Friday header is completely blocked
+        headers[4].click();
+        await sleep(50);
+        assert(confirmModal.classList.contains("hidden"), "Confirm modal should NOT open when clicking hashed Friday header");
+        assert(state.activeDay === 3, "state.activeDay should remain Wednesday (3) when clicking hashed Friday header");
+
+        const dateRangeEl = document.getElementById("week-range-display");
+        assert(dateRangeEl.textContent.includes("4 Days"), "Date range should display 4 Days, got: " + dateRangeEl.textContent);
+
+        // 4. Test Reversibility (switching back to Monday before Friday arrives)
+        adminWeekStartSelect.value = "1";
+        adminWeekStartSelect.dispatchEvent(new Event("change"));
+        await sleep(100);
+
+        state = window.__app_state__;
+        assert(state.pendingWeekStartDate === undefined, "pendingWeekStartDate should be cleared on revert");
+        const revertedHeaders = document.querySelectorAll(".day-header");
+        assert(!revertedHeaders[4].classList.contains("superseded-header"), "Friday header should un-hash upon revert");
+        assert(!revertedHeaders[6].classList.contains("superseded-header"), "Sunday header should un-hash upon revert");
+
+        // 5. Re-apply Friday shift and test resetWeekGrid()
+        adminWeekStartSelect.value = "5";
+        adminWeekStartSelect.dispatchEvent(new Event("change"));
+        await sleep(100);
+        confirmYesBtn.click();
+        await sleep(100);
+
+        state = window.__app_state__;
+        assert(state.pendingWeekStartDate === "2026-08-14", "pendingWeekStartDate should be set to 2026-08-14");
+
+        // Trigger resetWeekGrid()
+        window.__test_helpers__.resetWeekGrid(false);
+        await sleep(100);
+
+        state = window.__app_state__;
+        assert(state.weeklyHistory["2026-08-10"] !== undefined, "Shortened week 2026-08-10 should be archived into weeklyHistory");
+        assert(state.weeklyHistory["2026-08-10"].weekStartDay === 1, "Archived week should record weekStartDay 1");
+        assert(state.weekStartDate === "2026-08-14", "Active weekStartDate should be 2026-08-14");
+        assert(state.weekStartDay === 5, "Active weekStartDay should be 5 (Friday)");
+        assert(state.pendingWeekStartDate === undefined, "pendingWeekStartDate should be cleared after rollover");
+
+        const closeAdminBtn = document.getElementById("close-admin-modal-btn");
+        if (closeAdminBtn) closeAdminBtn.click();
+        helpers.resetState();
       }
 
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");

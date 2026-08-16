@@ -1,99 +1,105 @@
-# Implementation Plan: Historical Week Archive & Restoration (V15)
+# Technical Implementation Plan: Dynamic Week Boundaries & Historical Archiving (v2.1)
 
-This document outlines the step-by-step technical plan to implement the approved PRD for Historical Weeks.
-
----
-
-## Phase 1: State Schema Updates & Migration (V15)
-
-### 1.1. Schema Changes (`state.js`)
-- Increment `state.version` to `15`.
-- Add `weeklyHistory` object to default template:
-  ```javascript
-  weeklyHistory: {} // Key: YYYY-MM-DD (weekStartDate), Value: { weekStartDay, reward, megaReward, weeklyClaimed, badgeId, xpEarned }
-  ```
-- Update `state.tasks` array items to include lifecycle fields:
-  ```javascript
-  {
-    id: 'piano',
-    name: 'Piano Practice',
-    emoji: '🎹',
-    concept: 'Level up!',
-    instructions: '...',
-    active: true,
-    createdAt: '2026-07-10', // Default to a reasonable past date for existing tasks
-    deletedAt: null
-  }
-  ```
-
-### 1.2. Migration Logic (`migrations.js` / `state.js`)
-- Implement a migration function `migrateToV15(oldState)`:
-  - Detect if state version is `< 15`.
-  - For the active week, map all `state.grid` keys matching `${dayIndex}-${taskId}` to `${date}-${taskId}` using the current `state.weekStartDate` and `state.weekStartDay` to calculate the absolute date of each column.
-  - Do the same for `state.excused`.
-  - Initialize lifecycle fields for default tasks (`active: true`, `createdAt: "2026-07-01"`).
-  - Save the migrated state.
-- **Seeding Hook**: Add a placeholder hook in the migration script where we can inject the JSON payload of historical completions provided by the parent for Kepler and Lyra.
+This document outlines the step-by-step engineering plan to implement the approved PRD v2.1 for Dynamic Week Boundaries, Partial Week Rendering, and Smart Start-Day Transitions.
 
 ---
 
-## Phase 2: Refactor JS Grid Logic to use Date Keys
+## Phase 1: Dynamic Boundary Algorithm (`date_utils.js` / `app.js`)
 
-### 2.1. Date Resolution Refactoring
-- Update `app.js` and `vault.js` to read and write grid/excused status using absolute date keys instead of day indexes.
-- Functions to update:
-  - `checkDayCompleted` (in `vault.js`): Should write to `state.starVault.earnedDates` directly based on date check.
-  - `syncVaultStarsWithGrid` (in `app.js`): Resolve dates for each day index and check completions.
-  - Task toggle event listeners (in `app.js`): Map cell clicks to `YYYY-MM-DD-taskId` keys.
-  - Exception toggle event listeners (in `app.js`): Map exception cells to `YYYY-MM-DD-taskId` keys in `state.excused`.
-
----
-
-## Phase 3: Paging UI Implementation
-
-### 3.1. Main Grid Header Updates (`index.html` & `style.css`)
-- Replace the static weekly header with a paging container:
-  - `[ <- Prev ] [ Week Date Range Display ] [ Next -> ]`
-  - Style buttons to fit the pixel art theme.
-- Add dynamic week range display text (e.g., "Jul 27 - Aug 2, 2026").
-
-### 3.2. Navigation Logic (`app.js`)
-- Maintain a `currentViewingWeekStartDate` variable in memory (defaults to `state.weekStartDate`).
-- On `Prev` click: Subtract 7 days from `currentViewingWeekStartDate` and call `renderState(true)`.
-- On `Next` click: Add 7 days to `currentViewingWeekStartDate` and call `renderState(true)`.
-- Disable `Next` button if `currentViewingWeekStartDate >= state.weekStartDate` (cannot page into future).
-- Render grid cells by looking up `${resolvedDate}-${taskId}` in `state.grid`.
-- **Lock UI**: If `currentViewingWeekStartDate < state.weekStartDate` (historical week), disable all click event listeners on grid cells (Read-only mode).
-- Render the weekly badge section:
-  - If viewing current week: show silhouette or active badge.
-  - If viewing past week: look up `state.weeklyHistory[viewingStartDate]`. If claimed, show the full-color earned badge image (using `badgeId` from history) and hide the "Claim" button.
+### 1.1. Implement `getHistoricalWeekIntervals(state)`
+- Create a pure, deterministic helper `getHistoricalWeekIntervals(state)` that:
+  1. Collects all sorted keys from `state.weeklyHistory` plus `state.weekStartDate`.
+  2. For each key $K_i$ at index $i$:
+     - Determines `weekStartDay` from `state.weeklyHistory[K_i].weekStartDay` (or `state.weekStartDay` for current week).
+     - Calculates nominal end date: $K_i + 6\text{ days}$.
+     - Determines `nextStartDate`: $K_{i+1}$ if $i < \text{total}-1$, otherwise `null`.
+     - Calculates `actualEndDate`: $\min(\text{nominalEndDate}, \text{nextStartDate} - 1\text{ day})$ if $K_{i+1}$ exists, else $\text{nominalEndDate}$.
+     - Calculates `isPartial`: `actualEndDate < nominalEndDate`.
+     - Generates array of `activeDates` and `supersededDates`.
+     - Formats human-readable range string: e.g., `"Mon, Jul 20 – Thu, Jul 23 • 4 Days (Start Day Adjusted 📅)"` or `"Mon, Jul 13 – Sun, Jul 19"`.
+  3. Returns ordered array of interval descriptor objects:
+     ```javascript
+     {
+       startDate: "2026-07-20",
+       actualEndDate: "2026-07-23",
+       nominalEndDate: "2026-07-26",
+       weekStartDay: 1,
+       isPartial: true,
+       activeDaysCount: 4,
+       rangeDisplay: "Mon, Jul 20 – Thu, Jul 23 • 4 Days",
+       supersededDates: ["2026-07-24", "2026-07-25", "2026-07-26"],
+       isCurrentWeek: false,
+       history: { ... }
+     }
+     ```
 
 ---
 
-## Phase 4: Soft-Deletion Task Logic & Admin Panel Updates
+## Phase 2: Grid Table & Superseded Styling (`app.js` & `style.css`)
 
-### 4.1. Admin Panel Task Deletion
-- Update the "Delete Task" action in the Admin Panel:
-  - Instead of removing the task from `state.tasks`, set `active = false` and `deletedAt = formatLocalDate(new Date())`.
-- Update the "Add Task" action:
-  - Set `createdAt = formatLocalDate(new Date())`, `active = true`, `deletedAt = null`.
-  - Re-activate existing task if the ID is re-added.
+### 2.1. Dynamic Header Names by Viewing Week
+- In `renderGridTable()`:
+  - Retrieve the interval object for `currentViewingWeekStartDate`.
+  - Use `interval.weekStartDay` instead of `state.weekStartDay` to calculate day header abbreviations (`SUN`, `MON`, `TUE`, `WED`, `THU`, `FRI`, `SAT`).
 
-### 4.2. Grid Rendering Filters
-- Update `renderState` (specifically `buildGridHeaders` and task row rendering):
-  - When rendering week starting `W_START` to `W_END`:
-    - For each task in `state.tasks`:
-      - Check if active during that week (created before `W_END` and not deleted before `W_START`).
-      - If not active, do not render the row.
-      - If active but created mid-week, grey out/disable cells for days prior to `createdAt`.
-      - If active but deleted mid-week, grey out/disable cells for days post `deletedAt`.
+### 2.2. Superseded Cell Styling (`style.css`)
+- Define `.superseded-cell` class:
+  - Background: Subtle diagonal hatch stripes (`repeating-linear-gradient(45deg, rgba(255,255,255,0.03), rgba(255,255,255,0.03) 10px, transparent 10px, transparent 20px)`).
+  - Disabled / dashed placeholder checkbox.
+  - Set `title="These days moved to your new chart! 🚀"`.
+- In daily total row:
+  - Render superseded cells with a muted hatch icon / strike rather than failing red `"❌"`.
+
+### 2.3. Badge Morale & Status Chips
+- In `renderState()`:
+  - If viewing an unclaimed cut-short week, render a badge chip: `"Rolled forward to new chart ➡️"`.
 
 ---
 
-## Phase 5: Verification & Testing
+## Phase 3: Chronological Interval Navigation (`app.js`)
 
-### 5.1. Automated Tests (`tests.js`)
-- Add Test Case 32: Grid Migration (V14 -> V15).
-- Add Test Case 33: Historical Paging (assert cells are read-only, badge/rewards metadata is loaded correctly).
-- Add Test Case 34: Task lifecycle rendering (greyed out cells prior to add / post deletion).
-- Run headless test suite to verify.
+### 3.1. Interval-Based Navigation
+- Update `#prev-week-btn`:
+  - Find current index in `getHistoricalWeekIntervals(state)`.
+  - If index $> 0$, set `currentViewingWeekStartDate = intervals[index - 1].startDate`.
+  - Disable button if index $=== 0$.
+- Update `#next-week-btn`:
+  - If index $< \text{intervals.length} - 1$, set `currentViewingWeekStartDate = intervals[index + 1].startDate`.
+  - Disable button if viewing active week (`index === intervals.length - 1`).
+
+---
+
+## Phase 4: Smart Start-Day Transition in Parent Admin (`app.js` & `admin.js`)
+
+### 4.1. Concrete Date Preview Modal
+- When `adminWeekStartSelect` changes:
+  - Calculate target start dates:
+    - Target A (This week's occurrence): $\text{getWeekStart}(\text{today}, \text{newStartDay})$.
+    - Target B (Upcoming week's occurrence): $\text{Target A} + 7\text{ days}$.
+  - If Target A $< \text{state.weekStartDate}$, automatically use Target B (preventing backward inversion).
+  - If Target A $\ge \text{state.weekStartDate}$, show modal with clear radio/action options showing concrete date ranges (e.g. `"Wed, Jul 22 – Tue, Jul 28"` vs `"Wed, Jul 29 – Tue, Aug 4"`).
+- On confirmation:
+  - Archive active week into `state.weeklyHistory[oldWeekStartDate]`.
+  - Update `state.weekStartDate = chosenDate` and `state.weekStartDay = newStartDay`.
+  - Preserve `state.megaWeeks` (do not increment on partial cut).
+  - Prune 0-day or 0-completion micro-entries.
+
+### 4.2. Day-of-Week Exception Carry-Over
+- Update `carryOverExceptions` logic to map by weekday name (e.g., Monday excuse $\rightarrow$ Monday in new week).
+
+---
+
+## Phase 5: Automated Testing & Verification (`tests.js`)
+
+### 5.1. Test Cases
+- **Test Case 59: Dynamic Week Interval Resolution & Boundary Calculations**:
+  - Assert `getHistoricalWeekIntervals` correctly identifies partial vs full weeks, superseded dates, and accurate range strings.
+- **Test Case 60: Partial Week 7-Column Grid Rendering & Superseded Styling**:
+  - Assert day headers render based on historical `weekStartDay`, active days show completions, and superseded days receive `.superseded-cell` class and tooltips.
+- **Test Case 61: Discrete Chronological Paging Navigation**:
+  - Assert `#prev-week-btn` and `#next-week-btn` step through discrete intervals and handle boundary states correctly.
+- **Test Case 62: Admin Smart Start-Day Transition & Mega Milestone Integrity**:
+  - Assert changing start day archives partial slice without incrementing `megaWeeks`, anchors dates properly, and prunes micro-weeks.
+
+### 5.2. Verification
+- Run `node run_headless_tests.js` to ensure 100% pass across all regression tests in ~17s.

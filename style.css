@@ -507,11 +507,37 @@ button:disabled,
   border-bottom: 3px solid var(--border-color);
 }
 
+.week-nav-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
 .week-range-text {
   font-family: 'Fredoka One', cursive;
   font-size: 1.1rem;
   color: #334155;
   text-shadow: 1px 1px 0px #cbd5e1;
+}
+
+.back-to-today-pill {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 0 #b7791f;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.back-to-today-pill:hover {
+  background-color: #ed8936;
+}
+
+.back-to-today-pill:active {
+  transform: translateY(2px);
+  box-shadow: none;
 }
 
 .week-navigation-container .pixel-btn {
@@ -538,6 +564,128 @@ button:disabled,
 
 .checkbox-cell.future-cell .pokeball {
   filter: opacity(0.7);
+}
+
+.checkbox-cell.superseded-cell {
+  background: repeating-linear-gradient(
+    -45deg,
+    #f8fafc,
+    #f8fafc 6px,
+    #e2e8f0 6px,
+    #e2e8f0 12px
+  ) !important;
+  opacity: 0.55;
+  cursor: not-allowed !important;
+  pointer-events: auto !important;
+  position: relative;
+}
+
+.checkbox-cell.superseded-cell .pokeball {
+  filter: grayscale(100%) opacity(0.2);
+}
+
+/* Bonus Balls in Superseded / Hashed Cells */
+.checkbox-cell.superseded-cell.excused-cell .pokeball,
+.checkbox-cell.superseded-cell.excused-cell input + .pokeball {
+  background: transparent !important;
+  border-color: #94a3b8 !important;
+  filter: grayscale(100%) opacity(0.25) !important;
+}
+
+.checkbox-cell.superseded-cell.excused-cell .pokeball::before {
+  opacity: 0.25 !important;
+  color: #64748b !important;
+}
+
+.checkbox-cell.superseded-cell.excused-cell .pokeball::after {
+  opacity: 0.25 !important;
+  background: transparent !important;
+  border-color: #94a3b8 !important;
+  color: #64748b !important;
+}
+
+.day-header.superseded-header {
+  opacity: 0.5 !important;
+  background: repeating-linear-gradient(
+    -45deg,
+    #cbd5e1,
+    #cbd5e1 6px,
+    #94a3b8 6px,
+    #94a3b8 12px
+  ) !important;
+  color: #475569 !important;
+  cursor: not-allowed !important;
+}
+
+.day-total-cell.superseded-total {
+  background: repeating-linear-gradient(
+    -45deg,
+    #f8fafc,
+    #f8fafc 6px,
+    #e2e8f0 6px,
+    #e2e8f0 12px
+  ) !important;
+  opacity: 0.55;
+  cursor: not-allowed !important;
+  pointer-events: auto !important;
+}
+
+.day-total-cell.superseded-total .badge-indicator {
+  opacity: 0.35;
+  filter: grayscale(100%);
+}
+
+.transition-options-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0;
+  text-align: left;
+}
+
+.transition-option-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.transition-option-card:hover {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.transition-option-card.selected {
+  border-color: #2563eb;
+  background-color: #dbeafe;
+}
+
+.transition-option-card input[type="radio"] {
+  margin-top: 3px;
+  cursor: pointer;
+}
+
+.transition-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.transition-option-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+
+.transition-option-desc {
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.3;
 }
 
 .grid-scroll-wrapper {
@@ -570,6 +718,7 @@ button:disabled,
 }
 
 .weekly-grid th {
+  background-color: var(--poke-blue);
   color: white;
   font-family: 'Fredoka One', cursive;
   font-size: 0.95rem;
@@ -1196,19 +1345,29 @@ input:checked + .slider:before {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px; /* Ensure space between label and select */
-  padding: 12px 0;
+  gap: 10px;
+  padding: 8px 0;
   border-bottom: 2px dashed #e2e8f0;
   font-family: 'Fredoka One', cursive;
-  font-size: 0.95rem;
+  font-size: 0.90rem;
   color: var(--poke-dark-blue);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-option-row > span {
+  white-space: nowrap;
+  font-size: 0.88rem;
+  flex-shrink: 0;
 }
 
 .admin-option-row select.pixel-select {
-  width: 120px; /* Restrict width to prevent overflow */
-  padding: 8px 28px 8px 10px; /* tighter padding for admin options to fit text */
+  width: 140px;
+  flex: 0 0 140px;
+  padding: 8px 28px 8px 10px;
   background-position: right 10px center;
-  flex-shrink: 0;
+  box-sizing: border-box;
+  font-size: 0.88rem;
 }
 
 .testing-buttons {
@@ -1286,7 +1445,8 @@ input:checked + .slider:before {
 .confirm-actions .pixel-btn,
 .password-prompt-actions .pixel-btn {
   flex: 1;
-  max-width: 150px;
+  max-width: 200px;
+  white-space: nowrap;
 }
 
 /* Responsive styles for dialog actions */
@@ -1882,6 +2042,8 @@ input:checked + .slider:before {
 /* Active Day Column Highlights and Restrictions */
 .day-header {
   cursor: pointer;
+  background-color: var(--poke-blue);
+  color: white;
   transition: background-color 0.2s, color 0.2s;
 }
 
@@ -1906,7 +2068,7 @@ input:checked + .slider:before {
 }
 
 .day-header.future-day-header:hover {
-  background-color: transparent !important;
+  background-color: var(--poke-blue) !important;
 }
 
 .day-header.active-day {
@@ -1979,7 +2141,7 @@ input:checked + .slider:before {
 @media (min-width: 768px) {
   /* 3-column grid structure on desktop to align items across rows */
   .admin-grid {
-    grid-template-columns: 300px 1fr 1fr;
+    grid-template-columns: 320px 1fr 1fr;
     gap: 20px;
   }
 
@@ -2971,7 +3133,7 @@ input:checked + .slider:before {
 }
 
 /* Bonus Cell / Exception representation */
-.checkbox-cell.excused-cell {
+.checkbox-cell.excused-cell:not(.superseded-cell) {
   background-color: #ffffff !important; /* Keep cell background clean white */
   background-image: none !important;
   position: relative;
@@ -3067,6 +3229,41 @@ input:checked + .slider:before {
   background: #ffcb05 !important; /* Poke Yellow background */
   border: 1px solid var(--border-color) !important;
   color: #2d3748 !important; /* Dark text */
+}
+
+/* Superseded / Forward-Hashed Bonus Cells */
+.checkbox-cell.superseded-cell.excused-cell {
+  background: repeating-linear-gradient(
+    -45deg,
+    #f8fafc,
+    #f8fafc 6px,
+    #e2e8f0 6px,
+    #e2e8f0 12px
+  ) !important;
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+
+.checkbox-cell.superseded-cell.excused-cell input:not(:checked) + .pokeball,
+.checkbox-cell.superseded-cell.excused-cell input:checked + .pokeball,
+.checkbox-cell.superseded-cell.excused-cell .pokeball {
+  background: transparent !important;
+  border-color: #94a3b8 !important;
+  box-shadow: none !important;
+  filter: grayscale(100%) opacity(0.25) !important;
+}
+
+.checkbox-cell.superseded-cell.excused-cell .pokeball::before {
+  opacity: 0.25 !important;
+  color: #64748b !important;
+  text-shadow: none !important;
+}
+
+.checkbox-cell.superseded-cell.excused-cell .pokeball::after {
+  opacity: 0.25 !important;
+  background: #cbd5e1 !important;
+  border-color: #94a3b8 !important;
+  color: #64748b !important;
 }
 
 /* Highlight button active state */
@@ -4591,4 +4788,151 @@ body.has-banner .mini-hud.visible {
   .mini-hud {
     display: none !important;
   }
+}
+
+/* Inline Status Pill for Admin Settings */
+.admin-status-badge {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #ecfdf5;
+  border: 2px solid #10b981;
+  border-radius: 8px;
+  color: #065f46;
+  font-size: 0.85rem;
+  text-align: left;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.admin-status-badge .admin-status-title {
+  font-weight: bold;
+  color: #047857;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+  font-family: 'Fredoka One', cursive;
+  letter-spacing: 0.3px;
+}
+
+.admin-status-badge .admin-status-desc {
+  font-size: 0.78rem;
+  color: #065f46;
+  line-height: 1.35;
+}
+
+/* Confirmation Date Badges & Transition Callouts */
+/* Schedule Summary Hero Card */
+.schedule-hero-card {
+  background: linear-gradient(135deg, #f0f7ff 0%, #e0effe 100%);
+  border: 2px solid #93c5fd;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.08);
+}
+
+.schedule-hero-card.future {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-color: #60a5fa;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
+}
+
+.schedule-hero-label {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: #2563eb;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.schedule-hero-card.future .schedule-hero-label {
+  color: #1d4ed8;
+}
+
+.schedule-hero-main {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #1e3a8a;
+  line-height: 1.35;
+}
+
+.schedule-hero-card.future .schedule-hero-main {
+  color: #1e40af;
+}
+
+.schedule-hero-sub {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  margin-top: 8px;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+.transition-warning-callout,
+.transition-info-callout {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  text-align: left;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+}
+
+.transition-warning-callout {
+  background: #fffdf0;
+  border: 2px solid #f59e0b;
+}
+
+.transition-info-callout {
+  background: #eff6ff;
+  border: 2px solid #3b82f6;
+}
+
+.transition-callout-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.transition-warning-callout .transition-callout-title {
+  color: #92400e;
+}
+
+.transition-info-callout .transition-callout-title {
+  color: #1e40af;
+}
+
+.transition-callout-desc {
+  font-size: 0.84rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.transition-warning-callout .transition-callout-desc {
+  color: #78350f;
+}
+
+.transition-info-callout .transition-callout-desc {
+  color: #1e3a8a;
+}
+
+.admin-status-badge.pending {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1e3a8a;
+}
+
+.admin-status-badge.pending .admin-status-title {
+  color: #1d4ed8;
+}
+
+.admin-status-badge.pending .admin-status-desc {
+  color: #1e3a8a;
 }
