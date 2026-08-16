@@ -257,8 +257,16 @@ async function runSuite() {
       assert(updatedNewItem.dataset.taskId === "science-project", "Admin list item should have updated task ID");
 
       const deleteBtn = updatedNewItem.querySelector('.remove-task-btn');
-      deleteBtn.click(); // Auto-confirms
+      deleteBtn.click();
       await sleep(100);
+      {
+        const confirmModalEl = document.getElementById('confirm-modal');
+        const confirmYesBtnEl = document.getElementById('confirm-yes-btn');
+        if (confirmModalEl && !confirmModalEl.classList.contains('hidden') && confirmYesBtnEl) {
+          confirmYesBtnEl.click();
+          await sleep(100);
+        }
+      }
 
       // Save deletion
       adminSaveTasksBtn.click();
@@ -273,6 +281,24 @@ async function runSuite() {
         assert(nextCb.closest('.checkbox-cell').classList.contains('out-of-range-cell'), "Cell for days after deletion should be greyed out");
       }
       assert(state.grid[getGridKey(todayDayIndex, newTaskId)] === true, "Checked history for soft-deleted task should be preserved");
+
+      // Verify that deleted task with 0 completions is completely removed from grid to reduce clutter
+      {
+        const emptyTask = {
+          id: 'temp-unused-task',
+          name: 'Temporary Task',
+          emoji: '🧪',
+          active: false,
+          deletedAt: '2026-08-16',
+          createdAt: '2026-08-10'
+        };
+        assert(window.__test_helpers__.isTaskActiveInWeek(emptyTask, '2026-08-10') === false, "Deleted task with 0 completions should be hidden from grid");
+        
+        // Add completion
+        state.grid['2026-08-11-temp-unused-task'] = true;
+        assert(window.__test_helpers__.isTaskActiveInWeek(emptyTask, '2026-08-10') === true, "Deleted task with completions should be preserved in grid");
+        delete state.grid['2026-08-11-temp-unused-task'];
+      }
 
       // 5. Test State Diagnostics (Auto-Repair)
       console.log("Testing State Diagnostics...");
@@ -360,6 +386,27 @@ async function runSuite() {
       await sleep(100);
       assert(confirmModal.classList.contains('hidden'), "Confirm Modal should close after 2nd confirmation");
       assert(state.grid[getGridKey(todayCol, 'piano')] === undefined, "Grid should be cleared after 2nd reset");
+
+      // Verify canStartNextWeek lifecycle logic
+      {
+        const mockState = {
+          weekStartDate: '2026-08-10',
+          weekStartDay: 1,
+          weeklyClaimed: false,
+          timezoneOffset: 'UTC'
+        };
+        // In the middle of the week without claim/rollover, canStartNextWeek should be false
+        assert(window.__test_helpers__.canStartNextWeek(mockState, '2026-08-10', true) === false, "canStartNextWeek should be false in middle of uncompleted week");
+        
+        // If weeklyClaimed is true, can reset
+        mockState.weeklyClaimed = true;
+        assert(window.__test_helpers__.canStartNextWeek(mockState, '2026-08-10', true) === true, "canStartNextWeek should be true when weekly goal claimed");
+        
+        // If pendingWeekStartDate has arrived, can reset
+        mockState.weeklyClaimed = false;
+        mockState.pendingWeekStartDate = '2026-08-14';
+        assert(window.__test_helpers__.canStartNextWeek(mockState, '2026-08-10', true) === true, "canStartNextWeek should be true when pendingWeekStartDate is reached");
+      }
 
       // 7. Test Focused Active Day Column Restrictions with Friction Warning
       {
@@ -1317,6 +1364,21 @@ async function runSuite() {
         const pianoRow = document.querySelector('.task-row[data-task="piano"]');
         const pianoTotalCell = pianoRow.querySelector('.task-total-cell');
         assert(pianoTotalCell.textContent === "0 / 6", `Piano goal column should show 0/6 (actual: "${pianoTotalCell.textContent}")`);
+        
+        // 17.2b Test Excusing future active day (e.g. Day 4 = Thursday or Day 2 = Tuesday)
+        const tuePianoInput = document.querySelector('input[data-day="2"][data-task="piano"]');
+        if (tuePianoInput) {
+          const tuePianoTd = tuePianoInput.closest('.checkbox-cell');
+          tuePianoTd.click();
+          await sleep(50);
+          assert(tuePianoTd.classList.contains('excused-cell'), "Future active day (Tuesday) should be toggleable in Exception Mode");
+          assert(state.excused[getGridKey(2, 'piano')] === true, "State should have 2-piano excused");
+          
+          // Toggle off
+          tuePianoTd.click();
+          await sleep(50);
+          assert(!tuePianoTd.classList.contains('excused-cell'), "Tuesday should untoggle cleanly");
+        }
         
         // Assert that NO attention notification modal is displayed (since rewards are not set yet)
         const notifModal = document.querySelector('.notif-modal');
@@ -2615,6 +2677,7 @@ async function runSuite() {
         const thuDate = new Date(currentWeekStart + 'T00:00:00');
         thuDate.setDate(thuDate.getDate() + 4); // Thursday (Index 4)
         mathTask.deletedAt = formatLocalDate(thuDate);
+        state.grid[`${currentWeekStart}-math`] = true;
 
         helpers.renderState(true);
         await sleep(100);
@@ -4510,8 +4573,8 @@ async function runSuite() {
         const excusedSupersededCell = document.querySelector('tr[data-task="piano"] td.checkbox-cell.superseded-cell.excused-cell');
         assert(excusedSupersededCell !== null, "Excused bonus ball in superseded column should have both classes");
         const bonusPokeball = excusedSupersededCell.querySelector('.pokeball');
-        const computedBg = window.getComputedStyle(bonusPokeball).backgroundColor;
-        assert(computedBg === 'rgba(0, 0, 0, 0)' || computedBg === 'transparent', `Bonus ball in superseded cell should have transparent background, got ${computedBg}`);
+        const computedBgImage = window.getComputedStyle(bonusPokeball).backgroundImage;
+        assert(computedBgImage.includes('gradient'), `Bonus ball in superseded cell should have diagonal hatch gradient background, got ${computedBgImage}`);
 
         // 3. Verify Daily Total cells for superseded days
         const totalCells = document.querySelectorAll('tr.total-row td.day-total-cell');

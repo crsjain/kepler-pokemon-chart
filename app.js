@@ -537,10 +537,28 @@ function initFirebaseUI() {
 
   // Logout Family Action
   if (logoutFamilyBtn) {
-    logoutFamilyBtn.addEventListener('click', async () => {
-      if (confirm("Are you sure you want to sign out of this family account?")) {
-        await logoutFamily();
-      }
+    logoutFamilyBtn.addEventListener('click', () => {
+      const logoutHtml = `
+        <div class="confirm-detail">
+          <div class="schedule-hero-card">
+            <div class="schedule-hero-label">🚪 SIGN OUT</div>
+            <div class="schedule-hero-main">Sign Out of Family</div>
+            <div class="schedule-hero-sub">Are you sure you want to sign out of this family account?</div>
+          </div>
+        </div>
+      `;
+      showCustomConfirm(
+        "Sign Out? 🚪",
+        logoutHtml,
+        async () => {
+          await logoutFamily();
+        },
+        null,
+        "Sign Out",
+        "Stay Signed In",
+        "pixel-btn danger",
+        "pixel-btn greyed-out"
+      );
     });
   }
 }
@@ -995,6 +1013,33 @@ function getWeekRangeString(startDateStr) {
   return `${startPart} - ${endPart}, ${endDate.getFullYear()}`;
 }
 
+export function canStartNextWeek(state, viewingDateStr = null, forceCheck = false) {
+  if (!state || !state.weekStartDate) return false;
+  
+  const viewingDate = viewingDateStr || currentViewingWeekStartDate || state.weekStartDate;
+  if (viewingDate < state.weekStartDate) return false; // Historical past week
+  
+  // Future edits override in test mode or debug panel (unless forceCheck is true)
+  if (!forceCheck && (areFutureEditsAllowed() || location.search.includes('runTests=true'))) {
+    return true;
+  }
+  
+  const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
+  
+  // If there's a pending mid-cycle shift, the new week can start on or after the pending shift date
+  if (state.pendingWeekStartDate) {
+    return todayStr >= state.pendingWeekStartDate;
+  }
+  
+  // Standard cycle: Calculate next week start date (weekStartDate + 7 days)
+  const currentWeekStart = new Date(state.weekStartDate + 'T00:00:00');
+  const nextWeekStart = new Date(currentWeekStart.getTime());
+  nextWeekStart.setDate(currentWeekStart.getDate() + 7);
+  const nextWeekStartStr = formatLocalDate(nextWeekStart);
+  
+  return todayStr >= nextWeekStartStr || state.weeklyClaimed === true;
+}
+
 export function renderState(rebuildGrid = false) {
   if (debugAllowFutureEditsCheckbox) {
     debugAllowFutureEditsCheckbox.checked = areFutureEditsAllowed();
@@ -1025,7 +1070,19 @@ export function renderState(rebuildGrid = false) {
   }
   
   if (resetBtn) {
-    resetBtn.disabled = isPastWeek;
+    const canReset = canStartNextWeek(state, currentViewingWeekStartDate);
+    resetBtn.disabled = !canReset;
+    if (isPastWeek) {
+      resetBtn.title = "Cannot reset historical weeks";
+    } else if (!canReset) {
+      const currentWeekStart = new Date((state.weekStartDate || '2026-08-10') + 'T00:00:00');
+      const nextWeekStart = new Date(currentWeekStart.getTime());
+      nextWeekStart.setDate(currentWeekStart.getDate() + 7);
+      const nextDate = state.pendingWeekStartDate || formatLocalDate(nextWeekStart);
+      resetBtn.title = `Next week can be started once this training cycle finishes (${nextDate})`;
+    } else {
+      resetBtn.title = "Start your new week of training!";
+    }
   }
   const instanceId = state.activePartnerInstanceId || '25';
   const stats = state.partnersData[instanceId] || { familyId: '25', level: 1, xp: 0, stageId: '25' };
@@ -1315,7 +1372,18 @@ function updateGridCheckboxes() {
   }
 }
 
-function isTaskActiveInWeek(task, weekStartStr) {
+export function hasTaskActivityInWeek(task, weekStartStr) {
+  if (!state || !state.grid || !weekStartStr) return false;
+  for (let d = 0; d < 7; d++) {
+    const dateStr = getDateOfColumn(weekStartStr, d);
+    if (state.grid[`${dateStr}-${task.id}`]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function isTaskActiveInWeek(task, weekStartStr) {
   if (!weekStartStr) return true;
   
   const weekStart = new Date(weekStartStr + 'T00:00:00');
@@ -1328,7 +1396,16 @@ function isTaskActiveInWeek(task, weekStartStr) {
   const createdDate = task.createdAt || '2000-01-01';
   const deletedDate = task.deletedAt || '9999-12-31';
   
-  return createdDate <= wEndStr && deletedDate >= wStartStr;
+  const withinDateSpan = createdDate <= wEndStr && deletedDate >= wStartStr;
+  if (!withinDateSpan) return false;
+  
+  // If an activity is deleted, remove it from grids where it has no tasks completed
+  const isDeleted = (task.deletedAt !== null && task.deletedAt !== undefined) || task.active === false;
+  if (isDeleted) {
+    return hasTaskActivityInWeek(task, weekStartStr);
+  }
+  
+  return true;
 }
 
 function renderGridTable() {
@@ -1510,12 +1587,8 @@ function handleGridClick(e) {
   
   const day = parseInt(input.dataset.day);
   const taskId = input.dataset.task;
-  const dateStr = getDateOfColumn(state.weekStartDate, day);
+  const dateStr = getDateOfColumn(currentViewingWeekStartDate || state.weekStartDate, day);
   if (state.pendingWeekStartDate && dateStr >= state.pendingWeekStartDate) return;
-  const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
-  const isFutureDay = dateStr > todayStr;
-  const allowFutureEdits = areFutureEditsAllowed();
-  if (isFutureDay && !allowFutureEdits) return;
   const key = `${dateStr}-${taskId}`;
   
   // Toggle excused state
@@ -1558,7 +1631,7 @@ function updateDayTotalUI(day) {
   if (!dayTotalCell) return;
   
   const dateStr = getDateOfColumn(state.weekStartDate, day);
-  const tasks = state.tasks || [];
+  const tasks = (state.tasks || []).filter(task => isTaskActiveInWeek(task, state.weekStartDate));
   const allCheckedOrExcused = tasks.length > 0 && tasks.every(task => {
     const k = `${dateStr}-${task.id}`;
     return !!state.grid[k] || !!state.excused[k];
@@ -1885,6 +1958,9 @@ function setupEventListeners() {
 
     if (resetBtn) {
     resetBtn.addEventListener('click', () => {
+      if (resetBtn.disabled || !canStartNextWeek(state, currentViewingWeekStartDate)) {
+        return;
+      }
       const resetConfirmHtml = `
         <div class="confirm-detail">
           <div class="schedule-hero-card">
@@ -2736,7 +2812,7 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
 }
 
 function syncVaultStarsWithGrid() {
-  const tasks = state.tasks || [];
+  const tasks = (state.tasks || []).filter(task => isTaskActiveInWeek(task, state.weekStartDate));
   DAYS.forEach(day => {
     const dateStr = getDateOfColumn(state.weekStartDate, day);
     const allChecked = tasks.length > 0 && tasks.every(task => {
@@ -3058,7 +3134,7 @@ function checkAndTriggerWeeklySuccess() {
 }
 
 function renderProgress() {
-  const tasks = state.tasks || [];
+  const tasks = (state.tasks || []).filter(task => isTaskActiveInWeek(task, currentViewingWeekStartDate));
   
   const isPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
   
@@ -3685,7 +3761,10 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     getActiveProfileId: () => activeProfileId,
     triggerProfilesUpdate: (profiles) => handleProfilesUpdate(profiles),
     selectProfile: (id) => selectProfile(id),
-    renderRewardDropdowns: () => renderRewardDropdowns()
+    renderRewardDropdowns: () => renderRewardDropdowns(),
+    canStartNextWeek: (state, viewingDateStr, forceCheck) => canStartNextWeek(state, viewingDateStr, forceCheck),
+    isTaskActiveInWeek: (task, weekStartStr) => isTaskActiveInWeek(task, weekStartStr),
+    hasTaskActivityInWeek: (task, weekStartStr) => hasTaskActivityInWeek(task, weekStartStr)
   };
   
   if (location.search.includes('runTests=true')) {

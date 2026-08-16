@@ -318,11 +318,37 @@ function removeTask(taskId) {
   const taskToRemove = state.tasks.find(t => t.id === taskId);
   if (!taskToRemove) return;
   
-  if (confirm(`Remove task "${taskToRemove.name}"? This will hide it from the grid, but preserve its history.`)) {
-    taskToRemove.active = false;
-    taskToRemove.deletedAt = formatLocalDate(new Date());
-    renderAdminTasksList();
-  }
+  const taskName = taskToRemove.name || 'Activity';
+  const taskEmoji = taskToRemove.emoji || '📝';
+  
+  const removeTaskHtml = `
+    <div class="confirm-detail">
+      <div class="schedule-hero-card">
+        <div class="schedule-hero-label">🗑️ REMOVE ACTIVITY</div>
+        <div class="schedule-hero-main">${taskEmoji} ${taskName}</div>
+        <div class="schedule-hero-sub">Hide <strong>"${taskName}"</strong> from your active training chart?</div>
+      </div>
+      <div class="transition-info-callout">
+        <div class="transition-callout-title">ℹ️ History Preserved</div>
+        <div class="transition-callout-desc">This activity will no longer appear on your weekly training chart, but all previously earned stars, XP, and past weeks will remain safely saved in history.</div>
+      </div>
+    </div>
+  `;
+  
+  showCustomConfirm(
+    "Remove Activity? 🗑️",
+    removeTaskHtml,
+    () => {
+      taskToRemove.active = false;
+      taskToRemove.deletedAt = formatLocalDate(new Date());
+      renderAdminTasksList();
+    },
+    null,
+    "Remove Activity",
+    "Keep Activity",
+    "pixel-btn danger",
+    "pixel-btn greyed-out"
+  );
 }
 
 function addNewTask() {

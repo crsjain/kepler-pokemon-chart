@@ -581,26 +581,67 @@ button:disabled,
 }
 
 .checkbox-cell.superseded-cell .pokeball {
-  filter: grayscale(100%) opacity(0.2);
+  background: repeating-linear-gradient(
+    -45deg,
+    #f8fafc,
+    #f8fafc 4px,
+    #e2e8f0 4px,
+    #e2e8f0 8px
+  ) !important;
+  border-color: #94a3b8 !important;
+  box-shadow: none !important;
+  filter: grayscale(100%) opacity(0.5) !important;
+}
+
+.checkbox-cell.superseded-cell:not(.excused-cell) .pokeball::before {
+  background: repeating-linear-gradient(
+    -45deg,
+    #cbd5e1,
+    #cbd5e1 4px,
+    #94a3b8 4px,
+    #94a3b8 8px
+  ) !important;
+  border-bottom: 2px solid #94a3b8 !important;
+  opacity: 0.4 !important;
+}
+
+.checkbox-cell.superseded-cell:not(.excused-cell) .pokeball::after {
+  background: #f8fafc !important;
+  border: 2px solid #94a3b8 !important;
+  opacity: 0.6 !important;
 }
 
 /* Bonus Balls in Superseded / Hashed Cells */
 .checkbox-cell.superseded-cell.excused-cell .pokeball,
-.checkbox-cell.superseded-cell.excused-cell input + .pokeball {
-  background: transparent !important;
-  border-color: #94a3b8 !important;
-  filter: grayscale(100%) opacity(0.25) !important;
+.checkbox-cell.superseded-cell.excused-cell input + .pokeball,
+.checkbox-cell.superseded-cell.excused-cell input:not(:checked) + .pokeball,
+.checkbox-cell.superseded-cell.excused-cell input:checked + .pokeball {
+  background: repeating-linear-gradient(
+    -45deg,
+    #f8fafc,
+    #f8fafc 4px,
+    #e2e8f0 4px,
+    #e2e8f0 8px
+  ) !important;
+  border: 3px solid #94a3b8 !important;
+  box-shadow: none !important;
+  filter: grayscale(100%) opacity(0.6) !important;
 }
 
 .checkbox-cell.superseded-cell.excused-cell .pokeball::before {
-  opacity: 0.25 !important;
+  content: '★' !important;
+  opacity: 0.45 !important;
   color: #64748b !important;
+  text-shadow: none !important;
+  background: transparent !important;
+  border-bottom: none !important;
 }
 
 .checkbox-cell.superseded-cell.excused-cell .pokeball::after {
-  opacity: 0.25 !important;
-  background: transparent !important;
-  border-color: #94a3b8 !important;
+  content: '+XP' !important;
+  opacity: 0.55 !important;
+  background: #cbd5e1 !important;
+  border: 1px solid #94a3b8 !important;
   color: #64748b !important;
 }
 
@@ -2063,12 +2104,17 @@ input:checked + .slider:before {
   background-color: #cbd5e1 !important; /* Prevent hover background change */
 }
 
-.day-header.future-day-header {
+.day-header.future-day-header:not(.superseded-header) {
   cursor: not-allowed !important;
+  background-color: #cbd5e1 !important; /* Neutral grey background for future locked days */
+  color: #64748b !important; /* Muted slate text */
+  text-shadow: none !important;
+  opacity: 0.85;
 }
 
-.day-header.future-day-header:hover {
-  background-color: var(--poke-blue) !important;
+.day-header.future-day-header:not(.superseded-header):hover {
+  background-color: #cbd5e1 !important;
+  color: #64748b !important;
 }
 
 .day-header.active-day {
@@ -3132,6 +3178,12 @@ input:checked + .slider:before {
   opacity: 1 !important;
 }
 
+.layout-container.exception-mode .weekly-grid td.checkbox-cell.superseded-cell {
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+  opacity: 0.55 !important;
+}
+
 /* Bonus Cell / Exception representation */
 .checkbox-cell.excused-cell:not(.superseded-cell) {
   background-color: #ffffff !important; /* Keep cell background clean white */
@@ -3247,22 +3299,32 @@ input:checked + .slider:before {
 .checkbox-cell.superseded-cell.excused-cell input:not(:checked) + .pokeball,
 .checkbox-cell.superseded-cell.excused-cell input:checked + .pokeball,
 .checkbox-cell.superseded-cell.excused-cell .pokeball {
-  background: transparent !important;
-  border-color: #94a3b8 !important;
+  background: repeating-linear-gradient(
+    -45deg,
+    #f8fafc,
+    #f8fafc 4px,
+    #e2e8f0 4px,
+    #e2e8f0 8px
+  ) !important;
+  border: 3px solid #94a3b8 !important;
   box-shadow: none !important;
-  filter: grayscale(100%) opacity(0.25) !important;
+  filter: grayscale(100%) opacity(0.6) !important;
 }
 
 .checkbox-cell.superseded-cell.excused-cell .pokeball::before {
-  opacity: 0.25 !important;
+  content: '★' !important;
+  opacity: 0.45 !important;
   color: #64748b !important;
   text-shadow: none !important;
+  background: transparent !important;
+  border-bottom: none !important;
 }
 
 .checkbox-cell.superseded-cell.excused-cell .pokeball::after {
-  opacity: 0.25 !important;
+  content: '+XP' !important;
+  opacity: 0.55 !important;
   background: #cbd5e1 !important;
-  border-color: #94a3b8 !important;
+  border: 1px solid #94a3b8 !important;
   color: #64748b !important;
 }
 
