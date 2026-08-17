@@ -49,3 +49,41 @@ For buttons or labels containing long descriptive text, subtext, or emojis, prev
 For modal notifications or alert dialogs, the primary action or confirmation button (CTA) must match the emotional tone and context of the event:
 - **Positive Milestones / Achievements** (e.g., Level Up, Unlock, Claiming Rewards): Use celebratory copy (e.g., `"Awesome!"`, `"Woohoo! 🎉"`) and high-excitement brand colors (like bright yellow/gold).
 - **Warnings / Setbacks / System Alerts** (e.g., Devolution, Validation Errors, Task Unchecking): Avoid celebratory language. Use neutral, action-oriented, or motivational microcopy (e.g., `"Let's get it back! 🚀"`, `"I'll train harder! 💪"`, or `"Got it"`) and style the button in a neutral or warning color (like slate-blue, gray, or orange) to provide correct feedback.
+
+## 12. Standardized Spacing Rhythm & Shadow Compensation for Tactile UI
+When using tactile 3D elements with physical drop shadows (e.g., `.pixel-btn` with `box-shadow: 0 4px 0`), always design layouts using pure CSS flex/grid `gap` rather than child `margin`:
+- **Never Mix Margin with Flex Gap**: Do not add inline `margin-top` or `margin-bottom` to child elements inside containers that declare a `gap`. This causes compounding double-margin bugs.
+- **Shadow Compensation**: Because a `0 4px 0` box-shadow renders outside the element's layout flow, stacked buttons require a container `gap: 10px` to `12px` to preserve a comfortable `6px` to `8px` perceived optical whitespace.
+- **Zero Inline Dimensions on Form Elements**: Form inputs and buttons inside action groups must use `width: 100%; margin: 0;` declaratively in `style.css` instead of inline `style="..."` attributes.
+
+
+## 13. Weekly Grid Column State & Visual Hierarchy (Header & Cell Treatments)
+The Weekly Training Grid uses a centralized state machine with 4 distinct chromatic archetypes to clearly communicate temporal status, interaction affordance, and administrative overrides across both Kids (training mode) and Parents (exception/admin mode):
+
+### A. Chromatic Archetypes & State Visual Pairing
+1. **Active Training Column (`ACTIVE_TODAY`, `ACTIVE_PAST`, `ACTIVE_FUTURE`)**:
+   - **Header**: Pikachu Yellow (`#ffcb05`), Dark Charcoal Text (`#1e293b`), `cursor: default`.
+   - **Cells**: Full Opacity (1.0), Solid White background (`#ffffff`), fully interactive Pokéballs and glowing ⭐ daily totals.
+   - **Intent**: High visual focus drawing Kepler & Lyra directly to the current day's tasks.
+2. **Selectable Unselected Column (`SELECTABLE_TODAY`, `SELECTABLE_PAST`)**:
+   - **Header**: Poké Blue (`#2a71d0`), Solid White Text (`#ffffff`), hover lift, `cursor: pointer`.
+   - **Cells**: Soft Dimming (0.45 Opacity), `pointer-events: none` on cells in normal mode to prevent accidental checks without switching columns.
+   - **Intent**: Inactive day available to switch to. `SELECTABLE_TODAY` switches with zero modal; `SELECTABLE_PAST` prompts with "Switch Day? 📅" modal.
+3. **Future Locked Column (`FUTURE_LOCKED`)**:
+   - **Header**: Neutral Slate Grey (`#cbd5e1`), Muted Slate Text (`#64748b`), `cursor: not-allowed`, no hover color change.
+   - **Cells**: Soft Grey background (`#f1f5f9`), 0.8 Opacity on Pokéballs, checkbox inputs disabled in normal mode.
+   - **Intent**: Upcoming days locked for kids, but editable by parents in Exception Mode (Scenario 10).
+4. **Superseded / Forward-Hashed Column (`SUPERSEDED`)**:
+   - **Header**: Diagonal Stripe Gradient (`repeating-linear-gradient(-45deg, #cbd5e1, #cbd5e1 6px, #94a3b8 6px, #94a3b8 12px)`), Slate Text (`#475569`), `cursor: not-allowed`, tooltip `"These days moved to your new chart! 🚀"`.
+   - **Cells**: Soft Diagonal Stripe Hatching (`-45deg, #f8fafc ... #e2e8f0`), Grayscale hatched Pokéballs, Daily total shows muted `➖`, strictly non-editable across all modes.
+   - **Intent**: Truncated dates forwarded to a new week cycle (Case A / Case B shifts).
+5. **Historical Completed Week (`HISTORICAL`)**:
+   - **Header**: Neutral Slate Grey (`#cbd5e1`), Slate Text (`#64748b`), `cursor: not-allowed`.
+   - **Cells**: Dimmed (0.45 Opacity), read-only historical record honoring past earned badges and stars.
+
+### B. Contrast & Accessibility Invariants
+- **Yellow Active Headers MUST Use Dark Text**: Never use white text on yellow headers. Always use Dark Charcoal (`#1e293b`) for an outstanding 9.8:1 contrast ratio that exceeds WCAG 2.1 AAA standards.
+- **Declarative State Binding**: All header, cell, and total elements must declare their state via `data-column-state="active_today|active_past|active_future|selectable_today|selectable_past|future_locked|superseded|historical"` to guarantee CSS styles are driven directly by the state machine without fragile `:not()` selectors.
+- **Parent Exception Mode Elevation**: In Exception Mode (`.exception-mode`), all non-superseded cells elevate to full opacity (`opacity: 1 !important`) with soft amber tint (`#fffbeb`) to signal direct parent toggling.
+
+

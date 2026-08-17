@@ -389,23 +389,24 @@ async function runSuite() {
 
       // Verify canStartNextWeek lifecycle logic
       {
+        const todayStr = formatLocalDate(getLocalDate('UTC'));
         const mockState = {
-          weekStartDate: '2026-08-10',
+          weekStartDate: todayStr,
           weekStartDay: 1,
           weeklyClaimed: false,
           timezoneOffset: 'UTC'
         };
         // In the middle of the week without claim/rollover, canStartNextWeek should be false
-        assert(window.__test_helpers__.canStartNextWeek(mockState, '2026-08-10', true) === false, "canStartNextWeek should be false in middle of uncompleted week");
+        assert(window.__test_helpers__.canStartNextWeek(mockState, todayStr, true) === false, "canStartNextWeek should be false in middle of uncompleted week");
         
         // If weeklyClaimed is true, can reset
         mockState.weeklyClaimed = true;
-        assert(window.__test_helpers__.canStartNextWeek(mockState, '2026-08-10', true) === true, "canStartNextWeek should be true when weekly goal claimed");
+        assert(window.__test_helpers__.canStartNextWeek(mockState, todayStr, true) === true, "canStartNextWeek should be true when weekly goal claimed");
         
         // If pendingWeekStartDate has arrived, can reset
         mockState.weeklyClaimed = false;
-        mockState.pendingWeekStartDate = '2026-08-14';
-        assert(window.__test_helpers__.canStartNextWeek(mockState, '2026-08-10', true) === true, "canStartNextWeek should be true when pendingWeekStartDate is reached");
+        mockState.pendingWeekStartDate = todayStr;
+        assert(window.__test_helpers__.canStartNextWeek(mockState, todayStr, true) === true, "canStartNextWeek should be true when pendingWeekStartDate is reached");
       }
 
       // 7. Test Focused Active Day Column Restrictions with Friction Warning
@@ -1517,11 +1518,13 @@ async function runSuite() {
         assert(confirmModal && !confirmModal.classList.contains('hidden'), "Confirm Modal should open on different day cell click");
         assert(confirmModal.textContent.includes("Switch Day?"), "Confirm modal title should be Switch Day");
         
-        // Test Cancel (Stay on Monday)
+        // Test Cancel
         const confirmNoBtn = document.getElementById('confirm-no-btn');
         const confirmYesBtn = document.getElementById('confirm-yes-btn');
         assert(confirmYesBtn.textContent === "Switch to Wednesday", "Yes button label should be 'Switch to Wednesday'");
-        assert(confirmNoBtn.textContent === "Stay on Monday", "No button label should be 'Stay on Monday'");
+        const todayDay = getLocalDate(state?.timezoneOffset).getDay();
+        const expectedNoLabel = (state.activeDay === todayDay) ? "Stay on Today" : `Stay on ${DAYS[state.activeDay]}`;
+        assert(confirmNoBtn.textContent === expectedNoLabel, `No button label should be '${expectedNoLabel}'`);
         
         if (confirmNoBtn) confirmNoBtn.click();
         await sleep(100);
@@ -3805,10 +3808,16 @@ async function runSuite() {
         await sleep(100);
         assert(!adminModal.classList.contains('hidden'), "Admin panel should open on new passcode abcd");
 
+        // 6. Verify sticky header close button exists and closes the admin panel
+        const closeAdminHeaderBtn = document.getElementById('close-admin-header-btn');
+        assert(closeAdminHeaderBtn !== null, "Sticky admin header close button should exist");
+        closeAdminHeaderBtn.click();
+        await sleep(50);
+        assert(adminModal.classList.contains('hidden'), "Admin panel should close on sticky header close button click");
+
         // Clean up and restore default passcode zxcv
         state.adminPassword = "zxcv";
         helpers.saveState();
-        if (closeAdminBtn) closeAdminBtn.click();
         helpers.resetState();
         await sleep(50);
       }
@@ -4656,6 +4665,7 @@ async function runSuite() {
 
         state.weekStartDate = '2026-07-20'; // Monday start
         state.weekStartDay = 1;
+        state.activeDay = 5; // Friday (simulate transition on or after Friday)
         state.megaWeeks = 2; // 2 badges collected toward Mega
         state.reward = 'Ice Cream';
         state.megaReward = 'Lego Set';
@@ -4886,6 +4896,7 @@ async function runSuite() {
         // 2. Test Multi-Shift Micro-Week Consolidation
         state.weekStartDate = "2026-08-10";
         state.weekStartDay = 1;
+        state.activeDay = 3; // Wednesday (simulate transition occurring on or after target shift day)
         state.weeklyHistory = {};
         state.grid["2026-08-10-piano"] = true;
         helpers.saveState();

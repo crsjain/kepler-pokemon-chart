@@ -111,7 +111,6 @@ export let state = {
 
 // Storage Keys
 const STATE_KEY = 'kepler_pokemon_training_v2';
-const BACKUPS_KEY = 'kepler_pokemon_backups_history';
 
 let saveListener = null;
 
@@ -242,52 +241,7 @@ export function resetStateToDefault() {
   saveState();
 }
 
-export function saveAutoBackup() {
-  try {
-    const historyStr = localStorage.getItem(BACKUPS_KEY);
-    let history = [];
-    if (historyStr) {
-      history = JSON.parse(historyStr) || [];
-    }
-    
-    const backupEntry = {
-      timestamp: new Date().toISOString(),
-      state: JSON.parse(JSON.stringify(state))
-    };
-    
-    history.unshift(backupEntry);
-    if (history.length > 2) {
-      history = history.slice(0, 2);
-    }
-    
-    localStorage.setItem(BACKUPS_KEY, JSON.stringify(history));
-    localStorage.setItem('kepler_pokemon_training_backup', JSON.stringify(state));
-    console.log('Auto-backup saved in history.');
-  } catch (e) {
-    console.error('Error saving auto-backup to localStorage:', e);
-  }
-}
 
-export function getBackupHistory() {
-  try {
-    const historyStr = localStorage.getItem(BACKUPS_KEY);
-    return historyStr ? JSON.parse(historyStr) || [] : [];
-  } catch (e) {
-    console.error("Error reading backups:", e);
-    return [];
-  }
-}
-
-export function applyBackup(index) {
-  const history = getBackupHistory();
-  const backup = history[index];
-  if (backup) {
-    replaceState(backup.state);
-    saveState();
-    return true;
-  }
-  return false;
-}
 
 function getColumnDateStr(weekStartDateStr, dayIndex) {
   const baseDate = new Date(weekStartDateStr + 'T00:00:00');

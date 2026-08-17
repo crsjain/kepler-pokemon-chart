@@ -171,7 +171,7 @@ Historical week intervals are resolved chronologically at runtime from `state.we
 
 ## 8. Verification & Test Matrix
 
-The test suite in [`tests.js`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/tests.js) enforces 100% compliance across **65 automated test cases**, complemented by 13 manual scenarios in [`docs/verification_guide.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/docs/verification_guide.md):
+The test suite in [`tests.js`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/tests.js) enforces 100% compliance across **65 automated test cases**, complemented by 13 manual scenarios in [`docs/manual_test_guide_adaptive_weeks.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/docs/manual_test_guide_adaptive_weeks.md):
 
 *   **Test Case 29**: Dropdown bounding-box right-alignment geometry and label wrapping.
 *   **Test Case 33**: Future Day Locking & Sandbox override modes.

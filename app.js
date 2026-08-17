@@ -2,9 +2,6 @@ import {
   state, 
   saveState, 
   loadState, 
-  saveAutoBackup, 
-  getBackupHistory, 
-  applyBackup, 
   runStateDiagnostics,
   getStageInfo,
   resetStateToDefault,
@@ -3080,7 +3077,6 @@ function checkAndTriggerWeeklySuccess() {
     }
     
     saveState();
-    saveAutoBackup();
     renderProgress();
     
     const weekDisplayNum = state.megaWeeks + 1;

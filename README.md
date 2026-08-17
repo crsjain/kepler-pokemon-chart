@@ -29,12 +29,11 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
 - 🔒 **Parent Admin Panel**: Password-protected (`zxcv`) options dashboard in the footer:
   - **Dynamic Task Manager**: Add, edit, or delete activities, customize goal days (1-7), edit task instructions, and save changes instantly.
   - **Claimed Rewards History**: View a list of earned rewards with dates and partner context.
-  - **Backup & Restore (Child & Family)**: Backup or restore individual child progress (`Backup Child` / `Restore Child`) or backup/restore the entire family database containing all child profiles (`Backup Family` / `Restore Family`). Also supports restoring from a rolling 2-deep list of automated milestone backups (captured on level-ups and week resets).
+  - **Backup & Restore (Child & Family)**: Backup or restore individual child progress (`Backup Child` / `Restore Child`) or backup/restore the entire family database containing all child profiles (`Backup Family` / `Restore Family`).
   - **Profile Management**: Manage profiles directly from the list, including deleting profiles or opening a dedicated **Spacious Dashboard Modal** to customize lists of available weekly/mega rewards per-child.
   - **Screensaver Inactivity Timeout**: Adjust the inactivity timer (10m, 5m, or off) before the idle screensaver kicks in to pause animations and conserve battery.
   - **Diagnostics & Healing**: Click "Run Diagnostics" to auto-detect and heal any state schema inconsistency.
   - **Developer Debug Mode**: Toggle the right-aligned Debug Sidebar to test milestones, level up instantly, or force devolution for testing (includes a convenient direct close button on the panel).
-- 📋 **Integrated Restore Guide**: A quick FAQ inside the Admin Panel details exactly when to use Auto-Backup (accidental resets) vs. Manual Imports (cache clearance/device migration).
 - ✍️ **Reward Customization & Choice**: Dedicated drop-down options for Kepler to select his weekly and mega (4-week loop) target rewards. Available rewards can be customized per profile, and "Recent Rewards" are automatically suggested.
   - **Inline Editing (✏️)**: Parents can edit existing rewards in place with quick save/cancel controls and keyboard shortcuts (<kbd>Enter</kbd> to save, <kbd>Escape</kbd> to cancel).
   - **Drag-and-Drop Reordering (`⠿`)**: Reorder rewards intuitively within each column on both desktop (mouse drag) and mobile/touch devices (touch handle).

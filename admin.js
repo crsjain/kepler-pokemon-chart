@@ -6,9 +6,7 @@ import {
   replaceState,
   ADMIN_PASSWORD,
   DAYS,
-  getStageInfo,
-  getBackupHistory,
-  applyBackup
+  getStageInfo
 } from './state.js';
 import { formatLocalDate } from './date_utils.js';
 
@@ -92,6 +90,7 @@ export function initAdmin(callbacks) {
   adminWipeBtn = document.getElementById('admin-wipe-btn');
   adminForceUpdateBtn = document.getElementById('admin-force-update-btn');
   closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
+  const closeAdminHeaderBtn = document.getElementById('close-admin-header-btn');
   adminAddTaskBtn = document.getElementById('admin-add-task-btn');
   adminSaveTasksBtn = document.getElementById('admin-save-tasks-btn');
 
@@ -100,7 +99,6 @@ export function initAdmin(callbacks) {
       promptParentPassword(() => {
         adminModal.classList.remove('hidden');
         renderAdminTasksList();
-        renderBackupHistory();
         renderClaimedRewardsHistory();
         appCallbacks.renderAdminProfilesList();
       });
@@ -129,6 +127,12 @@ export function initAdmin(callbacks) {
     });
   }
 
+  if (closeAdminHeaderBtn) {
+    closeAdminHeaderBtn.addEventListener('click', () => {
+      adminModal.classList.add('hidden');
+    });
+  }
+
   if (adminModal) {
     adminModal.addEventListener('click', (e) => {
       if (e.target === adminModal) {
@@ -136,6 +140,12 @@ export function initAdmin(callbacks) {
       }
     });
   }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && adminModal && !adminModal.classList.contains('hidden')) {
+      adminModal.classList.add('hidden');
+    }
+  });
 
   if (adminDiagnosticsBtn) {
     adminDiagnosticsBtn.addEventListener('click', () => {
@@ -254,7 +264,6 @@ function handlePasswordSubmit() {
     } else {
       adminModal.classList.remove('hidden');
       renderAdminTasksList();
-      renderBackupHistory();
       renderClaimedRewardsHistory();
     }
   } else {
@@ -576,73 +585,7 @@ function renderClaimedRewardsHistory() {
   });
 }
 
-function renderBackupHistory() {
-  const listContainer = document.getElementById('backup-history-list');
-  if (!listContainer) return;
-  
-  listContainer.innerHTML = '';
-  
-  const history = getBackupHistory().slice(0, 2);
-  if (history.length === 0) {
-    listContainer.innerHTML = '<p class="no-backups">No backups available yet.</p>';
-    return;
-  }
-  
-  history.forEach((backup, idx) => {
-    const backupEl = document.createElement('div');
-    backupEl.className = 'backup-item';
-    
-    const dateStr = new Date(backup.timestamp).toLocaleString(undefined, {
-      month: 'numeric',
-      day: 'numeric',
-      year: '2-digit',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-    const family = backup.state.partnerFamily || '25';
-    const stats = backup.state.partnersData[family] || { level: 1 };
-    const stageInfo = getStageInfo(family, stats.stageId || family);
-    const partnerName = stageInfo.currentStage.name;
-    const completedWeeks = backup.state.megaWeeks || 0;
-    
-    backupEl.innerHTML = `
-      <div class="backup-info">
-        <span class="backup-details">${partnerName} (LV ${stats.level}) • Week ${completedWeeks + 1}</span>
-        <span class="backup-date">${dateStr}</span>
-      </div>
-      <button class="pixel-btn info small restore-backup-btn" data-index="${idx}">Restore</button>
-    `;
-    listContainer.appendChild(backupEl);
-  });
-  
-  listContainer.querySelectorAll('.restore-backup-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const idx = parseInt(e.currentTarget.dataset.index);
-      restoreBackupFromHistory(idx);
-    });
-  });
-}
 
-function restoreBackupFromHistory(index) {
-  const history = getBackupHistory();
-  const backup = history[index];
-  
-  if (backup) {
-    showCustomConfirm(
-      "Restore Backup? 📋",
-      `Restore progress from ${new Date(backup.timestamp).toLocaleString()}? Current progress will be overwritten.`,
-      () => {
-        if (applyBackup(index)) {
-          renderState(true);
-          showCustomNotification("RESTORE SUCCESS", "Progress restored successfully!");
-          const adminModal = document.getElementById('admin-modal');
-          if (adminModal) adminModal.classList.add('hidden');
-        }
-      }
-    );
-  }
-}
 
 function forceAppUpdate() {
   showCustomConfirm(

@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=8.8">
+  <link rel="stylesheet" href="style.css?v=9.1">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
@@ -562,7 +562,10 @@
     <!-- Admin Modal -->
     <div id="admin-modal" class="modal hidden">
       <div class="modal-content admin-modal-content">
-        <h2>Parent Admin Panel</h2>
+        <div class="admin-modal-header">
+          <h2>Parent Admin Panel ⚙️</h2>
+          <button id="close-admin-header-btn" class="admin-header-close-btn" aria-label="Close Admin Panel" title="Close">&times;</button>
+        </div>
         
         <div class="admin-grid">
           <!-- Quick Actions -->
@@ -615,7 +618,7 @@
                   <button id="admin-export-btn" class="pixel-btn info" title="Export current child's progress code to clipboard">Export Child</button>
                   <button id="admin-import-btn" class="pixel-btn info" title="Import current child's progress from clipboard code">Import Child</button>
                 </div>
-                <div class="admin-action-row-buttons" style="margin-top: 8px;">
+                <div class="admin-action-row-buttons">
                   <button id="admin-cloud-export-btn" class="pixel-btn success" title="Export all family profiles and settings code to clipboard">Export Family</button>
                   <button id="admin-cloud-import-btn" class="pixel-btn success" title="Import all family profiles and settings from clipboard code">Import Family</button>
                 </div>
@@ -637,9 +640,9 @@
               <div class="admin-action-group">
                 <h4>Parent Passcode</h4>
                 <div class="admin-option-row">
-                  <input type="password" id="admin-new-passcode-input" class="pixel-input" placeholder="New passcode" minlength="4" style="width: 100%; box-sizing: border-box; text-align: center;">
+                  <input type="password" id="admin-new-passcode-input" class="pixel-input" placeholder="New passcode" minlength="4">
                 </div>
-                <button id="admin-change-passcode-btn" class="pixel-btn warning" style="width: 100%; margin-top: 8px;">Update Passcode</button>
+                <button id="admin-change-passcode-btn" class="pixel-btn warning">Update Passcode</button>
               </div>
               
             </div>
@@ -671,27 +674,12 @@
           </div>
 
 
-          <!-- Auto-Backup History -->
-          <div class="admin-section backup-section">
-            <h3>📋 Auto-Backup History</h3>
-            <div id="backup-history-list" class="backup-history-list">
-              <p class="no-backups">No backups available yet.</p>
-            </div>
-          </div>
-
           <!-- Claimed Rewards History -->
           <div class="admin-section claimed-rewards-section">
             <h3>🏆 Claimed Rewards History</h3>
             <div id="claimed-rewards-history-list" class="claimed-rewards-history-list">
               <p class="no-rewards">No rewards claimed yet.</p>
             </div>
-          </div>
-
-          <!-- FAQ (Restore Guide) -->
-          <div class="admin-section admin-faq">
-            <h3>📋 Restore Guide</h3>
-            <p><strong>Auto-Backup:</strong> Fixes accidental resets. Rolls back to last Level Up or Week Completion.</p>
-            <p><strong>Import Code:</strong> Use if browser cache is cleared (wipes Auto-Backup too!) or if moving to a new device. (Requires previously saving the Export Code).</p>
           </div>
 
 
@@ -824,8 +812,8 @@
     </div>
   </div>
 
-  <script src="particles.js?v=8.8"></script>
-  <script type="module" src="app.js?v=8.8"></script>
+  <script src="particles.js?v=9.1"></script>
+  <script type="module" src="app.js?v=9.1"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 </body>
