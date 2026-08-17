@@ -1,8 +1,8 @@
 import { getStarsFromDates } from './vault.js';
 import { saveState, rollNewWeeklyBadge, getDefaultStateTemplate, DAYS, getTaskRequiredDays, runStateDiagnostics } from './state.js';
-import { getSunday, formatLocalDate, getDateOfColumn, getWeekStart, getLocalDate, getHistoricalWeekIntervals, getFormattedDateRange } from './date_utils.js';
+import { getSunday, formatLocalDate, getDateOfColumn, getWeekStart, getLocalDate, getHistoricalWeekIntervals, getFormattedDateRange, getWeekColumnStates, getColumnState } from './date_utils.js';
 import { runMigrations } from './migrations.js';
-import { POKEMON_TYPES, LEGENDARY_POKEMON_IDS, getPokemonName } from './pokemon_data.js';
+import { POKEMON_TYPES, LEGENDARY_POKEMON_IDS, getPokemonName, POKEMON_MAP, EVOLUTIONS, EVOLVED_POKEMON_IDS } from './pokemon_data.js';
 
 function getGridKey(dayIndex, taskId) {
   return `${getDateOfColumn(window.__app_state__.weekStartDate, dayIndex)}-${taskId}`;
@@ -1357,7 +1357,7 @@ async function runSuite() {
         
         assert(wedPianoTd.classList.contains('excused-cell'), "Cell should have excused-cell class");
         assert(state.excused[getGridKey(3, 'piano')] === true, "State should have 3-piano excused");
-        assert(state.grid[getGridKey(3, 'piano')] === false, "State grid for 3-piano should be false (auto-cleared)");
+        assert(!state.grid[getGridKey(3, 'piano')], "State grid for 3-piano should remain incomplete");
         assert(wedPianoInput.checked === false, "Checkbox should be unchecked");
         assert(state.activeDay === 1, "Active day should remain Monday (1) after excusing Wednesday task");
         
@@ -1366,7 +1366,38 @@ async function runSuite() {
         const pianoTotalCell = pianoRow.querySelector('.task-total-cell');
         assert(pianoTotalCell.textContent === "0 / 6", `Piano goal column should show 0/6 (actual: "${pianoTotalCell.textContent}")`);
         
-        // 17.2b Test Excusing future active day (e.g. Day 4 = Thursday or Day 2 = Tuesday)
+        // 17.2b Test Excusing an already COMPLETED task retains its completed state
+        const monMathInput = document.querySelector('input[data-day="1"][data-task="math"]');
+        assert(monMathInput !== null, "Monday Math input should exist");
+        // Mark task completed in state
+        state.grid[getGridKey(1, 'math')] = true;
+        monMathInput.checked = true;
+        saveState();
+        
+        const monMathTd = monMathInput.closest('.checkbox-cell');
+        // Click to apply exception
+        monMathTd.click();
+        await sleep(50);
+        
+        assert(monMathTd.classList.contains('excused-cell'), "Monday Math cell should have excused-cell class");
+        assert(state.excused[getGridKey(1, 'math')] === true, "Monday Math should be excused in state");
+        assert(state.grid[getGridKey(1, 'math')] === true, "Monday Math task state should be RETAINED as completed in state");
+        assert(monMathInput.checked === true, "Monday Math checkbox should RETAIN checked state in UI");
+        
+        // Untoggle exception on Monday Math
+        monMathTd.click();
+        await sleep(50);
+        assert(!monMathTd.classList.contains('excused-cell'), "Monday Math cell should lose excused-cell class");
+        assert(!state.excused[getGridKey(1, 'math')], "Monday Math exception should be removed");
+        assert(state.grid[getGridKey(1, 'math')] === true, "Monday Math should still remain completed after untoggling exception");
+        assert(monMathInput.checked === true, "Monday Math checkbox should remain checked");
+        
+        // Clean up math grid state for remainder of test
+        delete state.grid[getGridKey(1, 'math')];
+        monMathInput.checked = false;
+        saveState();
+        
+        // 17.2c Test Excusing future active day (e.g. Day 4 = Thursday or Day 2 = Tuesday)
         const tuePianoInput = document.querySelector('input[data-day="2"][data-task="piano"]');
         if (tuePianoInput) {
           const tuePianoTd = tuePianoInput.closest('.checkbox-cell');
@@ -5074,6 +5105,185 @@ async function runSuite() {
         const closeAdminBtn = document.getElementById("close-admin-modal-btn");
         if (closeAdminBtn) closeAdminBtn.click();
         helpers.resetState();
+      }
+
+      // ==========================================
+      // Test Case 66: Centralized Column State Machine Unit & Integration Suite
+      // ==========================================
+      {
+        console.log("Running Test Case 66: Centralized Column State Machine Unit & Integration Suite...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        let state = window.__app_state__;
+
+        // 1. Test Active Week Column States dynamically based on today's real day
+        const todayDate = getLocalDate(state?.timezoneOffset);
+        const todayRealDay = todayDate.getDay();
+        const currentWeekStartStr = formatLocalDate(getWeekStart(todayDate, 0));
+        
+        state.weekStartDate = currentWeekStartStr;
+        state.weekStartDay = 0; // Sunday
+        state.activeDay = todayRealDay; // Today
+        
+        // Pure resolution with allowFutureEdits = false
+        let colStates = getWeekColumnStates(state, currentWeekStartStr, { allowFutureEdits: false });
+        assert(colStates.length === 7, "getWeekColumnStates should return 7 columns");
+        
+        const todayColIdx = todayRealDay; // Sunday start means col index === day of week
+        assert(colStates[todayColIdx].state === 'ACTIVE_TODAY', `Today column (${todayColIdx}) should be ACTIVE_TODAY`);
+        assert(colStates[todayColIdx].headerClass === 'active-day', `Today headerClass should be active-day`);
+        assert(colStates[todayColIdx].canCheckTaskNormal === true, `Today canCheckTaskNormal should be true`);
+        assert(colStates[todayColIdx].canToggleException === true, `Today canToggleException should be true`);
+        assert(colStates[todayColIdx].canSelectHeader === false, `Today canSelectHeader should be false (already selected)`);
+
+        // Past columns before today (if any) should be SELECTABLE_PAST
+        for (let d = 0; d < todayColIdx; d++) {
+          assert(colStates[d].state === 'SELECTABLE_PAST', `Past Column ${d} should be SELECTABLE_PAST`);
+          assert(colStates[d].canSelectHeader === true, `Past Column ${d} canSelectHeader should be true`);
+          assert(colStates[d].requiresSwitchConfirmation === true, `Past Column ${d} requiresSwitchConfirmation should be true`);
+        }
+
+        // Future columns after today (if any) should be FUTURE_LOCKED
+        for (let d = todayColIdx + 1; d < 7; d++) {
+          assert(colStates[d].state === 'FUTURE_LOCKED', `Future Column ${d} should be FUTURE_LOCKED`);
+          assert(colStates[d].headerClass === 'future-day-header', `Future Column ${d} headerClass should be future-day-header`);
+          assert(colStates[d].canCheckTaskNormal === false, `Future Column ${d} canCheckTaskNormal should be false`);
+          assert(colStates[d].canToggleException === true, `Future Column ${d} canToggleException should be true (Scenario 10)`);
+          assert(colStates[d].isCellDisabled === true, `Future Column ${d} isCellDisabled should be true`);
+        }
+
+        // 2. Test Pending Shift Superseded Precedence
+        state.pendingWeekStartDate = "2026-08-21"; // Friday
+        colStates = getWeekColumnStates(state, "2026-08-16", { allowFutureEdits: false });
+        assert(colStates[5].state === 'SUPERSEDED', "Friday column should be SUPERSEDED");
+        assert(colStates[5].headerClass === 'superseded-header', "Friday headerClass should be superseded-header");
+        assert(colStates[5].tooltip.includes("These days moved to your new chart! 🚀"), "Friday tooltip should contain rocket message");
+        assert(colStates[5].canToggleException === false, "Superseded column should NOT allow exception toggling");
+        assert(colStates[5].canCheckTaskNormal === false, "Superseded column should NOT allow normal checks");
+        assert(colStates[6].state === 'SUPERSEDED', "Saturday column should also be SUPERSEDED");
+
+        // 3. Test Historical Week Evaluation
+        state.weeklyHistory = {
+          "2026-08-09": { weekStartDay: 0, reward: "test", weeklyClaimed: true }
+        };
+        const pastColStates = getWeekColumnStates(state, "2026-08-09", { allowFutureEdits: false });
+        for (let d = 0; d < 7; d++) {
+          assert(pastColStates[d].state === 'HISTORICAL', `Historical week column ${d} should be HISTORICAL`);
+          assert(pastColStates[d].headerClass === 'past-week-header', `Historical column ${d} headerClass should be past-week-header`);
+          assert(pastColStates[d].canSelectHeader === false, `Historical column ${d} canSelectHeader should be false`);
+          assert(pastColStates[d].canCheckTaskNormal === false, `Historical column ${d} canCheckTaskNormal should be false`);
+          assert(pastColStates[d].canToggleException === false, `Historical column ${d} canToggleException should be false`);
+        }
+
+        // 4. Test DOM Rendering and Data Attributes
+        delete state.pendingWeekStartDate;
+        state.activeDay = todayRealDay;
+        helpers.renderState(true);
+        await sleep(50);
+
+        const headers = document.querySelectorAll('.day-header');
+        assert(headers[todayRealDay].dataset.columnState !== undefined, "Headers should have data-column-state attribute");
+        assert(headers[todayRealDay].classList.contains('active-day'), "Active header should have active-day class");
+
+        const checkboxes = document.querySelectorAll('#grid-tbody tr.task-row td.checkbox-cell');
+        if (checkboxes.length > 0) {
+          assert(checkboxes[0].dataset.columnState !== undefined, "Checkbox cells should have data-column-state attribute");
+        }
+
+        helpers.resetState();
+        await sleep(50);
+      }
+
+      // ==========================================
+      // Test Case 67: Onix -> Steelix Evolution Line & Shop Sparkle
+      // ==========================================
+      {
+        console.log("Running Test Case 67: Onix -> Steelix Evolution Line & Shop Sparkle...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        let state = window.__app_state__;
+
+        // 1. Verify static data mappings
+        assert(POKEMON_MAP[95] === "Onix", "Pokedex 95 should be Onix");
+        assert(POKEMON_MAP[208] === "Steelix", "Pokedex 208 should be Steelix");
+        assert(POKEMON_TYPES[95] === "Rock", "Onix type should be Rock");
+        assert(POKEMON_TYPES[208] === "Steel", "Steelix type should be Steel");
+        assert(EVOLUTIONS['95'] !== undefined, "Onix should have an evolution definition");
+        assert(EVOLUTIONS['95'].stages.length === 2, "Onix evolution should have 2 stages");
+        assert(EVOLUTIONS['95'].stages[0].id === '95' && EVOLUTIONS['95'].stages[0].level === 1, "Stage 1 should be Onix at level 1");
+        assert(EVOLUTIONS['95'].stages[1].id === '208' && EVOLUTIONS['95'].stages[1].level === 5, "Stage 2 should be Steelix at level 5");
+        assert(EVOLVED_POKEMON_IDS.has(208), "Steelix (208) should be in EVOLVED_POKEMON_IDS");
+
+        // 2. Verify Shop Behavior
+        helpers.openPokemonShop();
+        await sleep(50);
+
+        const onixCard = document.querySelector('.shop-item-card[data-id="95"]');
+        assert(onixCard !== null, "Onix card should exist in shop");
+        const onixSparkle = onixCard.querySelector('.shop-item-sparkle');
+        assert(onixSparkle !== null, "Onix card in shop should display evolution sparkle ✨");
+
+        const steelixCard = document.querySelector('.shop-item-card[data-id="208"]');
+        assert(steelixCard === null, "Steelix (evolved form) should NOT be listed directly as a purchasable card in the shop");
+
+        const closeShopBtn = document.getElementById('close-shop-modal-btn');
+        if (closeShopBtn) closeShopBtn.click();
+        await sleep(50);
+
+        // 3. Verify Active Partner Evolution & Devolution
+        state.activePartnerInstanceId = '95';
+        state.partnerFamily = '95';
+        state.partnersData['95'] = { familyId: '95', level: 4, xp: 95, stageId: '95' };
+        state.reward = "Test Reward";
+        state.megaReward = "Test Mega";
+        const todayRealDay = getLocalDate(state?.timezoneOffset).getDay();
+        state.activeDay = todayRealDay;
+        saveState();
+        helpers.renderState(true);
+        await sleep(50);
+
+        const partnerNameEl = document.getElementById('partner-name');
+        assert(partnerNameEl.textContent.includes("Onix"), "HUD should display Onix at Level 4");
+
+        const targetCheckbox = document.querySelector(`input[data-day="${todayRealDay}"][data-task="piano"]`);
+        assert(targetCheckbox !== null, "Target task checkbox should exist");
+
+        // Click to check (Gain 5 XP -> Level 5, 0 XP -> Evolve to Steelix '208')
+        targetCheckbox.click();
+        await sleep(100);
+
+        assert(state.partnersData['95'].level === 5, "Onix should level up to Level 5");
+        assert(state.partnersData['95'].stageId === '208', "Onix partner stageId should evolve to Steelix (208)");
+        assert(partnerNameEl.textContent.includes("Steelix"), "HUD should display Steelix at Level 5");
+
+        // Dismiss evolution notification modal if present
+        const notifModal = document.querySelector('.notif-modal');
+        if (notifModal) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          notifModal.remove();
+          await sleep(50);
+        }
+
+        // Click to uncheck (Lose 5 XP -> Level 4, 95 XP -> Devolve to Onix '95')
+        targetCheckbox.click();
+        await sleep(100);
+
+        assert(state.partnersData['95'].level === 4, "Partner level should drop to 4");
+        assert(state.partnersData['95'].stageId === '95', "Partner should devolve back to Onix (95)");
+        assert(partnerNameEl.textContent.includes("Onix"), "HUD should display Onix after devolution");
+
+        // Dismiss devolution notification modal if present
+        const devolveModal = document.querySelector('.notif-modal');
+        if (devolveModal) {
+          const closeBtn = devolveModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          devolveModal.remove();
+          await sleep(50);
+        }
+
+        helpers.resetState();
+        await sleep(50);
       }
 
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");

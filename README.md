@@ -5,8 +5,9 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
 ## Features
 
 - 👾 **Retro Pokémon UI**: Immersive retro game font and pixel aesthetics.
-- 🦊 **Multi-Partner Training**: Kepler can choose to train different partners (Pikachu, Charmander, Bulbasaur, Squirtle, Eevee). XP and Levels are tracked **individually** for each Pokémon, encouraging him to train them all!
+- 🦊 **Multi-Partner Training**: Kepler can choose to train different partners (Pikachu, Charmander, Bulbasaur, Squirtle, Eevee, Onix). XP and Levels are tracked **individually** for each Pokémon, encouraging him to train them all!
   - **Eevee Branching Evolution**: Reaching Level 5 with Eevee unlocks a branching evolution modal allowing Kepler to choose between 8 different evolutions (Vaporeon, Jolteon, Flareon, Espeon, Umbreon, Leafeon, Glaceon, Sylveon) with individual sprites.
+  - **Onix & Steelix Evolution**: Train Onix (Rock-type) from Level 1 to Level 5 to trigger an authentic evolution event into Steelix (Steel-type), complete with devolution support and partner shop integration.
 - 🪙 **Star Vault & Partner Shop**:
   - Daily totals completed are saved as stars in the **Star Vault**.
   - Spend 5, 10, or 15 stars from your vault to purchase and unlock new partners from the **Partner Shop** featuring 100+ different Pokémon!
@@ -16,7 +17,13 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - Clearing all tasks in a day unlocks the **Daily Total (⭐)** and grants a **+15 XP Bonus**.
   - **Milestone XP Bar**: The XP bar displays vertical segment milestones representing levels. Leveling up triggers a bounce animation.
   - 📲 **Sticky Mini-HUD (Mobile/Tablet)**: When scrolling down on smaller viewports (under `1024px` wide), a sticky HUD slides in at the top showing the partner's sprite, name, level, and XP progress bar, allowing Kepler to track progress without scrolling back up. Tapping it smoothly scrolls back to the top.
-  - 📅 **Focused Active Day Interactions**: To prevent accidental clicks across different days, checking and unchecking tasks is restricted to the **currently active day** column. To record tasks for a different day, simply click that day's column header (e.g. MON, TUE) to activate it. The active column will light up, allowing inputs.
+  - 📅 **Centralized Column State Machine**: The weekly grid uses a single-source-of-truth state machine resolving 8 distinct states (`ACTIVE_TODAY`, `ACTIVE_PAST`, `ACTIVE_FUTURE`, `SELECTABLE_TODAY`, `SELECTABLE_PAST`, `FUTURE_LOCKED`, `SUPERSEDED`, `HISTORICAL`).
+    - Active day columns illuminate in Pikachu Yellow (`#ffcb05`) with high-contrast slate text.
+    - Future days are locked (`FUTURE_LOCKED`) against accidental child inputs while allowing parents to pre-configure exceptions in Parent Mode.
+    - Switching back to Today has zero friction, and switching to past catch-up days is protected with a confirmation dialog.
+    - Mid-cycle schedule adjustments forward-hash superseded days with diagonal hatching (`SUPERSEDED`) and tooltips.
+    - Capturing a task triggers an authentic 0.4s Pokémon capture wiggle animation on user click.
+  - **Adaptive Week Starts & Historical Archives**: Parents can customize the week start day at any time in Admin Settings with intelligent micro-week consolidation, preserving past completed weeks in a historical archive (`◀ Prev Week` / `Next Week ▶`).
   - **Evolution Celebrations**: Reaching Level 5 (and Level 10 for Charmander, Bulbasaur, and Squirtle) triggers a full-screen evolution event! The Pokémon transforms into its next stage (e.g., Pikachu -> Raichu, or Charmander -> Charmeleon -> Charizard) with a custom modal.
 - 🏆 **Weekly Badges & Collection**: Reaching the weekly task goals awards Kepler the active weekly badge.
   - **Immediate Case Award**: Badges are added to his permanent case immediately upon grid completion so he can view them without waiting to reset his week.

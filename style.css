@@ -300,6 +300,11 @@ body {
 .badge-status {
   font-weight: bold;
   font-size: 0.85rem;
+  min-height: 2.6em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.3;
 }
 
 /* Mega Milestone Progress Section */
@@ -891,7 +896,7 @@ button:disabled,
   transition: background-color 0.2s;
 }
 
-.pokeball-checkbox input:checked + .pokeball {
+.pokeball-checkbox .pokeball.just-checked {
   animation: wiggle 0.4s ease;
 }
 
@@ -2018,7 +2023,11 @@ input:checked + .slider:before {
 }
 
 
-/* Active Day Column Highlights and Restrictions */
+/* ==========================================================================
+   COLUMN STATE MACHINE STYLES (Single Source of Truth)
+   ========================================================================== */
+
+/* Base Header */
 .day-header {
   cursor: pointer;
   background-color: var(--poke-blue);
@@ -2030,46 +2039,95 @@ input:checked + .slider:before {
   background-color: rgba(255, 255, 255, 0.15);
 }
 
-.day-header.past-week-header {
+/* 1. SUPERSEDED (Forward-hashed dates) - Highest Precedence */
+.day-header.superseded-header,
+.day-header[data-column-state="superseded"] {
+  opacity: 0.5 !important;
+  background: repeating-linear-gradient(
+    -45deg,
+    #cbd5e1,
+    #cbd5e1 6px,
+    #94a3b8 6px,
+    #94a3b8 12px
+  ) !important;
+  color: #475569 !important;
+  cursor: not-allowed !important;
+}
+
+/* 2. HISTORICAL (Past completed weeks) */
+.day-header.past-week-header,
+.day-header[data-column-state="historical"] {
   cursor: not-allowed !important;
   opacity: 0.6;
-  background-color: #cbd5e1 !important; /* Neutral grey background for historical weeks */
-  color: #64748b !important; /* Muted slate text */
+  background-color: #cbd5e1 !important;
+  color: #64748b !important;
   text-shadow: none !important;
 }
 
-.day-header.past-week-header:hover {
-  background-color: #cbd5e1 !important; /* Prevent hover background change */
+.day-header.past-week-header:hover,
+.day-header[data-column-state="historical"]:hover {
+  background-color: #cbd5e1 !important;
 }
 
-.day-header.future-day-header:not(.superseded-header) {
+/* 3. FUTURE LOCKED (Upcoming days in active week) */
+.day-header.future-day-header,
+.day-header[data-column-state="future_locked"] {
   cursor: not-allowed !important;
-  background-color: #cbd5e1 !important; /* Neutral grey background for future locked days */
-  color: #64748b !important; /* Muted slate text */
+  background-color: #cbd5e1 !important;
+  color: #64748b !important;
   text-shadow: none !important;
   opacity: 0.85;
 }
 
-.day-header.future-day-header:not(.superseded-header):hover {
+.day-header.future-day-header:hover,
+.day-header[data-column-state="future_locked"]:hover {
   background-color: #cbd5e1 !important;
   color: #64748b !important;
 }
 
-.day-header.active-day {
+/* 4. ACTIVE (Currently selected column for entry) */
+.day-header.active-day,
+.day-header[data-column-state="active_today"],
+.day-header[data-column-state="active_past"],
+.day-header[data-column-state="active_future"] {
   background-color: var(--poke-yellow) !important;
   color: var(--text-color) !important;
   text-shadow: none !important;
 }
 
-.day-header.active-day:hover {
-  background-color: #e5b600 !important; /* Slightly darker yellow on hover */
+.day-header.active-day:hover,
+.day-header[data-column-state="active_today"]:hover,
+.day-header[data-column-state="active_past"]:hover,
+.day-header[data-column-state="active_future"]:hover {
+  background-color: #e5b600 !important;
 }
 
+/* Active Column Cells */
+.weekly-grid td.checkbox-cell.active-column,
+.weekly-grid td.day-total-cell.active-column {
+  opacity: 1 !important;
+  background-color: #ffffff !important;
+  pointer-events: auto !important;
+}
+
+/* Dimmed Inactive Columns in Normal Mode */
 .weekly-grid td.checkbox-cell:not(.active-column),
 .weekly-grid td.day-total-cell:not(.active-column) {
   opacity: 0.4;
   background-color: rgba(241, 245, 249, 0.4);
   pointer-events: none;
+}
+
+/* Exception Mode Overrides */
+.exception-mode .weekly-grid td.checkbox-cell {
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  background-color: #ffffff !important;
+}
+
+.exception-mode .weekly-grid td.checkbox-cell.superseded-cell {
+  pointer-events: none !important;
+  opacity: 0.55 !important;
 }
 
 .pixel-btn.greyed-out {
@@ -3167,8 +3225,6 @@ input:checked + .slider:before {
 
 /* Bonus Cell / Exception representation */
 .checkbox-cell.excused-cell:not(.superseded-cell) {
-  background-color: #ffffff !important; /* Keep cell background clean white */
-  background-image: none !important;
   position: relative;
 }
 
@@ -3195,7 +3251,6 @@ input:checked + .slider:before {
   border: 3px solid #eab308 !important; /* Gold border (Yellow 500) */
   background: white !important;
   box-shadow: 0 0 8px rgba(234, 179, 8, 0.4);
-  animation: wiggle 0.4s ease;
 }
 
 /* Star Overlay (replaces top half of pokeball) */

@@ -17,7 +17,7 @@ import {
   registerOnSave,
   getEarliestDataWeekStartDate
 } from './state.js';
-import { formatLocalDate, getWeekStart, getDateOfColumn, getLocalDate, getFormattedDateRange, getHistoricalWeekIntervals } from './date_utils.js';
+import { formatLocalDate, getWeekStart, getDateOfColumn, getLocalDate, getFormattedDateRange, getHistoricalWeekIntervals, getWeekColumnStates, getColumnState } from './date_utils.js';
 import { 
   loginFamily, 
   logoutFamily, 
@@ -1251,108 +1251,66 @@ function renderDebugSidebarVisibility() {
 }
 
 function updateActiveColumnUI() {
-  const isPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
-  
-  const activeDay = state.activeDay !== undefined ? state.activeDay : -1;
-  const activeColumn = (isPastWeek || activeDay === -1) ? -1 : (activeDay - state.weekStartDay + 7) % 7;
-  
-  // Calculate if the viewing week is calendar-wise in the past
-  const currentRealWeekStart = formatLocalDate(getWeekStart(getLocalDate(state?.timezoneOffset), state.weekStartDay || 0));
-  const isViewingWeekInPast = currentViewingWeekStartDate < currentRealWeekStart;
-
-  console.log("INSTRUMENTATION: updateActiveColumnUI", {
-    isPastWeek,
-    currentViewingWeekStartDate,
-    state_weekStartDate: state.weekStartDate,
-    activeDay,
-    state_weekStartDay: state.weekStartDay,
-    activeColumn,
-    currentRealWeekStart,
-    isViewingWeekInPast
-  });
+  const colStates = getWeekColumnStates(state, currentViewingWeekStartDate);
+  const ALL_HEADER_CLASSES = ['active-day', 'past-week-header', 'superseded-header', 'future-day-header'];
   
   const headers = document.querySelectorAll('.day-header');
-  console.log(`INSTRUMENTATION: headers count ${headers.length}, activeColumn ${activeColumn}, isViewingWeekInPast ${isViewingWeekInPast}, viewWeekStart ${currentViewingWeekStartDate}, realWeekStart ${currentRealWeekStart}, tzOffset ${state?.timezoneOffset}, localDate ${getLocalDate(state?.timezoneOffset).toString()}, weekStartObj ${getWeekStart(getLocalDate(state?.timezoneOffset), state.weekStartDay || 0).toString()}`);
-  headers.forEach(th => {
-    const day = parseInt(th.dataset.day); // column index
-    console.log(`INSTRUMENTATION: checking header ${th.textContent}, day=${day}, activeColumn=${activeColumn}`);
+  headers.forEach((th, index) => {
+    const col = colStates[index];
+    if (!col) return;
     
-    // Highlight active column header ONLY if the viewing week is NOT in the past
-    if (day === activeColumn && !isViewingWeekInPast) {
-      console.log(`INSTRUMENTATION: adding active-day to ${th.textContent} (day ${day})`);
-      th.classList.add('active-day');
-    } else {
-      th.classList.remove('active-day');
+    // Clear all state classes and apply the resolved single class
+    ALL_HEADER_CLASSES.forEach(cls => th.classList.remove(cls));
+    if (col.headerClass) {
+      th.classList.add(col.headerClass);
     }
-    
-    if (isPastWeek) {
-      th.classList.add('past-week-header');
-    } else {
-      th.classList.remove('past-week-header');
-    }
-
-    const intervals = getHistoricalWeekIntervals(state, currentViewingWeekStartDate);
-    const currentInterval = intervals.find(i => i.startDate === currentViewingWeekStartDate) || null;
-    const dateStr = getDateOfColumn(currentViewingWeekStartDate, day);
-    const isSuperseded = !!(currentInterval && currentInterval.supersededDates && currentInterval.supersededDates.includes(dateStr));
-
-    if (isSuperseded) {
-      th.classList.add('superseded-header');
-      th.title = "These days moved to your new chart! 🚀";
-    } else {
-      th.classList.remove('superseded-header');
-      th.title = "";
-    }
-
-    const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
-    const isFutureDay = dateStr > todayStr;
-    const allowFutureEdits = areFutureEditsAllowed();
-
-    if (isFutureDay && !allowFutureEdits) {
-      th.classList.add('future-day-header');
-    } else {
-      th.classList.remove('future-day-header');
-    }
+    th.dataset.columnState = col.state.toLowerCase();
+    th.title = col.tooltip;
+    th.style.cursor = col.canSelectHeader ? 'pointer' : (col.state.startsWith('ACTIVE') ? 'default' : 'not-allowed');
   });
 
   const tbody = document.getElementById('grid-tbody');
-  if (!tbody) return;
-
-  const rows = tbody.querySelectorAll('tr.task-row, tr.total-row');
-  rows.forEach(row => {
-    const checkCells = row.querySelectorAll('td.checkbox-cell');
-    checkCells.forEach(cell => {
-      const input = cell.querySelector('input');
-      if (input) {
-        const d = parseInt(input.dataset.day); // column index
-        if (d === activeColumn) {
+  if (tbody) {
+    const activeColIndex = colStates.findIndex(c => c.state.startsWith('ACTIVE'));
+    const rows = tbody.querySelectorAll('tr.task-row, tr.total-row');
+    rows.forEach(row => {
+      const checkCells = row.querySelectorAll('td.checkbox-cell');
+      checkCells.forEach(cell => {
+        const input = cell.querySelector('input');
+        if (input) {
+          const d = parseInt(input.dataset.day);
+          const col = colStates[d];
+          const isOutOfRange = cell.classList.contains('out-of-range-cell');
+          input.disabled = isOutOfRange || (col ? col.isCellDisabled : true);
+          if (d === activeColIndex) {
+            cell.classList.add('active-column');
+          } else {
+            cell.classList.remove('active-column');
+          }
+        }
+      });
+      
+      const totalCells = row.querySelectorAll('td.day-total-cell');
+      totalCells.forEach(cell => {
+        const d = parseInt(cell.dataset.day);
+        if (d === activeColIndex) {
           cell.classList.add('active-column');
         } else {
           cell.classList.remove('active-column');
         }
-      }
+      });
     });
-    
-    const totalCells = row.querySelectorAll('td.day-total-cell');
-    totalCells.forEach(cell => {
-      const d = parseInt(cell.dataset.day); // column index
-      if (d === activeColumn) {
-        cell.classList.add('active-column');
-      } else {
-        cell.classList.remove('active-column');
-      }
-    });
-  });
+  }
 
   const backToTodayBtn = document.getElementById('back-to-today-btn');
   if (backToTodayBtn) {
-    const todayRealDay = getLocalDate(state?.timezoneOffset).getDay();
-    const isCurrentToday = (state.activeDay === todayRealDay);
     const isViewingPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
-    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const todayName = daysOfWeek[todayRealDay];
-
-    if (!isViewingPastWeek && !isCurrentToday && state.activeDay !== -1) {
+    const hasActiveNonToday = colStates.some(c => c.state === 'ACTIVE_PAST' || c.state === 'ACTIVE_FUTURE');
+    if (!isViewingPastWeek && hasActiveNonToday && state.activeDay !== -1) {
+      const todayCol = colStates.find(c => c.state === 'SELECTABLE_TODAY');
+      const todayRealDay = getLocalDate(state?.timezoneOffset).getDay();
+      const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const todayName = todayCol ? daysOfWeek[todayCol.dayOfWeek] : daysOfWeek[todayRealDay];
       backToTodayBtn.textContent = `⚡ Back to Today (${todayName})`;
       backToTodayBtn.classList.remove('hidden');
     } else {
@@ -1412,6 +1370,7 @@ function renderGridTable() {
   }
   
   const isPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
+  const colStates = getWeekColumnStates(state, currentViewingWeekStartDate);
   const intervals = getHistoricalWeekIntervals(state, currentViewingWeekStartDate);
   const currentInterval = intervals.find(i => i.startDate === currentViewingWeekStartDate) || null;
   const viewingStartDay = currentInterval ? currentInterval.weekStartDay : (state.weekStartDay !== undefined ? state.weekStartDay : 0);
@@ -1454,21 +1413,19 @@ function renderGridTable() {
     `;
     
     for (let d = 0; d < 7; d++) {
-      const dateStr = getDateOfColumn(currentViewingWeekStartDate, d);
+      const col = colStates[d];
+      const dateStr = col.dateStr;
       const stateKey = `${dateStr}-${task.id}`;
       const checked = !!state.grid[stateKey];
       const excused = !!state.excused[stateKey];
       const isOutOfRange = (task.createdAt && dateStr < task.createdAt) || (task.deletedAt && dateStr >= task.deletedAt);
-      const isSuperseded = !!(currentInterval && currentInterval.supersededDates && currentInterval.supersededDates.includes(dateStr));
-      
-      const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
-      const isFutureDay = dateStr > todayStr;
-      const allowFutureEdits = areFutureEditsAllowed();
-      const shouldDisable = isPastWeek || isOutOfRange || isSuperseded || (isFutureDay && !allowFutureEdits);
-      const cellTitle = isSuperseded ? "These days moved to your new chart! 🚀" : "";
+      const shouldDisable = isOutOfRange || col.isCellDisabled;
+      const cellTitle = col.tooltip;
 
       html += `
-        <td class="checkbox-cell ${excused ? 'excused-cell' : ''} ${isOutOfRange ? 'out-of-range-cell' : ''} ${isSuperseded ? 'superseded-cell' : ''} ${(isFutureDay && !allowFutureEdits) ? 'future-cell' : ''}" ${cellTitle ? `title="${cellTitle}"` : ''}>
+        <td class="checkbox-cell ${excused ? 'excused-cell' : ''} ${isOutOfRange ? 'out-of-range-cell' : ''} ${col.cellClass}" 
+            data-column-state="${col.state.toLowerCase()}" 
+            ${cellTitle ? `title="${cellTitle}"` : ''}>
           <label class="pokeball-checkbox" ${cellTitle ? `title="${cellTitle}"` : ''}>
             <input type="checkbox" data-day="${d}" data-task="${task.id}" ${checked ? 'checked' : ''} ${shouldDisable ? 'disabled' : ''}>
             <span class="pokeball" ${cellTitle ? `title="${cellTitle}"` : ''}></span>
@@ -1499,12 +1456,11 @@ function renderGridTable() {
   `;
   
   for (let d = 0; d < 7; d++) {
-    const dateStr = getDateOfColumn(currentViewingWeekStartDate, d);
-    const isSuperseded = currentInterval && currentInterval.supersededDates && currentInterval.supersededDates.includes(dateStr);
-    if (isSuperseded) {
-      totalHtml += `<td class="day-total-cell superseded-total" data-day="${d}" title="These days moved to your new chart! 🚀"><div class="badge-indicator locked" title="These days moved to your new chart! 🚀">➖</div></td>`;
+    const col = colStates[d];
+    if (col.state === 'SUPERSEDED') {
+      totalHtml += `<td class="day-total-cell superseded-total" data-day="${d}" data-column-state="superseded" title="${col.tooltip}"><div class="badge-indicator locked" title="${col.tooltip}">➖</div></td>`;
     } else {
-      totalHtml += `<td class="day-total-cell" data-day="${d}"><div class="badge-indicator locked">❌</div></td>`;
+      totalHtml += `<td class="day-total-cell" data-day="${d}" data-column-state="${col.state.toLowerCase()}"><div class="badge-indicator locked">❌</div></td>`;
     }
   }
   
@@ -1571,30 +1527,25 @@ function stopExceptionMode() {
 
 function handleGridClick(e) {
   if (!isExceptionMode) return;
-  const isPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
-  if (isPastWeek) return;
-  
   const cell = e.target.closest('.checkbox-cell');
-  if (!cell || cell.classList.contains('superseded-cell')) return;
-  
-  e.preventDefault(); // Prevent default checkbox toggle behavior from label click
+  if (!cell) return;
   
   const input = cell.querySelector('input');
   if (!input) return;
   
   const day = parseInt(input.dataset.day);
+  const col = getColumnState(day, state, currentViewingWeekStartDate);
+  if (!col || !col.canToggleException) return;
+  
+  e.preventDefault(); // Prevent default checkbox toggle behavior from label click
+  
   const taskId = input.dataset.task;
-  const dateStr = getDateOfColumn(currentViewingWeekStartDate || state.weekStartDate, day);
-  if (state.pendingWeekStartDate && dateStr >= state.pendingWeekStartDate) return;
-  const key = `${dateStr}-${taskId}`;
+  const key = `${col.dateStr}-${taskId}`;
   
   // Toggle excused state
   state.excused[key] = !state.excused[key];
   if (!state.excused[key]) {
     delete state.excused[key];
-  } else {
-    // If excused, uncheck it
-    state.grid[key] = false;
   }
   
   saveState();
@@ -1651,28 +1602,13 @@ function handleCheckboxChange(e) {
   if (isExceptionMode) return;
   const cb = e.target;
   const day = parseInt(cb.dataset.day);
-
-  const isPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
-  if (isPastWeek) {
-    e.preventDefault();
-    return;
-  }
-
-  const dateStr = getDateOfColumn(currentViewingWeekStartDate, day);
-  if (state.pendingWeekStartDate && dateStr >= state.pendingWeekStartDate) {
+  const col = getColumnState(day, state, currentViewingWeekStartDate);
+  if (!col || col.isCellDisabled) {
     e.preventDefault();
     cb.checked = !cb.checked;
     return;
   }
-  const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
-  const isFutureDay = dateStr > todayStr;
-  const allowFutureEdits = areFutureEditsAllowed();
 
-  if (isFutureDay && !allowFutureEdits) {
-    e.preventDefault();
-    cb.checked = !cb.checked;
-    return;
-  }
   const clickedRealDay = (state.weekStartDay + day) % 7;
   
   if (clickedRealDay !== state.activeDay) {
@@ -1736,6 +1672,7 @@ function handleCheckboxChange(e) {
 
   const isChecked = cb.checked;
   const taskId = cb.dataset.task;
+  const dateStr = col.dateStr;
   const key = `${dateStr}-${taskId}`;
 
   const tasks = state.tasks || [];
@@ -1743,10 +1680,22 @@ function handleCheckboxChange(e) {
 
   state.grid[key] = isChecked;
 
+  const pokeballEl = cb.parentElement ? cb.parentElement.querySelector('.pokeball') : null;
   if (isChecked) {
     playSound('check');
+    if (pokeballEl) {
+      pokeballEl.classList.remove('just-checked');
+      void pokeballEl.offsetWidth; // Force reflow to retrigger animation if rapidly toggled
+      pokeballEl.classList.add('just-checked');
+      pokeballEl.addEventListener('animationend', () => {
+        pokeballEl.classList.remove('just-checked');
+      }, { once: true });
+    }
   } else {
     playSound('uncheck');
+    if (pokeballEl) {
+      pokeballEl.classList.remove('just-checked');
+    }
   }
 
   let xpGained = 0;
@@ -2033,21 +1982,10 @@ function setupEventListeners() {
   const headers = document.querySelectorAll('.day-header');
   headers.forEach(th => {
     th.addEventListener('click', () => {
-      const isPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
-      if (isPastWeek) return; // Prevent switching active day in historical weeks!
-
-      if (th.classList.contains('superseded-header')) return; // Prevent switching active day to forward-hashed / superseded days!
-
       const clickedColumn = parseInt(th.dataset.day);
-      const dateStr = getDateOfColumn(currentViewingWeekStartDate, clickedColumn);
+      const col = getColumnState(clickedColumn, state, currentViewingWeekStartDate);
+      if (!col || !col.canSelectHeader) return;
 
-      if (state.pendingWeekStartDate && dateStr >= state.pendingWeekStartDate) return;
-
-      const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
-      const isFutureDay = dateStr > todayStr;
-      const allowFutureEdits = areFutureEditsAllowed();
-
-      if (isFutureDay && !allowFutureEdits) return; // Prevent switching active day to future days!
       const clickedRealDay = (state.weekStartDay + clickedColumn) % 7;
       
       if (state.activeDay !== clickedRealDay) {
@@ -2057,13 +1995,14 @@ function setupEventListeners() {
           updateActiveColumnUI();
           return;
         }
-        const today = getLocalDate(state?.timezoneOffset).getDay();
-        if (dateStr !== todayStr) {
-          const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-          const targetDayName = daysOfWeek[clickedRealDay];
-          const isCurrentToday = (state.activeDay === today);
-          const currentActiveDayName = (state.activeDay !== undefined && state.activeDay !== -1) ? daysOfWeek[state.activeDay] : "Today";
-          
+        
+        const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const targetDayName = daysOfWeek[clickedRealDay];
+        const todayRealDay = getLocalDate(state?.timezoneOffset).getDay();
+        const isCurrentToday = (state.activeDay === todayRealDay);
+        const currentActiveDayName = (state.activeDay !== undefined && state.activeDay !== -1) ? daysOfWeek[state.activeDay] : "Today";
+        
+        if (col.requiresSwitchConfirmation) {
           const switchHeaderHtml = `
             <div class="confirm-detail">
               <div class="schedule-hero-card">
@@ -2088,7 +2027,7 @@ function setupEventListeners() {
             "pixel-btn greyed-out"
           );
         } else {
-          // Switching back to today has no friction
+          // Direct switch (e.g. jumping back to today with zero modal)
           state.activeDay = clickedRealDay;
           saveState();
           updateActiveColumnUI();

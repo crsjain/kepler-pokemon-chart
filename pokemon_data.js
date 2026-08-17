@@ -35,6 +35,7 @@ export const POKEMON_MAP = {
   179: "Mareep", 180: "Flaaffy", 181: "Ampharos",
   194: "Wooper",
   196: "Espeon", 197: "Umbreon",
+  208: "Steelix",
   212: "Scizor", 214: "Heracross",
   228: "Houndour", 229: "Houndoom",
   246: "Larvitar", 247: "Pupitar", 248: "Tyranitar",
@@ -130,7 +131,7 @@ export const TIER_1_IDS = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 25, 26, 35, 37, 38, 39, 40, 52, 53, 54, 
   55, 58, 59, 63, 65, 66, 68, 79, 80, 92, 93, 94, 95, 129, 130, 131, 133, 134, 135, 136, 
   143, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 172, 
-  174, 175, 176, 179, 180, 181, 194, 196, 197, 212, 214, 228, 229, 246, 247, 
+  174, 175, 176, 179, 180, 181, 194, 196, 197, 208, 212, 214, 228, 229, 246, 247, 
   248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 280, 282, 
   303, 328, 329, 330, 359, 374, 375, 376, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 
   390, 391, 392, 393, 394, 395, 446, 447, 448, 470, 471, 483, 484, 487, 493
@@ -388,6 +389,12 @@ export const EVOLUTIONS = {
       { level: 1, id: '92', name: 'Gastly' },
       { level: 5, id: '93', name: 'Haunter' },
       { level: 10, id: '94', name: 'Gengar' }
+    ]
+  },
+  '95': {
+    stages: [
+      { level: 1, id: '95', name: 'Onix' },
+      { level: 5, id: '208', name: 'Steelix' }
     ]
   },
   '129': {
@@ -773,6 +780,7 @@ export const EVOLVED_POKEMON_IDS = new Set([
   159, 160,   // Croconaw, Feraligatr
   176,        // Togetic
   180, 181,   // Flaaffy, Ampharos
+  208,        // Steelix (Evolved form of Onix)
   212,        // Scizor (Evolved form of Scyther)
   229,        // Houndoom
   247, 248,   // Pupitar, Tyranitar
@@ -872,6 +880,7 @@ export const POKEMON_TYPES = {
   194: "Water",
   196: "Psychic", 197: "Dark",
   123: "Bug",
+  208: "Steel",
   212: "Bug", 214: "Bug",
   228: "Dark", 229: "Dark",
   246: "Rock", 247: "Rock", 248: "Rock",
