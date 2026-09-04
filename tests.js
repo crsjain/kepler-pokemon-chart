@@ -1553,8 +1553,9 @@ async function runSuite() {
         const confirmNoBtn = document.getElementById('confirm-no-btn');
         const confirmYesBtn = document.getElementById('confirm-yes-btn');
         assert(confirmYesBtn.textContent === "Switch to Wednesday", "Yes button label should be 'Switch to Wednesday'");
+        const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
         const todayDay = getLocalDate(state?.timezoneOffset).getDay();
-        const expectedNoLabel = (state.activeDay === todayDay) ? "Stay on Today" : `Stay on ${DAYS[state.activeDay]}`;
+        const expectedNoLabel = (state.activeDay === todayDay) ? "Stay on Today" : `Stay on ${daysOfWeek[state.activeDay]}`;
         assert(confirmNoBtn.textContent === expectedNoLabel, `No button label should be '${expectedNoLabel}'`);
         
         if (confirmNoBtn) confirmNoBtn.click();
@@ -5153,6 +5154,7 @@ async function runSuite() {
         }
 
         // 2. Test Pending Shift Superseded Precedence
+        state.weekStartDate = "2026-08-16";
         state.pendingWeekStartDate = "2026-08-21"; // Friday
         colStates = getWeekColumnStates(state, "2026-08-16", { allowFutureEdits: false });
         assert(colStates[5].state === 'SUPERSEDED', "Friday column should be SUPERSEDED");
@@ -5283,6 +5285,91 @@ async function runSuite() {
         }
 
         helpers.resetState();
+        await sleep(50);
+      }
+
+      // 68. Test Add Child Profile Modal UI, Validation, and Button State Reset
+      {
+        console.log("Running Test Case 68: Add Child Profile Modal UI & State Reset...");
+        const helpers = window.__test_helpers__;
+        const addProfileModal = document.getElementById('add-profile-modal');
+        const addProfileOpenBtn = document.getElementById('add-profile-open-btn');
+        const addProfileSubmitBtn = document.getElementById('add-profile-submit-btn');
+        const addProfileCancelBtn = document.getElementById('add-profile-cancel-btn');
+        const newProfileNameInput = document.getElementById('new-profile-name');
+        const addProfileError = document.getElementById('add-profile-error');
+
+        assert(addProfileModal !== null, "addProfileModal should exist");
+        assert(addProfileSubmitBtn !== null, "addProfileSubmitBtn should exist");
+        assert(addProfileCancelBtn !== null, "addProfileCancelBtn should exist");
+        assert(newProfileNameInput !== null, "newProfileNameInput should exist");
+
+        // 1. Verify initial open resets button state and enables Create
+        addProfileOpenBtn.click();
+        await sleep(50);
+        // Password prompt opens
+        const pwInput = document.getElementById('password-input');
+        const pwSubmit = document.getElementById('password-submit-btn');
+        pwInput.value = helpers.ADMIN_PASSWORD;
+        pwSubmit.click();
+        await sleep(50);
+
+        assert(!addProfileModal.classList.contains('hidden'), "addProfileModal should be open");
+        assert(addProfileSubmitBtn.disabled === false, "addProfileSubmitBtn should be enabled on modal open");
+        assert(addProfileSubmitBtn.textContent === 'Create', "addProfileSubmitBtn text should be 'Create'");
+
+        // 2. Validate empty submission shows error without crashing or locking button
+        newProfileNameInput.value = '   ';
+        addProfileSubmitBtn.click();
+        await sleep(50);
+
+        assert(!addProfileError.classList.contains('hidden'), "addProfileError should be visible on empty name");
+        assert(addProfileSubmitBtn.disabled === false, "addProfileSubmitBtn should remain enabled after empty validation");
+        assert(addProfileSubmitBtn.textContent === 'Create', "addProfileSubmitBtn text should remain 'Create'");
+
+        // 3. Verify Cancel button resets error and enables button
+        addProfileCancelBtn.click();
+        await sleep(50);
+        assert(addProfileModal.classList.contains('hidden'), "addProfileModal should be hidden on cancel");
+        assert(addProfileSubmitBtn.disabled === false, "addProfileSubmitBtn should be enabled after cancel");
+        assert(addProfileError.classList.contains('hidden'), "addProfileError should be hidden after cancel");
+
+        // 4. Reopen and verify successful child creation
+        addProfileOpenBtn.click();
+        await sleep(50);
+        pwInput.value = helpers.ADMIN_PASSWORD;
+        pwSubmit.click();
+        await sleep(50);
+
+        assert(!addProfileModal.classList.contains('hidden'), "addProfileModal should be open on second attempt");
+        assert(addProfileSubmitBtn.disabled === false, "addProfileSubmitBtn MUST NOT be grayed out on second attempt");
+        assert(addProfileSubmitBtn.textContent === 'Create', "addProfileSubmitBtn text must be 'Create'");
+
+        const testChildName = "TestChild_" + Date.now().toString().slice(-4);
+        newProfileNameInput.value = testChildName;
+        addProfileSubmitBtn.click();
+        await sleep(100);
+
+        // Verify modal is dismissed
+        assert(addProfileModal.classList.contains('hidden'), "addProfileModal should be dismissed after child creation");
+        assert(addProfileSubmitBtn.disabled === false, "addProfileSubmitBtn should be re-enabled after child creation");
+        assert(addProfileSubmitBtn.textContent === 'Create', "addProfileSubmitBtn text should be 'Create' after child creation");
+
+        // Verify active profile switched to new child
+        const currentProfiles = helpers.getProfilesList();
+        assert(currentProfiles.some(p => p.name === testChildName), "New child profile should exist in profiles list");
+        assert(helpers.getActiveProfileId() !== null, "Active profile should be set");
+
+        // 5. Verify opening modal again for a third child is also enabled and never grayed out
+        addProfileOpenBtn.click();
+        await sleep(50);
+        pwInput.value = helpers.ADMIN_PASSWORD;
+        pwSubmit.click();
+        await sleep(50);
+
+        assert(addProfileSubmitBtn.disabled === false, "addProfileSubmitBtn MUST be enabled for subsequent child creation");
+        assert(addProfileSubmitBtn.textContent === 'Create', "addProfileSubmitBtn text must be 'Create'");
+        addProfileCancelBtn.click();
         await sleep(50);
       }
 

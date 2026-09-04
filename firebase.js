@@ -168,7 +168,17 @@ export async function createChildProfile(name, defaultStateTemplate, avatarId = 
     updatedAt: new Date().toISOString()
   };
   
-  await setDoc(userDocRef, updateData, { merge: true });
+  const writePromise = setDoc(userDocRef, updateData, { merge: true });
+  writePromise.catch((err) => {
+    console.error("Cloud profile creation sync error:", err);
+  });
+  
+  // Wait up to 1500ms for server ACK; if network or emulator is slow/offline,
+  // resolve optimistically since local cache already has the profile
+  await Promise.race([
+    writePromise,
+    new Promise((resolve) => setTimeout(resolve, 1500))
+  ]);
   
   return profileId;
 }
@@ -186,7 +196,15 @@ export async function deleteChildProfile(profileId) {
     updatedAt: new Date().toISOString()
   };
   
-  await setDoc(userDocRef, updateData, { merge: true });
+  const writePromise = setDoc(userDocRef, updateData, { merge: true });
+  writePromise.catch((err) => {
+    console.error("Cloud profile deletion sync error:", err);
+  });
+  
+  await Promise.race([
+    writePromise,
+    new Promise((resolve) => setTimeout(resolve, 1500))
+  ]);
 }
 
 // Subscribe to Active Profile State Sync (Firestore -> Local memory)

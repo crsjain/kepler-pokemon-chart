@@ -37,6 +37,21 @@ import {
 } from './firebase.js';
 let deleteChildProfileFn = deleteChildProfile;
 let saveProfileRewardsToCloudFn = saveProfileRewardsToCloud;
+let createChildProfileFn = (name, targetState, avatarId) => {
+  if (location.search.includes('runTests=true')) {
+    const profileId = name.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now().toString().slice(-4);
+    profilesList.push({
+      id: profileId,
+      name: name,
+      avatarId: avatarId || '25',
+      state: targetState
+    });
+    renderProfilesGrid();
+    renderAdminProfilesList();
+    return Promise.resolve(profileId);
+  }
+  return createChildProfile(name, targetState, avatarId);
+};
 let subscribeToProfileStateFn = (profileId, callback, errorCallback) => {
   if (location.search.includes('runTests=true')) {
     // In test mode, immediately callback with local state copy
@@ -296,87 +311,88 @@ function initFirebaseUI() {
     initGuide();
     initShop({ renderAppState: (rebuild) => renderState(rebuild) });
     renderState(true);
-    return;
   }
 
-  const saveDebounceTime = (location.search.includes('runTests=true') || location.search.includes('runMigrationTest=true')) ? 50 : 1500;
-  const debouncedCloudSave = debounceWithFlush((profileId, updatedState) => {
-    saveProfileStateToCloud(profileId, updatedState)
-      .then(() => {
-        isCloudSavePending = false;
-      })
-      .catch(err => {
-        console.error("Cloud save failed:", err);
-        isCloudSavePending = false;
-      });
-  }, saveDebounceTime);
+  if (!isTestMode) {
+    const saveDebounceTime = (location.search.includes('runTests=true') || location.search.includes('runMigrationTest=true')) ? 50 : 1500;
+    const debouncedCloudSave = debounceWithFlush((profileId, updatedState) => {
+      saveProfileStateToCloud(profileId, updatedState)
+        .then(() => {
+          isCloudSavePending = false;
+        })
+        .catch(err => {
+          console.error("Cloud save failed:", err);
+          isCloudSavePending = false;
+        });
+    }, saveDebounceTime);
 
-  // Hook up save observer to sync local state back to Firestore
-  registerOnSave((updatedState) => {
-    if (activeProfileId) {
-      isCloudSavePending = true;
-      debouncedCloudSave(activeProfileId, updatedState);
-    }
-  });
-
-  window.addEventListener('beforeunload', () => {
-    debouncedCloudSave.flush();
-  });
-
-  // Auth State Change Listener
-  subscribeToAuth((user) => {
-    console.log("Auth State Changed. User:", user ? user.email : "none");
-    if (!user) {
-      activeProfileId = null;
-      localStorage.removeItem('last_active_profile_id');
-      
-      // Blur app container & show login
-      const appContainer = document.querySelector('.app-container');
-      if (appContainer) {
-        appContainer.style.filter = 'blur(10px)';
-        appContainer.style.pointerEvents = 'none';
-      }
-      
-      if (familyLoginModal) familyLoginModal.classList.remove('hidden');
-      if (profileSelectModal) profileSelectModal.classList.add('hidden');
-      if (addProfileModal) addProfileModal.classList.add('hidden');
-    } else {
-      console.log("User is logged in. Hiding login modal and fetching profiles...");
-      if (familyLoginModal) familyLoginModal.classList.add('hidden');
-      
-      // Load Profiles List
-      console.log("Subscribing to profiles database collection...");
-      subscribeToProfiles((profiles) => {
-        handleProfilesUpdate(profiles);
-      }, (err) => {
-        console.error("Profiles subscription failed:", err);
-        showCustomNotification("Database Error ❌", "Failed to connect to profiles: " + err.message);
-        logoutFamily().catch(() => {});
-      });
-    }
-  });
-
-  // Login Action
-  if (loginSubmitBtn) {
-    loginSubmitBtn.addEventListener('click', async () => {
-      const email = loginEmailInput ? loginEmailInput.value.trim() : '';
-      const password = loginPasswordInput ? loginPasswordInput.value : '';
-      if (loginError) loginError.classList.add('hidden');
-      loginSubmitBtn.disabled = true;
-      loginSubmitBtn.textContent = 'Signing in...';
-      
-      try {
-        await loginFamily(email, password);
-      } catch (err) {
-        if (loginError) {
-          loginError.textContent = err.message;
-          loginError.classList.remove('hidden');
-        }
-      } finally {
-        loginSubmitBtn.disabled = false;
-        loginSubmitBtn.textContent = 'Sign In';
+    // Hook up save observer to sync local state back to Firestore
+    registerOnSave((updatedState) => {
+      if (activeProfileId) {
+        isCloudSavePending = true;
+        debouncedCloudSave(activeProfileId, updatedState);
       }
     });
+
+    window.addEventListener('beforeunload', () => {
+      debouncedCloudSave.flush();
+    });
+
+    // Auth State Change Listener
+    subscribeToAuth((user) => {
+      console.log("Auth State Changed. User:", user ? user.email : "none");
+      if (!user) {
+        activeProfileId = null;
+        localStorage.removeItem('last_active_profile_id');
+        
+        // Blur app container & show login
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) {
+          appContainer.style.filter = 'blur(10px)';
+          appContainer.style.pointerEvents = 'none';
+        }
+        
+        if (familyLoginModal) familyLoginModal.classList.remove('hidden');
+        if (profileSelectModal) profileSelectModal.classList.add('hidden');
+        if (addProfileModal) addProfileModal.classList.add('hidden');
+      } else {
+        console.log("User is logged in. Hiding login modal and fetching profiles...");
+        if (familyLoginModal) familyLoginModal.classList.add('hidden');
+        
+        // Load Profiles List
+        console.log("Subscribing to profiles database collection...");
+        subscribeToProfiles((profiles) => {
+          handleProfilesUpdate(profiles);
+        }, (err) => {
+          console.error("Profiles subscription failed:", err);
+          showCustomNotification("Database Error ❌", "Failed to connect to profiles: " + err.message);
+          logoutFamily().catch(() => {});
+        });
+      }
+    });
+
+    // Login Action
+    if (loginSubmitBtn) {
+      loginSubmitBtn.addEventListener('click', async () => {
+        const email = loginEmailInput ? loginEmailInput.value.trim() : '';
+        const password = loginPasswordInput ? loginPasswordInput.value : '';
+        if (loginError) loginError.classList.add('hidden');
+        loginSubmitBtn.disabled = true;
+        loginSubmitBtn.textContent = 'Signing in...';
+        
+        try {
+          await loginFamily(email, password);
+        } catch (err) {
+          if (loginError) {
+            loginError.textContent = err.message;
+            loginError.classList.remove('hidden');
+          }
+        } finally {
+          loginSubmitBtn.disabled = false;
+          loginSubmitBtn.textContent = 'Sign In';
+        }
+      });
+    }
   }
 
   // Switch Profile and Click-Outside listeners moved to setupEventListeners
@@ -464,6 +480,10 @@ function initFirebaseUI() {
         if (addProfileModal) addProfileModal.classList.remove('hidden');
         if (newProfileNameInput) newProfileNameInput.value = '';
         if (addProfileError) addProfileError.classList.add('hidden');
+        if (addProfileSubmitBtn) {
+          addProfileSubmitBtn.disabled = false;
+          addProfileSubmitBtn.textContent = 'Create';
+        }
         renderNewProfileIconPicker();
         checkLocalMigrationOption();
         if (newProfileNameInput) setTimeout(() => newProfileNameInput.focus(), 50);
@@ -471,13 +491,32 @@ function initFirebaseUI() {
     });
   }
 
+  if (newProfileNameInput) {
+    newProfileNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (addProfileSubmitBtn && !addProfileSubmitBtn.disabled) {
+          addProfileSubmitBtn.click();
+        }
+      }
+    });
+  }
+
   if (addProfileSubmitBtn) {
     addProfileSubmitBtn.addEventListener('click', async () => {
       const name = newProfileNameInput ? newProfileNameInput.value.trim() : '';
-      if (!name) return;
+      if (!name) {
+        if (addProfileError) {
+          addProfileError.textContent = 'Please enter a name for the child profile.';
+          addProfileError.classList.remove('hidden');
+        }
+        if (newProfileNameInput) newProfileNameInput.focus();
+        return;
+      }
       
       if (addProfileError) addProfileError.classList.add('hidden');
       addProfileSubmitBtn.disabled = true;
+      addProfileSubmitBtn.textContent = 'Creating...';
       
       try {
         let targetState;
@@ -501,7 +540,7 @@ function initFirebaseUI() {
         
         targetState.childName = name;
         
-        const newId = await createChildProfile(name, targetState, selectedNewProfileAvatar);
+        const newId = await createChildProfileFn(name, targetState, selectedNewProfileAvatar);
         
         // Clean up migrated state from local storage if migration was successful and requested
         if (migrateChk && migrateChk.checked) {
@@ -522,6 +561,7 @@ function initFirebaseUI() {
         }
       } finally {
         addProfileSubmitBtn.disabled = false;
+        addProfileSubmitBtn.textContent = 'Create';
       }
     });
   }
@@ -529,6 +569,11 @@ function initFirebaseUI() {
   if (addProfileCancelBtn) {
     addProfileCancelBtn.addEventListener('click', () => {
       if (addProfileModal) addProfileModal.classList.add('hidden');
+      if (addProfileSubmitBtn) {
+        addProfileSubmitBtn.disabled = false;
+        addProfileSubmitBtn.textContent = 'Create';
+      }
+      if (addProfileError) addProfileError.classList.add('hidden');
     });
   }
 
@@ -2307,11 +2352,8 @@ function setupEventListeners() {
       }
       
       // Case B: Target Day is in the PAST or TODAY of the current cycle (Immediate Shift & Archive)
-      const thisWeekStartObj = getWeekStart(getLocalDate(state?.timezoneOffset), newStartDay);
-      const thisWeekStart = formatLocalDate(thisWeekStartObj);
-      const thisWeekEndObj = new Date(thisWeekStart + 'T00:00:00');
-      thisWeekEndObj.setDate(thisWeekEndObj.getDate() + 6);
-      const thisWeekEnd = formatLocalDate(thisWeekEndObj);
+      const thisWeekStart = targetDateForNewDay;
+      const thisWeekEnd = getDateOfColumn(thisWeekStart, 6);
       const thisWeekRangeDisplay = getFormattedDateRange(thisWeekStart, thisWeekEnd);
 
       const confirmHtml = `
@@ -3687,6 +3729,7 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     getProfilesList: () => profilesList,
     renderAdminProfilesList: () => renderAdminProfilesList(),
     setDeleteChildProfileMock: (fn) => { deleteChildProfileFn = fn || deleteChildProfile; },
+    setCreateChildProfileMock: (fn) => { createChildProfileFn = fn || createChildProfile; },
     setSaveProfileRewardsMock: (fn) => { saveProfileRewardsToCloudFn = fn || saveProfileRewardsToCloud; },
     setExportCloudDataMock: (fn) => { exportCloudDataFn = fn; },
     setImportCloudDataMock: (fn) => { importCloudDataFn = fn; },
