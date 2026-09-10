@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Kepler Chart - Icon Redesign Visual Comparison</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Press+Start+2P&family=Quicksand:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --poke-red: #ee1515;
+      --poke-blue: #2a71d0;
+      --poke-yellow: #ffcb05;
+      --poke-dark-blue: #1b5399;
+      --border-color: #2d3748;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Quicksand', sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      padding: 30px 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-family: 'Fredoka One', cursive;
+      font-size: 2.2rem;
+      color: var(--poke-dark-blue);
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: #64748b;
+      margin-bottom: 25px;
+    }
+
+    .current-warning {
+      background: #fef2f2;
+      border-left: 5px solid #ef4444;
+      padding: 14px 18px;
+      border-radius: 6px;
+      margin-bottom: 30px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .option-card {
+      background: white;
+      border-radius: 12px;
+      border: 3px solid #e2e8f0;
+      box-shadow: 0 6px 16px -2px rgba(0,0,0,0.06);
+      margin-bottom: 40px;
+      overflow: hidden;
+    }
+
+    .option-header {
+      padding: 16px 20px;
+      background: #f1f5f9;
+      border-bottom: 2px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .option-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.4rem;
+      color: #0f172a;
+    }
+
+    .badge-tag {
+      font-family: 'Fredoka One', cursive;
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .tag-top-pick { background: #fef08a; color: #854d0e; border: 1px solid #facc15; }
+    .tag-lore { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+    .tag-contrast { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+    .tag-baseline { background: #e2e8f0; color: #475569; }
+
+    .option-body {
+      padding: 24px 20px;
+    }
+
+    .option-desc {
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #475569;
+      margin-bottom: 20px;
+    }
+
+    /* Icon Swatches Grid */
+    .swatches-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 16px;
+      margin-bottom: 25px;
+      background: #f8fafc;
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .swatch-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      background: white;
+      padding: 14px 10px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .swatch-cell-bg {
+      width: 54px;
+      height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .swatch-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 2px;
+    }
+
+    .swatch-status {
+      font-size: 0.72rem;
+      color: #64748b;
+    }
+
+    /* Mini Grid Simulation */
+    .mini-grid-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.05rem;
+      color: #334155;
+      margin-bottom: 10px;
+    }
+
+    .mini-grid {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      border: 2px solid #cbd5e1;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .mini-grid th, .mini-grid td {
+      border: 1px solid #cbd5e1;
+      padding: 8px 4px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 0.85rem;
+    }
+
+    .mini-grid th {
+      background: var(--poke-blue);
+      color: white;
+      font-family: 'Fredoka One', cursive;
+      font-size: 0.85rem;
+    }
+
+    .mini-grid th.active-col-th {
+      background: var(--poke-yellow) !important;
+      color: #1e293b !important;
+    }
+
+    .mini-grid td.task-name-col {
+      text-align: left;
+      font-weight: 700;
+      padding-left: 12px;
+      font-size: 0.9rem;
+      width: 25%;
+    }
+
+    .mini-grid td.active-col-td {
+      background: white !important;
+      box-shadow: inset 0 0 0 2px var(--poke-yellow);
+    }
+
+    .cell-striped {
+      background: repeating-linear-gradient(-45deg, #f8fafc, #f8fafc 4px, #e2e8f0 4px, #e2e8f0 8px) !important;
+    }
+
+    .cell-sky {
+      background: #f0f9ff !important;
+    }
+
+    .cell-dimmed {
+      opacity: 0.45;
+    }
+
+    /* ==========================================================================
+       ICON DEFINITIONS (36px footprint)
+       ========================================================================== */
+    .demo-icon {
+      width: 36px;
+      height: 36px;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      border-radius: 50%;
+    }
+
+    /* BASELINE / CURRENT */
+    .curr-dormant {
+      border: 3px solid var(--border-color);
+      background: white;
+      overflow: hidden;
+    }
+    .curr-dormant::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 50%;
+      background: #cbd5e0; border-bottom: 3px solid var(--border-color);
+    }
+    .curr-dormant::after {
+      content: ''; position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+      background: white; border: 3px solid var(--border-color); border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .curr-pokeball {
+      border: 3px solid var(--border-color);
+      background: white;
+      overflow: hidden;
+    }
+    .curr-pokeball::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 50%;
+      background: var(--poke-red); border-bottom: 3px solid var(--border-color);
+    }
+    .curr-pokeball::after {
+      content: ''; position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+      background: var(--poke-yellow); border: 3px solid var(--border-color); border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .curr-rest-uncheck {
+      border: 3px solid #a5b4fc;
+      background: white;
+      font-size: 15px;
+    }
+
+    .curr-bonus-uncheck {
+      border: 3px solid #38bdf8;
+      background: white;
+      font-size: 15px;
+    }
+
+    .curr-bonus-check {
+      border: 3px solid #0284c7;
+      background: #e0f2fe;
+      color: #0284c7;
+      font-family: 'Fredoka One', cursive;
+      font-size: 18px;
+      font-weight: 900;
+    }
+    .curr-bonus-check::after {
+      content: '+10 XP';
+      position: absolute;
+      top: -6px; right: 0;
+      background: #3b82f6;
+      border: 1px solid #1d4ed8;
+      color: white;
+      font-family: 'Fredoka One', cursive;
+      font-size: 7px;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    /* --------------------------------------------------------------------------
+       OPTION 1: THE POKÉMON TROPHY GOLD SYSTEM
+       -------------------------------------------------------------------------- */
+    .opt1-rest-uncheck {
+      border: none !important;
+      background: transparent !important;
+      font-size: 20px;
+      filter: drop-shadow(0 2px 4px rgba(100, 116, 139, 0.35));
+    }
+
+    .opt1-bonus-uncheck {
+      border: 3px dashed #f59e0b;
+      background: #fffbeb;
+      font-size: 16px;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.25);
+    }
+
+    .opt1-bonus-check {
+      border: 3px solid #b45309;
+      background: linear-gradient(135deg, #fde047, #f59e0b);
+      color: white;
+      font-family: 'Fredoka One', cursive;
+      font-size: 19px;
+      font-weight: 900;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.6), inset 0 0 4px rgba(255,255,255,0.6);
+      text-shadow: 0 1px 2px rgba(180, 83, 9, 0.8);
+    }
+    .opt1-bonus-check::after {
+      content: '★ +10 XP';
+      position: absolute;
+      top: -7px; right: -2px;
+      background: #d97706;
+      border: 1px solid #78350f;
+      color: #fff;
+      font-family: 'Fredoka One', cursive;
+      font-size: 7px;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    }
+
+    .opt1-rest-check {
+      border: 3px solid #4338ca;
+      background: linear-gradient(135deg, #a5b4fc, #6366f1);
+      color: white;
+      font-family: 'Fredoka One', cursive;
+      font-size: 19px;
+      font-weight: 900;
+      box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+      text-shadow: 0 1px 2px rgba(67, 56, 202, 0.8);
+    }
+    .opt1-rest-check::after {
+      content: '💤 +10 XP';
+      position: absolute;
+      top: -7px; right: -2px;
+      background: #4f46e5;
+      border: 1px solid #312e81;
+      color: #fff;
+      font-family: 'Fredoka One', cursive;
+      font-size: 7px;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    /* --------------------------------------------------------------------------
+       OPTION 2: THE GREAT BALL (SUPER BALL) POKÉMON LORE SYSTEM
+       -------------------------------------------------------------------------- */
+    .opt2-bonus-uncheck {
+      border: 3px dashed #0284c7;
+      background: #f0f9ff;
+      font-size: 16px;
+    }
+
+    .opt2-greatball {
+      border: none !important;
+      border-radius: 50% !important;
+      background-color: transparent !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36' width='36' height='36'%3E%3Ccircle cx='18' cy='18' r='16.5' fill='%23ffffff' stroke='%232d3748' stroke-width='3'/%3E%3Cpath d='M 1.5 18 A 16.5 16.5 0 0 1 34.5 18 Z' fill='%232563eb'/%3E%3Cpath d='M 6.8 13.2 C 7 11.5 8 9.5 10 7.8 C 11.2 6.8 12.8 6.8 13.8 7.8 L 14.8 9.5 L 11 15.5 C 9.5 15.5 7.8 14.8 6.8 13.2 Z' fill='%23b91c1c'/%3E%3Cpath d='M 7.2 12.5 C 7.5 10.8 8.8 8.8 10.5 7.5 C 11.5 6.7 12.8 6.7 13.5 7.5 L 14.2 8.8 L 10.2 14.5 C 8.8 14.2 7.8 13.5 7.2 12.5 Z' fill='%23ef4444'/%3E%3Cpath d='M 6.8 13.2 C 7 11.5 8 9.5 10 7.8 C 11.2 6.8 12.8 6.8 13.8 7.8 L 14.8 9.5 L 11 15.5 C 9.5 15.5 7.8 14.8 6.8 13.2 Z' fill='none' stroke='%232d3748' stroke-width='1.3' stroke-linejoin='round'/%3E%3Cpath d='M 29.2 13.2 C 29 11.5 28 9.5 26 7.8 C 24.8 6.8 23.2 6.8 22.2 7.8 L 21.2 9.5 L 25 15.5 C 26.5 15.5 28.2 14.8 29.2 13.2 Z' fill='%23b91c1c'/%3E%3Cpath d='M 28.8 12.5 C 28.5 10.8 27.2 8.8 25.5 7.5 C 24.5 6.7 23.2 6.7 22.5 7.5 L 21.8 8.8 L 25.8 14.5 C 27.2 14.2 28.2 13.5 28.8 12.5 Z' fill='%23ef4444'/%3E%3Cpath d='M 29.2 13.2 C 29 11.5 28 9.5 26 7.8 C 24.8 6.8 23.2 6.8 22.2 7.8 L 21.2 9.5 L 25 15.5 C 26.5 15.5 28.2 14.8 29.2 13.2 Z' fill='none' stroke='%232d3748' stroke-width='1.3' stroke-linejoin='round'/%3E%3Cline x1='1.5' y1='18' x2='34.5' y2='18' stroke='%232d3748' stroke-width='3'/%3E%3Ccircle cx='18' cy='18' r='5' fill='%232d3748'/%3E%3Ccircle cx='18' cy='18' r='3.2' fill='%23ffffff' stroke='%232d3748' stroke-width='1.5'/%3E%3C/svg%3E") !important;
+      background-size: contain !important;
+      background-repeat: no-repeat !important;
+      background-position: center !important;
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.45);
+    }
+    .opt2-greatball::before,
+    .opt2-greatball::after {
+      display: none !important;
+    }
+    .opt2-greatball-badge {
+      position: absolute;
+      top: -6px; right: -2px;
+      background: #1d4ed8;
+      border: 1px solid #1e3a8a;
+      color: #fff;
+      font-family: 'Fredoka One', cursive;
+      font-size: 7px;
+      padding: 1px 3px;
+      border-radius: 4px;
+      font-weight: bold;
+      z-index: 10;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    }
+
+    /* --------------------------------------------------------------------------
+       OPTION 3: THE SOLID FILL HIGH-CONTRAST SYSTEM
+       -------------------------------------------------------------------------- */
+    .opt3-bonus-uncheck {
+      border: 3px solid #f59e0b;
+      background: white;
+      font-size: 16px;
+    }
+
+    .opt3-bonus-check {
+      border: 3px solid #047857;
+      background: #10b981;
+      color: white;
+      font-family: 'Fredoka One', cursive;
+      font-size: 19px;
+      font-weight: 900;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    }
+    .opt3-bonus-check::after {
+      content: '+10 XP';
+      position: absolute;
+      top: -6px; right: 0;
+      background: #047857;
+      border: 1px solid #064e3b;
+      color: white;
+      font-family: 'Fredoka One', cursive;
+      font-size: 7px;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Icon Redesign: Visual Design Comparison</h1>
+    <p class="subtitle">Auditing why the current design causes confusion for Kepler (7yo) and comparing 3 Staff UX solutions.</p>
+
+    <!-- CURRENT BASELINE -->
+    <div class="option-card" id="card-baseline" style="border-color: #cbd5e1;">
+      <div class="option-header">
+        <span class="option-title">Current Baseline (The "Blue-on-Blue" Problem)</span>
+        <span class="badge-tag tag-baseline">Current Status</span>
+      </div>
+      <div class="option-body">
+        <div class="current-warning">
+          <strong>⚠️ The Problem:</strong> Notice below how <em>Rest Day Pass</em>, <em>Bonus Uncompleted</em>, and <em>Bonus Completed</em> are all <strong>light-blue hollow circles with thin borders</strong>. When glancing across the room or on a tablet, a 7-year-old cannot distinguish whether the bonus was completed or if the rest day is an unfilled button they forgot to complete.
+        </div>
+        <div class="swatches-grid">
+          <div class="swatch-item">
+            <div class="swatch-cell-bg"><div class="demo-icon curr-dormant"></div></div>
+            <div class="swatch-label">Normal Unchecked</div>
+            <div class="swatch-status">⚪ Grey Dormant</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg"><div class="demo-icon curr-pokeball"></div></div>
+            <div class="swatch-label">Normal Checked</div>
+            <div class="swatch-status">🔴 Pokéball (Great!)</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg cell-striped"><div class="demo-icon curr-rest-uncheck">💤</div></div>
+            <div class="swatch-label">Rest (Unchecked)</div>
+            <div class="swatch-status" style="color: #b91c1c;">⚠️ Looks like a button!</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg cell-sky"><div class="demo-icon curr-bonus-uncheck">✨</div></div>
+            <div class="swatch-label">Bonus (Unchecked)</div>
+            <div class="swatch-status">Light blue circle</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg cell-sky"><div class="demo-icon curr-bonus-check">✓</div></div>
+            <div class="swatch-label">Bonus (Checked)</div>
+            <div class="swatch-status" style="color: #b91c1c;">⚠️ Also light blue circle</div>
+          </div>
+        </div>
+
+        <div class="mini-grid-title">How Kepler sees this in a real week row:</div>
+        <table class="mini-grid">
+          <thead>
+            <tr>
+              <th style="width: 25%;">TASK</th>
+              <th>SUN</th>
+              <th>MON</th>
+              <th class="active-col-th">TUE (TODAY)</th>
+              <th>WED</th>
+              <th>THU (REST)</th>
+              <th>FRI (BONUS)</th>
+              <th>SAT (OVERACHIEVE)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="task-name-col">✏️ Writing</td>
+              <td class="cell-dimmed"><div class="demo-icon curr-pokeball"></div></td>
+              <td class="cell-dimmed"><div class="demo-icon curr-pokeball"></div></td>
+              <td class="active-col-td"><div class="demo-icon curr-dormant"></div></td>
+              <td><div class="demo-icon curr-dormant"></div></td>
+              <td class="cell-striped"><div class="demo-icon curr-rest-uncheck">💤</div></td>
+              <td class="cell-sky"><div class="demo-icon curr-bonus-uncheck">✨</div></td>
+              <td class="cell-sky"><div class="demo-icon curr-bonus-check">✓</div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- OPTION 1 -->
+    <div class="option-card" id="card-option1" style="border-color: #f59e0b;">
+      <div class="option-header" style="background: #fffbeb;">
+        <span class="option-title">Option 1: The "Trophy Gold" System</span>
+        <span class="badge-tag tag-top-pick">Staff UX Top Pick</span>
+      </div>
+      <div class="option-body">
+        <p class="option-desc">
+          <strong>Key Design Rules:</strong><br>
+          1. <strong>Rest Day (💤)</strong>: The circle is <em>completely removed</em>. The sleeping emoji floats naturally on the striped background. Zero false affordance—Kepler knows it's off-duty.<br>
+          2. <strong>Bonus Available (✨)</strong>: Warm golden-dashed ring that pulses with anticipation.<br>
+          3. <strong>Bonus Completed (★ +10 XP)</strong>: A <strong>Solid Amber/Gold Trophy Ball</strong> with crisp white checkmark. It is <em>solid filled</em> (unlike uncompleted tasks) and looks like an earned gold medal!
+        </p>
+        <div class="swatches-grid">
+          <div class="swatch-item">
+            <div class="swatch-cell-bg"><div class="demo-icon curr-dormant"></div></div>
+            <div class="swatch-label">Normal Unchecked</div>
+            <div class="swatch-status">⚪ Grey Dormant</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg"><div class="demo-icon curr-pokeball"></div></div>
+            <div class="swatch-label">Normal Checked</div>
+            <div class="swatch-status">🔴 Pokéball</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg cell-striped"><div class="demo-icon opt1-rest-uncheck">💤</div></div>
+            <div class="swatch-label">Rest (Unchecked)</div>
+            <div class="swatch-status" style="color: #15803d;">✅ Borderless Cloud!</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg cell-sky"><div class="demo-icon opt1-bonus-uncheck">✨</div></div>
+            <div class="swatch-label">Bonus (Unchecked)</div>
+            <div class="swatch-status" style="color: #b45309;">🟡 Gold Sparkle Ring</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg cell-sky"><div class="demo-icon opt1-bonus-check">✓</div></div>
+            <div class="swatch-label">Bonus (Checked)</div>
+            <div class="swatch-status" style="color: #b45309;">🏆 Solid Gold Trophy!</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg cell-striped"><div class="demo-icon opt1-rest-check">✓</div></div>
+            <div class="swatch-label">Rest (Overachieved)</div>
+            <div class="swatch-status" style="color: #4338ca;">🟣 Amethyst Star Ball</div>
+          </div>
+        </div>
+
+        <div class="mini-grid-title">How Kepler sees Option 1 in a real week row:</div>
+        <table class="mini-grid">
+          <thead>
+            <tr>
+              <th style="width: 25%;">TASK</th>
+              <th>SUN</th>
+              <th>MON</th>
+              <th class="active-col-th">TUE (TODAY)</th>
+              <th>WED</th>
+              <th>THU (REST)</th>
+              <th>FRI (BONUS)</th>
+              <th>SAT (OVERACHIEVE)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="task-name-col">✏️ Writing</td>
+              <td class="cell-dimmed"><div class="demo-icon curr-pokeball"></div></td>
+              <td class="cell-dimmed"><div class="demo-icon curr-pokeball"></div></td>
+              <td class="active-col-td"><div class="demo-icon curr-dormant"></div></td>
+              <td><div class="demo-icon curr-dormant"></div></td>
+              <td class="cell-striped"><div class="demo-icon opt1-rest-uncheck">💤</div></td>
+              <td class="cell-sky"><div class="demo-icon opt1-bonus-uncheck">✨</div></td>
+              <td class="cell-sky"><div class="demo-icon opt1-bonus-check">✓</div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- OPTION 2 -->
+    <div class="option-card" id="card-option2" style="border-color: #2563eb; box-shadow: 0 8px 24px -4px rgba(37, 99, 235, 0.2);">
+      <div class="option-header" style="background: #eff6ff; border-bottom: 2px solid #bfdbfe;">
+        <span class="option-title">Option 2: The "Great Ball" Pokémon Lore System</span>
+        <span class="badge-tag tag-top-pick" style="background: #dbeafe; color: #1e40af; border: 1px solid #3b82f6;">⭐ Implemented in Live App</span>
+      </div>
+      <div class="option-body">
+        <p class="option-desc">
+          <strong>Key Design Rules:</strong><br>
+          1. <strong>Normal Tasks</strong>: Standard Red/White Pokéball.<br>
+          2. <strong>Bonus & Rest Overachiever Tasks</strong>: Award a true Pokémon <strong>Great Ball (Super Ball)</strong> with its signature royal blue dome, scarlet red wing tabs, white bottom half, and clean <code>+XP</code> badge.<br>
+          3. <strong>Rest Tasks</strong>: Borderless floating `💤` on striped cell with no circle outline or button affordance.
+        </p>
+        <div class="swatches-grid">
+          <div class="swatch-item">
+            <div class="swatch-cell-bg"><div class="demo-icon curr-dormant"></div></div>
+            <div class="swatch-label">Normal Unchecked</div>
+            <div class="swatch-status">⚪ Grey Dormant</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg"><div class="demo-icon curr-pokeball"></div></div>
+            <div class="swatch-label">Normal Checked</div>
+            <div class="swatch-status">🔴 Pokéball</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg cell-striped"><div class="demo-icon opt1-rest-uncheck">💤</div></div>
+            <div class="swatch-label">Rest (Unchecked)</div>
+            <div class="swatch-status" style="color: #15803d;">✅ Borderless 💤</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg cell-sky"><div class="demo-icon opt2-bonus-uncheck">✨</div></div>
+            <div class="swatch-label">Bonus (Unchecked)</div>
+            <div class="swatch-status" style="color: #0284c7;">🔵 Cyan Dashed Ring</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg cell-sky">
+              <div class="demo-icon opt2-greatball">
+                <span class="opt2-greatball-badge">+XP</span>
+              </div>
+            </div>
+            <div class="swatch-label">Bonus (Checked)</div>
+            <div class="swatch-status" style="color: #1d4ed8;">🔵 Great Ball (+XP)</div>
+          </div>
+        </div>
+
+        <div class="mini-grid-title">How Kepler sees Option 2 in a real week row:</div>
+        <table class="mini-grid">
+          <thead>
+            <tr>
+              <th style="width: 25%;">TASK</th>
+              <th>SUN</th>
+              <th>MON</th>
+              <th class="active-col-th">TUE (TODAY)</th>
+              <th>WED</th>
+              <th>THU (REST)</th>
+              <th>FRI (BONUS)</th>
+              <th>SAT (OVERACHIEVE)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="task-name-col">✏️ Writing</td>
+              <td class="cell-dimmed"><div class="demo-icon curr-pokeball"></div></td>
+              <td class="cell-dimmed"><div class="demo-icon curr-pokeball"></div></td>
+              <td class="active-col-td"><div class="demo-icon curr-dormant"></div></td>
+              <td><div class="demo-icon curr-dormant"></div></td>
+              <td class="cell-striped"><div class="demo-icon opt1-rest-uncheck">💤</div></td>
+              <td class="cell-sky"><div class="demo-icon opt2-bonus-uncheck">✨</div></td>
+              <td class="cell-sky">
+                <div class="demo-icon opt2-greatball">
+                  <span class="opt2-greatball-badge">+XP</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- OPTION 3 -->
+    <div class="option-card" id="card-option3" style="border-color: #10b981;">
+      <div class="option-header" style="background: #f0fdf4;">
+        <span class="option-title">Option 3: The "Solid Fill High-Contrast" System</span>
+        <span class="badge-tag tag-contrast">High Contrast Clarity</span>
+      </div>
+      <div class="option-body">
+        <p class="option-desc">
+          <strong>Key Design Rules:</strong><br>
+          1. <strong>Rule of Completion</strong>: Incomplete items are always <em>hollow</em> with a white interior. Completed items are always <em>solid saturated colors</em>.<br>
+          2. <strong>Completed Bonus</strong>: Solid Emerald Green filled circle with bold white `✓`.<br>
+          3. <strong>Rest Tasks</strong>: Same borderless floating `💤`.
+        </p>
+        <div class="swatches-grid">
+          <div class="swatch-item">
+            <div class="swatch-cell-bg"><div class="demo-icon curr-dormant"></div></div>
+            <div class="swatch-label">Normal Unchecked</div>
+            <div class="swatch-status">⚪ Grey Dormant</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg"><div class="demo-icon curr-pokeball"></div></div>
+            <div class="swatch-label">Normal Checked</div>
+            <div class="swatch-status">🔴 Pokéball</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg cell-striped"><div class="demo-icon opt1-rest-uncheck">💤</div></div>
+            <div class="swatch-label">Rest (Unchecked)</div>
+            <div class="swatch-status" style="color: #15803d;">✅ Borderless Cloud</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg cell-sky"><div class="demo-icon opt3-bonus-uncheck">✨</div></div>
+            <div class="swatch-label">Bonus (Unchecked)</div>
+            <div class="swatch-status" style="color: #d97706;">🟡 Solid Gold Ring</div>
+          </div>
+          <div class="swatch-item">
+            <div class="swatch-cell-bg cell-sky"><div class="demo-icon opt3-bonus-check">✓</div></div>
+            <div class="swatch-label">Bonus (Checked)</div>
+            <div class="swatch-status" style="color: #047857;">🟢 Solid Emerald Circle</div>
+          </div>
+        </div>
+
+        <div class="mini-grid-title">How Kepler sees Option 3 in a real week row:</div>
+        <table class="mini-grid">
+          <thead>
+            <tr>
+              <th style="width: 25%;">TASK</th>
+              <th>SUN</th>
+              <th>MON</th>
+              <th class="active-col-th">TUE (TODAY)</th>
+              <th>WED</th>
+              <th>THU (REST)</th>
+              <th>FRI (BONUS)</th>
+              <th>SAT (OVERACHIEVE)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="task-name-col">✏️ Writing</td>
+              <td class="cell-dimmed"><div class="demo-icon curr-pokeball"></div></td>
+              <td class="cell-dimmed"><div class="demo-icon curr-pokeball"></div></td>
+              <td class="active-col-td"><div class="demo-icon curr-dormant"></div></td>
+              <td><div class="demo-icon curr-dormant"></div></td>
+              <td class="cell-striped"><div class="demo-icon opt1-rest-uncheck">💤</div></td>
+              <td class="cell-sky"><div class="demo-icon opt3-bonus-uncheck">✨</div></td>
+              <td class="cell-sky"><div class="demo-icon opt3-bonus-check">✓</div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

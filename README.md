@@ -45,6 +45,15 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - **Inline Editing (✏️)**: Parents can edit existing rewards in place with quick save/cancel controls and keyboard shortcuts (<kbd>Enter</kbd> to save, <kbd>Escape</kbd> to cancel).
   - **Drag-and-Drop Reordering (`⠿`)**: Reorder rewards intuitively within each column on both desktop (mouse drag) and mobile/touch devices (touch handle).
   - **Live Main Dropdown Sync**: Dropdowns on the main chart automatically reflect the exact custom sequence and keep Kepler's active selection updated upon renaming.
+  - **Unearned Badge & Reward Carryover**: Unearned weekly badges and selected rewards automatically carry over across week rollovers until completed, preserving Kepler's progress without premature pool re-rolls.
+- 💤 **Smart Hybrid Rest Day Passes & Bonus Tasks**:
+  - **3-State Parent Exception Mode**: Parents can tap any cell in Exception Mode (`Admin 🔒 ➔ Exception Mode ⚠️`) to cycle between Required (`🔴`), Elective Bonus (`✨`), and Rest Day Pass (`💤`).
+  - **Non-Clickable Rest Day Passes (`💤`)**: Floating, borderless emoji on diagonal stripes. In child mode, rest cells are strictly non-clickable (`disabled`, `pointer-events: none; cursor: default;`) to prevent accidental clicks or confusing button affordances during illness or travel.
+  - **Elective Bonus Tasks (`✨`)**: Vibrant cyan dashed ring (`#0284c7`) with centered sparkle emoji, clickable for enrichment.
+  - **Authentic 2D Great Ball (Super Ball)**: Completing a bonus task transforms the cell into an authentic Great Ball featuring a royal cobalt blue dome (`#2563eb`), dual angled diagonal red pill capsules (`#ef4444`), golden yellow center button (`#ffcb05`), white base dome with crescent shadow, and snug floating `+XP` pill badge.
+  - **Child-Friendly Daily Totals (Zero Raw Numbers)**: Daily Total cells display *only* clean status icons (`🌟` complete, `❌` pending, `➖` superseded) with a glowing gold pulse (`.super-trainer`) for overachievers. Removed fractional counters from the child layout to avoid cognitive overload for a 7-year-old, preserving full counts in hover tooltips for parents.
+  - **Extended XP Float Readability**: Floating XP notifications feature a 2.5s duration with a 1.5s+ motionless dwell phase in rounded `Fredoka One` typography, horizontal viewport edge clamping, and clean messaging (`+20 XP! 🎉`, `+10 XP Super Trainer! 🚀`).
+  - **Smart Rollover Policy**: Elective bonus tasks (`'bonus'`) automatically carry over to new weeks, while temporary rest passes (`'rest'`) automatically expire.
 
 ---
 
