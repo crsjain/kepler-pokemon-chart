@@ -7,6 +7,7 @@ export const DAYS = [0, 1, 2, 3, 4, 5, 6];
 export const XP_LEVEL_THRESHOLD = 100;
 export const XP_DAILY_BONUS = 15;
 export const XP_PER_TASK = 5;
+export const XP_BONUS_TASK = 10;
 
 
 export function getStageInfo(familyId, stageId) {
@@ -72,7 +73,7 @@ export let state = {
   timezoneOffset: 'default',
   weeklyRewardOptions: [...DEFAULT_WEEKLY_REWARDS],
   megaRewardOptions: [...DEFAULT_MEGA_REWARDS],
-  excused: {}, // key format: "YYYY-MM-DD-task" -> boolean
+  excused: {}, // key format: "YYYY-MM-DD-task" -> 'bonus' | 'rest' | boolean (legacy true = 'rest')
   weeklyHistory: {}, // key format: "YYYY-MM-DD" -> { weekStartDay, reward, megaReward, weeklyClaimed, badgeId, xpEarned, megaWeeks }
   partnersData: {
     '172': { familyId: '172', level: 1, xp: 0, stageId: '172' },
@@ -240,6 +241,11 @@ export function resetStateToDefault() {
   replaceState(defaults);
   saveState();
 }
+
+// Backwards compatibility stubs for legacy cached clients during SW upgrades
+export function saveAutoBackup() {}
+export function getBackupHistory() { return []; }
+export function applyBackup() { return false; }
 
 
 
@@ -518,7 +524,7 @@ export function runStateDiagnostics() {
     
     DAYS.forEach(day => {
       const dateStr = currentWeekDates[day];
-      const allChecked = state.tasks.every(task => !!state.grid[`${dateStr}-${task.id}`] || !!state.excused[`${dateStr}-${task.id}`]);
+      const allChecked = isDayComplete(dateStr, state);
       const index = state.starVault.earnedDates.indexOf(dateStr);
       
       if (allChecked && index === -1) {
@@ -687,3 +693,72 @@ export function getEarliestDataWeekStartDate() {
   return earliest;
 }
 
+export function isDayComplete(dateStr, currentState = state) {
+  const tasks = currentState.tasks || [];
+  if (tasks.length === 0) return false;
+
+  const activeTasks = tasks.filter(task => {
+    if (task.createdAt && dateStr < task.createdAt) return false;
+    if (task.deletedAt && dateStr >= task.deletedAt) return false;
+    if (task.active === false && (!task.deletedAt || dateStr >= task.deletedAt)) return false;
+    return true;
+  });
+
+  if (activeTasks.length === 0) return false;
+
+  const requiredTasks = activeTasks.filter(task => !currentState.excused || !currentState.excused[`${dateStr}-${task.id}`]);
+  if (requiredTasks.length === 0) return true; // All excused = free rest star
+
+  return requiredTasks.every(task => !!(currentState.grid && currentState.grid[`${dateStr}-${task.id}`]));
+}
+
+export function getDayTaskCounts(dateStr, currentState = state) {
+  const tasks = currentState.tasks || [];
+  const activeTasks = tasks.filter(task => {
+    if (task.createdAt && dateStr < task.createdAt) return false;
+    if (task.deletedAt && dateStr >= task.deletedAt) return false;
+    if (task.active === false && (!task.deletedAt || dateStr >= task.deletedAt)) return false;
+    return true;
+  });
+
+  let requiredTotal = 0;
+  let requiredCompleted = 0;
+  let bonusCompleted = 0;
+
+  activeTasks.forEach(task => {
+    const key = `${dateStr}-${task.id}`;
+    const excusedVal = currentState.excused && currentState.excused[key];
+    const isBonus = excusedVal === 'bonus';
+    const isRest = excusedVal === 'rest' || excusedVal === true;
+    const isExcused = isBonus || isRest;
+    const isChecked = !!(currentState.grid && currentState.grid[key]);
+
+    if (!isExcused) {
+      requiredTotal++;
+      if (isChecked) requiredCompleted++;
+    } else {
+      if (isChecked && isBonus) bonusCompleted++;
+    }
+  });
+
+  const isComplete = (requiredTotal === 0 && activeTasks.length > 0) || (requiredTotal > 0 && requiredCompleted >= requiredTotal);
+  let displayString = '';
+
+  if (isComplete && bonusCompleted > 0) {
+    displayString = `${requiredCompleted + bonusCompleted} / ${requiredTotal} ⭐ (Super Trainer! 🚀)`;
+  } else if (isComplete) {
+    displayString = `${requiredCompleted} / ${requiredTotal} ⭐`;
+  } else if (bonusCompleted > 0) {
+    displayString = `${requiredCompleted} / ${requiredTotal} (+${bonusCompleted})`;
+  } else {
+    displayString = `${requiredCompleted} / ${requiredTotal}`;
+  }
+
+  return {
+    requiredTotal,
+    requiredCompleted,
+    bonusCompleted,
+    isComplete,
+    displayString
+  };
+}

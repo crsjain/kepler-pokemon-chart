@@ -1,4 +1,5 @@
 import { getStarsFromDates } from './vault.js';
+import * as StateModule from './state.js';
 import { saveState, rollNewWeeklyBadge, getDefaultStateTemplate, DAYS, getTaskRequiredDays, runStateDiagnostics } from './state.js';
 import { getSunday, formatLocalDate, getDateOfColumn, getWeekStart, getLocalDate, getHistoricalWeekIntervals, getFormattedDateRange, getWeekColumnStates, getColumnState } from './date_utils.js';
 import { runMigrations } from './migrations.js';
@@ -1351,15 +1352,24 @@ async function runSuite() {
         const wedPianoTd = wedPianoInput.closest('.checkbox-cell');
         assert(wedPianoTd !== null, "Wednesday Piano cell should exist");
         
-        // Click the cell to excuse it
+        // Click 1: Normal -> Bonus
         wedPianoTd.click();
         await sleep(50);
         
-        assert(wedPianoTd.classList.contains('excused-cell'), "Cell should have excused-cell class");
-        assert(state.excused[getGridKey(3, 'piano')] === true, "State should have 3-piano excused");
+        assert(wedPianoTd.classList.contains('excused-cell'), "Cell should have excused-cell class on click 1");
+        assert(wedPianoTd.classList.contains('bonus-cell'), "Cell should have bonus-cell class on click 1");
+        assert(state.excused[getGridKey(3, 'piano')] === 'bonus', "State should have 3-piano as 'bonus'");
         assert(!state.grid[getGridKey(3, 'piano')], "State grid for 3-piano should remain incomplete");
         assert(wedPianoInput.checked === false, "Checkbox should be unchecked");
         assert(state.activeDay === 1, "Active day should remain Monday (1) after excusing Wednesday task");
+
+        // Click 2: Bonus -> Rest
+        wedPianoTd.click();
+        await sleep(50);
+        assert(wedPianoTd.classList.contains('excused-cell'), "Cell should retain excused-cell class on click 2");
+        assert(wedPianoTd.classList.contains('rest-cell'), "Cell should have rest-cell class on click 2");
+        assert(!wedPianoTd.classList.contains('bonus-cell'), "Cell should lose bonus-cell class on click 2");
+        assert(state.excused[getGridKey(3, 'piano')] === 'rest', "State should have 3-piano as 'rest'");
         
         // Verify dynamic denominator calculation
         const pianoRow = document.querySelector('.task-row[data-task="piano"]');
@@ -1375,19 +1385,31 @@ async function runSuite() {
         saveState();
         
         const monMathTd = monMathInput.closest('.checkbox-cell');
-        // Click to apply exception
+        // Click 1: Apply bonus exception
         monMathTd.click();
         await sleep(50);
         
         assert(monMathTd.classList.contains('excused-cell'), "Monday Math cell should have excused-cell class");
-        assert(state.excused[getGridKey(1, 'math')] === true, "Monday Math should be excused in state");
+        assert(monMathTd.classList.contains('bonus-cell'), "Monday Math cell should have bonus-cell class");
+        assert(state.excused[getGridKey(1, 'math')] === 'bonus', "Monday Math should be bonus in state");
+        assert(state.grid[getGridKey(1, 'math')] === true, "Monday Math task state should be RETAINED as completed in state");
+        assert(monMathInput.checked === true, "Monday Math checkbox should RETAIN checked state in UI");
+
+        // Click 2: Cycle to Rest exception
+        monMathTd.click();
+        await sleep(50);
+        assert(monMathTd.classList.contains('excused-cell'), "Monday Math cell should retain excused-cell class");
+        assert(monMathTd.classList.contains('rest-cell'), "Monday Math cell should have rest-cell class");
+        assert(state.excused[getGridKey(1, 'math')] === 'rest', "Monday Math should be rest in state");
         assert(state.grid[getGridKey(1, 'math')] === true, "Monday Math task state should be RETAINED as completed in state");
         assert(monMathInput.checked === true, "Monday Math checkbox should RETAIN checked state in UI");
         
-        // Untoggle exception on Monday Math
+        // Click 3: Untoggle exception on Monday Math (back to Normal)
         monMathTd.click();
         await sleep(50);
         assert(!monMathTd.classList.contains('excused-cell'), "Monday Math cell should lose excused-cell class");
+        assert(!monMathTd.classList.contains('bonus-cell'), "Monday Math cell should lose bonus-cell class");
+        assert(!monMathTd.classList.contains('rest-cell'), "Monday Math cell should lose rest-cell class");
         assert(!state.excused[getGridKey(1, 'math')], "Monday Math exception should be removed");
         assert(state.grid[getGridKey(1, 'math')] === true, "Monday Math should still remain completed after untoggling exception");
         assert(monMathInput.checked === true, "Monday Math checkbox should remain checked");
@@ -1401,15 +1423,25 @@ async function runSuite() {
         const tuePianoInput = document.querySelector('input[data-day="2"][data-task="piano"]');
         if (tuePianoInput) {
           const tuePianoTd = tuePianoInput.closest('.checkbox-cell');
+          // Click 1: Normal -> Bonus
           tuePianoTd.click();
           await sleep(50);
           assert(tuePianoTd.classList.contains('excused-cell'), "Future active day (Tuesday) should be toggleable in Exception Mode");
-          assert(state.excused[getGridKey(2, 'piano')] === true, "State should have 2-piano excused");
+          assert(tuePianoTd.classList.contains('bonus-cell'), "Tuesday should have bonus-cell class");
+          assert(state.excused[getGridKey(2, 'piano')] === 'bonus', "State should have 2-piano bonus");
+
+          // Click 2: Bonus -> Rest
+          tuePianoTd.click();
+          await sleep(50);
+          assert(state.excused[getGridKey(2, 'piano')] === 'rest', "State should have 2-piano rest");
+          assert(tuePianoTd.classList.contains('rest-cell'), "Tuesday should have rest-cell class");
           
-          // Toggle off
+          // Click 3: Rest -> Normal (toggle off)
           tuePianoTd.click();
           await sleep(50);
           assert(!tuePianoTd.classList.contains('excused-cell'), "Tuesday should untoggle cleanly");
+          assert(!tuePianoTd.classList.contains('rest-cell'), "Tuesday should lose rest-cell class");
+          assert(!state.excused[getGridKey(2, 'piano')], "Tuesday exception should be removed");
         }
         
         // Assert that NO attention notification modal is displayed (since rewards are not set yet)
@@ -1481,7 +1513,7 @@ async function runSuite() {
         
         // Grid should be cleared, but 3-piano should STILL be excused
         assert(Object.keys(state.grid).length === 0, "Grid should be empty");
-        assert(state.excused[getGridKey(3, 'piano')] === true, "3-piano should still be excused after reset with carry over");
+        assert(state.excused[getGridKey(3, 'piano')] === 'rest', "3-piano should still be excused as rest after reset with carry over");
         
         // Verify UI has .excused-cell class on Wed Piano cell
         const wedPianoTdAfterReset = document.querySelector('input[data-day="3"][data-task="piano"]').closest('.checkbox-cell');
@@ -1897,8 +1929,10 @@ async function runSuite() {
         confirmYesBtn.click();
         await sleep(100);
         
-        window.__test_helpers__.resetWeekGrid(false);
-        await sleep(100);
+        if (window.__app_state__.pendingWeekStartDate) {
+          window.__test_helpers__.resetWeekGrid(false);
+          await sleep(100);
+        }
 
         state = window.__app_state__;
         assert(state.weekStartDay === 0, "State weekStartDay should be updated to 0");
@@ -2335,8 +2369,8 @@ async function runSuite() {
         // Verify state
         assert(state.weekStartDay === 5, "Week start day should be 5 (Friday)");
         
-        // In current Sunday cycle, Friday is upcoming (2026-08-21)
-        assert(state.weekStartDate === '2026-08-21' || state.weekStartDate === formatLocalDate(getWeekStart(new Date(), 5)), "weekStartDate should match new Friday cycle");
+        // In current Sunday cycle, Friday is upcoming getDateOfColumn(baseDateStr, 5)
+        assert(state.weekStartDate === getDateOfColumn(baseDateStr, 5) || state.weekStartDate === '2026-08-21', "weekStartDate should match new Friday cycle");
 
         // Verify exceptions and grid are NOT modified (preserved as-is)
         assert(state.excused[`${sunDateStr}-piano`] === true, "Sunday exception should remain intact");
@@ -5288,9 +5322,205 @@ async function runSuite() {
         await sleep(50);
       }
 
-      // 68. Test Add Child Profile Modal UI, Validation, and Button State Reset
+      // 68. Test Phase 1: Rest Day Passes & Overachiever Bonus Tasks
       {
-        console.log("Running Test Case 68: Add Child Profile Modal UI & State Reset...");
+        console.log("Running Test Case 68: Rest Day Passes & Overachiever Bonus Tasks (Phase 1)...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        // Set rewards to allow task checking
+        const rewardSelect = document.getElementById('reward-select');
+        const megaRewardSelect = document.getElementById('mega-reward-select');
+        rewardSelect.value = "Blanket Fort";
+        rewardSelect.dispatchEvent(new Event('change'));
+        megaRewardSelect.value = "Dessert Outing";
+        megaRewardSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        const wedColIndex = 3;
+        const wedDateStr = getDateOfColumn(state.weekStartDate, wedColIndex);
+        state.activeDay = (state.weekStartDay + wedColIndex) % 7;
+        saveState();
+        helpers.renderState(false);
+        await sleep(50);
+
+        // 1. Rest Day Pass Activation
+        // Excuse piano on Wednesday as a Rest Day pass
+        state.excused[`${wedDateStr}-piano`] = 'rest';
+        saveState();
+        helpers.renderState(true);
+        await sleep(50);
+
+        const wedPianoTd = document.querySelector(`input[data-day="${wedColIndex}"][data-task="piano"]`).closest('.checkbox-cell');
+        assert(wedPianoTd.classList.contains('excused-cell'), "Excused task cell should have excused-cell class");
+        assert(wedPianoTd.classList.contains('rest-cell'), "Excused task cell should have rest-cell class");
+        assert(wedPianoTd.getAttribute('title')?.includes('Rest Day'), "Excused task cell should have Rest Day tooltip");
+
+        // Verify Rest Day cell is strictly unclickable in child mode
+        const pianoRestCb = document.querySelector(`input[data-day="${wedColIndex}"][data-task="piano"]`);
+        assert(pianoRestCb.disabled, "Rest day checkbox input should be disabled");
+        pianoRestCb.click();
+        await sleep(50);
+        assert(!pianoRestCb.checked, "Clicking rest day cell should NOT check it");
+        assert(!state.grid[`${wedDateStr}-piano`], "State grid must NOT record a checked rest task");
+
+        let counts = helpers.getDayTaskCounts(wedDateStr, state);
+        assert(counts.requiredTotal === 4, `Required tasks should be 4 after excusing 1 task, got ${counts.requiredTotal}`);
+        assert(counts.requiredCompleted === 0, "Required completed should be 0");
+        assert(counts.bonusCompleted === 0, "Bonus completed should be 0");
+        assert(counts.isComplete === false, "Day should not be complete");
+        assert(counts.displayString === "0 / 4", `Display string should be '0 / 4', got '${counts.displayString}'`);
+
+        // 2. Daily Star Trigger on Rest Day
+        // Check the 4 required tasks on Wednesday
+        const reqTasks = ['math', 'reading', 'writing', 'chinese'];
+        for (const tid of reqTasks) {
+          const input = document.querySelector(`input[data-day="${wedColIndex}"][data-task="${tid}"]`);
+          if (input && !input.checked) {
+            input.click();
+            await sleep(50);
+          }
+        }
+
+        assert(helpers.isDayComplete(wedDateStr, state) === true, "Day should be complete after checking all 4 required tasks");
+        assert(state.starVault.earnedDates.includes(wedDateStr), "Daily Star must be awarded into starVault.earnedDates");
+        
+        const wedTotalCell = document.querySelector(`.day-total-cell[data-day="${wedColIndex}"]`);
+        const indicator = wedTotalCell.querySelector('.badge-indicator');
+        assert(indicator && indicator.classList.contains('unlocked'), "Wednesday indicator should be unlocked 🌟");
+        
+        counts = helpers.getDayTaskCounts(wedDateStr, state);
+        assert(counts.isComplete === true, "Day should be complete");
+        assert(counts.displayString === "4 / 4 ⭐", `Display string should be '4 / 4 ⭐', got '${counts.displayString}'`);
+
+        // 3. Overachiever Bonus Completion (+10 XP & Super Trainer banner)
+        // Now set Wednesday Piano as an elective 'bonus' task (which IS clickable for extra credit)
+        state.excused[`${wedDateStr}-piano`] = 'bonus';
+        saveState();
+        helpers.renderState(true);
+        await sleep(50);
+
+        const partnerInstance = state.activePartnerInstanceId;
+        const initialPartnerXp = state.partnersData[partnerInstance].xp;
+
+        const pianoBonusCb = document.querySelector(`input[data-day="${wedColIndex}"][data-task="piano"]`);
+        assert(pianoBonusCb !== null, "Piano bonus checkbox should exist");
+        assert(!pianoBonusCb.disabled, "Bonus task checkbox should NOT be disabled");
+        pianoBonusCb.click();
+        await sleep(100);
+
+        assert(state.grid[`${wedDateStr}-piano`] === true, "State grid should record bonus piano check");
+        const afterBonusXp = state.partnersData[partnerInstance].xp;
+        const expectedXp = (initialPartnerXp + helpers.XP_BONUS_TASK) % 100;
+        assert(afterBonusXp === expectedXp, `Partner XP should increase by +${helpers.XP_BONUS_TASK} XP (from ${initialPartnerXp} to ${expectedXp}, actual: ${afterBonusXp})`);
+
+        counts = helpers.getDayTaskCounts(wedDateStr, state);
+        assert(counts.bonusCompleted === 1, "Bonus completed count should be 1");
+        assert(counts.displayString.includes("Super Trainer! 🚀"), `Display string should include 'Super Trainer! 🚀', got '${counts.displayString}'`);
+        assert(counts.displayString.includes("5 / 4 ⭐"), `Display string should show 5 / 4 ⭐, got '${counts.displayString}'`);
+
+        const currentWedTotalCell = document.querySelector(`.day-total-cell[data-day="${wedColIndex}"]`);
+        const totalCountEl = currentWedTotalCell ? currentWedTotalCell.querySelector('.day-total-count') : null;
+        assert(totalCountEl && totalCountEl.classList.contains('super-trainer'), "Total count element should have super-trainer class");
+
+        // 4. Accidental Unchecking Revert
+        // Uncheck the bonus task
+        pianoBonusCb.click();
+        await sleep(100);
+
+        assert(!state.grid[`${wedDateStr}-piano`], "State grid should clear bonus piano check");
+        assert(state.partnersData[partnerInstance].xp === initialPartnerXp, "Partner XP should decrement cleanly by 10 on bonus uncheck");
+        assert(state.starVault.earnedDates.includes(wedDateStr), "Daily Star must NOT be revoked when unchecking an overachiever task");
+
+        counts = helpers.getDayTaskCounts(wedDateStr, state);
+        assert(counts.bonusCompleted === 0, "Bonus completed should revert to 0");
+        assert(counts.displayString === "4 / 4 ⭐", `Display string should revert to '4 / 4 ⭐', got '${counts.displayString}'`);
+
+        // 5. No Cheating Guard on Thursday (3 of 4 required + 1 bonus does NOT award Star)
+        const thuColIndex = 4;
+        const thuDateStr = getDateOfColumn(state.weekStartDate, thuColIndex);
+        state.activeDay = (state.weekStartDay + thuColIndex) % 7;
+        state.excused[`${thuDateStr}-chinese`] = 'bonus'; // Chinese bonus task
+        saveState();
+        helpers.renderState(true);
+        await sleep(50);
+
+        // Check 3 required tasks: piano, math, reading (leave writing unchecked)
+        for (const tid of ['piano', 'math', 'reading']) {
+          const input = document.querySelector(`input[data-day="${thuColIndex}"][data-task="${tid}"]`);
+          if (input && !input.checked) {
+            input.click();
+            await sleep(50);
+          }
+        }
+
+        // Check the excused bonus task: chinese
+        const chineseBonusCb = document.querySelector(`input[data-day="${thuColIndex}"][data-task="chinese"]`);
+        chineseBonusCb.click();
+        await sleep(100);
+
+        // Total 4 tasks checked, but only 3 required tasks checked
+        assert(helpers.isDayComplete(thuDateStr, state) === false, "No-cheating invariant: Day must NOT be complete with incomplete required tasks");
+        assert(!state.starVault.earnedDates.includes(thuDateStr), "No-cheating invariant: Daily Star must NOT be awarded");
+
+        const thuTotalCell = document.querySelector(`.day-total-cell[data-day="${thuColIndex}"]`);
+        const thuIndicator = thuTotalCell.querySelector('.badge-indicator');
+        assert(thuIndicator && thuIndicator.classList.contains('locked'), "Thursday indicator should remain locked ❌");
+
+        counts = helpers.getDayTaskCounts(thuDateStr, state);
+        assert(counts.isComplete === false, "Counts isComplete should be false");
+        assert(counts.displayString.includes("(+1)"), `Display string should show (+1) bonus, got '${counts.displayString}'`);
+
+        // Now complete the 4th required task: writing
+        const writingCb = document.querySelector(`input[data-day="${thuColIndex}"][data-task="writing"]`);
+        writingCb.click();
+        await sleep(100);
+
+        assert(helpers.isDayComplete(thuDateStr, state) === true, "Day should be complete after checking all required tasks");
+        assert(state.starVault.earnedDates.includes(thuDateStr), "Daily Star should now be awarded into starVault.earnedDates");
+        const updatedThuIndicator = thuTotalCell.querySelector('.badge-indicator');
+        assert(updatedThuIndicator && updatedThuIndicator.classList.contains('unlocked'), "Thursday indicator should now be unlocked 🌟");
+
+        // 6. Diagnostics & State Integrity
+        helpers.saveState();
+        helpers.loadState();
+        assert(state.starVault.earnedDates.includes(wedDateStr), "Wednesday star preserved across save/load");
+        assert(state.starVault.earnedDates.includes(thuDateStr), "Thursday star preserved across save/load");
+
+        helpers.resetState();
+        await sleep(50);
+      }
+
+      // 69. Test PWA Backward-Compatibility Contract (Export Surface Stubs)
+      {
+        console.log("Running Test Case 69: PWA Backward-Compatibility Contract (Export Surface)...");
+        
+        // Assert that state.js exports required backward-compatibility stubs for cached clients
+        assert(typeof StateModule.applyBackup === 'function', "state.js must export applyBackup stub for legacy cached clients");
+        assert(typeof StateModule.saveAutoBackup === 'function', "state.js must export saveAutoBackup stub for legacy cached clients");
+        assert(typeof StateModule.getBackupHistory === 'function', "state.js must export getBackupHistory stub for legacy cached clients");
+
+        // Verify stubs execute safely without throwing or causing side effects
+        assert(StateModule.applyBackup(0) === false, "applyBackup stub should safely return false");
+        assert(StateModule.applyBackup() === false, "applyBackup stub with no args should safely return false");
+        
+        const history = StateModule.getBackupHistory();
+        assert(Array.isArray(history), "getBackupHistory stub should safely return an array");
+        assert(history.length === 0, "getBackupHistory stub should return an empty array");
+
+        let threwError = false;
+        try {
+          StateModule.saveAutoBackup();
+        } catch (err) {
+          threwError = true;
+        }
+        assert(!threwError, "saveAutoBackup stub should safely execute as a no-op without throwing");
+      }
+
+      // 70. Test Add Child Profile Modal UI, Validation, and Button State Reset
+      {
+        console.log("Running Test Case 70: Add Child Profile Modal UI & State Reset...");
         const helpers = window.__test_helpers__;
         const addProfileModal = document.getElementById('add-profile-modal');
         const addProfileOpenBtn = document.getElementById('add-profile-open-btn');
@@ -5370,6 +5600,264 @@ async function runSuite() {
         assert(addProfileSubmitBtn.disabled === false, "addProfileSubmitBtn MUST be enabled for subsequent child creation");
         assert(addProfileSubmitBtn.textContent === 'Create', "addProfileSubmitBtn text must be 'Create'");
         addProfileCancelBtn.click();
+        await sleep(50);
+      }
+
+      // 71. Test Unearned Badge and Reward Carry Over on Week Rollover
+      {
+        console.log("Running Test Case 71: Unearned Badge & Reward Carry Over on Rollover...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+        let stateObj = window.__app_state__;
+
+        const rewardSelect = document.getElementById('reward-select');
+        assert(rewardSelect !== null, "rewardSelect element should exist");
+
+        // 1. Setup an unearned week with a specific reward and target badge
+        rewardSelect.value = "Bonus Tablet Time";
+        rewardSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        const initialBadgeId = stateObj.activeWeeklyBadgeId;
+        assert(initialBadgeId !== null && initialBadgeId !== undefined, "activeWeeklyBadgeId should be set");
+        assert(stateObj.reward === "Bonus Tablet Time", "state.reward should be 'Bonus Tablet Time'");
+        stateObj.weeklyClaimed = false;
+
+        // 2. Simulate date passing: set weekStartDate to a past week
+        const pastWeekStart = '2026-08-02';
+        stateObj.weekStartDate = pastWeekStart;
+        helpers.saveState();
+
+        // Advance week via resetWeekGrid
+        helpers.resetWeekGrid(false);
+        await sleep(100);
+
+        stateObj = window.__app_state__;
+
+        // Verify unearned badge carried over
+        assert(stateObj.activeWeeklyBadgeId === initialBadgeId, 
+          `Unearned badge (${initialBadgeId}) should carry over to next week (actual: ${stateObj.activeWeeklyBadgeId})`);
+
+        // Verify weekly reward carried over
+        assert(stateObj.reward === "Bonus Tablet Time", 
+          `Weekly reward should carry over to next week (actual: '${stateObj.reward}')`);
+        assert(rewardSelect.value === "Bonus Tablet Time", 
+          `Reward dropdown should display carried-over reward (actual: '${rewardSelect.value}')`);
+
+        // Verify weeklyClaimed is false in the new week
+        assert(stateObj.weeklyClaimed === false, "weeklyClaimed should be false in the new week");
+
+        // Verify the past week was archived with weeklyClaimed: false, badgeId, and reward
+        const archivedWeek = stateObj.weeklyHistory[pastWeekStart];
+        assert(archivedWeek !== undefined, "Past week should be recorded in weeklyHistory");
+        assert(archivedWeek.weeklyClaimed === false, "Archived week should have weeklyClaimed: false");
+        assert(archivedWeek.badgeId === initialBadgeId, "Archived week should record the target badgeId");
+        assert(archivedWeek.reward === "Bonus Tablet Time", "Archived week should record the reward");
+
+        // Verify collectedBadges did not gain this badge
+        assert(!stateObj.collectedBadges.some(b => b.id === initialBadgeId), 
+          "Unearned badge should NOT be in collectedBadges");
+
+        // 3. Test unearned rollover with pendingWeekStartDate (schedule shift)
+        rewardSelect.value = "Choose Meal";
+        rewardSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        stateObj.pendingWeekStartDate = '2026-09-07';
+        stateObj.pendingWeekStartDay = 1;
+        stateObj.weeklyClaimed = false;
+
+        helpers.resetWeekGrid(false);
+        await sleep(100);
+        stateObj = window.__app_state__;
+
+        assert(stateObj.activeWeeklyBadgeId === initialBadgeId, 
+          `Unearned badge (${initialBadgeId}) should still carry over after pendingWeekStartDate (actual: ${stateObj.activeWeeklyBadgeId})`);
+        assert(stateObj.reward === "Choose Meal", 
+          `Reward should still carry over after pendingWeekStartDate (actual: '${stateObj.reward}')`);
+        assert(stateObj.weeklyClaimed === false, "weeklyClaimed should be false after pending week rollover");
+
+        // 4. Test earned week rollover: when weeklyClaimed === true, badge awards and rolls new, reward resets
+        stateObj.weeklyClaimed = true;
+
+        helpers.resetWeekGrid(false);
+        await sleep(100);
+        stateObj = window.__app_state__;
+
+        assert(stateObj.collectedBadges.some(b => b.id === initialBadgeId), 
+          "Earned badge should now be in collectedBadges");
+        assert(stateObj.activeWeeklyBadgeId !== initialBadgeId, 
+          "New weekly badge should be rolled after earning");
+        assert(stateObj.reward === '', 
+          `Reward should reset to empty after earning (actual: '${stateObj.reward}')`);
+        assert(stateObj.weeklyClaimed === false, "weeklyClaimed should reset to false");
+
+        // Clean up
+        helpers.resetState();
+        await sleep(50);
+      }
+
+      // 72. Test Smart Hybrid Exception Mode (3-State Cycling & Smart Rollover)
+      {
+        console.log("Running Test Case 72: Smart Hybrid Exception Mode (3-State Cycling & Smart Rollover)...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+        let stateObj = window.__app_state__;
+
+        const dateStrMon = getDateOfColumn(stateObj.weekStartDate, 1);
+        const dateStrWed = getDateOfColumn(stateObj.weekStartDate, 3);
+        const dateStrFri = getDateOfColumn(stateObj.weekStartDate, 5);
+
+        // 1. Enter Exception Mode
+        const adminModal = document.getElementById('admin-modal');
+        const adminBtn = document.getElementById('admin-btn');
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmitBtn = document.getElementById('password-submit-btn');
+        const exceptionsBtn = document.getElementById('exceptions-btn');
+        const exceptionsBanner = document.getElementById('exceptions-banner');
+
+        adminBtn.click();
+        await sleep(100);
+        passwordInput.value = window.__test_helpers__.ADMIN_PASSWORD || "zxcv";
+        passwordSubmitBtn.click();
+        await sleep(100);
+        exceptionsBtn.click();
+        await sleep(50);
+
+        assert(!exceptionsBanner.classList.contains('hidden'), "Exception banner should be visible");
+
+        // 2. Test 3-State Cycling on Friday Writing (Day 5, task 'writing')
+        const friWritingInput = document.querySelector('input[data-day="5"][data-task="writing"]');
+        assert(friWritingInput !== null, "Friday writing input should exist");
+        const friWritingCell = friWritingInput.closest('.checkbox-cell');
+        assert(friWritingCell !== null, "Friday writing cell should exist");
+
+        // State 0 -> State 1: Tap 1 -> 'bonus'
+        friWritingCell.click();
+        await sleep(50);
+        assert(stateObj.excused[`${dateStrFri}-writing`] === 'bonus', "Click 1: should set state.excused to 'bonus'");
+        assert(friWritingCell.classList.contains('excused-cell'), "Click 1: should have .excused-cell");
+        assert(friWritingCell.classList.contains('bonus-cell'), "Click 1: should have .bonus-cell");
+        assert(!friWritingCell.classList.contains('rest-cell'), "Click 1: should not have .rest-cell");
+        assert(friWritingCell.getAttribute('data-excused-type') === 'bonus', "Click 1: data-excused-type should be 'bonus'");
+        assert(friWritingCell.getAttribute('title')?.includes('Bonus Task'), "Click 1: title should mention Bonus Task");
+
+        // State 1 -> State 2: Tap 2 -> 'rest'
+        friWritingCell.click();
+        await sleep(50);
+        assert(stateObj.excused[`${dateStrFri}-writing`] === 'rest', "Click 2: should cycle state.excused to 'rest'");
+        assert(friWritingCell.classList.contains('excused-cell'), "Click 2: should retain .excused-cell");
+        assert(friWritingCell.classList.contains('rest-cell'), "Click 2: should have .rest-cell");
+        assert(!friWritingCell.classList.contains('bonus-cell'), "Click 2: should lose .bonus-cell");
+        assert(friWritingCell.getAttribute('data-excused-type') === 'rest', "Click 2: data-excused-type should be 'rest'");
+        assert(friWritingCell.getAttribute('title')?.includes('Rest Day'), "Click 2: title should mention Rest Day");
+
+        // State 2 -> State 0: Tap 3 -> Normal (unexcused)
+        friWritingCell.click();
+        await sleep(50);
+        assert(stateObj.excused[`${dateStrFri}-writing`] === undefined, "Click 3: should remove state.excused");
+        assert(!friWritingCell.classList.contains('excused-cell'), "Click 3: should lose .excused-cell");
+        assert(!friWritingCell.classList.contains('bonus-cell'), "Click 3: should lose .bonus-cell");
+        assert(!friWritingCell.classList.contains('rest-cell'), "Click 3: should lose .rest-cell");
+        assert(!friWritingCell.hasAttribute('data-excused-type'), "Click 3: should remove data-excused-type");
+
+        // Exit Exception Mode
+        const exceptionsDoneBtn = document.getElementById('exceptions-done-btn');
+        exceptionsDoneBtn.click();
+        await sleep(50);
+
+        // 3. Test Overachiever +10 XP on 'bonus' task
+        const rewardSelect = document.getElementById('reward-select');
+        const megaRewardSelect = document.getElementById('mega-reward-select');
+        rewardSelect.value = "Bonus Tablet Time";
+        rewardSelect.dispatchEvent(new Event('change'));
+        megaRewardSelect.value = "Dessert Outing";
+        megaRewardSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        stateObj.excused[`${dateStrMon}-writing`] = 'bonus';
+        stateObj.activeDay = 1; // Monday
+        helpers.saveState();
+        helpers.renderState(true);
+        await sleep(50);
+
+        const partnerInst = stateObj.activePartnerInstanceId;
+        const initialPartnerXp = stateObj.partnersData[partnerInst].xp;
+
+        // Check Monday Writing ('bonus' task)
+        const monWritingInput = document.querySelector('input[data-day="1"][data-task="writing"]');
+        monWritingInput.click();
+        await sleep(100);
+
+        assert(stateObj.grid[`${dateStrMon}-writing`] === true, "Grid should record bonus writing check");
+        const afterBonusXp = stateObj.partnersData[partnerInst].xp;
+        const expectedXp = (initialPartnerXp + helpers.XP_BONUS_TASK) % 100;
+        assert(afterBonusXp === expectedXp, `Checking 'bonus' task should award +10 XP (got ${afterBonusXp}, expected ${expectedXp})`);
+
+        // Accidental uncheck reverts XP
+        monWritingInput.click();
+        await sleep(100);
+        assert(!stateObj.grid[`${dateStrMon}-writing`], "Grid should clear bonus writing check");
+        assert(stateObj.partnersData[partnerInst].xp === initialPartnerXp, "Unchecking bonus task reverts XP cleanly");
+
+        // 4. Test Smart Rollover:
+        // Set up past week: Monday writing = 'bonus', Wednesday piano = 'rest'
+        const pastWeekStart = '2026-08-02';
+        stateObj.weekStartDate = pastWeekStart;
+        const pastDateMon = getDateOfColumn(pastWeekStart, 1);
+        const pastDateWed = getDateOfColumn(pastWeekStart, 3);
+        stateObj.excused = {
+          [`${pastDateMon}-writing`]: 'bonus',
+          [`${pastDateWed}-piano`]: 'rest'
+        };
+        stateObj.weeklyClaimed = false;
+        helpers.saveState();
+
+        // Advance week via resetWeekGrid(false) (unearned rollover without manual carry-over)
+        helpers.resetWeekGrid(false);
+        await sleep(100);
+        stateObj = window.__app_state__;
+
+        const newWeekStart = stateObj.weekStartDate;
+        const newDateMon = getDateOfColumn(newWeekStart, 1);
+        const newDateWed = getDateOfColumn(newWeekStart, 3);
+
+        // 'bonus' task MUST automatically carry over by day of week
+        assert(stateObj.excused[`${newDateMon}-writing`] === 'bonus', 
+          `Smart Rollover: 'bonus' task MUST auto-carry over to next week (actual: '${stateObj.excused[`${newDateMon}-writing`]}')`);
+
+        // 'rest' task MUST automatically expire on rollover
+        assert(stateObj.excused[`${newDateWed}-piano`] === undefined, 
+          `Smart Rollover: 'rest' task MUST expire on rollover (actual: '${stateObj.excused[`${newDateWed}-piano`]}')`);
+
+        // Verify UI rendered correctly in new week
+        const newMonWritingCell = document.querySelector('input[data-day="1"][data-task="writing"]').closest('.checkbox-cell');
+        assert(newMonWritingCell.classList.contains('bonus-cell'), "New week Mon Writing should have .bonus-cell in UI");
+        assert(newMonWritingCell.classList.contains('excused-cell'), "New week Mon Writing should have .excused-cell in UI");
+        const newWedPianoCell = document.querySelector('input[data-day="3"][data-task="piano"]').closest('.checkbox-cell');
+        assert(!newWedPianoCell.classList.contains('excused-cell'), "New week Wed Piano should not have .excused-cell in UI");
+
+        // 5. Test Manual Carry Over when carryOverExceptions === true:
+        // Set past week again with both bonus and rest
+        stateObj.weekStartDate = pastWeekStart;
+        stateObj.excused = {
+          [`${pastDateMon}-writing`]: 'bonus',
+          [`${pastDateWed}-piano`]: 'rest'
+        };
+        stateObj.weeklyClaimed = false;
+        helpers.saveState();
+
+        helpers.resetWeekGrid(true); // reset with carryOverExceptions = true
+        await sleep(100);
+        stateObj = window.__app_state__;
+
+        assert(stateObj.excused[`${newDateMon}-writing`] === 'bonus', "Bonus task carries over when carryOver=true");
+        assert(stateObj.excused[`${newDateWed}-piano`] === 'rest', "Rest task carries over when carryOver=true");
+
+        // Clean up
+        helpers.resetState();
         await sleep(50);
       }
 

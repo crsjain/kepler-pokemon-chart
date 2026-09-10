@@ -86,4 +86,42 @@ The Weekly Training Grid uses a centralized state machine with 4 distinct chroma
 - **Declarative State Binding**: All header, cell, and total elements must declare their state via `data-column-state="active_today|active_past|active_future|selectable_today|selectable_past|future_locked|superseded|historical"` to guarantee CSS styles are driven directly by the state machine without fragile `:not()` selectors.
 - **Parent Exception Mode Elevation**: In Exception Mode (`.exception-mode`), all non-superseded cells elevate to full opacity (`opacity: 1 !important`) with soft amber tint (`#fffbeb`) to signal direct parent toggling.
 
+## 14. Task Checkbox State Matrix & Icon Iconography (Pokéball, Rest Day 💤, Bonus ✨, and Great Ball +XP)
+See canonical PRD [`docs/prd_rest_day_passes_and_bonus_tasks.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/docs/prd_rest_day_passes_and_bonus_tasks.md) for full specs. All checkbox states use a strictly locked 36px × 36px circular footprint:
+
+1. **Normal Unchecked (`.checkbox-cell`)**:
+   - 36px circle with `3px solid #2d3748` border.
+   - Upper dome: Dormant Grey `#cbd5e0`, border-bottom `3px solid #2d3748`.
+   - Lower dome: Pure White `#ffffff`.
+   - Center button: 10px circle, white `#ffffff` with `3px solid #2d3748` border.
+
+2. **Normal Checked (`.checkbox-cell input:checked`)**:
+   - Upper dome: Pokémon Red `#ff3c3c` (`var(--poke-red)`).
+   - Center button: Pokémon Yellow `#ffcb05` (`var(--poke-yellow)`).
+
+3. **Rest Day (`.checkbox-cell.excused-cell.rest-cell`)**:
+   - Strictly non-clickable in child mode: `<input type="checkbox" disabled>`, `pointer-events: none !important; cursor: default !important;`.
+   - `border: none !important; background: transparent !important; box-shadow: none !important;`
+   - Floating `💤` emoji (`19px`) with `filter: drop-shadow(0 2px 4px rgba(100, 116, 139, 0.35))`.
+   - Cell background: diagonal stripes `repeating-linear-gradient(-45deg, #f8fafc, #f8fafc 4px, #e2e8f0 4px, #e2e8f0 8px)`.
+   - Invariant: Eliminates false button affordance for 7yo; lowers daily required chore goal. Cannot be checked or turned into a Great Ball. (In Parent Exception Mode, clicking cycles the exception state).
+
+4. **Bonus Task Unchecked (`.checkbox-cell.excused-cell.bonus-cell input:not(:checked)`)**:
+   - `border: 3px dashed #0284c7 !important; background: #ffffff !important; border-radius: 50% !important;`
+   - Centered `✨` emoji (`16px`).
+   - Cell background: Soft Sky Blue tint `#f0f9ff`.
+   - Interactive: `cursor: pointer;`, hover lift.
+
+5. **Completed Bonus Task (`.checkbox-cell.bonus-cell input:checked`)**:
+   - Authentic Pokémon **Great Ball (Super Ball)** vector SVG (exclusive to completed bonus tasks):
+     - Top dome: Royal Cobalt Blue `#2563eb` with dark charcoal outer stroke (`#2d3748`, `stroke-width="3"`).
+     - Left red capsule element (~10 o'clock): Angled rounded pill from `(8.8, 9.2)` to `(13.2, 13.6)` outlined in `#2d3748` (`stroke-width="5"`) with scarlet core `#ef4444` (`stroke-width="2.6"`).
+     - Right red capsule element (~2 o'clock): Angled rounded pill from `(27.2, 9.2)` to `(22.8, 13.6)` outlined in `#2d3748` (`stroke-width="5"`) with scarlet core `#ef4444` (`stroke-width="2.6"`).
+     - Equator band: dark charcoal `#2d3748` line (`stroke-width="3"`).
+     - Center button: outer 12px dark circle (`r=6`) in `#2d3748`, inner golden yellow button (`r=4.2`) in Pokémon Yellow `#ffcb05`.
+     - Bottom hemisphere: pure white `#ffffff` with subtle crescent base shadow (`#e2e8f0`).
+   - Floating Badge: `.pokeball-checkbox:has(input:checked)::after` with text `+XP`, font `Fredoka One`, `font-size: 7px`, background `#1d4ed8`, border `1px solid #1e3a8a`, color `#ffffff`, `top: -6px; right: -2px;`.
+   - Awards `+10 XP` to partner Pokémon and unlocks `(Super Trainer! 🚀)` footer.
+
+
 

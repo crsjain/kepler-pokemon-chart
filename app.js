@@ -10,6 +10,9 @@ import {
   XP_LEVEL_THRESHOLD,
   XP_DAILY_BONUS,
   XP_PER_TASK,
+  XP_BONUS_TASK,
+  isDayComplete,
+  getDayTaskCounts,
   rollNewWeeklyBadge,
   getTaskRequiredDays,
   replaceState,
@@ -1325,8 +1328,9 @@ function updateActiveColumnUI() {
         if (input) {
           const d = parseInt(input.dataset.day);
           const col = colStates[d];
+          const isRest = cell.classList.contains('rest-cell');
           const isOutOfRange = cell.classList.contains('out-of-range-cell');
-          input.disabled = isOutOfRange || (col ? col.isCellDisabled : true);
+          input.disabled = isOutOfRange || (col ? col.isCellDisabled : true) || isRest;
           if (d === activeColIndex) {
             cell.classList.add('active-column');
           } else {
@@ -1461,15 +1465,30 @@ function renderGridTable() {
       const col = colStates[d];
       const dateStr = col.dateStr;
       const stateKey = `${dateStr}-${task.id}`;
+      const excusedVal = state.excused[stateKey];
+      const isBonus = excusedVal === 'bonus';
+      const isRest = excusedVal === 'rest' || excusedVal === true;
       const checked = !!state.grid[stateKey];
-      const excused = !!state.excused[stateKey];
+      const excused = isBonus || isRest;
       const isOutOfRange = (task.createdAt && dateStr < task.createdAt) || (task.deletedAt && dateStr >= task.deletedAt);
-      const shouldDisable = isOutOfRange || col.isCellDisabled;
-      const cellTitle = col.tooltip;
+      const shouldDisable = isOutOfRange || col.isCellDisabled || isRest;
+      
+      let cellTitle = col.tooltip;
+      if (col.state === 'SUPERSEDED') {
+        cellTitle = col.tooltip;
+      } else if (isBonus) {
+        cellTitle = 'Bonus Task (+10 XP if completed!)';
+      } else if (isRest) {
+        cellTitle = 'Rest Day (Excused chore)';
+      }
+
+      const excusedClasses = isBonus ? 'excused-cell bonus-cell' : (isRest ? 'excused-cell rest-cell' : '');
+      const excusedDataAttr = isBonus ? 'data-excused-type="bonus"' : (isRest ? 'data-excused-type="rest"' : '');
 
       html += `
-        <td class="checkbox-cell ${excused ? 'excused-cell' : ''} ${isOutOfRange ? 'out-of-range-cell' : ''} ${col.cellClass}" 
+        <td class="checkbox-cell ${excusedClasses} ${isOutOfRange ? 'out-of-range-cell' : ''} ${col.cellClass}" 
             data-column-state="${col.state.toLowerCase()}" 
+            ${excusedDataAttr}
             ${cellTitle ? `title="${cellTitle}"` : ''}>
           <label class="pokeball-checkbox" ${cellTitle ? `title="${cellTitle}"` : ''}>
             <input type="checkbox" data-day="${d}" data-task="${task.id}" ${checked ? 'checked' : ''} ${shouldDisable ? 'disabled' : ''}>
@@ -1505,7 +1524,7 @@ function renderGridTable() {
     if (col.state === 'SUPERSEDED') {
       totalHtml += `<td class="day-total-cell superseded-total" data-day="${d}" data-column-state="superseded" title="${col.tooltip}"><div class="badge-indicator locked" title="${col.tooltip}">➖</div></td>`;
     } else {
-      totalHtml += `<td class="day-total-cell" data-day="${d}" data-column-state="${col.state.toLowerCase()}"><div class="badge-indicator locked">❌</div></td>`;
+      totalHtml += `<td class="day-total-cell" data-day="${d}" data-column-state="${col.state.toLowerCase()}"><div class="badge-indicator locked">❌</div><div class="day-total-count">0 / ${state.tasks.length}</div></td>`;
     }
   }
   
@@ -1587,9 +1606,14 @@ function handleGridClick(e) {
   const taskId = input.dataset.task;
   const key = `${col.dateStr}-${taskId}`;
   
-  // Toggle excused state
-  state.excused[key] = !state.excused[key];
-  if (!state.excused[key]) {
+  // 3-state cycle:
+  // Required (undefined) -> Bonus ('bonus') -> Rest ('rest') -> Required (undefined)
+  const currentVal = state.excused[key];
+  if (!currentVal) {
+    state.excused[key] = 'bonus';
+  } else if (currentVal === 'bonus') {
+    state.excused[key] = 'rest';
+  } else {
     delete state.excused[key];
   }
   
@@ -1612,10 +1636,45 @@ function handleGridClick(e) {
 }
 
 function updateCellUI(cell, key) {
-  if (state.excused[key]) {
-    cell.classList.add('excused-cell');
+  const excusedVal = state.excused[key];
+  const label = cell.querySelector('.pokeball-checkbox');
+  const span = cell.querySelector('.pokeball');
+  const input = cell.querySelector('input');
+
+  if (excusedVal === 'bonus') {
+    cell.classList.add('excused-cell', 'bonus-cell');
+    cell.classList.remove('rest-cell');
+    cell.setAttribute('data-excused-type', 'bonus');
+    const title = 'Bonus Task (+10 XP if completed!)';
+    cell.setAttribute('title', title);
+    if (label) label.setAttribute('title', title);
+    if (span) span.setAttribute('title', title);
+    if (input) {
+      input.disabled = false;
+      input.checked = !!state.grid[key];
+    }
+  } else if (excusedVal === 'rest' || excusedVal === true) {
+    cell.classList.add('excused-cell', 'rest-cell');
+    cell.classList.remove('bonus-cell');
+    cell.setAttribute('data-excused-type', 'rest');
+    const title = 'Rest Day (Excused chore)';
+    cell.setAttribute('title', title);
+    if (label) label.setAttribute('title', title);
+    if (span) span.setAttribute('title', title);
+    if (input) {
+      input.disabled = true;
+      input.checked = !!state.grid[key];
+    }
   } else {
-    cell.classList.remove('excused-cell');
+    cell.classList.remove('excused-cell', 'bonus-cell', 'rest-cell');
+    cell.removeAttribute('data-excused-type');
+    cell.removeAttribute('title');
+    if (label) label.removeAttribute('title');
+    if (span) span.removeAttribute('title');
+    if (input) {
+      input.disabled = false;
+      input.checked = !!state.grid[key];
+    }
   }
 }
 
@@ -1624,20 +1683,23 @@ function updateDayTotalUI(day) {
   if (!dayTotalCell) return;
   
   const dateStr = getDateOfColumn(state.weekStartDate, day);
-  const tasks = (state.tasks || []).filter(task => isTaskActiveInWeek(task, state.weekStartDate));
-  const allCheckedOrExcused = tasks.length > 0 && tasks.every(task => {
-    const k = `${dateStr}-${task.id}`;
-    return !!state.grid[k] || !!state.excused[k];
-  });
+  const isComplete = isDayComplete(dateStr, state);
+  const counts = getDayTaskCounts(dateStr, state);
   
-  checkDayCompleted(dateStr, allCheckedOrExcused);
+  checkDayCompleted(dateStr, isComplete);
   
-  if (allCheckedOrExcused) {
-    dayTotalCell.innerHTML = '<div class="badge-indicator unlocked">🌟</div>';
+  if (isComplete) {
+    dayTotalCell.innerHTML = `
+      <div class="badge-indicator unlocked" title="${counts.displayString}">🌟</div>
+      <div class="day-total-count ${counts.bonusCompleted > 0 ? 'super-trainer' : ''}" title="${counts.displayString}">${counts.displayString}</div>
+    `;
     dayTotalCell.classList.add('unlocked');
     dayTotalCell.classList.remove('locked');
   } else {
-    dayTotalCell.innerHTML = '<div class="badge-indicator locked">❌</div>';
+    dayTotalCell.innerHTML = `
+      <div class="badge-indicator locked" title="${counts.displayString}">❌</div>
+      <div class="day-total-count" title="${counts.displayString}">${counts.displayString}</div>
+    `;
     dayTotalCell.classList.add('locked');
     dayTotalCell.classList.remove('unlocked');
   }
@@ -1651,6 +1713,17 @@ function handleCheckboxChange(e) {
   if (!col || col.isCellDisabled) {
     e.preventDefault();
     cb.checked = !cb.checked;
+    return;
+  }
+
+  const taskId = cb.dataset.task;
+  const dateStr = col.dateStr;
+  const key = `${dateStr}-${taskId}`;
+  const excusedVal = state.excused[key];
+  const isRest = excusedVal === 'rest' || excusedVal === true;
+  if (isRest) {
+    e.preventDefault();
+    cb.checked = false;
     return;
   }
 
@@ -1716,12 +1789,10 @@ function handleCheckboxChange(e) {
   }
 
   const isChecked = cb.checked;
-  const taskId = cb.dataset.task;
-  const dateStr = col.dateStr;
-  const key = `${dateStr}-${taskId}`;
+  const isExcused = !!state.excused[key];
+  const taskXp = isExcused ? XP_BONUS_TASK : XP_PER_TASK;
 
-  const tasks = state.tasks || [];
-  const wasDayFullyChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${dateStr}-${task.id}`] || !!state.excused[`${dateStr}-${task.id}`]);
+  const wasDayFullyChecked = isDayComplete(dateStr, state);
 
   state.grid[key] = isChecked;
 
@@ -1743,14 +1814,9 @@ function handleCheckboxChange(e) {
     }
   }
 
-  let xpGained = 0;
-  if (isChecked) {
-    xpGained += XP_PER_TASK;
-  } else {
-    xpGained -= XP_PER_TASK;
-  }
+  let xpGained = isChecked ? taskXp : -taskXp;
 
-  const isDayFullyChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${dateStr}-${task.id}`] || !!state.excused[`${dateStr}-${task.id}`]);
+  const isDayFullyChecked = isDayComplete(dateStr, state);
   
   if (isDayFullyChecked && !wasDayFullyChecked) {
     xpGained += XP_DAILY_BONUS;
@@ -1768,9 +1834,11 @@ function handleCheckboxChange(e) {
   }
 
   if (isChecked) {
-    let text = `+${XP_PER_TASK} XP`;
+    let text = isExcused ? `+${taskXp} XP (Bonus!)` : `+${taskXp} XP`;
     if (isDayFullyChecked && !wasDayFullyChecked) {
-      text = `+${XP_PER_TASK + XP_DAILY_BONUS} XP! 🎉`;
+      text = isExcused ? `+${taskXp + XP_DAILY_BONUS} XP! 🎉 (Super Trainer! 🚀)` : `+${taskXp + XP_DAILY_BONUS} XP! 🎉`;
+    } else if (isDayFullyChecked && isExcused) {
+      text = `+${taskXp} XP (Super Trainer! 🚀)`;
     }
     spawnXpFloat(cb, text);
   }
@@ -2594,21 +2662,45 @@ function calculateWeekXpEarned(weekStartDateStr) {
         const key = `${dateStr}-${task.id}`;
         if (state.grid[key]) {
           completedTasksCount++;
-          xp += XP_PER_TASK;
+          xp += state.excused[key] ? XP_BONUS_TASK : XP_PER_TASK;
         }
       }
     });
     
-    const allCheckedOrExcused = tasks.every(task => {
-      const key = `${dateStr}-${task.id}`;
-      return !!state.grid[key] || !!state.excused[key];
-    });
-    
-    if (allCheckedOrExcused && activeTasksCount > 0) {
+    if (isDayComplete(dateStr, state) && activeTasksCount > 0) {
       xp += XP_DAILY_BONUS;
     }
   });
   return xp;
+}
+
+function carryOverExceptionsSmart(oldWeekStartDate, newWeekStartDate, oldStartDay, newStartDay, carryOverExceptions) {
+  const excusedByDayOfWeek = {};
+  DAYS.forEach(dayIndex => {
+    const oldDateStr = getDateOfColumn(oldWeekStartDate, dayIndex);
+    const dayOfWeek = (oldStartDay + dayIndex) % 7;
+    (state.tasks || []).forEach(task => {
+      const oldKey = `${oldDateStr}-${task.id}`;
+      const val = state.excused[oldKey];
+      if (val === 'bonus') {
+        excusedByDayOfWeek[dayOfWeek] = excusedByDayOfWeek[dayOfWeek] || {};
+        excusedByDayOfWeek[dayOfWeek][task.id] = 'bonus';
+      } else if (val && carryOverExceptions) {
+        excusedByDayOfWeek[dayOfWeek] = excusedByDayOfWeek[dayOfWeek] || {};
+        excusedByDayOfWeek[dayOfWeek][task.id] = val;
+      }
+    });
+  });
+  
+  DAYS.forEach(dayIndex => {
+    const newDateStr = getDateOfColumn(newWeekStartDate, dayIndex);
+    const dayOfWeek = (newStartDay + dayIndex) % 7;
+    if (excusedByDayOfWeek[dayOfWeek]) {
+      Object.keys(excusedByDayOfWeek[dayOfWeek]).forEach(taskId => {
+        state.excused[`${newDateStr}-${taskId}`] = excusedByDayOfWeek[dayOfWeek][taskId];
+      });
+    }
+  });
 }
 
 function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStartDay, newStartDay = state.weekStartDay) {
@@ -2621,24 +2713,50 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
     const pendingDay = state.pendingWeekStartDay !== undefined ? state.pendingWeekStartDay : state.weekStartDay;
     delete state.pendingWeekStartDate;
     delete state.pendingWeekStartDay;
+
+    const wasClaimed = !!state.weeklyClaimed;
+    if (wasClaimed) {
+      const alreadyAwarded = state.collectedBadges.some(b => b.id === state.activeWeeklyBadgeId);
+      if (!alreadyAwarded) {
+        awardCurrentWeeklyBadge();
+      }
+    }
     
     // Archive old shortened week
     state.weeklyHistory[oldWeekStartDate] = {
       weekStartDay: state.weekStartDay !== undefined ? state.weekStartDay : 0,
       reward: state.reward || '',
       megaReward: state.megaReward || '',
-      weeklyClaimed: false,
+      weeklyClaimed: wasClaimed,
       badgeId: state.activeWeeklyBadgeId,
       xpEarned: calculateWeekXpEarned(oldWeekStartDate),
       megaWeeks: state.megaWeeks !== undefined ? state.megaWeeks : 0
     };
     
+    const oldStartDay = state.weeklyHistory[oldWeekStartDate]?.weekStartDay !== undefined ? state.weeklyHistory[oldWeekStartDate].weekStartDay : (state.weekStartDay || 0);
+    const newStartDay = pendingDay !== undefined ? pendingDay : 0;
+    carryOverExceptionsSmart(oldWeekStartDate, pendingDate, oldStartDay, newStartDay, carryOverExceptions);
+
     state.weekStartDay = pendingDay;
     state.weekStartDate = pendingDate;
     currentViewingWeekStartDate = pendingDate;
-    rollNewWeeklyBadge();
-    state.weeklyClaimed = false;
-    state.reward = '';
+
+    if (wasClaimed) {
+      rollNewWeeklyBadge();
+      state.megaWeeks = (state.megaWeeks !== undefined ? state.megaWeeks : 0) + 1;
+      if (state.megaWeeks >= 4) {
+        state.megaWeeks = 0;
+        state.megaReward = '';
+        flashMega = true;
+      }
+      state.weeklyClaimed = false;
+      state.reward = '';
+      flashWeekly = true;
+    } else {
+      // Unearned: carry over badge and weekly reward to new week
+      state.weeklyClaimed = false;
+    }
+
     saveState();
     renderState(true);
     return;
@@ -2679,34 +2797,10 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
     const newWeekStartDate = isOldWeek ? currentRealWeekStart : nextWeekStartDateStr;
     state.weekStartDate = newWeekStartDate;
 
-    // Carry over exceptions to the new week (mapped by day of week)
-    if (carryOverExceptions) {
-      const oldStartDay = state.weeklyHistory[oldWeekStartDate]?.weekStartDay !== undefined ? state.weeklyHistory[oldWeekStartDate].weekStartDay : (state.weekStartDay || 0);
-      const newStartDay = state.weekStartDay !== undefined ? state.weekStartDay : 0;
-      
-      const excusedByDayOfWeek = {};
-      DAYS.forEach(dayIndex => {
-        const oldDateStr = getDateOfColumn(oldWeekStartDate, dayIndex);
-        const dayOfWeek = (oldStartDay + dayIndex) % 7;
-        (state.tasks || []).forEach(task => {
-          const oldKey = `${oldDateStr}-${task.id}`;
-          if (state.excused[oldKey]) {
-            excusedByDayOfWeek[dayOfWeek] = excusedByDayOfWeek[dayOfWeek] || {};
-            excusedByDayOfWeek[dayOfWeek][task.id] = true;
-          }
-        });
-      });
-      
-      DAYS.forEach(dayIndex => {
-        const newDateStr = getDateOfColumn(newWeekStartDate, dayIndex);
-        const dayOfWeek = (newStartDay + dayIndex) % 7;
-        if (excusedByDayOfWeek[dayOfWeek]) {
-          Object.keys(excusedByDayOfWeek[dayOfWeek]).forEach(taskId => {
-            state.excused[`${newDateStr}-${taskId}`] = true;
-          });
-        }
-      });
-    }
+    // Smart rollover for exceptions:
+    const oldStartDay = state.weeklyHistory[oldWeekStartDate]?.weekStartDay !== undefined ? state.weeklyHistory[oldWeekStartDate].weekStartDay : (state.weekStartDay || 0);
+    const newStartDay = state.weekStartDay !== undefined ? state.weekStartDay : 0;
+    carryOverExceptionsSmart(oldWeekStartDate, newWeekStartDate, oldStartDay, newStartDay, carryOverExceptions);
 
     state.weeklyClaimed = false;
     state.reward = '';
@@ -2723,41 +2817,15 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
       megaWeeks: state.megaWeeks
     };
     
-    rollNewWeeklyBadge();
-    
     const newWeekStartDate = currentRealWeekStart;
     state.weekStartDate = newWeekStartDate;
 
-    if (carryOverExceptions) {
-      const oldStartDay = state.weeklyHistory[oldWeekStartDate]?.weekStartDay !== undefined ? state.weeklyHistory[oldWeekStartDate].weekStartDay : (state.weekStartDay || 0);
-      const newStartDay = state.weekStartDay !== undefined ? state.weekStartDay : 0;
-      
-      const excusedByDayOfWeek = {};
-      DAYS.forEach(dayIndex => {
-        const oldDateStr = getDateOfColumn(oldWeekStartDate, dayIndex);
-        const dayOfWeek = (oldStartDay + dayIndex) % 7;
-        (state.tasks || []).forEach(task => {
-          const oldKey = `${oldDateStr}-${task.id}`;
-          if (state.excused[oldKey]) {
-            excusedByDayOfWeek[dayOfWeek] = excusedByDayOfWeek[dayOfWeek] || {};
-            excusedByDayOfWeek[dayOfWeek][task.id] = true;
-          }
-        });
-      });
-      
-      DAYS.forEach(dayIndex => {
-        const newDateStr = getDateOfColumn(newWeekStartDate, dayIndex);
-        const dayOfWeek = (newStartDay + dayIndex) % 7;
-        if (excusedByDayOfWeek[dayOfWeek]) {
-          Object.keys(excusedByDayOfWeek[dayOfWeek]).forEach(taskId => {
-            state.excused[`${newDateStr}-${taskId}`] = true;
-          });
-        }
-      });
-    }
+    // Smart rollover for exceptions:
+    const oldStartDay = state.weeklyHistory[oldWeekStartDate]?.weekStartDay !== undefined ? state.weeklyHistory[oldWeekStartDate].weekStartDay : (state.weekStartDay || 0);
+    const newStartDay = state.weekStartDay !== undefined ? state.weekStartDay : 0;
+    carryOverExceptionsSmart(oldWeekStartDate, newWeekStartDate, oldStartDay, newStartDay, carryOverExceptions);
 
     state.weeklyClaimed = false;
-    state.reward = '';
   } else {
     // Manual Reset (same week)
     // Clear only the current week's keys from grid and excused
@@ -2790,13 +2858,9 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
 }
 
 function syncVaultStarsWithGrid() {
-  const tasks = (state.tasks || []).filter(task => isTaskActiveInWeek(task, state.weekStartDate));
   DAYS.forEach(day => {
     const dateStr = getDateOfColumn(state.weekStartDate, day);
-    const allChecked = tasks.length > 0 && tasks.every(task => {
-      const k = `${dateStr}-${task.id}`;
-      return !!state.grid[k] || !!state.excused[k];
-    });
+    const allChecked = isDayComplete(dateStr, state);
     checkDayCompleted(dateStr, allChecked);
   });
 }
@@ -3168,7 +3232,8 @@ function renderProgress() {
   DAYS.forEach(day => {
     const dateStr = getDateOfColumn(currentViewingWeekStartDate, day);
     const isSuperseded = !!(currentInterval && currentInterval.supersededDates && currentInterval.supersededDates.includes(dateStr));
-    const allChecked = tasks.length > 0 && tasks.every(task => !!state.grid[`${dateStr}-${task.id}`] || !!state.excused[`${dateStr}-${task.id}`]);
+    const isComplete = isDayComplete(dateStr, state);
+    const counts = getDayTaskCounts(dateStr, state);
     const totalCell = domCache.dayTotals[day];
     if (totalCell) {
       if (isSuperseded) {
@@ -3176,13 +3241,19 @@ function renderProgress() {
         totalCell.classList.add('superseded-total');
         totalCell.classList.add('locked');
         totalCell.classList.remove('unlocked');
-      } else if (allChecked) {
-        totalCell.innerHTML = '<div class="badge-indicator unlocked">🌟</div>';
+      } else if (isComplete) {
+        totalCell.innerHTML = `
+          <div class="badge-indicator unlocked" title="${counts.displayString}">🌟</div>
+          <div class="day-total-count ${counts.bonusCompleted > 0 ? 'super-trainer' : ''}" title="${counts.displayString}">${counts.displayString}</div>
+        `;
         totalCell.classList.remove('superseded-total');
         totalCell.classList.add('unlocked');
         totalCell.classList.remove('locked');
       } else {
-        totalCell.innerHTML = '<div class="badge-indicator locked">❌</div>';
+        totalCell.innerHTML = `
+          <div class="badge-indicator locked" title="${counts.displayString}">❌</div>
+          <div class="day-total-count" title="${counts.displayString}">${counts.displayString}</div>
+        `;
         totalCell.classList.remove('superseded-total');
         totalCell.classList.add('locked');
         totalCell.classList.remove('unlocked');
@@ -3728,8 +3799,8 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     setProfilesList: (list) => { profilesList = list; },
     getProfilesList: () => profilesList,
     renderAdminProfilesList: () => renderAdminProfilesList(),
-    setDeleteChildProfileMock: (fn) => { deleteChildProfileFn = fn || deleteChildProfile; },
     setCreateChildProfileMock: (fn) => { createChildProfileFn = fn || createChildProfile; },
+    setDeleteChildProfileMock: (fn) => { deleteChildProfileFn = fn || deleteChildProfile; },
     setSaveProfileRewardsMock: (fn) => { saveProfileRewardsToCloudFn = fn || saveProfileRewardsToCloud; },
     setExportCloudDataMock: (fn) => { exportCloudDataFn = fn; },
     setImportCloudDataMock: (fn) => { importCloudDataFn = fn; },
@@ -3742,7 +3813,10 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     renderRewardDropdowns: () => renderRewardDropdowns(),
     canStartNextWeek: (state, viewingDateStr, forceCheck) => canStartNextWeek(state, viewingDateStr, forceCheck),
     isTaskActiveInWeek: (task, weekStartStr) => isTaskActiveInWeek(task, weekStartStr),
-    hasTaskActivityInWeek: (task, weekStartStr) => hasTaskActivityInWeek(task, weekStartStr)
+    hasTaskActivityInWeek: (task, weekStartStr) => hasTaskActivityInWeek(task, weekStartStr),
+    isDayComplete: (dateStr, state) => isDayComplete(dateStr, state),
+    getDayTaskCounts: (dateStr, state) => getDayTaskCounts(dateStr, state),
+    XP_BONUS_TASK: XP_BONUS_TASK
   };
   
   if (location.search.includes('runTests=true')) {
