@@ -8,7 +8,7 @@ This guide provides the complete, step-by-step procedures for manually testing d
 
 *   **Local Server**: `http://localhost:8000/` (Launch with `python3 -m http.server 8000` if needed).
 *   **Parent Admin Passcode**: `zxcv` (Default fallback).
-*   **Browser Cache**: Perform a hard refresh (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> or <kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd>) to ensure the updated Service Worker cache (`v82`) and CSS load (`v=7.7`).
+*   **Browser Cache**: Perform a hard refresh (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> or <kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd>) to ensure the updated Service Worker cache (`poke-chart-cache-v116`) and CSS load (`style.css?v=10.10`, `app.js?v=10.6`).
 
 ---
 
@@ -195,7 +195,7 @@ node run_headless_tests.js
 *Expected Output:*
 ```
 🎉 All regression tests passed successfully!
-✅ Tests passed successfully! (65/65 passing in ~19s)
+✅ Tests passed successfully! (72/72 passing in ~20s)
 ```
 
 ---
