@@ -127,7 +127,11 @@ See canonical PRD [`docs/prd_rest_day_passes_and_bonus_tasks.md`](file:///usr/lo
 - **Only Clean Icons (No Sub-Labels)**: Day cells in the `Daily Total` row (`tr.total-row td.day-total-cell`) must display ONLY the clean status icon (`❌` for incomplete days, `🌟` for completed days, `➖` for superseded days).
 - **No Fractional Text for 7-Year-Olds**: Never render fractional progress text (e.g. `1 / 3 (+1)`, `0 / 0 ⭐`, `4 / 4`) below the icons in the chart cells. For a 7-year-old child, these numbers create unnecessary cognitive clutter.
 - **Parent Tooltip Support**: Full count strings (e.g. `1 / 3 (+1)` or `5 / 4 ⭐ (Super Trainer! 🚀)`) must be preserved in the cell and badge `title` attributes for optional hover inspection by parents.
-- **Super Trainer Pulse**: When bonus tasks are cleared on a completed day, the `🌟` badge receives `.super-trainer` with a glowing golden drop-shadow and gentle pulse animation.
-
-
-
+## 16. XP Float Animation (Child Dwell Time & Readability Invariant)
+- **Extended Dwell Phase (1.5s+ Hold)**: Floating reward feedback text (e.g. `+10 XP`, `+20 XP! 🎉`, `+10 XP Super Trainer! 🚀`) must never vanish or race upwards too quickly. Total animation duration is 2.5s with a locked, rock-steady hold phase between 18% and 75% (~1.4–1.6s) so a 7-year-old child can comfortably read every word and emoji before it gently fades.
+- **Child-Friendly Typography (`Fredoka One`)**: Floating XP text uses `font-family: 'Fredoka One', cursive, sans-serif` with thick 2px dark outlines (`#1e293b` or `#1e3a8a`), ensuring crisp, cheerful legibility against any background.
+- **Center Alignment & Viewport Clamping**: Floating text is centered over the clicked Pokéball via `transform: translate3d(-50%, ..., 0)` and clamped horizontally (`110px` from viewport edges) so long phrases like `+10 XP Super Trainer! 🚀` never clip off the screen on mobile devices or edge columns (Sunday/Saturday).
+- **Celebratory Styling**:
+  - Regular chore: Vivid Emerald XP Green (`#22c55e`).
+  - Day Complete Star (`+20 XP! 🎉`): Pokémon Yellow (`#ffcb05`) with Navy outline and warm glow.
+  - Overachiever Great Ball (`+10 XP Super Trainer! 🚀`): Pokémon Yellow (`#ffcb05`) with Royal Blue outline and electric blue aura.

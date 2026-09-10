@@ -4806,35 +4806,77 @@ body.has-banner {
 
 /* --- Mobile UX Upgrades --- */
 
-/* 1. XP Float Animation */
+/* 1. XP Float Animation (Extended dwell time for child readability) */
 .xp-float {
   position: fixed;
   pointer-events: none;
-  font-family: 'Press Start 2P', cursive;
-  font-size: 0.85rem;
-  color: var(--xp-color);
+  font-family: 'Fredoka One', cursive, sans-serif;
+  font-size: 1.15rem;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  color: #22c55e; /* Vibrant Emerald XP Green */
   text-shadow: 
-    -1.5px -1.5px 0 var(--border-color),  
-     1.5px -1.5px 0 var(--border-color),
-    -1.5px  1.5px 0 var(--border-color),
-     1.5px  1.5px 0 var(--border-color);
+    -2px -2px 0 #1e293b,  
+     2px -2px 0 #1e293b,
+    -2px  2px 0 #1e293b,
+     2px  2px 0 #1e293b,
+     0 3px 8px rgba(0, 0, 0, 0.35);
   z-index: 10000;
-  animation: float-up-fade 0.8s cubic-bezier(0.25, 1, 0.50, 1) forwards;
+  animation: float-up-fade 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: transform, opacity;
+}
+
+/* Daily Star Complete (+20 XP! 🎉) - Celebratory Bright Gold */
+.xp-float.daily-bonus {
+  color: #ffcb05; /* Pokémon Yellow */
+  text-shadow: 
+    -2px -2px 0 #1e3a8a,  
+     2px -2px 0 #1e3a8a,
+    -2px  2px 0 #1e3a8a,
+     2px  2px 0 #1e3a8a,
+     0 0 10px rgba(255, 203, 5, 0.5),
+     0 3px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* Great Ball Bonus (+10 XP Super Trainer! 🚀) - Vibrant Gold with Royal Blue contour and glow */
+.xp-float.super-trainer {
+  color: #ffcb05; /* Pokémon Yellow */
+  text-shadow: 
+    -2px -2px 0 #1e3a8a,  
+     2px -2px 0 #1e3a8a,
+    -2px  2px 0 #1e3a8a,
+     2px  2px 0 #1e3a8a,
+     0 0 12px rgba(37, 99, 235, 0.7),
+     0 3px 8px rgba(0, 0, 0, 0.35);
 }
 
 @keyframes float-up-fade {
   0% {
-    transform: translate3d(0, 0, 0) scale(0.8);
     opacity: 0;
+    transform: translate3d(-50%, -10px, 0) scale(0.6);
   }
   10% {
     opacity: 1;
-    transform: translate3d(0, -10px, 0) scale(1.1);
+    transform: translate3d(-50%, -30px, 0) scale(1.15);
+  }
+  18% {
+    opacity: 1;
+    transform: translate3d(-50%, -32px, 0) scale(1.0);
+  }
+  75% {
+    opacity: 1;
+    transform: translate3d(-50%, -42px, 0) scale(1.0);
   }
   100% {
-    transform: translate3d(0, -60px, 0) scale(0.9);
     opacity: 0;
+    transform: translate3d(-50%, -68px, 0) scale(0.95);
+  }
+}
+
+@media (max-width: 600px) {
+  .xp-float {
+    font-size: 0.95rem;
   }
 }
 

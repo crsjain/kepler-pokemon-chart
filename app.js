@@ -1837,9 +1837,9 @@ function handleCheckboxChange(e) {
   if (isChecked) {
     let text = isExcused ? `+${taskXp} XP (Bonus!)` : `+${taskXp} XP`;
     if (isDayFullyChecked && !wasDayFullyChecked) {
-      text = isExcused ? `+${taskXp + XP_DAILY_BONUS} XP! 🎉 (Super Trainer! 🚀)` : `+${taskXp + XP_DAILY_BONUS} XP! 🎉`;
+      text = isExcused ? `+${taskXp + XP_DAILY_BONUS} XP Super Trainer! 🚀` : `+${taskXp + XP_DAILY_BONUS} XP! 🎉`;
     } else if (isDayFullyChecked && isExcused) {
-      text = `+${taskXp} XP (Super Trainer! 🚀)`;
+      text = `+${taskXp} XP Super Trainer! 🚀`;
     }
     spawnXpFloat(cb, text);
   }
@@ -3930,23 +3930,24 @@ function createXpFloatAtCoords(x, y, text) {
 
   const floatDiv = document.createElement('div');
   floatDiv.className = 'xp-float';
+  if (text.includes('Super Trainer')) {
+    floatDiv.classList.add('super-trainer');
+  } else if (text.includes('20 XP')) {
+    floatDiv.classList.add('daily-bonus');
+  }
   floatDiv.textContent = text;
   
-  // Apply randomized offsets
-  const offsetX = (Math.random() - 0.5) * 30; // -15px to 15px
-  const offsetY = (Math.random() - 0.5) * 20; // -10px to 10px
+  // Apply gentle randomized horizontal jitter (-10px to 10px) so rapid clicks don't perfectly overlap
+  const offsetX = (Math.random() - 0.5) * 20;
   
-  // Random scale
-  const scale = 0.9 + Math.random() * 0.2; // 0.9 to 1.1
+  // Clamp horizontal position so floating text never clips outside viewport on edge columns or mobile
+  const halfWidth = 110;
+  const minX = Math.min(halfWidth, window.innerWidth / 2);
+  const maxX = Math.max(minX, window.innerWidth - halfWidth);
+  const clampedX = Math.max(minX, Math.min(maxX, x + offsetX));
   
-  // Account for scroll offset since position is fixed but rect is viewport-relative
-  // Actually, getBoundingClientRect() returns viewport-relative coordinates.
-  // CSS position: fixed also uses viewport-relative coordinates.
-  // So we don't need to add window.scrollY if using position: fixed.
-  // This is correct!
-  floatDiv.style.left = `${x + offsetX}px`;
-  floatDiv.style.top = `${y + offsetY}px`;
-  floatDiv.style.transform = `scale(${scale})`;
+  floatDiv.style.left = `${clampedX}px`;
+  floatDiv.style.top = `${y}px`;
   
   document.body.appendChild(floatDiv);
   activeXpFloats.push(floatDiv);
