@@ -1524,7 +1524,7 @@ function renderGridTable() {
     if (col.state === 'SUPERSEDED') {
       totalHtml += `<td class="day-total-cell superseded-total" data-day="${d}" data-column-state="superseded" title="${col.tooltip}"><div class="badge-indicator locked" title="${col.tooltip}">➖</div></td>`;
     } else {
-      totalHtml += `<td class="day-total-cell" data-day="${d}" data-column-state="${col.state.toLowerCase()}"><div class="badge-indicator locked">❌</div><div class="day-total-count">0 / ${state.tasks.length}</div></td>`;
+      totalHtml += `<td class="day-total-cell" data-day="${d}" data-column-state="${col.state.toLowerCase()}" title="0 / ${state.tasks.length}"><div class="badge-indicator locked" title="0 / ${state.tasks.length}">❌</div></td>`;
     }
   }
   
@@ -1688,18 +1688,19 @@ function updateDayTotalUI(day) {
   
   checkDayCompleted(dateStr, isComplete);
   
+  const isSuperTrainer = isComplete && counts.bonusCompleted > 0;
   if (isComplete) {
     dayTotalCell.innerHTML = `
-      <div class="badge-indicator unlocked" title="${counts.displayString}">🌟</div>
-      <div class="day-total-count ${counts.bonusCompleted > 0 ? 'super-trainer' : ''}" title="${counts.displayString}">${counts.displayString}</div>
+      <div class="badge-indicator unlocked ${isSuperTrainer ? 'super-trainer' : ''}" title="${counts.displayString}">🌟</div>
     `;
+    dayTotalCell.title = counts.displayString;
     dayTotalCell.classList.add('unlocked');
     dayTotalCell.classList.remove('locked');
   } else {
     dayTotalCell.innerHTML = `
       <div class="badge-indicator locked" title="${counts.displayString}">❌</div>
-      <div class="day-total-count" title="${counts.displayString}">${counts.displayString}</div>
     `;
+    dayTotalCell.title = counts.displayString;
     dayTotalCell.classList.add('locked');
     dayTotalCell.classList.remove('unlocked');
   }
@@ -3242,18 +3243,19 @@ function renderProgress() {
         totalCell.classList.add('locked');
         totalCell.classList.remove('unlocked');
       } else if (isComplete) {
+        const isSuperTrainer = counts.bonusCompleted > 0;
         totalCell.innerHTML = `
-          <div class="badge-indicator unlocked" title="${counts.displayString}">🌟</div>
-          <div class="day-total-count ${counts.bonusCompleted > 0 ? 'super-trainer' : ''}" title="${counts.displayString}">${counts.displayString}</div>
+          <div class="badge-indicator unlocked ${isSuperTrainer ? 'super-trainer' : ''}" title="${counts.displayString}">🌟</div>
         `;
+        totalCell.title = counts.displayString;
         totalCell.classList.remove('superseded-total');
         totalCell.classList.add('unlocked');
         totalCell.classList.remove('locked');
       } else {
         totalCell.innerHTML = `
           <div class="badge-indicator locked" title="${counts.displayString}">❌</div>
-          <div class="day-total-count" title="${counts.displayString}">${counts.displayString}</div>
         `;
+        totalCell.title = counts.displayString;
         totalCell.classList.remove('superseded-total');
         totalCell.classList.add('locked');
         totalCell.classList.remove('unlocked');

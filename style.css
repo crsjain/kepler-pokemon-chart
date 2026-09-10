@@ -981,36 +981,23 @@ button:disabled,
   transform: scale(1.2);
 }
 
-/* Daily Total Count Display */
-.day-total-count {
-  font-family: 'Fredoka One', cursive, sans-serif;
-  font-size: 0.72rem;
-  color: #64748b;
-  margin-top: 3px;
-  white-space: nowrap;
-  line-height: 1.2;
+.badge-indicator.super-trainer {
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.85));
+  animation: superTrainerPulse 1.5s infinite alternate ease-in-out;
 }
 
-.day-total-cell.unlocked .day-total-count {
-  color: #1e293b;
-  font-weight: bold;
-}
-
-.day-total-count.super-trainer {
-  color: #d97706 !important; /* Glowing warm gold */
-  animation: goldPulse 1.5s infinite alternate ease-in-out;
-  text-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
-}
-
-@keyframes goldPulse {
+@keyframes superTrainerPulse {
   0% {
-    transform: scale(1);
-    color: #d97706;
+    transform: scale(1.2);
   }
   100% {
-    transform: scale(1.05);
-    color: #b45309;
+    transform: scale(1.35);
   }
+}
+
+/* Hide any daily total count text (clean X and stars only for 7yo readability) */
+.day-total-count {
+  display: none !important;
 }
 
 /* Bottom Section */

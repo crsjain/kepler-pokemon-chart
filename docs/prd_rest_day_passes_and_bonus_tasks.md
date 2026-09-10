@@ -149,3 +149,4 @@ Parents configure task exceptions directly on the weekly grid during Exception M
 3. **No Cheating on Daily Stars**: Completing bonus tasks never substitutes for incomplete required chores.
 4. **XP Deductibility**: Unchecking a bonus task cleanly decrements `10 XP` without corrupting star vault records.
 5. **Regression Verification**: All 72 automated test cases in `run_headless_tests.js` must pass 100% green before any release.
+6. **Child-Friendly Daily Totals (No Number Parsing)**: The Daily Total row displays only the visual status icons (❌ for incomplete days, 🌟 for complete days, with glowing pulse for Super Trainer bonus days, and ➖ for superseded days). Fractional task counts (e.g. `1 / 3 (+1)`, `0 / 0 ⭐`) are omitted from the visual layout so a 7-year-old child can instantly parse their progress without cognitive overload. Full counts remain accessible via hover tooltips for parents.

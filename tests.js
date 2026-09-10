@@ -5421,8 +5421,9 @@ async function runSuite() {
         assert(counts.displayString.includes("5 / 4 ⭐"), `Display string should show 5 / 4 ⭐, got '${counts.displayString}'`);
 
         const currentWedTotalCell = document.querySelector(`.day-total-cell[data-day="${wedColIndex}"]`);
-        const totalCountEl = currentWedTotalCell ? currentWedTotalCell.querySelector('.day-total-count') : null;
-        assert(totalCountEl && totalCountEl.classList.contains('super-trainer'), "Total count element should have super-trainer class");
+        const indicatorEl = currentWedTotalCell ? currentWedTotalCell.querySelector('.badge-indicator') : null;
+        assert(indicatorEl && indicatorEl.classList.contains('super-trainer'), "Badge indicator should have super-trainer class");
+        assert(!currentWedTotalCell.querySelector('.day-total-count'), "Day total count text must NOT be present (clean X and stars only for 7yo)");
 
         // 4. Accidental Unchecking Revert
         // Uncheck the bonus task
