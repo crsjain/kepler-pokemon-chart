@@ -20,11 +20,17 @@ This document contains a complete, chronological record of user requests, system
     - Desktop/Tablet: Increased sprite dimensions from `210px` to `250px` (stage `270px`, circular pedestal `260px`, radial aura `240px`), expanding visible artwork surface area by >40%.
     - Mobile Viewports ($\le 480\text{px}$): Increased sprite dimensions from `180px` to `210px` (stage `230px`, circular pedestal `220px`, radial aura `200px`).
     - Optical Rhythm: Adjusted `.showcase-header` gap to `16px` and identity cluster gap to `8px`, keeping the entire modal comfortably within standard 100% viewport height with zero vertical scrolling on desktop/tablet.
+- [x] **Showcase Pokémon Tap Highlight Suppression**:
+  - User requested: "When the Pokémon in the partner showcase is clicked, there is a blue rectangle that shows up. I don't want the blue highlighting to happen."
+  - **Mobile Browser Tap Highlight & Selection Elimination**:
+    - Added `-webkit-tap-highlight-color: transparent;` globally to universal selector `*` and specifically to `.showcase-sprite-stage` and `.showcase-sprite`.
+    - Added `-webkit-touch-callout: none;`, `-webkit-user-drag: none;`, `user-select: none;`, and `-webkit-user-select: none;` to completely prevent mobile browser callout overlays, image dragging, and selection rectangles.
+    - Added `outline: none;` on `.showcase-sprite` and `.showcase-sprite:focus`, `.showcase-sprite:focus-visible` to eliminate browser focus rings.
 - [x] **Cache & Asset Invalidation**:
-  - Bumped Service Worker cache to `poke-chart-cache-v131` in `service-worker.js`.
-  - Bumped asset tags in `index.html`: `style.css?v=10.26`, `app.js?v=10.19`.
+  - Bumped Service Worker cache to `poke-chart-cache-v132` in `service-worker.js`.
+  - Bumped asset tags in `index.html`: `style.css?v=10.27`, `app.js?v=10.20`.
 - [x] **Automated Regression Suite Verification**:
-  - Enhanced **Test Case 75** in `tests.js` to assert `'Press Start 2P'` font, `4px` border-radius, `none` shadow, and enlarged sprite width ($\ge 240\text{px}$).
+  - Enhanced **Test Case 75** in `tests.js` asserting `'Press Start 2P'` font, `4px` border-radius, `none` shadow, enlarged sprite width ($\ge 240\text{px}$), transparent tap highlight (`rgba(0, 0, 0, 0)`), and `user-select: none`.
   - Ran `run_headless_tests.js`: **75/75 tests passing (100% green)**.
 
 ---
@@ -34,7 +40,7 @@ This document contains a complete, chronological record of user requests, system
 *   **Repository Location**: `/usr/local/google/home/crsjain/kepler-pokemon-chart`
 *   **Active Branch**: `prototype/pokemon-badge-collection`
 *   **Target Audience**: Kepler (7yo) & Lyra (gamified training chart)
-*   **Current Version**: `v1.10.9` / Service Worker cache `poke-chart-cache-v131` / Asset tags `style.css?v=10.26`, `app.js?v=10.19`
+*   **Current Version**: `v1.10.9` / Service Worker cache `poke-chart-cache-v132` / Asset tags `style.css?v=10.27`, `app.js?v=10.20`
 *   **Admin Password**: `"zxcv"`
 *   **Local Server URL**: `http://localhost:8000/` (or `http://crsjain.c.googlers.com:8000/`)
 *   **Git Policy**: Changes committed and pushed to remote origin `prototype/pokemon-badge-collection` and merged to `main`.
@@ -109,10 +115,15 @@ This document contains a complete, chronological record of user requests, system
   - Adjusted modal inner margins and header gaps (`16px` and `8px`) so the entire card remains within view without vertical scrollbars.
 * **Documentation & README Updates**:
   - Updated `README.md` to reflect enlarged partner sprite dimensions, retro LV badge styling, and slimmed stats card.
+* **Showcase Pokémon Tap Highlight Suppression**:
+  - Eliminated mobile browser blue rectangular tap highlight and image selection overlay by setting `-webkit-tap-highlight-color: transparent;` globally (`*`) and specifically on `.showcase-sprite-stage` and `.showcase-sprite`.
+  - Added `-webkit-touch-callout: none;`, `-webkit-user-drag: none;`, `user-select: none;`, and `outline: none;` (`:focus`, `:focus-visible`) to prevent mobile callouts and focus rings.
+* **Documentation & README Updates**:
+  - Updated `README.md` to reflect enlarged partner sprite dimensions, retro LV badge styling, and slimmed stats card.
 * **Cache & Regression Suite Verification**:
-  - Bumped Service Worker cache to `poke-chart-cache-v131`.
-  - Bumped asset queries in `index.html` (`style.css?v=10.26`, `app.js?v=10.19`).
-  - Added assertions to Test Case 75 in `tests.js` verifying `'Press Start 2P'`, `4px` border-radius, `none` shadow, and $\ge 240\text{px}$ sprite width.
+  - Bumped Service Worker cache to `poke-chart-cache-v132`.
+  - Bumped asset queries in `index.html` (`style.css?v=10.27`, `app.js?v=10.20`).
+  - Added assertions to Test Case 75 in `tests.js` verifying `'Press Start 2P'`, `4px` border-radius, `none` shadow, $\ge 240\text{px}$ sprite width, `rgba(0, 0, 0, 0)` tap highlight, and `user-select: none`.
   - Verified 100% pass rate (75/75 tests passing).
 
 ---
@@ -128,12 +139,13 @@ This document contains a complete, chronological record of user requests, system
   - Updated `.showcase-stats-card .level-badge` to authentic `'Press Start 2P'` styling, `4px` border radius, and `box-shadow: none`.
   - Slimmed `.showcase-stats-card` padding, gap, and progress bar height (`10px`).
   - Enlarged `.showcase-sprite-stage`, `.showcase-pedestal`, `.showcase-glow`, and `.showcase-sprite` (250px desktop, 210px mobile).
+  - Added `-webkit-tap-highlight-color: transparent;`, `-webkit-touch-callout: none;`, `user-select: none;`, and `outline: none;` on universal reset `*` and `.showcase-sprite`.
 * [`service-worker.js`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/service-worker.js):
-  - Bumped cache to `poke-chart-cache-v131`.
+  - Bumped cache to `poke-chart-cache-v132`.
 * [`index.html`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/index.html):
-  - Bumped asset tags to `style.css?v=10.26` and `app.js?v=10.19`.
+  - Bumped asset tags to `style.css?v=10.27` and `app.js?v=10.20`.
 * [`tests.js`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/tests.js):
-  - Enhanced Test Case 75 asserting computed level badge font, border-radius, shadow, and enlarged sprite width.
+  - Enhanced Test Case 75 asserting computed level badge font, border-radius, shadow, enlarged sprite width, transparent tap highlight, and user-select none.
 * [`README.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/README.md):
   - Updated partner showcase modal feature documentation.
 
@@ -147,9 +159,9 @@ This document contains a complete, chronological record of user requests, system
    - Verify that both use the identical 8-bit `'Press Start 2P'` pixel typography, `4px` corners, yellow background, and dark border without drop shadows.
 2. **Verify Stats Box Proportions**:
    - Check that the blue stats box is compact (~35% shorter) with a sleek 10px XP bar, leaving ample vertical space for the Pokémon.
-3. **Verify Hero-Sized Pokémon Sprite**:
+3. **Verify Hero-Sized Pokémon Sprite & Zero Tap Highlight**:
    - Check that the Pokémon sprite is prominently enlarged ($250\text{px}$ on desktop/tablet, $210\text{px}$ on mobile).
-   - Tap the Pokémon sprite: observe that the easter egg bounce animation (`cheerBounce`) and 8-bit chime fire smoothly.
+   - Tap the Pokémon sprite on a mobile device or touch simulator: observe that the easter egg bounce animation fires smoothly and **no blue rectangular highlight box appears**.
 4. **Verify Modal Dimensions & Scrolling**:
    - Check that the entire modal dialog fits neatly within the viewport without requiring vertical scrolling on tablet and desktop screens.
 5. **Automated Suite**:

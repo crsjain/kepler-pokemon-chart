@@ -6037,10 +6037,12 @@ async function runSuite() {
         assert(levelBadgeStyle.borderRadius === '4px', `Showcase level badge border-radius should be '4px', got '${levelBadgeStyle.borderRadius}'`);
         assert(levelBadgeStyle.boxShadow === 'none' || levelBadgeStyle.boxShadow === 'none, none', `Showcase level badge should have no box-shadow, got '${levelBadgeStyle.boxShadow}'`);
 
-        // Verify enlarged partner sprite dimensions
+        // Verify enlarged partner sprite dimensions and tap highlight suppression
         const showcaseSpriteStyle = window.getComputedStyle(showcaseSprite);
         const spriteWidth = parseInt(showcaseSpriteStyle.width, 10);
         assert(spriteWidth >= 240, `Showcase partner sprite should be enlarged (>= 240px on desktop), got '${spriteWidth}px'`);
+        assert(showcaseSpriteStyle.webkitTapHighlightColor === 'rgba(0, 0, 0, 0)' || showcaseSpriteStyle.webkitTapHighlightColor === 'transparent', `Showcase sprite should have transparent tap highlight, got '${showcaseSpriteStyle.webkitTapHighlightColor}'`);
+        assert(showcaseSpriteStyle.userSelect === 'none' || showcaseSpriteStyle.webkitUserSelect === 'none', `Showcase sprite should have user-select none, got '${showcaseSpriteStyle.userSelect}'`);
 
         // 3. Test tap-to-cheer interaction on enlarged sprite
         showcaseSprite.click();
