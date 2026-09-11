@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.13">
+  <link rel="stylesheet" href="style.css?v=10.25">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
@@ -80,7 +80,10 @@
     <section class="trainer-card">
       <div class="trainer-info">
         <div class="avatar-container">
-          <img id="pokemon-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="Active Pokemon">
+          <div class="pokemon-sprite-wrapper" id="pokemon-sprite-wrapper" title="Click to view partner details!">
+            <img id="pokemon-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="Active Pokemon" tabindex="0" role="button" aria-label="View enlarged partner Pokémon">
+            <span class="sprite-inspect-badge" aria-hidden="true">🔍</span>
+          </div>
           <button id="change-partner-btn" class="pixel-btn small">Change Partner</button>
         </div>
         <div class="stats-container">
@@ -249,6 +252,43 @@
           <!-- Populated dynamically via JS -->
         </div>
         <button id="close-modal-btn" class="pixel-btn">Close</button>
+      </div>
+    </div>
+
+    <!-- Partner Showcase Modal -->
+    <div id="partner-showcase-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="showcase-pokemon-name">
+      <div class="modal-content partner-showcase-content">
+        <button id="close-partner-showcase-btn" class="modal-close-btn" aria-label="Close modal">&times;</button>
+        
+        <div class="showcase-header">
+          <div class="showcase-eyebrow"><span>TRAINER</span> <span class="trainer-name-label">Kepler</span></div>
+          <div class="showcase-pokemon-identity">
+            <h2 id="showcase-pokemon-name" class="showcase-name">Pikachu</h2>
+            <div class="showcase-meta-row">
+              <span id="showcase-dex-num" class="showcase-dex-pill">#025</span>
+              <div id="showcase-type-badge" class="type-pill type-electric">⚡ Electric</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="showcase-sprite-stage">
+          <div class="showcase-pedestal"></div>
+          <div id="showcase-glow" class="showcase-glow"></div>
+          <img id="showcase-sprite" src="" alt="Enlarged Partner" class="showcase-sprite" draggable="false">
+        </div>
+
+        <div class="showcase-stats-card">
+          <div class="showcase-level-row">
+            <span class="level-badge">LV <span id="showcase-level">1</span></span>
+            <span class="showcase-xp-text">XP: <span id="showcase-xp">0</span> / <span id="showcase-next-xp">100</span></span>
+          </div>
+          <div class="xp-bar-outer">
+            <div class="xp-bar-inner" id="showcase-xp-fill" style="width: 0%;"></div>
+          </div>
+          <div id="showcase-evolution-helper" class="evolution-helper"></div>
+        </div>
+
+        <button id="showcase-ok-btn" class="pixel-btn">Let's Go Train! 🚀</button>
       </div>
     </div>
 
@@ -827,7 +867,7 @@
   </div>
 
   <script src="particles.js?v=10.3"></script>
-  <script type="module" src="app.js?v=10.7" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.18" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 </body>

@@ -119,6 +119,23 @@ const changePartnerBtn = document.getElementById('change-partner-btn');
 const partnerModal = document.getElementById('partner-modal');
 const closeModalBtn = document.getElementById('close-modal-btn');
 const partnerOptionsContainer = document.getElementById('pokemon-options-container');
+
+// Partner Showcase Modal Elements
+const pokemonSpriteWrapper = document.getElementById('pokemon-sprite-wrapper');
+const partnerShowcaseModal = document.getElementById('partner-showcase-modal');
+const closePartnerShowcaseBtn = document.getElementById('close-partner-showcase-btn');
+const showcaseOkBtn = document.getElementById('showcase-ok-btn');
+const showcaseSprite = document.getElementById('showcase-sprite');
+const showcasePokemonName = document.getElementById('showcase-pokemon-name');
+const showcaseDexNum = document.getElementById('showcase-dex-num');
+const showcaseTypeBadge = document.getElementById('showcase-type-badge');
+const showcaseGlow = document.getElementById('showcase-glow');
+const showcaseLevel = document.getElementById('showcase-level');
+const showcaseXp = document.getElementById('showcase-xp');
+const showcaseNextXp = document.getElementById('showcase-next-xp');
+const showcaseXpFill = document.getElementById('showcase-xp-fill');
+const showcaseEvolutionHelper = document.getElementById('showcase-evolution-helper');
+
 const resetBtn = document.getElementById('reset-btn');
 const prevWeekBtn = document.getElementById('prev-week-btn');
 const nextWeekBtn = document.getElementById('next-week-btn');
@@ -1280,6 +1297,11 @@ export function renderState(rebuildGrid = false) {
   // Render Star Vault
   renderVault();
 
+  // Render Partner Showcase if open
+  if (partnerShowcaseModal && !partnerShowcaseModal.classList.contains('hidden')) {
+    renderPartnerShowcaseContent();
+  }
+
   // Render Debug Sidebar Visibility
   renderDebugSidebarVisibility();
 }
@@ -1965,6 +1987,126 @@ function renderPartnerSelector() {
   container.appendChild(addOptionDiv);
 }
 
+// ==========================================================================
+// Partner Showcase Modal (Enlarged View & Companion Tap Interaction)
+// ==========================================================================
+function getPokemonTypeIcon(type) {
+  const icons = {
+    water: '💧',
+    fire: '🔥',
+    electric: '⚡',
+    grass: '🌿',
+    psychic: '🔮',
+    dragon: '🐉',
+    ghost: '👻',
+    dark: '🌑',
+    steel: '🛡️',
+    rock: '🪨',
+    fighting: '🥊',
+    normal: '⭐',
+    fairy: '✨',
+    bug: '🐛',
+    ground: '🏜️',
+    ice: '❄️'
+  };
+  return icons[type.toLowerCase()] || '⭐';
+}
+
+export function renderPartnerShowcaseContent() {
+  if (!partnerShowcaseModal) return;
+  const instanceId = state.activePartnerInstanceId || '25';
+  const stats = state.partnersData[instanceId] || { familyId: '25', level: 1, xp: 0, stageId: '25' };
+  const family = stats.familyId || '25';
+  const stageInfo = getStageInfo(family, stats.stageId || family);
+  const activePokemon = stageInfo.currentStage;
+
+  if (showcasePokemonName) showcasePokemonName.textContent = activePokemon.name;
+  if (showcaseDexNum) showcaseDexNum.textContent = `#${String(activePokemon.id).padStart(3, '0')}`;
+  if (showcaseSprite) {
+    showcaseSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`;
+    showcaseSprite.alt = activePokemon.name;
+  }
+
+  // Type badge and radial aura
+  const typeStr = (POKEMON_TYPES[activePokemon.id] || 'Normal').toLowerCase();
+  if (showcaseTypeBadge) {
+    showcaseTypeBadge.className = `type-pill type-${typeStr}`;
+    showcaseTypeBadge.textContent = `${getPokemonTypeIcon(typeStr)} ${typeStr.charAt(0).toUpperCase() + typeStr.slice(1)}`;
+  }
+  if (showcaseGlow) {
+    const glowColors = {
+      water: 'rgba(2, 132, 199, 0.4)',
+      fire: 'rgba(234, 88, 12, 0.4)',
+      electric: 'rgba(234, 179, 8, 0.45)',
+      grass: 'rgba(22, 163, 74, 0.4)',
+      psychic: 'rgba(147, 51, 234, 0.4)',
+      dragon: 'rgba(79, 70, 229, 0.4)',
+      ghost: 'rgba(107, 33, 168, 0.4)',
+      dark: 'rgba(51, 65, 85, 0.4)',
+      steel: 'rgba(100, 116, 139, 0.4)',
+      rock: 'rgba(120, 53, 15, 0.4)',
+      fighting: 'rgba(185, 28, 28, 0.4)',
+      normal: 'rgba(100, 116, 139, 0.35)',
+      fairy: 'rgba(219, 39, 119, 0.4)',
+      bug: 'rgba(101, 163, 13, 0.4)',
+      ground: 'rgba(202, 138, 4, 0.4)',
+      ice: 'rgba(6, 182, 212, 0.4)'
+    };
+    const glow = glowColors[typeStr] || 'rgba(42, 113, 208, 0.3)';
+    showcaseGlow.style.background = `radial-gradient(circle, ${glow} 0%, rgba(255, 255, 255, 0) 70%)`;
+  }
+
+  // Level & XP
+  if (showcaseLevel) showcaseLevel.textContent = stats.level;
+  if (showcaseXp) showcaseXp.textContent = stats.xp;
+  if (showcaseNextXp) showcaseNextXp.textContent = XP_LEVEL_THRESHOLD;
+  if (showcaseXpFill) {
+    const progressPercent = Math.min(100, (stats.xp / XP_LEVEL_THRESHOLD) * 100);
+    showcaseXpFill.style.width = `${progressPercent}%`;
+  }
+
+  // Evolution Info (Safely handling choice and terminal forms)
+  if (showcaseEvolutionHelper) {
+    if (!stageInfo.nextStage) {
+      showcaseEvolutionHelper.innerHTML = `🏆 Fully Evolved form!`;
+    } else if (stageInfo.nextStage.id === 'choice') {
+      const levelsLeft = stageInfo.endLevel - stats.level;
+      showcaseEvolutionHelper.innerHTML = `✨ Evolves at LV&nbsp;${stageInfo.endLevel} (${levelsLeft} ${levelsLeft === 1 ? 'level' : 'levels'} to go!)`;
+    } else {
+      const levelsLeft = stageInfo.endLevel - stats.level;
+      showcaseEvolutionHelper.innerHTML = `✨ Next Evolution: <strong>${stageInfo.nextStage.name}</strong> at LV&nbsp;${stageInfo.endLevel} (${levelsLeft} ${levelsLeft === 1 ? 'level' : 'levels'} to go!)`;
+    }
+  }
+}
+
+export function openPartnerShowcaseModal() {
+  if (!partnerShowcaseModal) return;
+  renderPartnerShowcaseContent();
+  partnerShowcaseModal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+export function closePartnerShowcaseModal() {
+  if (!partnerShowcaseModal) return;
+  partnerShowcaseModal.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+let lastCheerTap = 0;
+export function triggerShowcaseCheer() {
+  const now = Date.now();
+  if (now - lastCheerTap < 250) return; // 250ms throttle against rapid tapping
+  lastCheerTap = now;
+
+  if (showcaseSprite) {
+    showcaseSprite.classList.remove('cheer-bounce');
+    void showcaseSprite.offsetWidth; // Force CSS reflow to retrigger animation
+    showcaseSprite.classList.add('cheer-bounce');
+  }
+
+  playSound('badge');
+}
+
 function setupEventListeners() {
   // Switch Profile Action
   if (switchProfileBtn) {
@@ -2052,10 +2194,17 @@ function setupEventListeners() {
   if (exceptionsDoneBtn) {
     exceptionsDoneBtn.addEventListener('click', stopExceptionMode);
   }
-  // Allow Escape key to cleanly exit Exception Mode
+  // Allow Escape key to cleanly dismiss Showcase Modal or exit Exception Mode
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && isExceptionMode) {
-      stopExceptionMode();
+    if (e.key === 'Escape') {
+      if (partnerShowcaseModal && !partnerShowcaseModal.classList.contains('hidden')) {
+        closePartnerShowcaseModal();
+        e.stopImmediatePropagation();
+        return;
+      }
+      if (isExceptionMode) {
+        stopExceptionMode();
+      }
     }
   });
   if (prevWeekBtn) {
@@ -2095,6 +2244,39 @@ function setupEventListeners() {
   if (closeModalBtn) {
     closeModalBtn.addEventListener('click', () => {
       partnerModal.classList.add('hidden');
+    });
+  }
+
+  // Partner Showcase Modal listeners
+  if (pokemonSpriteWrapper) {
+    pokemonSpriteWrapper.addEventListener('click', openPartnerShowcaseModal);
+    pokemonSpriteWrapper.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openPartnerShowcaseModal();
+      }
+    });
+  } else if (pokemonSprite) {
+    pokemonSprite.addEventListener('click', openPartnerShowcaseModal);
+  }
+
+  if (closePartnerShowcaseBtn) {
+    closePartnerShowcaseBtn.addEventListener('click', closePartnerShowcaseModal);
+  }
+
+  if (showcaseOkBtn) {
+    showcaseOkBtn.addEventListener('click', closePartnerShowcaseModal);
+  }
+
+  if (showcaseSprite) {
+    showcaseSprite.addEventListener('click', triggerShowcaseCheer);
+  }
+
+  if (partnerShowcaseModal) {
+    partnerShowcaseModal.addEventListener('click', (e) => {
+      if (e.target === partnerShowcaseModal) {
+        closePartnerShowcaseModal();
+      }
     });
   }
 
@@ -3824,7 +4006,11 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     hasTaskActivityInWeek: (task, weekStartStr) => hasTaskActivityInWeek(task, weekStartStr),
     isDayComplete: (dateStr, state) => isDayComplete(dateStr, state),
     getDayTaskCounts: (dateStr, state) => getDayTaskCounts(dateStr, state),
-    XP_BONUS_TASK: XP_BONUS_TASK
+    XP_BONUS_TASK: XP_BONUS_TASK,
+    openPartnerShowcaseModal: () => openPartnerShowcaseModal(),
+    closePartnerShowcaseModal: () => closePartnerShowcaseModal(),
+    renderPartnerShowcaseContent: () => renderPartnerShowcaseContent(),
+    triggerShowcaseCheer: () => triggerShowcaseCheer()
   };
   
   if (location.search.includes('runTests=true')) {
@@ -3841,6 +4027,15 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
 }
 
 if ('serviceWorker' in navigator && !location.search.includes('headless=true')) {
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      console.log('Service Worker controller changed. Reloading page to apply latest version...');
+      window.location.reload();
+    }
+  });
+
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./service-worker.js')
       .then(reg => {
@@ -3850,9 +4045,12 @@ if ('serviceWorker' in navigator && !location.search.includes('headless=true')) 
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('New app version detected. Reloading to apply update...');
-              window.location.reload();
+            if ((newWorker.state === 'installed' || newWorker.state === 'activated') && navigator.serviceWorker.controller) {
+              if (!refreshing) {
+                refreshing = true;
+                console.log('New app version detected. Reloading to apply update...');
+                window.location.reload();
+              }
             }
           });
         });

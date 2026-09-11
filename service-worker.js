@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poke-chart-cache-v119';
+const CACHE_NAME = 'poke-chart-cache-v130';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -48,7 +48,7 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch Event - cache-first for static assets and sprites
+// Fetch Event - network-first for navigation, cache-busting aware for local assets
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   
@@ -63,19 +63,29 @@ self.addEventListener('fetch', event => {
   });
 
   if (isLocalAsset || isPokeapiSprite) {
+    // For navigation requests (index.html), use Network-First so app updates load immediately when online
+    if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
+      event.respondWith(
+        fetch(event.request)
+          .then(networkResponse => {
+            if (networkResponse && networkResponse.status === 200) {
+              const responseToCache = networkResponse.clone();
+              caches.open(CACHE_NAME).then(cache => cache.put('./index.html', responseToCache));
+            }
+            return networkResponse;
+          })
+          .catch(() => caches.match('./index.html', { ignoreSearch: true }))
+      );
+      return;
+    }
+
+    // For local assets with explicit query parameters (e.g. style.css?v=10.25), do NOT ignoreSearch
+    // so cache-busting query strings fetch fresh code instead of returning stale cached CSS/JS!
+    const matchOptions = (isLocalAsset && url.search) ? {} : { ignoreSearch: true };
     event.respondWith(
-      caches.match(event.request, { ignoreSearch: true })
+      caches.match(event.request, matchOptions)
         .then(cachedResponse => {
           if (cachedResponse) {
-            // Return cached version
-            // For local assets, we can optionally update cache in background (Stale-While-Revalidate)
-            if (isLocalAsset) {
-              fetch(event.request).then(networkResponse => {
-                if (networkResponse.status === 200) {
-                  caches.open(CACHE_NAME).then(cache => cache.put(event.request, networkResponse.clone()));
-                }
-              }).catch(() => {}); // Ignore network errors
-            }
             return cachedResponse;
           }
 
@@ -86,16 +96,12 @@ self.addEventListener('fetch', event => {
                 return networkResponse;
               }
               const responseToCache = networkResponse.clone();
-              caches.open(CACHE_NAME)
-                .then(cache => {
-                  cache.put(event.request, responseToCache);
-                });
+              caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
               return networkResponse;
             })
             .catch(() => {
               // Offline fallback for images if not cached
               if (isPokeapiSprite) {
-                // Return a default pokeball placeholder if offline and sprite not cached
                 return caches.match('./icon.png');
               }
             });

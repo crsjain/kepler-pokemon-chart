@@ -8,6 +8,7 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
 - 🦊 **Multi-Partner Training**: Kepler can choose to train different partners (Pikachu, Charmander, Bulbasaur, Squirtle, Eevee, Onix). XP and Levels are tracked **individually** for each Pokémon, encouraging him to train them all!
   - **Eevee Branching Evolution**: Reaching Level 5 with Eevee unlocks a branching evolution modal allowing Kepler to choose between 8 different evolutions (Vaporeon, Jolteon, Flareon, Espeon, Umbreon, Leafeon, Glaceon, Sylveon) with individual sprites.
   - **Onix & Steelix Evolution**: Train Onix (Rock-type) from Level 1 to Level 5 to trigger an authentic evolution event into Steelix (Steel-type), complete with devolution support and partner shop integration.
+  - **Partner Pokémon Showcase Modal & Easter Egg Tap**: Tap the partner sprite on the Trainer Card to open an authentic collectible card modal displaying high-res official artwork, Pokédex number, elemental type pill, level & XP progression metrics, and evolution helper text. Tapping the enlarged sprite triggers a playful easter egg bounce animation with an authentic 8-bit chime!
 - 🪙 **Star Vault & Partner Shop**:
   - Daily totals completed are saved as stars in the **Star Vault**.
   - Spend 5, 10, or 15 stars from your vault to purchase and unlock new partners from the **Partner Shop** featuring 100+ different Pokémon!

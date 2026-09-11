@@ -5985,6 +5985,94 @@ async function runSuite() {
         await sleep(50);
       }
 
+      // 75. Test Partner Pokémon Showcase Modal & Enlarged View Inspection
+      {
+        console.log("Running Test Case 75: Partner Pokémon Showcase Modal & Enlarged View Inspection...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        const spriteWrapper = document.getElementById('pokemon-sprite-wrapper');
+        const sprite = document.getElementById('pokemon-sprite');
+        const showcaseModal = document.getElementById('partner-showcase-modal');
+        const showcaseName = document.getElementById('showcase-pokemon-name');
+        const showcaseSprite = document.getElementById('showcase-sprite');
+        const showcaseBadge = document.getElementById('showcase-type-badge');
+        const showcaseLevel = document.getElementById('showcase-level');
+        const showcaseXp = document.getElementById('showcase-xp');
+        const showcaseHelper = document.getElementById('showcase-evolution-helper');
+        const okBtn = document.getElementById('showcase-ok-btn');
+        const closeBtn = document.getElementById('close-partner-showcase-btn');
+
+        assert(spriteWrapper !== null, "Pokemon sprite wrapper should exist in DOM");
+        assert(sprite !== null, "Pokemon sprite should exist in DOM");
+        assert(showcaseModal !== null, "Partner showcase modal should exist in DOM");
+        assert(showcaseModal.classList.contains('hidden'), "Showcase modal should be hidden by default");
+
+        // 1. Verify click affordance on sprite
+        const spriteStyle = window.getComputedStyle(sprite);
+        assert(spriteStyle.cursor === 'pointer', `Sprite must have cursor === 'pointer', got '${spriteStyle.cursor}'`);
+
+        // 2. Open showcase modal by clicking sprite wrapper
+        spriteWrapper.click();
+        await sleep(30);
+
+        assert(!showcaseModal.classList.contains('hidden'), "Clicking sprite should open showcase modal (remove .hidden)");
+        assert(showcaseName.textContent.trim().length > 0, `Showcase name should not be empty, got '${showcaseName.textContent}'`);
+        assert(showcaseSprite.src.includes('official-artwork/172.png') || showcaseSprite.src.includes('official-artwork/25.png'), `Showcase sprite src should point to official-artwork, got '${showcaseSprite.src}'`);
+        assert(showcaseBadge.textContent.includes('Electric'), `Showcase badge should display 'Electric', got '${showcaseBadge.textContent}'`);
+        assert(showcaseBadge.classList.contains('type-electric'), "Showcase badge should have class 'type-electric'");
+        const showcaseDex = document.getElementById('showcase-dex-num');
+        assert(showcaseDex !== null, "Showcase Dex element should exist in DOM");
+        assert(showcaseDex.textContent === '#172' || showcaseDex.textContent === '#025', `Showcase Dex should display '#172' or '#025', got '${showcaseDex.textContent}'`);
+        assert(showcaseLevel.textContent === '1', `Showcase level should be 1, got '${showcaseLevel.textContent}'`);
+        assert(showcaseXp.textContent === '0', `Showcase XP should be 0, got '${showcaseXp.textContent}'`);
+        assert(showcaseHelper.textContent.includes('Pikachu') || showcaseHelper.textContent.includes('Raichu') || showcaseHelper.textContent.includes('Evolution'), `Showcase evolution helper should be populated, got '${showcaseHelper.textContent}'`);
+
+        // 3. Test tap-to-cheer interaction on enlarged sprite
+        showcaseSprite.click();
+        await sleep(20);
+        assert(showcaseSprite.classList.contains('cheer-bounce'), "Clicking showcase sprite should add .cheer-bounce class");
+
+        // 4. Test dismissal via CTA button
+        assert(okBtn.textContent.includes("Train"), `CTA button text should be actionable training copy, got '${okBtn.textContent}'`);
+        okBtn.click();
+        await sleep(30);
+        assert(showcaseModal.classList.contains('hidden'), "Clicking CTA button should hide showcase modal");
+
+        // 5. Reopen and test dismissal via Close button
+        spriteWrapper.click();
+        await sleep(30);
+        assert(!showcaseModal.classList.contains('hidden'), "Modal should reopen on click");
+        closeBtn.click();
+        await sleep(30);
+        assert(showcaseModal.classList.contains('hidden'), "Clicking Close button should hide showcase modal");
+
+        // 6. Reopen and test dismissal via Escape key
+        spriteWrapper.click();
+        await sleep(30);
+        assert(!showcaseModal.classList.contains('hidden'), "Modal should reopen for Escape test");
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        await sleep(30);
+        assert(showcaseModal.classList.contains('hidden'), "Pressing Escape should hide showcase modal");
+
+        // 7. Reopen and test dismissal via Backdrop click
+        spriteWrapper.click();
+        await sleep(30);
+        assert(!showcaseModal.classList.contains('hidden'), "Modal should reopen for Backdrop test");
+        showcaseModal.click();
+        await sleep(30);
+        assert(showcaseModal.classList.contains('hidden'), "Clicking modal backdrop should hide showcase modal");
+
+        // 8. Verify Z-Index isolation in CSS
+        const modalComputedStyle = window.getComputedStyle(showcaseModal);
+        assert(modalComputedStyle.zIndex === '100000', `Showcase modal must have zIndex === '100000', got '${modalComputedStyle.zIndex}'`);
+
+        // Clean up
+        helpers.resetState();
+        await sleep(50);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
