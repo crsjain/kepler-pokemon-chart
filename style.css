@@ -804,15 +804,37 @@ button:disabled,
   padding: 8px 2px !important;
 }
 
-@media (max-width: 600px) {
-  .weekly-grid th {
-    font-size: 0.78rem;
-    letter-spacing: 0;
+/* Responsive Viewport Policy: Zero Scroll (Tablet/Desktop >= 768px) vs. Horizontal Scroll (Mobile < 768px) */
+@media (max-width: 767px) {
+  .grid-scroll-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  .grid-scroll-wrapper::-webkit-scrollbar {
+    height: 6px;
+  }
+  .grid-scroll-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .grid-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+  .weekly-grid {
+    min-width: 620px;
   }
   .weekly-grid th.day-header,
   .weekly-grid td.checkbox-cell,
   .weekly-grid td.day-total-cell {
-    padding: 6px 1px !important;
+    padding: 8px 3px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .weekly-grid th {
+    font-size: 0.78rem;
+    letter-spacing: 0;
   }
   .task-col-header {
     padding-left: 6px !important;
@@ -3253,31 +3275,187 @@ input:checked + .slider:before {
    EXCEPTION EDIT MODE STYLING (V11)
    ========================================================================== */
 
-/* Exceptions Banner */
+/* Exceptions Floating Command Dock (Bottom Viewport Parent Domain) */
 .exceptions-banner {
-  background-color: var(--poke-red);
-  color: white;
-  padding: 10px;
-  text-align: center;
-  font-family: 'Fredoka One', cursive;
-  font-size: 0.9rem;
-  border-bottom: var(--pixel-border);
-  box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+  position: fixed;
+  bottom: max(18px, env(safe-area-inset-bottom, 18px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 998; /* Above mini-hud (995), below modals (1000) */
+  width: calc(100% - 32px);
+  max-width: 580px;
+  background: rgba(30, 41, 59, 0.96); /* Slate 800 with high opacity */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 3px solid #2d3748;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 4px 0 #0f172a;
+  padding: 10px 18px;
+  box-sizing: border-box;
+  font-family: 'Fredoka One', cursive, sans-serif;
+  animation: dockSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
-  justify-content: center;
   align-items: center;
-  animation: bannerSlideDown 0.3s ease-out;
-  margin-bottom: 15px;
-  border-radius: 8px;
-  border: var(--pixel-border);
+  justify-content: center;
+  pointer-events: auto;
+  margin-bottom: 0;
 }
 
-@keyframes bannerSlideDown {
-  from { transform: translateY(-20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+@keyframes dockSlideUp {
+  from {
+    transform: translate(-50%, 60px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
 }
 
-/* Exception Mode Grid State */
+.exceptions-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+
+.exceptions-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  text-align: left;
+}
+
+.exceptions-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* De-buttonized typographic mode indicator (never looks like a button) */
+.exceptions-mode-badge {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  color: #f87171; /* Soft warning coral */
+  font-size: 0.75rem;
+  letter-spacing: 0.8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+}
+
+.exceptions-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #f1f5f9;
+  flex-wrap: nowrap;
+}
+
+.exceptions-prompt {
+  color: #94a3b8;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  margin-right: 2px;
+}
+
+.exceptions-legend .legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.exceptions-legend .legend-arrow {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.exceptions-banner .exceptions-done-btn {
+  flex-shrink: 0;
+  min-height: 42px;
+  padding: 8px 18px !important;
+  font-size: 0.95rem !important;
+  border-radius: 8px !important;
+  border: 2px solid #065f46 !important;
+  box-shadow: 0 3px 0 #065f46 !important;
+  cursor: pointer;
+  margin-left: 0 !important;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.exceptions-banner .exceptions-done-btn:hover {
+  background: #059669;
+}
+
+.exceptions-banner .exceptions-done-btn:active {
+  transform: translateY(2px) !important;
+  box-shadow: 0 1px 0 #065f46 !important;
+}
+
+/* Tablet single-row layout enhancement (>= 680px) */
+@media (min-width: 680px) {
+  .exceptions-banner {
+    max-width: 640px;
+  }
+
+  .exceptions-info {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .exceptions-header-row {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .exceptions-header-row::after {
+    content: "|";
+    color: #475569;
+    font-size: 0.85rem;
+    margin-left: 10px;
+    line-height: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .exceptions-banner {
+    padding: 8px 12px;
+    border-radius: 12px;
+  }
+  
+  .exceptions-prompt {
+    display: none;
+  }
+
+  .exceptions-legend {
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+
+  .exceptions-banner .exceptions-done-btn {
+    padding: 6px 14px !important;
+    font-size: 0.85rem !important;
+    min-height: 38px;
+  }
+}
+
+/* Exception Mode Grid State & Bottom Clearance */
+.layout-container.exception-mode {
+  padding-bottom: 96px;
+}
+
 .layout-container.exception-mode .pokeball-checkbox input[type="checkbox"] {
   pointer-events: none; /* Disable standard checkbox clicking */
 }

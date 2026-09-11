@@ -86,6 +86,10 @@ The Weekly Training Grid uses a centralized state machine with 4 distinct chroma
 - **Declarative State Binding**: All header, cell, and total elements must declare their state via `data-column-state="active_today|active_past|active_future|selectable_today|selectable_past|future_locked|superseded|historical"` to guarantee CSS styles are driven directly by the state machine without fragile `:not()` selectors.
 - **Parent Exception Mode Elevation**: In Exception Mode (`.exception-mode`), all non-superseded cells elevate to full opacity (`opacity: 1 !important`) with soft amber tint (`#fffbeb`) to signal direct parent toggling.
 
+### C. Responsive Viewport Policy: Zero Scroll (Tablet/Desktop) vs. Horizontal Scroll (Mobile)
+- **Desktop & Tablet Viewports ($\ge 768\text{px}$)**: Strict **Zero Horizontal Scroll** policy. The weekly grid fits 100% of `.chart-container` without horizontal scrollbars (`overflow-x: hidden; width: 100%; table-layout: fixed; min-width: 0;`), providing an unclipped, glanceable view of the full week.
+- **Mobile Viewports ($< 768\text{px}$)**: **Horizontal Scrolling Enabled**. To prevent 9-column accordion compression and overlapping 36px Pokéball assets on narrow phone viewports (360px–430px), `.grid-scroll-wrapper` must enable horizontal scrolling (`overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;`) with a minimum table width (`min-width: 620px`). This guarantees each day cell maintains $\ge 50\text{px}$ width so Pokéball circles, rest passes, and bonus badges never collide or overlap.
+
 ## 14. Task Checkbox State Matrix & Icon Iconography (Pokéball, Rest Day 💤, Bonus ✨, and Great Ball +XP)
 See canonical PRD [`docs/prd_rest_day_passes_and_bonus_tasks.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/docs/prd_rest_day_passes_and_bonus_tasks.md) for full specs. All checkbox states use a strictly locked 36px × 36px circular footprint:
 
@@ -135,3 +139,21 @@ See canonical PRD [`docs/prd_rest_day_passes_and_bonus_tasks.md`](file:///usr/lo
   - Regular chore: Vivid Emerald XP Green (`#22c55e`).
   - Day Complete Star (`+20 XP! 🎉`): Pokémon Yellow (`#ffcb05`) with Navy outline and warm glow.
   - Overachiever Great Ball (`+10 XP Super Trainer! 🚀`): Pokémon Yellow (`#ffcb05`) with Royal Blue outline and electric blue aura.
+
+## 17. Persistent Mode Toolbars & Floating Dock Hierarchy (Parent vs. Child Viewport Zones)
+When presenting temporary or administrative modes (e.g., Exception Mode, Batch Reordering, or Multi-Day Overrides) alongside persistent child gamification elements (e.g., Sticky Mini-HUD):
+
+1. **Spatial Separation of Concerns**:
+   - **Top Viewport (Child Domain)**: Reserved strictly for partner status, level, and XP progression (`.mini-hud`). Never dock administrative override toolbars adjacent to or directly stacked beneath the Mini-HUD on mobile/tablet screens.
+   - **Bottom Viewport (Parent Domain)**: Administrative action toolbars must float as an elevated dock/pill anchored to the bottom center of the viewport (`bottom: max(18px, env(safe-area-inset-bottom, 18px))`).
+2. **Thumb Zone Ergonomics (Fitts's Law)**:
+   - Action buttons intended for tablet/mobile interaction (such as "Done", "Save", or "Cancel") must remain within the natural thumb reach zone (bottom 25% of viewport).
+   - Touch targets must measure at least 42px in height with explicit active tap states (`transform: translateY(2px)`).
+3. **Visual Balance & Palette Quarantine (No False Affordances)**:
+   - Floating administrative docks must use a neutral, high-contrast dark foundation (`rgba(30, 41, 59, 0.96)` Slate 800 with dark slate retro border and backdrop blur).
+   - Mode indicators (`.exceptions-mode-badge`) must be styled as clean typographic headers (soft coral uppercase text with subtle tracking) without button-like background fills, borders, or drop shadows to eliminate false button affordances. The completion button (`Done ✅`) must remain the sole interactive CTA.
+   - Instructional prompts (`.exceptions-prompt`) must be syntactically and visually fused to the state sequence (`🔴 Normal ➔ ✨ Bonus ➔ 💤 Rest`) via colon punctuation and shared baseline alignment.
+4. **Bottom Scroll Clearance**:
+   - Containers in active administrative modes (`.layout-container.exception-mode`) must declare sufficient bottom padding (`padding-bottom: 96px`) so scrolled content at the bottom of the page (such as milestone reward dropdowns and buttons) is never permanently occluded by the floating dock.
+5. **Zero Inline Styles**:
+   - Do not use inline `style="..."` attributes on buttons or spans inside floating bars. All spacing, flex gaps, and alignment must be defined in `style.css` using `gap` rhythms (Rule 12).

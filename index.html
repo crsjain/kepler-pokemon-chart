@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.10">
+  <link rel="stylesheet" href="style.css?v=10.13">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
@@ -57,9 +57,23 @@
       <p class="subtitle">"Gotta Catch 'Em All!"</p>
     </header>
     
-    <div id="exceptions-banner" class="exceptions-banner hidden">
-      <span>⚙️ EXCEPTION EDIT MODE: Click cells to cycle (🔴 Normal ➔ ✨ BONUS ➔ 💤 REST)</span>
-      <button id="exceptions-done-btn" class="pixel-btn success small" style="margin-left: 15px;">Done ✅</button>
+    <div id="exceptions-banner" class="exceptions-banner hidden" role="toolbar" aria-label="Exception Edit Mode">
+      <div class="exceptions-banner-content">
+        <div class="exceptions-info">
+          <div class="exceptions-header-row">
+            <span class="exceptions-mode-badge">⚙️ EDIT MODE</span>
+          </div>
+          <div class="exceptions-legend">
+            <span class="exceptions-prompt">Click cells to cycle:</span>
+            <span class="legend-item"><span class="legend-dot">🔴</span> Normal</span>
+            <span class="legend-arrow">➔</span>
+            <span class="legend-item"><span class="legend-dot">✨</span> Bonus</span>
+            <span class="legend-arrow">➔</span>
+            <span class="legend-item"><span class="legend-dot">💤</span> Rest</span>
+          </div>
+        </div>
+        <button id="exceptions-done-btn" class="pixel-btn success small exceptions-done-btn">Done ✅</button>
+      </div>
     </div>
 
     <!-- Trainer Card / Progress Section -->
@@ -813,7 +827,7 @@
   </div>
 
   <script src="particles.js?v=10.3"></script>
-  <script type="module" src="app.js?v=10.6" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.7" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 </body>

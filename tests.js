@@ -5862,6 +5862,129 @@ async function runSuite() {
         await sleep(50);
       }
 
+      // 73. Test Parent Command Dock (Floating Bottom Bar, Z-Index, Safe Clearance, and Escape Key Dismissal)
+      {
+        console.log("Running Test Case 73: Parent Command Dock Floating UI & Escape Dismissal...");
+        const helpers = window.__test_helpers__;
+        const exceptionsBtn = document.getElementById('exceptions-btn');
+        const exceptionsBanner = document.getElementById('exceptions-banner');
+        const layoutContainer = document.querySelector('.layout-container');
+        const adminBtn = document.getElementById('admin-btn');
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmitBtn = document.getElementById('password-submit-btn');
+
+        // 1. Enter Exception Mode
+        adminBtn.click();
+        await sleep(50);
+        passwordInput.value = helpers.ADMIN_PASSWORD || "zxcv";
+        passwordSubmitBtn.click();
+        await sleep(50);
+        exceptionsBtn.click();
+        await sleep(50);
+
+        assert(!exceptionsBanner.classList.contains('hidden'), "Exception banner should be visible");
+        assert(layoutContainer.classList.contains('exception-mode'), "Layout should have exception-mode class");
+
+        // 2. Validate Semantic Structure of Floating Command Dock
+        const modeBadge = exceptionsBanner.querySelector('.exceptions-mode-badge');
+        assert(modeBadge !== null, "Mode badge element should exist in command dock");
+        assert(modeBadge.textContent.includes('EDIT MODE'), "Mode badge should display 'EDIT MODE'");
+
+        const legend = exceptionsBanner.querySelector('.exceptions-legend');
+        assert(legend !== null, "Legend element should exist in command dock");
+        assert(legend.textContent.includes('Normal'), "Legend should mention Normal");
+        assert(legend.textContent.includes('Bonus'), "Legend should mention Bonus");
+        assert(legend.textContent.includes('Rest'), "Legend should mention Rest");
+
+        const doneBtn = document.getElementById('exceptions-done-btn');
+        assert(doneBtn !== null, "Done button should exist");
+        assert(doneBtn.classList.contains('exceptions-done-btn'), "Done button should have exceptions-done-btn class");
+
+        // 3. Validate Computed Styles (Floating Dock & Bottom Scroll Clearance)
+        const bannerStyles = window.getComputedStyle(exceptionsBanner);
+        assert(bannerStyles.position === 'fixed', `Command dock position should be 'fixed', got '${bannerStyles.position}'`);
+        assert(bannerStyles.zIndex === '998', `Command dock zIndex should be '998', got '${bannerStyles.zIndex}'`);
+
+        const containerStyles = window.getComputedStyle(layoutContainer);
+        assert(containerStyles.paddingBottom === '96px', `Layout container in exception-mode must have 96px bottom clearance, got '${containerStyles.paddingBottom}'`);
+
+        // 4. Test Escape Key Dismissal
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        await sleep(50);
+
+        assert(exceptionsBanner.classList.contains('hidden'), "Escape key should dismiss exception mode and hide banner");
+        assert(!layoutContainer.classList.contains('exception-mode'), "Escape key should remove exception-mode class from layout container");
+
+        // Clean up
+        helpers.resetState();
+        await sleep(50);
+      }
+
+      // 74. Test Responsive Viewport Policy: Zero Scroll (Desktop/Tablet >= 768px) vs. Horizontal Scroll (Mobile < 768px)
+      {
+        console.log("Running Test Case 74: Responsive Viewport Policy (Zero Scroll Tablet/Desktop vs. Horizontal Scroll Mobile)...");
+        const helpers = window.__test_helpers__;
+        const gridWrapper = document.querySelector('.grid-scroll-wrapper');
+        const weeklyGrid = document.querySelector('.weekly-grid');
+        assert(gridWrapper !== null, "Grid scroll wrapper should exist in DOM");
+        assert(weeklyGrid !== null, "Weekly grid should exist in DOM");
+
+        // 1. Verify Desktop/Tablet Viewport Policy: Zero Horizontal Scroll
+        const wrapperStyle = window.getComputedStyle(gridWrapper);
+        assert(wrapperStyle.overflowX === 'hidden', `Desktop/Tablet grid scroll wrapper must have overflowX === 'hidden', got '${wrapperStyle.overflowX}'`);
+
+        const gridStyle = window.getComputedStyle(weeklyGrid);
+        assert(gridStyle.tableLayout === 'fixed', `Desktop/Tablet weekly grid must have tableLayout === 'fixed', got '${gridStyle.tableLayout}'`);
+
+        // 2. Verify Mobile Responsive Rules in Stylesheet (@media (max-width: 767px))
+        let foundMobileMedia = false;
+        let foundOverflowAuto = false;
+        let foundMinWidth620 = false;
+        let foundPaddingEnhanced = false;
+
+        for (const sheet of document.styleSheets) {
+          try {
+            const rules = sheet.cssRules || [];
+            for (const rule of rules) {
+              if (rule.media && rule.media.mediaText && rule.media.mediaText.includes('767px')) {
+                foundMobileMedia = true;
+                const subRules = rule.cssRules || [];
+                for (const subRule of subRules) {
+                  const selector = subRule.selectorText || '';
+                  const cssText = subRule.cssText || '';
+                  if (selector.includes('.grid-scroll-wrapper') && cssText.includes('overflow-x: auto')) {
+                    foundOverflowAuto = true;
+                  }
+                  if (selector.includes('.weekly-grid') && cssText.includes('min-width: 620px')) {
+                    foundMinWidth620 = true;
+                  }
+                  if (selector.includes('checkbox-cell') && cssText.includes('padding: 8px 3px')) {
+                    foundPaddingEnhanced = true;
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            // Ignore CORS stylesheet errors if any
+          }
+        }
+
+        assert(foundMobileMedia, "Media query @media (max-width: 767px) should exist in stylesheets");
+        assert(foundOverflowAuto, "Mobile media query must declare .grid-scroll-wrapper { overflow-x: auto }");
+        assert(foundMinWidth620, "Mobile media query must declare .weekly-grid { min-width: 620px }");
+        assert(foundPaddingEnhanced, "Mobile media query must provide adequate padding (8px 3px) for touch cells");
+
+        // 3. Verify Container Containment
+        const chartContainer = document.querySelector('.chart-container');
+        assert(chartContainer !== null, "Chart container should exist");
+        const chartContainerStyle = window.getComputedStyle(chartContainer);
+        assert(chartContainerStyle.overflow === 'hidden', "Chart container must have overflow: hidden to contain scroll wrapper cleanly");
+
+        // Clean up
+        helpers.resetState();
+        await sleep(50);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

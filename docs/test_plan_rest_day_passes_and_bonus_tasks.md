@@ -2,7 +2,7 @@
 
 **Document**: `docs/test_plan_rest_day_passes_and_bonus_tasks.md`  
 **Feature PRD**: [`docs/prd_rest_day_passes_and_bonus_tasks.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/docs/prd_rest_day_passes_and_bonus_tasks.md)  
-**Version**: 2.2.0 (Rest Day Click Lock, 2D Great Ball Lore, Clean Daily Totals & Extended XP Float Readability)  
+**Version**: 2.4.0 (Responsive Viewport Policy: Zero Scroll Tablet/Desktop vs. Horizontal Scroll Mobile, Parent Command Dock, Rest Day Click Lock, 2D Great Ball Lore)  
 **Schema Compatibility**: Schema V18 (Zero Database Migration Required)  
 **Audience**: Product Management, QA, Engineering, Parents, Pair-Programming Agents  
 
@@ -13,7 +13,7 @@
 * **Local App URL**: `http://localhost:8000/` (or `http://crsjain.c.googlers.com:8000/`).
 * **Parent Admin Passcode**: `zxcv`
 * **Test Runner**: `node run_headless_tests.js`
-* **Browser Cache**: Perform a hard refresh (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> on Linux/Windows, <kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> on Mac) to ensure Service Worker cache `poke-chart-cache-v116` and asset tags `style.css?v=10.10`, `app.js?v=10.6` are active.
+* **Browser Cache**: Perform a hard refresh (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> on Linux/Windows, <kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> on Mac) to ensure Service Worker cache `poke-chart-cache-v119` and asset tags `style.css?v=10.13`, `app.js?v=10.7` are active.
 
 ---
 
@@ -195,8 +195,10 @@ node run_headless_tests.js
 * **Test 70**: Child profile modal lifecycle and button state reset.
 * **Test 71**: Unearned weekly badge and reward carry-over across week rollover.
 * **Test 72**: Smart Hybrid 3-State Exception Mode cycling, UI attributes, Overachiever +10 XP, and Smart Rollover auto-carryover (`✨ BONUS`) vs. auto-expiration (`💤 REST`).
+* **Test 73**: Parent Command Dock floating UI verification, semantic elements (`.exceptions-mode-badge`, `.exceptions-legend`, `.exceptions-done-btn`), computed `position: fixed`, `z-index: 998`, `96px` container bottom clearance padding, and `Escape` key dismissal.
+* **Test 74**: Responsive Viewport Policy verification: Zero horizontal scroll enforced on Desktop/Tablet ($\ge 768\text{px}$) via `overflow-x: hidden` and `table-layout: fixed`; horizontal scroll enabled on Mobile ($< 768\text{px}$) via stylesheet rule `@media (max-width: 767px)` with `overflow-x: auto`, `min-width: 620px`, and comfortable touch padding (`padding: 8px 3px`).
 
-**Pass Criteria**: **72/72 tests passing with 0 failures.**
+**Pass Criteria**: **74/74 tests passing with 0 failures.**
 
 ---
 
@@ -210,4 +212,6 @@ node run_headless_tests.js
 - [ ] Test 7: Goal column denominator calculation verified.
 - [ ] Test 8: Child readability verified (clean `🌟`, `❌`, `➖` icons only; fractional counts accessible via parent hover tooltip).
 - [ ] Test 9: Floating XP animation timing (2.5s duration, 1.5s dwell phase) and screen edge clamping verified.
-- [ ] Automated suite: `node run_headless_tests.js` passes 72/72 tests (100%).
+- [ ] Test 10: Parent Command Dock verified (floats at bottom center during Exception Mode without colliding with sticky top Mini-HUD, `Escape` key dismisses, 96px bottom clearance protects page footer).
+- [ ] Test 11: Responsive Viewport Policy verified: Zero horizontal scroll on tablet/desktop ($\ge 768\text{px}$), horizontal scroll enabled on mobile ($< 768\text{px}$) with `min-width: 620px` and no overlapping Pokéball cells.
+- [ ] Automated suite: `node run_headless_tests.js` passes 74/74 tests (100%).

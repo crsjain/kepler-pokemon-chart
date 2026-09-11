@@ -2052,6 +2052,12 @@ function setupEventListeners() {
   if (exceptionsDoneBtn) {
     exceptionsDoneBtn.addEventListener('click', stopExceptionMode);
   }
+  // Allow Escape key to cleanly exit Exception Mode
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isExceptionMode) {
+      stopExceptionMode();
+    }
+  });
   if (prevWeekBtn) {
     prevWeekBtn.addEventListener('click', () => {
       const intervals = getHistoricalWeekIntervals(state, currentViewingWeekStartDate);

@@ -13,7 +13,7 @@
 * **Local App URL**: `http://crsjain.c.googlers.com:8000/` or `http://localhost:8000/`
 * **Parent Admin Passcode**: `zxcv`
 * **Automated Runner**: `node run_headless_tests.js`
-* **Browser Cache**: Force-refresh with <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> (or <kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd>) to ensure `service-worker.js` cache `poke-chart-cache-v116` and `app.js?v=10.6` are loaded.
+* **Browser Cache**: Force-refresh with <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> (or <kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd>) to ensure `service-worker.js` cache `poke-chart-cache-v118` and `app.js?v=10.7` are loaded.
 
 ---
 

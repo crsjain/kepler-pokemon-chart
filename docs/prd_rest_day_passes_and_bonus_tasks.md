@@ -145,9 +145,11 @@ Parents configure task exceptions directly on the weekly grid during Exception M
 ## 5. Technical Constraints & Invariants
 
 1. **Strict 36px Footprint**: All icons (Pokéball, borderless `💤`, dashed `✨`, Great Ball) occupy exactly `36px × 36px`.
-2. **Zero Horizontal Scroll**: The grid table must maintain `table-layout: fixed; width: 100%;` with `0px` scroll delta across all 5 responsive test viewports (1280×800 desktop down to 412px mobile).
+2. **Responsive Viewport Policy (Zero Scroll Tablet/Desktop vs. Horizontal Scroll Mobile)**:
+   - **Desktop & Tablet Viewports ($\ge 768\text{px}$)**: Strict **Zero Horizontal Scroll** policy. The grid table maintains `table-layout: fixed; width: 100%; min-width: 0; overflow-x: hidden;` with `0px` scroll delta so the entire week fits on screen without horizontal scroll.
+   - **Mobile Viewports ($< 768\text{px}$)**: **Horizontal Scrolling Enabled**. To prevent 9-column accordion squeezing and overlapping 36px Pokéball assets on narrow mobile viewports (360px–430px), `.grid-scroll-wrapper` enables horizontal scrolling (`overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;`) with `min-width: 620px`. This guarantees each day cell maintains $\ge 50\text{px}$ width for clear readability and touch ergonomics.
 3. **No Cheating on Daily Stars**: Completing bonus tasks never substitutes for incomplete required chores.
 4. **XP Deductibility**: Unchecking a bonus task cleanly decrements `10 XP` without corrupting star vault records.
-5. **Regression Verification**: All 72 automated test cases in `run_headless_tests.js` must pass 100% green before any release.
+5. **Regression Verification**: All 74 automated test cases in `run_headless_tests.js` must pass 100% green before any release.
 6. **Child-Friendly Daily Totals (No Number Parsing)**: The Daily Total row displays only the visual status icons (❌ for incomplete days, 🌟 for complete days, with glowing pulse for Super Trainer bonus days, and ➖ for superseded days). Fractional task counts (e.g. `1 / 3 (+1)`, `0 / 0 ⭐`) are omitted from the visual layout so a 7-year-old child can instantly parse their progress without cognitive overload. Full counts remain accessible via hover tooltips for parents.
 7. **Child Dwell Time & XP Float Readability**: Floating XP notifications (`+10 XP`, `+20 XP! 🎉`, `+10 XP Super Trainer! 🚀`) feature an extended 2.5s duration with a 1.5s rock-solid dwell phase, centered `Fredoka One` typography, and viewport edge clamping so early readers can comfortably read the reward feedback.
