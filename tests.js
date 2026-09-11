@@ -6029,6 +6029,19 @@ async function runSuite() {
         assert(showcaseXp.textContent === '0', `Showcase XP should be 0, got '${showcaseXp.textContent}'`);
         assert(showcaseHelper.textContent.includes('Pikachu') || showcaseHelper.textContent.includes('Raichu') || showcaseHelper.textContent.includes('Evolution'), `Showcase evolution helper should be populated, got '${showcaseHelper.textContent}'`);
 
+        // Verify showcase level badge styling matches main app screen (pixel font, compact radius, no extra shadow)
+        const showcaseLevelBadge = showcaseLevel.closest('.level-badge');
+        assert(showcaseLevelBadge !== null, "Showcase level badge should exist");
+        const levelBadgeStyle = window.getComputedStyle(showcaseLevelBadge);
+        assert(levelBadgeStyle.fontFamily.includes('Press Start 2P'), `Showcase level badge should use 'Press Start 2P' font, got '${levelBadgeStyle.fontFamily}'`);
+        assert(levelBadgeStyle.borderRadius === '4px', `Showcase level badge border-radius should be '4px', got '${levelBadgeStyle.borderRadius}'`);
+        assert(levelBadgeStyle.boxShadow === 'none' || levelBadgeStyle.boxShadow === 'none, none', `Showcase level badge should have no box-shadow, got '${levelBadgeStyle.boxShadow}'`);
+
+        // Verify enlarged partner sprite dimensions
+        const showcaseSpriteStyle = window.getComputedStyle(showcaseSprite);
+        const spriteWidth = parseInt(showcaseSpriteStyle.width, 10);
+        assert(spriteWidth >= 240, `Showcase partner sprite should be enlarged (>= 240px on desktop), got '${spriteWidth}px'`);
+
         // 3. Test tap-to-cheer interaction on enlarged sprite
         showcaseSprite.click();
         await sleep(20);
