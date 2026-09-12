@@ -6110,6 +6110,10 @@ async function runSuite() {
         const pichuRibbon = pichuCard.querySelector('.shop-item-caught-ribbon');
         assert(pichuRibbon !== null, "Pichu card should contain .shop-item-caught-ribbon");
         assert(pichuRibbon.textContent.includes('CAUGHT'), `Pichu ribbon should include 'CAUGHT', got '${pichuRibbon.textContent}'`);
+        const pichuRibbonStyle = window.getComputedStyle(pichuRibbon);
+        const ribbonTop = parseInt(pichuRibbonStyle.top, 10);
+        assert(ribbonTop < 0, `Caught ribbon should extend upward past card boundary (negative top), got '${pichuRibbonStyle.top}'`);
+        assert(pichuRibbonStyle.borderRadius === '4px', `Caught ribbon should have 4-corner border radius, got '${pichuRibbonStyle.borderRadius}'`);
         const pichuPokeball = pichuCard.querySelector('.shop-item-pokeball-badge');
         assert(pichuPokeball !== null, "Pichu card should have 2D Poké Ball stamp in corner");
         assert(pichuPokeball.querySelector('.shop-item-pokeball-center') !== null, "Poké Ball stamp should have center button");

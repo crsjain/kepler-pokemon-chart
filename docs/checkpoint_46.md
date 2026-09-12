@@ -9,10 +9,12 @@ This document contains a complete, chronological record of user requests, system
 - [x] **Pokémon Shop "Owned vs. Not-Yet-Owned" Visual Indicators with Repurchase Support (Option A)**:
   - User requested: "Option A but the child should be able to repurchase the pokemon again if they want - this is particularly relevant for pokemon like Eevee which have multiple evolution paths."
   - User requested: "Remove the ' • Caught: 5/111' I find it distracting."
+  - User requested: "Have the caught call-out go upward past the card boundaries slightly, where highlighted in red in the screneshot."
   - **Option A Visual Indicators (Pokedex Caught Paradigm)**:
-    - **Top Pixel Ribbon (`.shop-item-caught-ribbon`)**: Positioned at `top: -2px; left: 50%; transform: translateX(-50%)` with `'Press Start 2P'` 8-bit font (`0.44rem`). Displays `CAUGHT!` or, if multiple copies are owned (e.g. for multiple Eeveelutions), dynamic `CAUGHT ×{count}` (e.g. `CAUGHT ×2`).
+    - **Upward Floating Pixel Ribbon (`.shop-item-caught-ribbon`)**: Positioned at `top: -9px; left: 50%; transform: translateX(-50%)` with `'Press Start 2P'` 8-bit font (`0.44rem`). Straddles and extends upward past the card boundary into the user-specified zone, framed by a complete 4-corner border (`border: 1.5px solid #059669; border-radius: 4px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18)`). Displays `CAUGHT!` or, if multiple copies are owned, dynamic `CAUGHT ×{count}` (e.g. `CAUGHT ×2`). Completely unblocks breathing room around Pokémon artwork and corner stamp.
     - **2D Poké Ball Stamp (`.shop-item-pokeball-badge`)**: Sits in the top-right corner of `.shop-item-sprite-container` replacing the generic lock badge. Rendered purely in CSS (`linear-gradient(to bottom, #ef4444 48%, #1e293b 48%, #1e293b 54%, #ffffff 54%)`) with an inner center button circle, delivering 100% pre-literacy recognition without emoji OS rendering drift (Rule 3).
     - **Celebratory Card Frame (`.shop-item-card.caught`)**: Applies emerald border (`#10b981`) and soft mint gradient (`linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)`).
+    - **Scroll Container Clearance**: Updated `.shop-items-grid` to `padding: 12px 8px 8px; gap: 14px 12px;` so the top row's `-9px` callout tab has 3px of comfortable clearance inside the scroll viewport with zero clipping.
     - **Clean Subtitle**: Kept `#shop-screen-browse` subtitle clean and uncluttered (`You have X stars available to spend.`), removing distracting counter text per user request.
   - **Full Repurchase & Multi-Evolution Support**:
     - Cards remain 100% interactive and purchasable:
@@ -24,10 +26,10 @@ This document contains a complete, chronological record of user requests, system
       - Hold button CTA displays `Hold Down to Adopt Another! 🔓`.
     - Unlocking an owned Pokémon creates an independent instance in `state.partnersData` (`${pokemonId}_${Date.now()}`), allowing players to level and evolve different instances along separate evolutionary branches (e.g. Vaporeon, Jolteon, Flareon).
 - [x] **Cache & Asset Invalidation**:
-  - Bumped Service Worker cache to `poke-chart-cache-v134` in `service-worker.js`.
-  - Bumped asset tags in `index.html`: `style.css?v=10.29`, `app.js?v=10.22`.
+  - Bumped Service Worker cache to `poke-chart-cache-v135` in `service-worker.js`.
+  - Bumped asset tags in `index.html`: `style.css?v=10.30`, `app.js?v=10.23`.
 - [x] **Automated Regression Suite Verification**:
-  - Added **Test Case 76** in `tests.js` validating starter caught state assertions (ribbon, pokeball stamp, `data-caught="true"`), unowned absence assertions, subtitle cleanliness (no distracting caught counter), duplicate repurchase flow on Eevee (#133), and dynamic `CAUGHT ×2` ribbon update upon repurchase.
+  - Enhanced **Test Case 76** in `tests.js` validating starter caught state assertions (ribbon, pokeball stamp, `data-caught="true"`), upward negative `top: -9px` and `border-radius: 4px` ribbon geometry, unowned absence assertions, subtitle cleanliness (no distracting caught counter), duplicate repurchase flow on Eevee (#133), and dynamic `CAUGHT ×2` ribbon update upon repurchase.
   - Ran `run_headless_tests.js`: **76/76 tests passing (100% green)**.
 
 ---
@@ -37,7 +39,7 @@ This document contains a complete, chronological record of user requests, system
 *   **Repository Location**: `/usr/local/google/home/crsjain/kepler-pokemon-chart`
 *   **Active Branch**: `prototype/pokemon-badge-collection`
 *   **Target Audience**: Kepler (7yo) & Lyra (gamified training chart)
-*   **Current Version**: `v1.10.11` / Service Worker cache `poke-chart-cache-v134` / Asset tags `style.css?v=10.29`, `app.js?v=10.22`
+*   **Current Version**: `v1.10.12` / Service Worker cache `poke-chart-cache-v135` / Asset tags `style.css?v=10.30`, `app.js?v=10.23`
 *   **Admin Password**: `"zxcv"`
 *   **Local Server URL**: `http://localhost:8000/` (or `http://crsjain.c.googlers.com:8000/`)
 *   **Git Policy**: Changes committed to local branch `prototype/pokemon-badge-collection`. Pushes executed only via `session-wrapup` skill.
@@ -100,22 +102,21 @@ This document contains a complete, chronological record of user requests, system
 
 ## 4. Work Accomplished
 
-* **Option A Caught Visuals**:
-  - Implemented `.shop-item-caught-ribbon` with pixel typography (`Press Start 2P`) and emerald styling.
-  - Implemented 2D `.shop-item-pokeball-badge` with red/white hemispheres and center circle in pure CSS.
-  - Added `.shop-item-card.caught` styling with mint gradient and emerald border.
-  - Removed the distracting subtitle counter per user request, preserving a clean and focused shop header.
+* **Upward Protruding Caught Ribbon**:
+  - Positioned `.shop-item-caught-ribbon` with `top: -9px; left: 50%; transform: translateX(-50%)`, `padding: 3px 6px 2.5px`, full 4-corner `border-radius: 4px`, and subtle drop shadow.
+  - Placed ribbon directly in the user-highlighted zone straddling and extending above the card's top border.
+  - Increased `.shop-items-grid` top padding to `12px` and row gap to `14px` for clean viewport containment without scroll clipping.
 * **Repurchase & Evolution Tree Support**:
-  - Added `getOwnedPokemonCount(pokemonId)` in `shop.js` to accurately count instances across families, stages, and baby forms.
+  - Maintained `getOwnedPokemonCount(pokemonId)` in `shop.js` to accurately count instances across families, stages, and baby forms.
   - Retained `⭐ ${cost}` price tag for affordable caught Pokémon and progress bar for locked caught Pokémon.
   - Updated confirmation modal copy to acknowledge existing team members and prompt for duplicates.
   - Ensured unlocking an owned Pokémon produces an independent instance in `state.partnersData`, updating the ribbon to `CAUGHT ×2`.
 * **Automated Regression Verification**:
-  - Added **Test Case 76** to `tests.js` verifying caught cards, subtitle cleanliness, and duplicate repurchase flow with `CAUGHT ×2`.
+  - Enhanced **Test Case 76** to verify `top: -9px` and `border-radius: 4px` on the caught ribbon.
   - Verified 100% pass across all 76 tests via `run_headless_tests.js`.
 * **Cache Invalidation**:
-  - Bumped Service Worker cache to `poke-chart-cache-v134`.
-  - Bumped asset tags in `index.html` to `style.css?v=10.29` and `app.js?v=10.22`.
+  - Bumped Service Worker cache to `poke-chart-cache-v135`.
+  - Bumped asset tags in `index.html` to `style.css?v=10.30` and `app.js?v=10.23`.
 
 ---
 
@@ -126,19 +127,15 @@ This document contains a complete, chronological record of user requests, system
   - Checkpoint 46 documentation.
 
 ### Edited Files
-* [`shop.js`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/shop.js):
-  - Added `getOwnedPokemonCount(pokemonId)`.
-  - Added Option A ribbon and Poké Ball badge rendering.
-  - Updated `selectPokemon` confirmation copy for duplicate adoption.
 * [`style.css`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/style.css):
-  - Added `.shop-item-card.caught`, `.shop-item-caught-ribbon`, `.shop-item-pokeball-badge`, `.shop-item-pokeball-center`.
+  - Updated `.shop-item-caught-ribbon` to `top: -9px`, `border-radius: 4px`, `border: 1.5px solid #059669`.
+  - Adjusted `.shop-items-grid` to `padding: 12px 8px 8px; gap: 14px 12px;`.
 * [`index.html`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/index.html):
-  - Cleaned shop browse subtitle.
-  - Bumped asset tags to `style.css?v=10.29` and `app.js?v=10.22`.
+  - Bumped asset tags to `style.css?v=10.30` and `app.js?v=10.23`.
 * [`service-worker.js`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/service-worker.js):
-  - Bumped cache to `poke-chart-cache-v134`.
+  - Bumped cache to `poke-chart-cache-v135`.
 * [`tests.js`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/tests.js):
-  - Added Test Case 76 testing caught indicators, subtitle cleanliness, and repurchase flow with `CAUGHT ×2` update.
+  - Enhanced Test Case 76 asserting negative top and border-radius on the caught ribbon.
 
 ---
 
@@ -146,19 +143,9 @@ This document contains a complete, chronological record of user requests, system
 
 1. **Open the Pokémon Shop**:
    - Tap the Vault / Star counter on the HUD to open the shop modal.
-   - Observe that starter Pokémon on your team (Pichu, Charmander, Bulbasaur, Squirtle, Eevee) show:
-     - The emerald green card frame.
-     - The pixel `CAUGHT!` top ribbon.
-     - The authentic red-and-white 2D Poké Ball stamp in the corner of the sprite.
-     - The subtitle is clean and concise: *"You have X stars available to spend."* (no distracting counter).
-2. **Verify Unowned Pokémon**:
-   - Scroll down to Mew, Onix, or legendary Pokémon:
-     - Verify they do NOT have the caught ribbon or Poké Ball stamp.
-     - Verify locked cards display the 🔒 badge and progress bar as usual.
-3. **Verify Repurchase Capability**:
-   - Click on an owned Pokémon (e.g. Eevee).
-   - Verify the confirmation screen opens with: *"You already have Eevee (already on your team)! Ready to welcome another to your team for 5 Stars? 🌟"*.
-   - If stars are available, hold down the button to unlock another copy.
-   - Verify the second copy is added to the team, and reopening the shop shows the ribbon updated to `CAUGHT ×2`.
-4. **Automated Suite**:
+   - Inspect caught cards (e.g. Bulbasaur, Charmander, Pichu, Squirtle, Eevee):
+     - Verify the green `CAUGHT!` ribbon extends upward past the card's top border into the crown zone.
+     - Observe that the Pokémon sprite below has full breathing room with no visual overlap.
+     - Verify the top row of cards has smooth breathing room without clipping against the top edge of the scroll grid.
+2. **Automated Suite**:
    - Run `node run_headless_tests.js`: verify 76/76 tests pass (100% green).
