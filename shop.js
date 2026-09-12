@@ -161,14 +161,6 @@ function showBrowse() {
   if (availableStarsText) availableStarsText.textContent = remainingStars;
 
   const buyableIds = getBuyablePokemonIds();
-  let totalCaughtCount = 0;
-  buyableIds.forEach(id => {
-    if (getOwnedPokemonCount(id) > 0) totalCaughtCount++;
-  });
-  const caughtCountEl = document.getElementById('shop-caught-count');
-  if (caughtCountEl) {
-    caughtCountEl.textContent = `${totalCaughtCount}/${buyableIds.length}`;
-  }
 
   if (!itemsGrid) return;
   itemsGrid.innerHTML = '';

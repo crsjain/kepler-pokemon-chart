@@ -6129,10 +6129,9 @@ async function runSuite() {
         assert(mewCard.querySelector('.shop-item-caught-ribbon') === null, "Mew card should NOT have caught ribbon");
         assert(mewCard.querySelector('.shop-item-pokeball-badge') === null, "Mew card should NOT have Poké Ball stamp");
 
-        // 4. Verify Total Caught Counter
+        // 4. Verify Subtitle Cleanliness (no distracting caught counter)
         const caughtCountEl = document.getElementById('shop-caught-count');
-        assert(caughtCountEl !== null, "Shop caught counter element should exist");
-        assert(caughtCountEl.textContent.startsWith('5/'), `Shop caught counter should report 5 starters caught, got '${caughtCountEl.textContent}'`);
+        assert(caughtCountEl === null, "Shop subtitle should not display distracting caught counter");
 
         // 5. Test Repurchase Flow on an already caught Pokemon (Eevee #133)
         // Give state 15 stars to make Eevee affordable

@@ -4457,16 +4457,6 @@ body.idle-mode * {
   box-sizing: border-box;
 }
 
-.shop-caught-counter-wrap {
-  font-family: 'Fredoka One', cursive;
-  color: #10b981;
-  margin-left: 6px;
-}
-
-.shop-caught-count {
-  color: #059669;
-}
-
 .shop-item-sprite-container {
   position: relative;
   width: 60px;
