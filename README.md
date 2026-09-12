@@ -11,8 +11,9 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - **Partner Pokémon Showcase Modal & Easter Egg Tap**: Tap the partner sprite on the Trainer Card to open an authentic collectible card modal featuring an enlarged, hero-sized partner Pokémon sprite (250px on desktop, 210px on mobile), Pokédex number, elemental type pill, matching pixel-art LV badge ('Press Start 2P'), a slimmed stats card, and evolution helper text. Tapping the enlarged sprite triggers a playful easter egg bounce animation with an authentic 8-bit chime!
 - 🪙 **Star Vault & Partner Shop**:
   - Daily totals completed are saved as stars in the **Star Vault**.
-  - Spend 5, 10, or 15 stars from your vault to purchase and unlock new partners from the **Partner Shop** featuring 100+ different Pokémon!
-  - Filter shop items dynamically by type (Fire, Water, Grass, etc.), cost tier, or sort alphabetically / numerically.
+  - Spend 5, 10, or 15 stars from your vault to purchase and unlock new partners from the **Partner Shop** featuring 100+ different Pokémon (including Legendaries like Galarian Moltres)!
+  - Filter shop items dynamically by type (Fire, Water, Grass, Dark, etc.), cost tier, or sort alphabetically / numerically.
+  - Interactive "CAUGHT!" badges and multi-purchase counters (`CAUGHT ×2`) track Kepler's growing collection with crisp elevated ribbon badges, single-line name formatting (`G. Moltres`), and vertically aligned star progress bars.
 - 📈 **XP & Evolution System**: 
   - Each task checked adds **5 XP**.
   - Clearing all tasks in a day unlocks the **Daily Total (⭐)** and grants a **+15 XP Bonus**.
