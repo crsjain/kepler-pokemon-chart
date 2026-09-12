@@ -156,7 +156,8 @@
 ### 👶 Test 8: Child Readability Verification (Zero Raw Numbers in Daily Totals)
 1. Inspect the **Daily Total** row across all 7 day columns on desktop, tablet, and mobile.
 2. **Verify Clean Status Icons**:
-   - [ ] Incomplete days display strictly **`❌`** (`.badge-indicator`).
+   - [ ] Incomplete past missed days display strictly **`❌`** (`.badge-indicator`).
+   - [ ] Today in-progress and unreached future days display strictly **`☆`** (`.badge-indicator.future-star`).
    - [ ] Completed days display strictly **`🌟`** (`.badge-indicator.unlocked`).
    - [ ] Overachiever bonus days display the pulsating gold star **`🌟`** (`.badge-indicator.unlocked.super-trainer`).
    - [ ] Superseded / forward-hashed days display strictly **`➖`** (`.badge-indicator`).
