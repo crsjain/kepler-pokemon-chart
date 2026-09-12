@@ -4492,17 +4492,21 @@ body.idle-mode * {
 .shop-item-name {
   font-family: 'Fredoka One', cursive;
   font-size: 0.8rem;
+  line-height: 20px;
+  height: 20px;
   color: #334155;
   margin-top: 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .shop-item-price-container {
   width: 100%;
-  margin-top: 6px;
+  margin-top: auto;
+  padding-top: 6px;
 }
 
 .shop-item-progress-bg {
@@ -5086,7 +5090,9 @@ body.has-banner {
 
 .shop-item-sparkle {
   margin-left: 4px;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  line-height: 1;
+  vertical-align: middle;
   color: #fbbf24; /* yellow-400 */
   text-shadow: 0 0 4px rgba(251, 191, 36, 0.4);
 }

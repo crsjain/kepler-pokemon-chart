@@ -6224,6 +6224,23 @@ async function runSuite() {
         const sparkle = gMoltresCard.querySelector('.shop-item-sparkle');
         assert(sparkle === null, "Galarian Moltres should NOT have sparkle icon (no evolution linkage)");
 
+        // 2b. Verify vertical alignment of progress bars between cards with and without evolution sparkle
+        const fidoughCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="926"]');
+        assert(fidoughCard !== null, "Fidough (#926) card should exist in shop");
+        const fSparkle = fidoughCard.querySelector('.shop-item-sparkle');
+        assert(fSparkle !== null, "Fidough should have sparkle icon (can evolve)");
+
+        const gNameH = gMoltresCard.querySelector('.shop-item-name').getBoundingClientRect().height;
+        const fNameH = fidoughCard.querySelector('.shop-item-name').getBoundingClientRect().height;
+        assert(Math.abs(gNameH - fNameH) <= 1, `Card name heights should be identical (got G. Moltres: ${gNameH}px, Fidough: ${fNameH}px)`);
+
+        const gProgBg = gMoltresCard.querySelector('.shop-item-progress-bg');
+        const fProgBg = fidoughCard.querySelector('.shop-item-progress-bg');
+        assert(gProgBg !== null && fProgBg !== null, "Both cards should have progress bars");
+        const gProgOffset = gProgBg.getBoundingClientRect().top - gMoltresCard.getBoundingClientRect().top;
+        const fProgOffset = fProgBg.getBoundingClientRect().top - fidoughCard.getBoundingClientRect().top;
+        assert(Math.abs(gProgOffset - fProgOffset) <= 1, `Progress bar vertical offset relative to card must be identical for evolving vs non-evolving Pokemon (got G. Moltres: ${gProgOffset}px, Fidough: ${fProgOffset}px)`);
+
         // 3. Filter by Dark type and verify Galarian Moltres is present
         const typeSelect = document.getElementById('shop-filter-type');
         typeSelect.value = "Dark";
