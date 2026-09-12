@@ -6103,6 +6103,11 @@ async function runSuite() {
         assert(shopModal && !shopModal.classList.contains('hidden'), "Shop modal should be open");
 
         // 2. Verify Owned Starters have Option A caught styling (ribbon, pokeball stamp, data-caught='true')
+        const shopGrid = document.getElementById('shop-items-grid');
+        assert(shopGrid !== null, "Shop items grid should exist");
+        const gridPaddingTop = parseInt(window.getComputedStyle(shopGrid).paddingTop, 10);
+        assert(gridPaddingTop >= 16, `Shop grid padding-top must be at least 16px to prevent clipping caught ribbon on hover, got ${gridPaddingTop}px`);
+
         const pichuCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="172"]');
         assert(pichuCard !== null, "Pichu (#172) card should exist in shop");
         assert(pichuCard.classList.contains('caught'), "Pichu card should have .caught class");
