@@ -6303,6 +6303,97 @@ async function runSuite() {
         await sleep(50);
       }
 
+      // ==========================================
+      // Test Case 78: Future Day Daily Total Ghost Star (☆)
+      // ==========================================
+      {
+        console.log("Running Test Case 78: Future Day Daily Total Ghost Star (☆)...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        const state = window.__app_state__;
+
+        // Set week to Monday-start week (matching user's chart Sep 7 - 13, 2026)
+        // Today is Saturday (col 5), tomorrow Sunday (col 6) is in the future
+        const localDateObj = getLocalDate(state?.timezoneOffset);
+        const todayStr = formatLocalDate(localDateObj);
+        const todayRealDay = localDateObj.getDay();
+        state.weekStartDay = 1; // Monday start
+        const weekStartObj = getWeekStart(localDateObj, 1);
+        state.weekStartDate = formatLocalDate(weekStartObj);
+        helpers.setViewingWeekStartDate(state.weekStartDate);
+        state.activeDay = todayRealDay;
+        helpers.saveState();
+        helpers.renderState(true);
+        await sleep(50);
+
+        let futureColIndex = -1;
+        let pastColIndex = -1;
+        let todayColIndex = -1;
+
+        for (let col = 0; col < 7; col++) {
+          const dateStr = getDateOfColumn(state.weekStartDate, col);
+          if (dateStr > todayStr && futureColIndex === -1) {
+            futureColIndex = col;
+          } else if (dateStr < todayStr && pastColIndex === -1) {
+            pastColIndex = col;
+          } else if (dateStr === todayStr) {
+            todayColIndex = col;
+          }
+        }
+
+        // Verify future day displays ghost star ☆ and NOT ❌
+        if (futureColIndex !== -1) {
+          const futureCell = document.querySelector(`.day-total-cell[data-day="${futureColIndex}"]`);
+          assert(futureCell !== null, `Future day total cell (col ${futureColIndex}) should exist`);
+          assert(futureCell.classList.contains('future-total'), "Future day total cell should have .future-total class");
+          const futureIndicator = futureCell.querySelector('.badge-indicator');
+          assert(futureIndicator !== null, "Future indicator element should exist");
+          assert(futureIndicator.classList.contains('future-star'), "Future indicator should have .future-star class");
+          assert(futureIndicator.textContent.trim() === '☆', `Future indicator should display ghost star '☆', got '${futureIndicator.textContent.trim()}'`);
+          assert(!futureIndicator.textContent.includes('❌'), "Future indicator must NOT display ❌");
+        }
+
+        // Verify past incomplete day displays ❌
+        if (pastColIndex !== -1) {
+          const pastCell = document.querySelector(`.day-total-cell[data-day="${pastColIndex}"]`);
+          assert(pastCell !== null, `Past day total cell (col ${pastColIndex}) should exist`);
+          const pastIndicator = pastCell.querySelector('.badge-indicator');
+          assert(pastIndicator !== null, "Past indicator element should exist");
+          assert(pastIndicator.textContent.trim() === '❌', `Past incomplete indicator should display '❌', got '${pastIndicator.textContent.trim()}'`);
+        }
+
+        // Complete all tasks on the future day -> should unlock 🌟
+        if (futureColIndex !== -1) {
+          const futureDateStr = getDateOfColumn(state.weekStartDate, futureColIndex);
+          const tasks = state.tasks || [];
+          tasks.forEach(t => {
+            state.grid[`${futureDateStr}-${t.id}`] = true;
+          });
+          helpers.saveState();
+          helpers.renderState(false);
+          await sleep(50);
+
+          const completedFutureCell = document.querySelector(`.day-total-cell[data-day="${futureColIndex}"]`);
+          const completedIndicator = completedFutureCell.querySelector('.badge-indicator');
+          assert(completedIndicator.classList.contains('unlocked'), "Completed future day should unlock");
+          assert(completedIndicator.textContent.trim() === '🌟', `Completed future day should display '🌟', got '${completedIndicator.textContent.trim()}'`);
+
+          // Uncheck one task on the future day -> should revert to ghost star ☆ (not ❌!)
+          delete state.grid[`${futureDateStr}-${tasks[0].id}`];
+          helpers.saveState();
+          helpers.renderState(false);
+          await sleep(50);
+
+          const revertedFutureCell = document.querySelector(`.day-total-cell[data-day="${futureColIndex}"]`);
+          const revertedIndicator = revertedFutureCell.querySelector('.badge-indicator');
+          assert(revertedIndicator.classList.contains('future-star'), "Reverted future day should regain .future-star class");
+          assert(revertedIndicator.textContent.trim() === '☆', `Reverted future day must display '☆' (not '❌'), got '${revertedIndicator.textContent.trim()}'`);
+        }
+
+        helpers.resetState();
+        await sleep(50);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

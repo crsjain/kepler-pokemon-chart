@@ -1056,6 +1056,14 @@ button:disabled,
   }
 }
 
+.badge-indicator.future-star {
+  font-size: 1.35rem;
+  line-height: 1;
+  color: #94a3b8;
+  opacity: 0.85;
+  user-select: none;
+}
+
 /* Hide any daily total count text (clean X and stars only for 7yo readability) */
 .day-total-count {
   display: none !important;
