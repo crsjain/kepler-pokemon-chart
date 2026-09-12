@@ -124,7 +124,8 @@ export const POKEMON_MAP = {
   10086: "Hoopa Unbound",
   10157: "Ultra Necrozma",
   10188: "Crowned Sword Zacian", 10189: "Crowned Shield Zamazenta",
-  10193: "Ice Rider Calyrex", 10194: "Shadow Rider Calyrex"
+  10193: "Ice Rider Calyrex", 10194: "Shadow Rider Calyrex",
+  10171: "Galarian Moltres"
 };
 
 export const TIER_1_IDS = [
@@ -145,7 +146,7 @@ export const TIER_2_IDS = [
   778, 789, 790, 791, 792, 800, 807, 810, 811, 812, 813, 814, 815, 821, 822, 823, 
   831, 832, 847, 849, 863, 872, 873, 885, 886, 887, 888, 889, 892, 898, 906, 
   907, 908, 909, 910, 911, 912, 913, 914, 926, 927, 935, 936, 937, 957, 958, 959, 1007, 
-  1008, 1017
+  1008, 1017, 10171
 ];
 
 export function getPokemonName(id) {
@@ -966,7 +967,8 @@ export const POKEMON_TYPES = {
   10086: "Psychic",
   10157: "Psychic",
   10188: "Fairy", 10189: "Fighting",
-  10193: "Psychic", 10194: "Psychic"
+  10193: "Psychic", 10194: "Psychic",
+  10171: "Dark"
 };
 
 export const LEGENDARY_POKEMON_IDS = new Set([
@@ -978,7 +980,7 @@ export const LEGENDARY_POKEMON_IDS = new Set([
   716, 717, 718, 719, 720, // Gen 6 Legendaries
   789, 790, 791, 792, 800, 807, // Gen 7 Legendaries
   888, 889, 892, 898,   // Gen 8 Legendaries
-  1007, 1008, 1017      // Gen 9 Legendaries
+  1007, 1008, 1017, 10171 // Gen 9 & Alternate Legendaries
 ]);
 
 export const RARE_POKEMON_IDS = new Set([

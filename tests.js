@@ -6191,6 +6191,95 @@ async function runSuite() {
         await sleep(50);
       }
 
+      // ----------------------------------------------------------------------
+      // TEST CASE 77: Galarian Moltres Standalone Shop Item & Adoption
+      // ----------------------------------------------------------------------
+      console.log("Running Test Case 77: Galarian Moltres Standalone Shop Item & Adoption...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        // 1. Open Shop Modal
+        helpers.openPokemonShop();
+        await sleep(100);
+
+        const shopModal = document.getElementById('pokemon-shop-modal');
+        assert(shopModal && !shopModal.classList.contains('hidden'), "Shop modal should be open");
+
+        // 2. Verify Galarian Moltres card exists in shop
+        const gMoltresCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="10171"]');
+        assert(gMoltresCard !== null, "Galarian Moltres (#10171) card should exist in shop");
+        assert(gMoltresCard.dataset.cost === '15', "Galarian Moltres should cost 15 stars (Legendary)");
+        assert(POKEMON_TYPES[10171] === 'Dark', "Galarian Moltres should be Dark type");
+        assert(LEGENDARY_POKEMON_IDS.has(10171), "Galarian Moltres should be in LEGENDARY_POKEMON_IDS");
+
+        // Verify it has NO sparkle icon (no evolution linkage)
+        const sparkle = gMoltresCard.querySelector('.shop-item-sparkle');
+        assert(sparkle === null, "Galarian Moltres should NOT have sparkle icon (no evolution linkage)");
+
+        // 3. Filter by Dark type and verify Galarian Moltres is present
+        const typeSelect = document.getElementById('shop-filter-type');
+        typeSelect.value = "Dark";
+        typeSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        const darkCards = document.querySelectorAll('#shop-items-grid .shop-item-card');
+        assert(Array.from(darkCards).some(c => c.dataset.id === '10171'), "Galarian Moltres should appear under Dark filter");
+
+        // Reset type filter
+        typeSelect.value = "all";
+        typeSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+
+        // 4. Give user 15 stars to test adoption flow
+        const stateObj = window.__app_state__;
+        stateObj.starVault.earnedDates = Array.from({ length: 15 }, (_, i) => `2026-07-${10 + i}`);
+        stateObj.starVault.totalTraded = 0;
+        helpers.saveState();
+        helpers.renderState(false);
+        helpers.openPokemonShop();
+        await sleep(50);
+
+        const freshCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="10171"]');
+        assert(freshCard && freshCard.classList.contains('affordable'), "Galarian Moltres should be affordable with 15 stars");
+        freshCard.click();
+        await sleep(100);
+
+        const confirmName = document.getElementById('shop-confirm-name');
+        assert(confirmName && confirmName.textContent.includes("Galarian Moltres"), `Confirm title should be Galarian Moltres, got '${confirmName ? confirmName.textContent : ''}'`);
+
+        const confirmSprite = document.getElementById('shop-confirm-sprite');
+        assert(confirmSprite && confirmSprite.src.includes('10171.png'), `Confirm sprite should point to 10171.png, got '${confirmSprite ? confirmSprite.src : ''}'`);
+
+        const holdBtn = document.getElementById('shop-hold-unlock-btn');
+        assert(holdBtn && !holdBtn.disabled, "Hold unlock button should be enabled");
+
+        // Unlock Galarian Moltres
+        holdBtn.dispatchEvent(new MouseEvent('mousedown'));
+        await sleep(400);
+        holdBtn.dispatchEvent(new MouseEvent('mouseup'));
+        await sleep(2000, true);
+
+        // 5. Verify partner is set to Galarian Moltres
+        assert(stateObj.partnerFamily === '10171' || (stateObj.partnersData && Object.values(stateObj.partnersData).some(p => String(p.familyId) === '10171')), "Galarian Moltres should be in partnersData");
+
+        // 6. Reopen shop and verify CAUGHT! ribbon
+        helpers.openPokemonShop();
+        await sleep(100);
+        const caughtCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="10171"]');
+        assert(caughtCard && caughtCard.classList.contains('caught'), "Galarian Moltres should have .caught class after purchase");
+        const caughtRibbon = caughtCard.querySelector('.shop-item-caught-ribbon');
+        assert(caughtRibbon && caughtRibbon.textContent.includes('CAUGHT'), "Galarian Moltres card should show CAUGHT! ribbon");
+
+        // Close shop & cleanup
+        const closeBtn = document.getElementById('close-shop-modal-btn');
+        if (closeBtn) closeBtn.click();
+        await sleep(50);
+        helpers.resetState();
+        await sleep(50);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
