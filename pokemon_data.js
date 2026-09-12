@@ -153,6 +153,14 @@ export function getPokemonName(id) {
   return POKEMON_MAP[id] || `Pokémon #${id}`;
 }
 
+export const POKEMON_SHORT_NAMES = {
+  10171: "G. Moltres"
+};
+
+export function getPokemonShortName(id) {
+  return POKEMON_SHORT_NAMES[id] || getPokemonName(id);
+}
+
 // Mega Milestone Pokemon
 export const MEGA_POKEMON = [
   { id: 658, name: 'Greninja' },

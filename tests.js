@@ -6214,6 +6214,12 @@ async function runSuite() {
         assert(POKEMON_TYPES[10171] === 'Dark', "Galarian Moltres should be Dark type");
         assert(LEGENDARY_POKEMON_IDS.has(10171), "Galarian Moltres should be in LEGENDARY_POKEMON_IDS");
 
+        // Verify Option 1 abbreviated name to prevent card truncation
+        const nameEl = gMoltresCard.querySelector('.shop-item-name');
+        assert(nameEl !== null, "Galarian Moltres card should have .shop-item-name element");
+        assert(nameEl.textContent.trim() === 'G. Moltres', `Card name should be abbreviated to 'G. Moltres' to prevent truncation, got '${nameEl.textContent.trim()}'`);
+        assert(nameEl.getAttribute('title') === 'Galarian Moltres', `Card name title attribute should be full 'Galarian Moltres', got '${nameEl.getAttribute('title')}'`);
+
         // Verify it has NO sparkle icon (no evolution linkage)
         const sparkle = gMoltresCard.querySelector('.shop-item-sparkle');
         assert(sparkle === null, "Galarian Moltres should NOT have sparkle icon (no evolution linkage)");

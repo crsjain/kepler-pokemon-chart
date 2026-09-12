@@ -1,5 +1,5 @@
 import { state, saveState } from './state.js';
-import { POKEMON_MAP, EVOLUTIONS, getPokemonName, EVOLVED_POKEMON_IDS, POKEMON_TYPES, LEGENDARY_POKEMON_IDS, RARE_POKEMON_IDS, getPokemonCost } from './pokemon_data.js';
+import { POKEMON_MAP, EVOLUTIONS, getPokemonName, getPokemonShortName, EVOLVED_POKEMON_IDS, POKEMON_TYPES, LEGENDARY_POKEMON_IDS, RARE_POKEMON_IDS, getPokemonCost } from './pokemon_data.js';
 import { playSound } from './audio.js';
 
 // DOM elements
@@ -194,6 +194,7 @@ function showBrowse() {
 
   filteredIds.forEach(id => {
     const name = getPokemonName(id);
+    const shortName = getPokemonShortName(id);
     const cost = getPokemonCost(id);
     const isLocked = remainingStars < cost;
     const progressPct = Math.min(100, Math.round((remainingStars / cost) * 100));
@@ -223,7 +224,7 @@ function showBrowse() {
         <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png" class="shop-item-sprite" alt="${name}" loading="lazy">
         ${badgeHtml}
       </div>
-      <span class="shop-item-name">${name}${sparkleHtml}</span>
+      <span class="shop-item-name" title="${name}">${shortName}${sparkleHtml}</span>
       <div class="shop-item-price-container">
         ${isLocked ? `
           <div class="shop-item-progress-bg">
