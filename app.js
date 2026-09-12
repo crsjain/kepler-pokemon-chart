@@ -1708,7 +1708,7 @@ function updateDayTotalUI(day) {
   const dayTotalCell = domCache.dayTotals[day];
   if (!dayTotalCell) return;
   
-  const dateStr = getDateOfColumn(state.weekStartDate, day);
+  const dateStr = getDateOfColumn(currentViewingWeekStartDate || state.weekStartDate, day);
   const isComplete = isDayComplete(dateStr, state);
   const counts = getDayTaskCounts(dateStr, state);
   
