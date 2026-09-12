@@ -4381,6 +4381,92 @@ body.idle-mode * {
   transform: translateY(-2px);
 }
 
+/* Option A: Caught Pokémon Card Styling */
+.shop-item-card.caught {
+  position: relative;
+  border-color: #10b981;
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.shop-item-card.caught.affordable {
+  border-color: #10b981;
+}
+
+.shop-item-card.caught.affordable:hover {
+  border-color: #059669;
+  background: #dcfce7;
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 6px 14px rgba(16, 185, 129, 0.25);
+}
+
+.shop-item-card.caught.locked {
+  opacity: 0.9;
+  border-color: #6ee7b7;
+  background: linear-gradient(180deg, #f0fdf4 0%, #f8fafc 100%);
+}
+
+.shop-item-card.caught.locked:hover {
+  border-color: #10b981;
+  transform: translateY(-2px);
+}
+
+.shop-item-caught-ribbon {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #10b981;
+  color: #ffffff;
+  font-family: 'Press Start 2P', monospace, cursive;
+  font-size: 0.44rem;
+  line-height: 1;
+  padding: 2.5px 6px 2px;
+  border-radius: 0 0 5px 5px;
+  border: 1.5px solid #059669;
+  border-top: none;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.shop-item-pokeball-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #1e293b;
+  background: linear-gradient(to bottom, #ef4444 0%, #ef4444 48%, #1e293b 48%, #1e293b 54%, #ffffff 54%, #ffffff 100%);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+  box-sizing: border-box;
+}
+
+.shop-item-pokeball-center {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1.5px solid #1e293b;
+  box-sizing: border-box;
+}
+
+.shop-caught-counter-wrap {
+  font-family: 'Fredoka One', cursive;
+  color: #10b981;
+  margin-left: 6px;
+}
+
+.shop-caught-count {
+  color: #059669;
+}
+
 .shop-item-sprite-container {
   position: relative;
   width: 60px;

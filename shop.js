@@ -122,6 +122,27 @@ function closeShop() {
   cancelHold();
 }
 
+export function getOwnedPokemonCount(pokemonId) {
+  if (!state.partnersData) return 0;
+  const targetIdStr = String(pokemonId);
+  let count = 0;
+  Object.entries(state.partnersData).forEach(([key, pData]) => {
+    if (!pData) return;
+    const fid = String(pData.familyId || '');
+    const sid = String(pData.stageId || '');
+    if (fid === targetIdStr || sid === targetIdStr || key === targetIdStr) {
+      count++;
+    } else if (
+      (targetIdStr === '172' && fid === '25') ||
+      (targetIdStr === '446' && fid === '143') ||
+      (targetIdStr === '174' && fid === '39')
+    ) {
+      count++;
+    }
+  });
+  return count;
+}
+
 function getBuyablePokemonIds() {
   const allIds = Object.keys(POKEMON_MAP).map(Number);
   return allIds.filter(id => !EVOLVED_POKEMON_IDS.has(id));
@@ -139,10 +160,19 @@ function showBrowse() {
 
   if (availableStarsText) availableStarsText.textContent = remainingStars;
 
+  const buyableIds = getBuyablePokemonIds();
+  let totalCaughtCount = 0;
+  buyableIds.forEach(id => {
+    if (getOwnedPokemonCount(id) > 0) totalCaughtCount++;
+  });
+  const caughtCountEl = document.getElementById('shop-caught-count');
+  if (caughtCountEl) {
+    caughtCountEl.textContent = `${totalCaughtCount}/${buyableIds.length}`;
+  }
+
   if (!itemsGrid) return;
   itemsGrid.innerHTML = '';
 
-  const buyableIds = getBuyablePokemonIds();
   const selectedType = filterTypeSelect ? filterTypeSelect.value : 'all';
   const selectedCost = filterCostSelect ? filterCostSelect.value : 'all';
 
@@ -175,19 +205,31 @@ function showBrowse() {
     const cost = getPokemonCost(id);
     const isLocked = remainingStars < cost;
     const progressPct = Math.min(100, Math.round((remainingStars / cost) * 100));
+    const ownedCount = getOwnedPokemonCount(id);
+    const isCaught = ownedCount > 0;
 
     const card = document.createElement('div');
-    card.className = `shop-item-card ${isLocked ? 'locked' : 'affordable'}`;
+    card.className = `shop-item-card ${isLocked ? 'locked' : 'affordable'}${isCaught ? ' caught' : ''}`;
     card.dataset.id = id;
     card.dataset.cost = cost;
+    card.dataset.caught = isCaught ? 'true' : 'false';
 
     const canEvolve = !!EVOLUTIONS[String(id)] || !!EVOLUTIONS[id];
     const sparkleHtml = canEvolve ? '<span class="shop-item-sparkle animate-bounce-subtle" title="Can evolve! ✨">✨</span>' : '';
 
+    const ribbonHtml = isCaught
+      ? `<div class="shop-item-caught-ribbon" title="Already caught! On your team">${ownedCount > 1 ? `CAUGHT ×${ownedCount}` : 'CAUGHT!'}</div>`
+      : '';
+
+    const badgeHtml = isCaught
+      ? `<div class="shop-item-pokeball-badge" title="Caught! On your team"><div class="shop-item-pokeball-center"></div></div>`
+      : (isLocked ? '<div class="shop-item-lock-badge">🔒</div>' : '');
+
     card.innerHTML = `
+      ${ribbonHtml}
       <div class="shop-item-sprite-container">
         <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png" class="shop-item-sprite" alt="${name}" loading="lazy">
-        ${isLocked ? '<div class="shop-item-lock-badge">🔒</div>' : ''}
+        ${badgeHtml}
       </div>
       <span class="shop-item-name">${name}${sparkleHtml}</span>
       <div class="shop-item-price-container">
@@ -214,6 +256,8 @@ function selectPokemon(id) {
   selectedPokemonId = id;
   const name = getPokemonName(id);
   const cost = getPokemonCost(id);
+  const ownedCount = getOwnedPokemonCount(id);
+  const isCaught = ownedCount > 0;
 
   if (confirmSprite) {
     confirmSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
@@ -223,7 +267,12 @@ function selectPokemon(id) {
     confirmName.innerHTML = `${name}${canEvolve ? ' <span class="shop-item-sparkle animate-bounce-subtle">✨</span>' : ''}`;
   }
   if (confirmDesc) {
-    confirmDesc.textContent = `Ready to welcome ${name} to your team for ${cost} Stars? 🌟`;
+    if (isCaught) {
+      const countMsg = ownedCount > 1 ? ` (${ownedCount} already on your team)` : ` (already on your team)`;
+      confirmDesc.textContent = `You already have ${name}${countMsg}! Ready to welcome another to your team for ${cost} Stars? 🌟`;
+    } else {
+      confirmDesc.textContent = `Ready to welcome ${name} to your team for ${cost} Stars? 🌟`;
+    }
   }
 
   const earnedCount = state.starVault.earnedDates.length;
@@ -240,7 +289,9 @@ function selectPokemon(id) {
     } else {
       holdBtn.disabled = false;
       holdBtn.classList.remove('disabled');
-      if (holdBtnText) holdBtnText.textContent = 'Hold Down to Unlock! 🔓';
+      if (holdBtnText) {
+        holdBtnText.textContent = isCaught ? 'Hold Down to Adopt Another! 🔓' : 'Hold Down to Unlock! 🔓';
+      }
       const svg = holdBtn.querySelector('svg');
       if (svg) svg.style.display = 'block';
       resetHoldProgress();

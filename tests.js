@@ -6088,6 +6088,101 @@ async function runSuite() {
         await sleep(50);
       }
 
+      // 76. Test Case 76: Pokemon Shop Option A Caught Indicators & Repurchase Flow
+      console.log("Running Test Case 76: Pokemon Shop Option A Caught Indicators & Repurchase Flow...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        // 1. Open Shop Modal
+        helpers.openPokemonShop();
+        await sleep(100);
+
+        const shopModal = document.getElementById('pokemon-shop-modal');
+        assert(shopModal && !shopModal.classList.contains('hidden'), "Shop modal should be open");
+
+        // 2. Verify Owned Starters have Option A caught styling (ribbon, pokeball stamp, data-caught='true')
+        const pichuCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="172"]');
+        assert(pichuCard !== null, "Pichu (#172) card should exist in shop");
+        assert(pichuCard.classList.contains('caught'), "Pichu card should have .caught class");
+        assert(pichuCard.dataset.caught === 'true', "Pichu card should have data-caught='true'");
+        const pichuRibbon = pichuCard.querySelector('.shop-item-caught-ribbon');
+        assert(pichuRibbon !== null, "Pichu card should contain .shop-item-caught-ribbon");
+        assert(pichuRibbon.textContent.includes('CAUGHT'), `Pichu ribbon should include 'CAUGHT', got '${pichuRibbon.textContent}'`);
+        const pichuPokeball = pichuCard.querySelector('.shop-item-pokeball-badge');
+        assert(pichuPokeball !== null, "Pichu card should have 2D Poké Ball stamp in corner");
+        assert(pichuPokeball.querySelector('.shop-item-pokeball-center') !== null, "Poké Ball stamp should have center button");
+
+        const eeveeCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="133"]');
+        assert(eeveeCard !== null, "Eevee (#133) card should exist in shop");
+        assert(eeveeCard.classList.contains('caught'), "Eevee card should have .caught class");
+        assert(eeveeCard.dataset.caught === 'true', "Eevee card should have data-caught='true'");
+        assert(eeveeCard.querySelector('.shop-item-caught-ribbon') !== null, "Eevee card should have caught ribbon");
+        assert(eeveeCard.querySelector('.shop-item-pokeball-badge') !== null, "Eevee card should have Poké Ball stamp");
+
+        // 3. Verify Unowned Pokemon do NOT have caught styling
+        const mewCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="151"]');
+        assert(mewCard !== null, "Mew (#151) card should exist in shop");
+        assert(!mewCard.classList.contains('caught'), "Mew card should NOT have .caught class");
+        assert(mewCard.dataset.caught === 'false', "Mew card should have data-caught='false'");
+        assert(mewCard.querySelector('.shop-item-caught-ribbon') === null, "Mew card should NOT have caught ribbon");
+        assert(mewCard.querySelector('.shop-item-pokeball-badge') === null, "Mew card should NOT have Poké Ball stamp");
+
+        // 4. Verify Total Caught Counter
+        const caughtCountEl = document.getElementById('shop-caught-count');
+        assert(caughtCountEl !== null, "Shop caught counter element should exist");
+        assert(caughtCountEl.textContent.startsWith('5/'), `Shop caught counter should report 5 starters caught, got '${caughtCountEl.textContent}'`);
+
+        // 5. Test Repurchase Flow on an already caught Pokemon (Eevee #133)
+        // Give state 15 stars to make Eevee affordable
+        const stateObj = window.__app_state__;
+        stateObj.starVault.earnedDates = Array.from({ length: 15 }, (_, i) => `2026-07-${10 + i}`);
+        stateObj.starVault.totalTraded = 0;
+        helpers.saveState();
+        helpers.renderState(false);
+        helpers.openPokemonShop();
+        await sleep(50);
+
+        const freshEeveeCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="133"]');
+        assert(freshEeveeCard && freshEeveeCard.classList.contains('affordable'), "Eevee card should be affordable with 15 stars");
+        freshEeveeCard.click();
+        await sleep(100);
+
+        const confirmDesc = document.getElementById('shop-confirm-desc');
+        assert(confirmDesc && confirmDesc.textContent.includes("already have Eevee"), `Confirm description should mention already having Eevee, got '${confirmDesc.textContent}'`);
+
+        const holdBtn = document.getElementById('shop-hold-unlock-btn');
+        assert(holdBtn && !holdBtn.disabled, "Hold unlock button should be enabled for repurchasing Eevee");
+
+        // Dispatch hold unlock
+        holdBtn.dispatchEvent(new MouseEvent('mousedown'));
+        await sleep(400);
+        holdBtn.dispatchEvent(new MouseEvent('mouseup'));
+
+        // Wait for unlock completion
+        await sleep(2000, true);
+
+        // 6. Verify second Eevee instance in state
+        const eeveeInstances = Object.values(stateObj.partnersData || {}).filter(p => String(p.familyId) === '133');
+        assert(eeveeInstances.length >= 2, `State should have at least 2 Eevee instances after repurchase, got ${eeveeInstances.length}`);
+
+        // 7. Reopen Shop: verify Eevee now displays CAUGHT ×2
+        helpers.openPokemonShop();
+        await sleep(100);
+        const multiEeveeCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="133"]');
+        assert(multiEeveeCard !== null, "Eevee card should exist after repurchase");
+        const multiEeveeRibbon = multiEeveeCard.querySelector('.shop-item-caught-ribbon');
+        assert(multiEeveeRibbon && multiEeveeRibbon.textContent.includes('CAUGHT ×2'), `Eevee ribbon should display 'CAUGHT ×2', got '${multiEeveeRibbon ? multiEeveeRibbon.textContent : 'null'}'`);
+
+        // Close shop & clean up
+        const closeShopBtn = document.getElementById('close-shop-modal-btn');
+        if (closeShopBtn) closeShopBtn.click();
+        await sleep(50);
+        helpers.resetState();
+        await sleep(50);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

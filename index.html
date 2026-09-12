@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.27">
+  <link rel="stylesheet" href="style.css?v=10.28">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
@@ -466,7 +466,7 @@
         <!-- Screen 1: Browse Shop -->
         <div id="shop-screen-browse" class="shop-screen">
           <h3 class="shop-title">Pokémon Partner Shop! 🏪</h3>
-          <p class="shop-subtitle">You have <strong id="shop-available-stars" class="shop-available-stars-count">0</strong> stars available to spend.</p>
+          <p class="shop-subtitle">You have <strong id="shop-available-stars" class="shop-available-stars-count">0</strong> stars available to spend.<span id="shop-caught-counter-wrap" class="shop-caught-counter-wrap"> • Caught: <strong id="shop-caught-count" class="shop-caught-count">0</strong></span></p>
           
           <div class="shop-filter-bar">
             <select id="shop-filter-type">
@@ -867,7 +867,7 @@
   </div>
 
   <script src="particles.js?v=10.3"></script>
-  <script type="module" src="app.js?v=10.20" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.21" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 </body>
