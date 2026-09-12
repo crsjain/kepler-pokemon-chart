@@ -128,7 +128,7 @@ See canonical PRD [`docs/prd_rest_day_passes_and_bonus_tasks.md`](file:///usr/lo
    - Awards `+10 XP` to partner Pokémon and unlocks `(Super Trainer! 🚀)` footer.
 
 ## 15. Daily Total Row (Child Readability Invariant)
-- **Only Clean Icons (No Sub-Labels)**: Day cells in the `Daily Total` row (`tr.total-row td.day-total-cell`) must display ONLY the clean status icon (`❌` for incomplete past days/today, `☆` ghost star for unreached future days, `🌟` for completed days, `➖` for superseded days).
+- **Only Clean Icons (No Sub-Labels)**: Day cells in the `Daily Total` row (`tr.total-row td.day-total-cell`) must display ONLY the clean status icon (`❌` for incomplete past missed days, `☆` ghost star for today in-progress and unreached future days, `🌟` for completed days, `➖` for superseded days).
 - **No Fractional Text for 7-Year-Olds**: Never render fractional progress text (e.g. `1 / 3 (+1)`, `0 / 0 ⭐`, `4 / 4`) below the icons in the chart cells. For a 7-year-old child, these numbers create unnecessary cognitive clutter.
 - **Parent Tooltip Support**: Full count strings (e.g. `1 / 3 (+1)` or `5 / 4 ⭐ (Super Trainer! 🚀)`) must be preserved in the cell and badge `title` attributes for optional hover inspection by parents.
 ## 16. XP Float Animation (Child Dwell Time & Readability Invariant)

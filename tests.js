@@ -620,7 +620,7 @@ async function runSuite() {
         // Verify star is removed from vault
         assert(!state.starVault.earnedDates.includes(todayDateStr), "Today's star should be removed from vault");
         assert(state.starVault.earnedDates.length === 0, "Vault should be empty again");
-        assert(dailyTotalCell.querySelector('.badge-indicator').textContent === '❌', "Daily indicator should show ❌");
+        assert(dailyTotalCell.querySelector('.badge-indicator').textContent.trim() === '☆', "Daily indicator on today in-progress should show ghost star ☆");
       }
 
       // 10. Test Pokémon Partner Shop & Hold-to-Unlock
@@ -6351,6 +6351,18 @@ async function runSuite() {
           assert(futureIndicator.classList.contains('future-star'), "Future indicator should have .future-star class");
           assert(futureIndicator.textContent.trim() === '☆', `Future indicator should display ghost star '☆', got '${futureIndicator.textContent.trim()}'`);
           assert(!futureIndicator.textContent.includes('❌'), "Future indicator must NOT display ❌");
+        }
+
+        // Verify today in-progress displays ghost star ☆ until complete
+        if (todayColIndex !== -1) {
+          const todayCell = document.querySelector(`.day-total-cell[data-day="${todayColIndex}"]`);
+          assert(todayCell !== null, `Today day total cell (col ${todayColIndex}) should exist`);
+          assert(todayCell.classList.contains('future-total'), "Today in-progress total cell should have .future-total class");
+          const todayIndicator = todayCell.querySelector('.badge-indicator');
+          assert(todayIndicator !== null, "Today indicator element should exist");
+          assert(todayIndicator.classList.contains('future-star'), "Today indicator should have .future-star class");
+          assert(todayIndicator.textContent.trim() === '☆', `Today in-progress indicator should display ghost star '☆', got '${todayIndicator.textContent.trim()}'`);
+          assert(!todayIndicator.textContent.includes('❌'), "Today indicator must NOT display ❌");
         }
 
         // Verify past incomplete day displays ❌

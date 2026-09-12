@@ -1544,10 +1544,10 @@ function renderGridTable() {
   const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
   for (let d = 0; d < 7; d++) {
     const col = colStates[d];
-    const isFutureDay = col.dateStr > todayStr;
+    const isFutureOrToday = col.dateStr >= todayStr;
     if (col.state === 'SUPERSEDED') {
       totalHtml += `<td class="day-total-cell superseded-total" data-day="${d}" data-column-state="superseded" title="${col.tooltip}"><div class="badge-indicator locked" title="${col.tooltip}">➖</div></td>`;
-    } else if (isFutureDay) {
+    } else if (isFutureOrToday) {
       totalHtml += `<td class="day-total-cell future-total" data-day="${d}" data-column-state="${col.state.toLowerCase()}" title="0 / ${state.tasks.length}"><div class="badge-indicator locked future-star" title="0 / ${state.tasks.length}">☆</div></td>`;
     } else {
       totalHtml += `<td class="day-total-cell" data-day="${d}" data-column-state="${col.state.toLowerCase()}" title="0 / ${state.tasks.length}"><div class="badge-indicator locked" title="0 / ${state.tasks.length}">❌</div></td>`;
@@ -1715,7 +1715,7 @@ function updateDayTotalUI(day) {
   checkDayCompleted(dateStr, isComplete);
   
   const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
-  const isFutureDay = dateStr > todayStr;
+  const isFutureOrToday = dateStr >= todayStr;
   
   dayTotalCell.classList.remove('superseded-total', 'future-total');
   const isSuperTrainer = isComplete && counts.bonusCompleted > 0;
@@ -1726,7 +1726,7 @@ function updateDayTotalUI(day) {
     dayTotalCell.title = counts.displayString;
     dayTotalCell.classList.add('unlocked');
     dayTotalCell.classList.remove('locked');
-  } else if (isFutureDay) {
+  } else if (isFutureOrToday) {
     dayTotalCell.innerHTML = `
       <div class="badge-indicator locked future-star" title="${counts.displayString}">☆</div>
     `;
@@ -3440,7 +3440,7 @@ function renderProgress() {
     const isSuperseded = !!(currentInterval && currentInterval.supersededDates && currentInterval.supersededDates.includes(dateStr));
     const isComplete = isDayComplete(dateStr, state);
     const counts = getDayTaskCounts(dateStr, state);
-    const isFutureDay = dateStr > todayStr;
+    const isFutureOrToday = dateStr >= todayStr;
     const totalCell = domCache.dayTotals[day];
     if (totalCell) {
       totalCell.classList.remove('superseded-total', 'future-total');
@@ -3457,7 +3457,7 @@ function renderProgress() {
         totalCell.title = counts.displayString;
         totalCell.classList.add('unlocked');
         totalCell.classList.remove('locked');
-      } else if (isFutureDay) {
+      } else if (isFutureOrToday) {
         totalCell.innerHTML = `
           <div class="badge-indicator locked future-star" title="${counts.displayString}">☆</div>
         `;
