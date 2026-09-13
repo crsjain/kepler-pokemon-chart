@@ -63,6 +63,9 @@ let subscribeToProfileStateFn = (profileId, callback, errorCallback) => {
   }
   return subscribeToProfileState(profileId, callback, errorCallback);
 };
+
+// Option 1: Gamified Slate Socket (Subdued 28px vector SVG socket with accessible fallback)
+const GHOST_STAR_HTML = `<svg class="ghost-star-svg" width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 1.8l3.2 6.5 7.2 1-5.2 5.1 1.2 7.1-6.4-3.4-6.4 3.4 1.2-7.1-5.2-5.1 7.2-1z" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="sr-only">☆</span>`;
 import { promptParentPassword } from './admin.js';
 import { DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS } from './migrations.js';
 
@@ -1548,7 +1551,7 @@ function renderGridTable() {
     if (col.state === 'SUPERSEDED') {
       totalHtml += `<td class="day-total-cell superseded-total" data-day="${d}" data-column-state="superseded" title="${col.tooltip}"><div class="badge-indicator locked" title="${col.tooltip}">➖</div></td>`;
     } else if (isFutureOrToday) {
-      totalHtml += `<td class="day-total-cell future-total" data-day="${d}" data-column-state="${col.state.toLowerCase()}" title="0 / ${state.tasks.length}"><div class="badge-indicator locked future-star" title="0 / ${state.tasks.length}">☆</div></td>`;
+      totalHtml += `<td class="day-total-cell future-total" data-day="${d}" data-column-state="${col.state.toLowerCase()}" title="0 / ${state.tasks.length}"><div class="badge-indicator locked future-star" title="0 / ${state.tasks.length}">${GHOST_STAR_HTML}</div></td>`;
     } else {
       totalHtml += `<td class="day-total-cell" data-day="${d}" data-column-state="${col.state.toLowerCase()}" title="0 / ${state.tasks.length}"><div class="badge-indicator locked" title="0 / ${state.tasks.length}">❌</div></td>`;
     }
@@ -1728,7 +1731,7 @@ function updateDayTotalUI(day) {
     dayTotalCell.classList.remove('locked');
   } else if (isFutureOrToday) {
     dayTotalCell.innerHTML = `
-      <div class="badge-indicator locked future-star" title="${counts.displayString}">☆</div>
+      <div class="badge-indicator locked future-star" title="${counts.displayString}">${GHOST_STAR_HTML}</div>
     `;
     dayTotalCell.title = counts.displayString;
     dayTotalCell.classList.add('future-total');
@@ -3459,7 +3462,7 @@ function renderProgress() {
         totalCell.classList.remove('locked');
       } else if (isFutureOrToday) {
         totalCell.innerHTML = `
-          <div class="badge-indicator locked future-star" title="${counts.displayString}">☆</div>
+          <div class="badge-indicator locked future-star" title="${counts.displayString}">${GHOST_STAR_HTML}</div>
         `;
         totalCell.title = counts.displayString;
         totalCell.classList.add('future-total');

@@ -1039,29 +1039,67 @@ button:disabled,
 }
 
 .badge-indicator.unlocked {
-  transform: scale(1.2);
+  transform: scale(1.25);
+  filter: drop-shadow(0 2px 4px rgba(180, 83, 9, 0.45)) drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
+}
+
+.weekly-grid td.day-total-cell.unlocked {
+  opacity: 1 !important;
+  background: radial-gradient(circle, rgba(254, 243, 199, 0.65) 0%, rgba(254, 243, 199, 0.1) 68%, transparent 72%) !important;
 }
 
 .badge-indicator.super-trainer {
-  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.85));
+  filter: drop-shadow(0 2px 5px rgba(180, 83, 9, 0.6)) drop-shadow(0 0 10px rgba(245, 158, 11, 0.9));
   animation: superTrainerPulse 1.5s infinite alternate ease-in-out;
 }
 
 @keyframes superTrainerPulse {
   0% {
-    transform: scale(1.2);
+    transform: scale(1.25);
   }
   100% {
-    transform: scale(1.35);
+    transform: scale(1.4);
   }
 }
 
 .badge-indicator.future-star {
-  font-size: 1.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
-  color: #94a3b8;
-  opacity: 0.85;
   user-select: none;
+  vertical-align: middle;
+  opacity: 0.65;
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.badge-indicator.future-star:hover {
+  opacity: 0.9;
+}
+
+.badge-indicator.future-star .ghost-star-svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.04));
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.badge-indicator.future-star:hover .ghost-star-svg {
+  transform: scale(1.08);
+}
+
+/* Screen reader only utility class for accessible text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 /* Hide any daily total count text (clean X and stars only for 7yo readability) */
