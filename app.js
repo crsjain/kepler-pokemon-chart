@@ -64,8 +64,10 @@ let subscribeToProfileStateFn = (profileId, callback, errorCallback) => {
   return subscribeToProfileState(profileId, callback, errorCallback);
 };
 
-// Option 1: Gamified Slate Socket (Subdued 28px vector SVG socket with accessible fallback)
-const GHOST_STAR_HTML = `<svg class="ghost-star-svg" width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 1.8l3.2 6.5 7.2 1-5.2 5.1 1.2 7.1-6.4-3.4-6.4 3.4 1.2-7.1-5.2-5.1 7.2-1z" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="sr-only">☆</span>`;
+// Pokémon Gym Badge Star Assets (Option 1: Vector SVG with charcoal border & accessible text fallbacks)
+const EARNED_STAR_HTML = `<svg class="earned-star-svg badge-pop" width="27" height="27" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><polygon points="16,2 20.3,11.5 30.5,12.7 23,19.5 25,29.5 16,24.5 7,29.5 9,19.5 1.5,12.7 11.7,11.5" fill="#ffcb05" stroke="#2d3748" stroke-width="2.6" stroke-linejoin="round"/><polygon points="16,2 20.3,11.5 16,24.5 7,29.5 9,19.5 1.5,12.7 11.7,11.5" fill="#d97706" opacity="0.32"/><circle cx="16" cy="10" r="2.2" fill="#ffffff" opacity="0.9"/><polygon points="16,4.5 18,10 14,10" fill="#ffffff" opacity="0.85"/></svg><span class="sr-only">🌟</span>`;
+const HEADER_STAR_HTML = `<svg class="header-star-svg" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><polygon points="16,2 20.3,11.5 30.5,12.7 23,19.5 25,29.5 16,24.5 7,29.5 9,19.5 1.5,12.7 11.7,11.5" fill="#ffcb05" stroke="#2d3748" stroke-width="2.6" stroke-linejoin="round"/><polygon points="16,2 20.3,11.5 16,24.5 7,29.5 9,19.5 1.5,12.7 11.7,11.5" fill="#f59e0b" opacity="0.35"/><polygon points="16,5 17.5,10.5 13,10.5" fill="#ffffff" opacity="0.8"/></svg>`;
+const GHOST_STAR_HTML = `<svg class="ghost-star-svg" width="27" height="27" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><polygon points="16,2 20.3,11.5 30.5,12.7 23,19.5 25,29.5 16,24.5 7,29.5 9,19.5 1.5,12.7 11.7,11.5" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2.2" stroke-linejoin="round"/></svg><span class="sr-only">☆</span>`;
 import { promptParentPassword } from './admin.js';
 import { DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS } from './migrations.js';
 
@@ -1535,7 +1537,7 @@ function renderGridTable() {
   let totalHtml = `
     <td>
       <div class="task-desc total-desc">
-        <span class="task-emoji">⭐</span>
+        <span class="task-emoji">${HEADER_STAR_HTML}</span>
         <div class="task-text-container">
           <span class="task-name">Daily Total</span>
           <span class="task-concept">All tasks cleared!</span>
@@ -1724,7 +1726,7 @@ function updateDayTotalUI(day) {
   const isSuperTrainer = isComplete && counts.bonusCompleted > 0;
   if (isComplete) {
     dayTotalCell.innerHTML = `
-      <div class="badge-indicator unlocked ${isSuperTrainer ? 'super-trainer' : ''}" title="${counts.displayString}">🌟</div>
+      <div class="badge-indicator unlocked ${isSuperTrainer ? 'super-trainer' : ''}" title="${counts.displayString}">${EARNED_STAR_HTML}</div>
     `;
     dayTotalCell.title = counts.displayString;
     dayTotalCell.classList.add('unlocked');
@@ -3455,7 +3457,7 @@ function renderProgress() {
       } else if (isComplete) {
         const isSuperTrainer = counts.bonusCompleted > 0;
         totalCell.innerHTML = `
-          <div class="badge-indicator unlocked ${isSuperTrainer ? 'super-trainer' : ''}" title="${counts.displayString}">🌟</div>
+          <div class="badge-indicator unlocked ${isSuperTrainer ? 'super-trainer' : ''}" title="${counts.displayString}">${EARNED_STAR_HTML}</div>
         `;
         totalCell.title = counts.displayString;
         totalCell.classList.add('unlocked');

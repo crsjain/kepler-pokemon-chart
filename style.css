@@ -1039,26 +1039,54 @@ button:disabled,
 }
 
 .badge-indicator.unlocked {
-  transform: scale(1.25);
-  filter: drop-shadow(0 2px 4px rgba(180, 83, 9, 0.45)) drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  user-select: none;
+  vertical-align: middle;
+  transform: none;
+}
+
+.badge-indicator.unlocked .earned-star-svg {
+  width: 27px;
+  height: 27px;
+  display: block;
+  filter: drop-shadow(0 2px 0 rgba(180, 83, 9, 0.35));
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.badge-indicator.unlocked:hover .earned-star-svg {
+  transform: scale(1.12);
+}
+
+@keyframes badgePopIn {
+  0% { transform: scale(0.6); opacity: 0.7; }
+  60% { transform: scale(1.18); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.badge-pop {
+  animation: badgePopIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .weekly-grid td.day-total-cell.unlocked {
   opacity: 1 !important;
-  background: radial-gradient(circle, rgba(254, 243, 199, 0.65) 0%, rgba(254, 243, 199, 0.1) 68%, transparent 72%) !important;
+  background: rgba(254, 243, 199, 0.45) !important;
+  border-radius: 6px;
 }
 
-.badge-indicator.super-trainer {
-  filter: drop-shadow(0 2px 5px rgba(180, 83, 9, 0.6)) drop-shadow(0 0 10px rgba(245, 158, 11, 0.9));
+.badge-indicator.super-trainer .earned-star-svg {
+  filter: drop-shadow(0 2px 0 rgba(180, 83, 9, 0.5)) drop-shadow(0 0 6px rgba(245, 158, 11, 0.6));
   animation: superTrainerPulse 1.5s infinite alternate ease-in-out;
 }
 
 @keyframes superTrainerPulse {
   0% {
-    transform: scale(1.25);
+    transform: scale(1);
   }
   100% {
-    transform: scale(1.4);
+    transform: scale(1.18);
   }
 }
 
@@ -1078,8 +1106,8 @@ button:disabled,
 }
 
 .badge-indicator.future-star .ghost-star-svg {
-  width: 28px;
-  height: 28px;
+  width: 27px;
+  height: 27px;
   display: block;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.04));
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -1087,6 +1115,15 @@ button:disabled,
 
 .badge-indicator.future-star:hover .ghost-star-svg {
   transform: scale(1.08);
+}
+
+.total-desc .task-emoji {
+  align-items: center;
+}
+
+.total-desc .task-emoji .header-star-svg {
+  display: block;
+  filter: drop-shadow(0 1px 0 rgba(180, 83, 9, 0.3));
 }
 
 /* Screen reader only utility class for accessible text */
