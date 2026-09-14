@@ -3542,6 +3542,7 @@ function renderProgress() {
       // Dynamic requirements summary
       if (tasks.length === 0) {
         badgeStatusEl.textContent = "No activities configured. Add some in Admin Panel!";
+        badgeStatusEl.title = "";
       } else {
         const groups = {};
         tasks.forEach(t => {
@@ -3556,7 +3557,8 @@ function renderProgress() {
             const names = groups[days].join(', ');
             return `${names}: ${days} day${days > 1 ? 's' : ''}`;
           });
-        badgeStatusEl.innerHTML = summaryParts.join('. ') + '.';
+        badgeStatusEl.textContent = "Clear all goals to unlock!";
+        badgeStatusEl.title = summaryParts.join('. ') + '.';
       }
     }
   }
