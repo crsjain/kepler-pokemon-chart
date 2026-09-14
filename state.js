@@ -707,7 +707,12 @@ export function isDayComplete(dateStr, currentState = state) {
   if (activeTasks.length === 0) return false;
 
   const requiredTasks = activeTasks.filter(task => !currentState.excused || !currentState.excused[`${dateStr}-${task.id}`]);
-  if (requiredTasks.length === 0) return true; // All excused = free rest star
+  if (requiredTasks.length === 0) {
+    // All tasks excused: Free rest star is only awarded once the rest day has concluded (at midnight rollover)!
+    // Future days or today in-progress cannot award a free rest star before midnight rollover.
+    const todayStr = formatLocalDate(getLocalDate(currentState?.timezoneOffset));
+    return dateStr < todayStr;
+  }
 
   return requiredTasks.every(task => !!(currentState.grid && currentState.grid[`${dateStr}-${task.id}`]));
 }
@@ -741,7 +746,9 @@ export function getDayTaskCounts(dateStr, currentState = state) {
     }
   });
 
-  const isComplete = (requiredTotal === 0 && activeTasks.length > 0) || (requiredTotal > 0 && requiredCompleted >= requiredTotal);
+  const todayStr = formatLocalDate(getLocalDate(currentState?.timezoneOffset));
+  const isPast = dateStr < todayStr;
+  const isComplete = (requiredTotal === 0 && activeTasks.length > 0 && isPast) || (requiredTotal > 0 && requiredCompleted >= requiredTotal);
   let displayString = '';
 
   if (isComplete && bonusCompleted > 0) {

@@ -6406,6 +6406,131 @@ async function runSuite() {
         await sleep(50);
       }
 
+      // 79. Test Future/Today In-Progress Rest Days & Bonus Days (Must Display Ghost Star ☆, Not Premature 🌟)
+      {
+        console.log("Running Test Case 79: Future/Today In-Progress Rest Days & Bonus Days (Ghost Star Invariant)...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        let state = window.__app_state__;
+        await sleep(50);
+
+        const localDateObj = getLocalDate(state?.timezoneOffset);
+        const todayStr = formatLocalDate(localDateObj);
+        const todayDayOfWeek = localDateObj.getDay();
+        const activeColIndex = (todayDayOfWeek - state.weekStartDay + 7) % 7;
+
+        let futureColIndex = -1;
+        let pastColIndex = -1;
+        for (let col = 0; col < 7; col++) {
+          const colDateStr = getDateOfColumn(state.weekStartDate, col);
+          if (colDateStr > todayStr && futureColIndex === -1) {
+            futureColIndex = col;
+          }
+          if (colDateStr < todayStr && pastColIndex === -1) {
+            pastColIndex = col;
+          }
+        }
+
+        const tasks = state.tasks || [];
+
+        // 1. Future day with ALL rest tasks (like Thursday in user screenshot)
+        if (futureColIndex !== -1) {
+          const futureDateStr = getDateOfColumn(state.weekStartDate, futureColIndex);
+          tasks.forEach(t => {
+            state.excused[`${futureDateStr}-${t.id}`] = 'rest';
+          });
+          helpers.saveState();
+          helpers.renderState(false);
+          await sleep(50);
+
+          // Invariant: isDayComplete must be false, must not be in vault, and daily total must be ghost star ☆
+          assert(helpers.isDayComplete(futureDateStr, state) === false, "Future rest day must NOT be complete before the day arrives");
+          assert(!state.starVault.earnedDates.includes(futureDateStr), "Future rest day must NOT award star into starVault.earnedDates");
+
+          const futureTotalCell = document.querySelector(`.day-total-cell[data-day="${futureColIndex}"]`);
+          assert(futureTotalCell !== null, `Future day total cell (col ${futureColIndex}) should exist`);
+          assert(futureTotalCell.classList.contains('future-total'), "Future rest day should have .future-total class");
+          assert(!futureTotalCell.classList.contains('unlocked'), "Future rest day must NOT have .unlocked class");
+          const futureIndicator = futureTotalCell.querySelector('.badge-indicator');
+          assert(futureIndicator !== null, "Future indicator element should exist");
+          assert(futureIndicator.classList.contains('future-star'), "Future rest day indicator should have .future-star class");
+          assert(futureIndicator.textContent.trim() === '☆', `Future rest day indicator should display ghost star '☆', got '${futureIndicator.textContent.trim()}'`);
+          assert(!futureIndicator.textContent.includes('🌟'), "Future rest day must NOT display yellow star 🌟");
+        }
+
+        // 2. Future day with mix of bonus tasks + rest tasks with 0 required tasks (like Wednesday in user screenshot)
+        let secondFutureCol = -1;
+        for (let col = 0; col < 7; col++) {
+          const colDateStr = getDateOfColumn(state.weekStartDate, col);
+          if (colDateStr > todayStr && col !== futureColIndex) {
+            secondFutureCol = col;
+            break;
+          }
+        }
+        if (secondFutureCol !== -1) {
+          const secondFutureDateStr = getDateOfColumn(state.weekStartDate, secondFutureCol);
+          // Set first 2 tasks as bonus, remaining as rest
+          tasks.forEach((t, i) => {
+            state.excused[`${secondFutureDateStr}-${t.id}`] = (i < 2) ? 'bonus' : 'rest';
+          });
+          helpers.saveState();
+          helpers.renderState(false);
+          await sleep(50);
+
+          assert(helpers.isDayComplete(secondFutureDateStr, state) === false, "Future bonus/rest day with 0 required tasks must NOT be complete");
+          assert(!state.starVault.earnedDates.includes(secondFutureDateStr), "Future bonus/rest day must NOT award star into starVault.earnedDates");
+
+          const secondFutureCell = document.querySelector(`.day-total-cell[data-day="${secondFutureCol}"]`);
+          assert(secondFutureCell !== null, "Second future cell should exist");
+          assert(secondFutureCell.classList.contains('future-total'), "Should have .future-total class");
+          const secondIndicator = secondFutureCell.querySelector('.badge-indicator');
+          assert(secondIndicator.classList.contains('future-star'), "Should have .future-star class");
+          assert(secondIndicator.textContent.trim() === '☆', "Should display ghost star '☆'");
+          assert(!secondIndicator.textContent.includes('🌟'), "Must NOT display yellow star 🌟");
+        }
+
+        // 3. Today in-progress with ALL rest tasks (must display ghost star ☆ until midnight rollover)
+        const todayDateStr = getDateOfColumn(state.weekStartDate, activeColIndex);
+        tasks.forEach(t => {
+          state.excused[`${todayDateStr}-${t.id}`] = 'rest';
+        });
+        helpers.saveState();
+        helpers.renderState(false);
+        await sleep(50);
+
+        assert(helpers.isDayComplete(todayDateStr, state) === false, "Today in-progress rest day must NOT be complete until midnight rollover");
+        assert(!state.starVault.earnedDates.includes(todayDateStr), "Today in-progress rest day must NOT award star into starVault");
+
+        const todayCell = document.querySelector(`.day-total-cell[data-day="${activeColIndex}"]`);
+        const todayIndicator = todayCell.querySelector('.badge-indicator');
+        assert(todayIndicator.classList.contains('future-star'), "Today rest day indicator should have .future-star class");
+        assert(todayIndicator.textContent.trim() === '☆', "Today rest day indicator should display ghost star '☆'");
+        assert(!todayIndicator.textContent.includes('🌟'), "Today rest day must NOT display yellow star 🌟 before midnight rollover");
+
+        // 4. Past day with ALL rest tasks (MUST award free rest star 🌟 because day has passed)
+        if (pastColIndex !== -1) {
+          const pastDateStr = getDateOfColumn(state.weekStartDate, pastColIndex);
+          tasks.forEach(t => {
+            state.excused[`${pastDateStr}-${t.id}`] = 'rest';
+          });
+          helpers.syncVaultStarsWithGrid();
+          helpers.saveState();
+          helpers.renderState(false);
+          await sleep(50);
+
+          assert(helpers.isDayComplete(pastDateStr, state) === true, "Past rest day MUST be complete after day has concluded");
+          assert(state.starVault.earnedDates.includes(pastDateStr), "Past rest day MUST award free rest star into starVault.earnedDates");
+
+          const pastCell = document.querySelector(`.day-total-cell[data-day="${pastColIndex}"]`);
+          const pastIndicator = pastCell.querySelector('.badge-indicator');
+          assert(pastIndicator.classList.contains('unlocked'), "Past rest day indicator should be unlocked");
+          assert(pastIndicator.textContent.trim() === '🌟', `Past rest day indicator should display '🌟', got '${pastIndicator.textContent.trim()}'`);
+        }
+
+        helpers.resetState();
+        await sleep(50);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
