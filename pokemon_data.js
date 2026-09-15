@@ -33,7 +33,7 @@ export const POKEMON_MAP = {
   174: "Igglybuff",
   175: "Togepi", 176: "Togetic",
   179: "Mareep", 180: "Flaaffy", 181: "Ampharos",
-  194: "Wooper",
+  194: "Wooper", 195: "Quagsire",
   196: "Espeon", 197: "Umbreon",
   208: "Steelix",
   212: "Scizor", 214: "Heracross",
@@ -125,14 +125,15 @@ export const POKEMON_MAP = {
   10157: "Ultra Necrozma",
   10188: "Crowned Sword Zacian", 10189: "Crowned Shield Zamazenta",
   10193: "Ice Rider Calyrex", 10194: "Shadow Rider Calyrex",
-  10171: "Galarian Moltres"
+  10171: "Galarian Moltres",
+  10047: "Mega Heracross"
 };
 
 export const TIER_1_IDS = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 25, 26, 35, 37, 38, 39, 40, 52, 53, 54, 
   55, 58, 59, 63, 65, 66, 68, 79, 80, 92, 93, 94, 95, 129, 130, 131, 133, 134, 135, 136, 
   143, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 172, 
-  174, 175, 176, 179, 180, 181, 194, 196, 197, 208, 212, 214, 228, 229, 246, 247, 
+  174, 175, 176, 179, 180, 181, 194, 195, 196, 197, 208, 212, 214, 228, 229, 246, 247, 
   248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 280, 282, 
   303, 328, 329, 330, 359, 374, 375, 376, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 
   390, 391, 392, 393, 394, 395, 446, 447, 448, 470, 471, 483, 484, 487, 493
@@ -451,6 +452,18 @@ export const EVOLUTIONS = {
       { level: 1, id: '179', name: 'Mareep' },
       { level: 5, id: '180', name: 'Flaaffy' },
       { level: 10, id: '181', name: 'Ampharos' }
+    ]
+  },
+  '194': {
+    stages: [
+      { level: 1, id: '194', name: 'Wooper' },
+      { level: 5, id: '195', name: 'Quagsire' }
+    ]
+  },
+  '214': {
+    stages: [
+      { level: 1, id: '214', name: 'Heracross' },
+      { level: 10, id: '10047', name: 'Mega Heracross' }
     ]
   },
   '228': {
@@ -789,6 +802,7 @@ export const EVOLVED_POKEMON_IDS = new Set([
   159, 160,   // Croconaw, Feraligatr
   176,        // Togetic
   180, 181,   // Flaaffy, Ampharos
+  195,        // Quagsire (Evolved form of Wooper)
   208,        // Steelix (Evolved form of Onix)
   212,        // Scizor (Evolved form of Scyther)
   229,        // Houndoom
@@ -850,6 +864,7 @@ export const EVOLVED_POKEMON_IDS = new Set([
   10157,        // Ultra Necrozma
   10188, 10189, // Crowned Sword Zacian, Crowned Shield Zamazenta
   10193, 10194, // Ice Rider Calyrex, Shadow Rider Calyrex
+  10047,        // Mega Heracross
 ]);
 
 export const POKEMON_TYPES = {
@@ -886,7 +901,7 @@ export const POKEMON_TYPES = {
   174: "Normal",
   175: "Fairy", 176: "Fairy",
   179: "Electric", 180: "Electric", 181: "Electric",
-  194: "Water",
+  194: "Water", 195: "Water",
   196: "Psychic", 197: "Dark",
   123: "Bug",
   208: "Steel",
@@ -976,7 +991,8 @@ export const POKEMON_TYPES = {
   10157: "Psychic",
   10188: "Fairy", 10189: "Fighting",
   10193: "Psychic", 10194: "Psychic",
-  10171: "Dark"
+  10171: "Dark",
+  10047: "Bug"
 };
 
 export const LEGENDARY_POKEMON_IDS = new Set([

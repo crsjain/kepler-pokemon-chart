@@ -6531,6 +6531,198 @@ async function runSuite() {
         await sleep(50);
       }
 
+      // ==========================================
+      // Test Case 80: Wooper ➔ Quagsire & Heracross ➔ Mega Heracross Evolutions & Shop Affordances
+      // ==========================================
+      {
+        console.log("Running Test Case 80: Wooper ➔ Quagsire & Heracross ➔ Mega Heracross Evolutions & Shop...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        let state = window.__app_state__;
+        await sleep(50);
+
+        // 1. Static Data Integrity
+        assert(POKEMON_MAP[194] === "Wooper", "Pokemon 194 should be Wooper");
+        assert(POKEMON_MAP[195] === "Quagsire", "Pokemon 195 should be Quagsire");
+        assert(POKEMON_MAP[214] === "Heracross", "Pokemon 214 should be Heracross");
+        assert(POKEMON_MAP[10047] === "Mega Heracross", "Pokemon 10047 should be Mega Heracross");
+
+        assert(EVOLVED_POKEMON_IDS.has(195), "Quagsire (195) must be in EVOLVED_POKEMON_IDS");
+        assert(EVOLVED_POKEMON_IDS.has(10047), "Mega Heracross (10047) must be in EVOLVED_POKEMON_IDS");
+        assert(!EVOLVED_POKEMON_IDS.has(194), "Wooper (194) must NOT be in EVOLVED_POKEMON_IDS");
+        assert(!EVOLVED_POKEMON_IDS.has(214), "Heracross (214) must NOT be in EVOLVED_POKEMON_IDS");
+
+        assert(POKEMON_TYPES[195] === "Water", "Quagsire type should be Water");
+        assert(POKEMON_TYPES[10047] === "Bug", "Mega Heracross type should be Bug");
+
+        // 2. Evolution Stage Configurations
+        const wooperEvo = EVOLUTIONS['194'];
+        assert(wooperEvo !== undefined, "EVOLUTIONS['194'] must be defined");
+        assert(wooperEvo.stages.length === 2, "Wooper evolution must have 2 stages");
+        assert(wooperEvo.stages[0].id === '194' && wooperEvo.stages[0].name === 'Wooper' && wooperEvo.stages[0].level === 1, "Wooper stage 1 should be level 1 Wooper");
+        assert(wooperEvo.stages[1].id === '195' && wooperEvo.stages[1].name === 'Quagsire' && wooperEvo.stages[1].level === 5, "Wooper stage 2 should be level 5 Quagsire");
+
+        const heracrossEvo = EVOLUTIONS['214'];
+        assert(heracrossEvo !== undefined, "EVOLUTIONS['214'] must be defined");
+        assert(heracrossEvo.stages.length === 2, "Heracross evolution must have 2 stages");
+        assert(heracrossEvo.stages[0].id === '214' && heracrossEvo.stages[0].name === 'Heracross' && heracrossEvo.stages[0].level === 1, "Heracross stage 1 should be level 1 Heracross");
+        assert(heracrossEvo.stages[1].id === '10047' && heracrossEvo.stages[1].name === 'Mega Heracross' && heracrossEvo.stages[1].level === 10, "Heracross stage 2 should be level 10 Mega Heracross");
+
+        // 3. Shop UI Affordances: 'Can evolve! ✨' Sparkle on cards & modal, isolation of evolved forms
+        helpers.openPokemonShop();
+        await sleep(100);
+
+        const shopModal = document.getElementById('pokemon-shop-modal');
+        assert(shopModal && !shopModal.classList.contains('hidden'), "Shop modal should be open");
+
+        const wooperCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="194"]');
+        assert(wooperCard !== null, "Wooper (#194) card should exist in shop");
+        const wooperSparkle = wooperCard.querySelector('.shop-item-sparkle');
+        assert(wooperSparkle !== null, "Wooper card MUST display 'Can evolve! ✨' sparkle");
+
+        const heracrossCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="214"]');
+        assert(heracrossCard !== null, "Heracross (#214) card should exist in shop");
+        const heracrossSparkle = heracrossCard.querySelector('.shop-item-sparkle');
+        assert(heracrossSparkle !== null, "Heracross card MUST display 'Can evolve! ✨' sparkle");
+
+        // Quagsire and Mega Heracross must NOT be sold in the shop
+        const quagsireCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="195"]');
+        assert(quagsireCard === null, "Quagsire card must NOT be sold in the shop");
+        const megaHeracrossCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="10047"]');
+        assert(megaHeracrossCard === null, "Mega Heracross card must NOT be sold in the shop");
+
+        // Inspect confirmation modal for Wooper
+        wooperCard.click();
+        await sleep(50);
+        const confirmName = document.getElementById('shop-confirm-name');
+        assert(confirmName !== null, "Confirmation modal name should exist");
+        assert(confirmName.textContent.includes("Wooper"), "Confirmation title should include Wooper");
+        assert(confirmName.querySelector('.shop-item-sparkle') !== null, "Confirmation title for Wooper should include evolution sparkle ✨");
+
+        // Return to browse and inspect confirmation modal for Heracross
+        const cancelBtn = document.getElementById('shop-confirm-cancel');
+        if (cancelBtn) cancelBtn.click();
+        await sleep(50);
+
+        heracrossCard.click();
+        await sleep(50);
+        assert(confirmName.textContent.includes("Heracross"), "Confirmation title should include Heracross");
+        assert(confirmName.querySelector('.shop-item-sparkle') !== null, "Confirmation title for Heracross should include evolution sparkle ✨");
+
+        // Close shop
+        const closeShopBtn = document.getElementById('close-shop-modal-btn');
+        if (closeShopBtn) closeShopBtn.click();
+        await sleep(50);
+
+        // 4. Partner Evolution Lifecycle: Wooper ➔ Quagsire at LV 5
+        state.reward = "Bonus Tablet Time";
+        state.megaReward = "Booster Pack";
+        state.weekStartDay = 0;
+        state.activeDay = 2;
+        state.activePartnerInstanceId = '194_test';
+        state.partnersData['194_test'] = {
+          familyId: '194',
+          level: 4,
+          xp: 95,
+          stageId: '194'
+        };
+        helpers.renderState(false);
+        await sleep(50);
+
+        const evoHelper = document.getElementById('evolution-helper');
+        const wooperEvoText = evoHelper ? evoHelper.textContent.replace(/\u00a0/g, ' ') : '';
+        assert(wooperEvoText.includes('Quagsire'), `Wooper evolution helper should mention Quagsire, got: '${wooperEvoText}'`);
+        assert(wooperEvoText.includes('LV 5'), `Wooper evolution helper should indicate LV 5, got: '${wooperEvoText}'`);
+
+        // Check task to gain 5 XP -> Level 5 -> Evolves to Quagsire (195)
+        const pianoCb = document.querySelector('input[data-day="2"][data-task="piano"]');
+        if (pianoCb.checked) {
+          pianoCb.click();
+          await sleep(50);
+        }
+        pianoCb.click();
+        await sleep(300);
+
+        assert(state.partnersData['194_test'].level === 5, "Wooper partner should level up to 5");
+        assert(state.partnersData['194_test'].stageId === '195', "Wooper partner should evolve into Quagsire (195)");
+        assert(document.getElementById('partner-name').textContent === 'Quagsire', "Partner name should update to Quagsire");
+
+        // Dismiss evolution notification
+        let notifModal = document.querySelector('.notif-modal');
+        if (notifModal && !notifModal.classList.contains('hidden')) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+
+        // Uncheck task -> lose 5 XP -> Level 4, 95 XP -> Devolves back to Wooper (194)
+        state.partnersData['194_test'].level = 5;
+        state.partnersData['194_test'].xp = 0;
+        pianoCb.click();
+        await sleep(300);
+
+        assert(state.partnersData['194_test'].level === 4, "Wooper partner should level down to 4");
+        assert(state.partnersData['194_test'].stageId === '194', "Wooper partner should devolve back to Wooper (194)");
+        assert(document.getElementById('partner-name').textContent === 'Wooper', "Partner name should revert to Wooper");
+
+        notifModal = document.querySelector('.notif-modal');
+        if (notifModal && !notifModal.classList.contains('hidden')) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+
+        // 5. Partner Evolution Lifecycle: Heracross ➔ Mega Heracross at LV 10
+        state.activePartnerInstanceId = '214_test';
+        state.partnersData['214_test'] = {
+          familyId: '214',
+          level: 9,
+          xp: 95,
+          stageId: '214'
+        };
+        helpers.renderState(false);
+        await sleep(50);
+
+        const heracrossEvoText = evoHelper ? evoHelper.textContent.replace(/\u00a0/g, ' ') : '';
+        assert(heracrossEvoText.includes('Mega Heracross'), `Heracross evolution helper should mention Mega Heracross, got: '${heracrossEvoText}'`);
+        assert(heracrossEvoText.includes('LV 10'), `Heracross evolution helper should indicate LV 10, got: '${heracrossEvoText}'`);
+
+        // Check task to gain 5 XP -> Level 10 -> Evolves to Mega Heracross (10047)
+        pianoCb.click();
+        await sleep(300);
+
+        assert(state.partnersData['214_test'].level === 10, "Heracross partner should level up to 10");
+        assert(state.partnersData['214_test'].stageId === '10047', "Heracross partner should evolve into Mega Heracross (10047)");
+        assert(document.getElementById('partner-name').textContent === 'Mega Heracross', "Partner name should update to Mega Heracross");
+
+        notifModal = document.querySelector('.notif-modal');
+        if (notifModal && !notifModal.classList.contains('hidden')) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+
+        // Uncheck task -> lose 5 XP -> Level 9, 95 XP -> Devolves back to Heracross (214)
+        state.partnersData['214_test'].level = 10;
+        state.partnersData['214_test'].xp = 0;
+        pianoCb.click();
+        await sleep(300);
+
+        assert(state.partnersData['214_test'].level === 9, "Heracross partner should level down to 9");
+        assert(state.partnersData['214_test'].stageId === '214', "Heracross partner should devolve back to Heracross (214)");
+        assert(document.getElementById('partner-name').textContent === 'Heracross', "Partner name should revert to Heracross");
+
+        notifModal = document.querySelector('.notif-modal');
+        if (notifModal && !notifModal.classList.contains('hidden')) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+
+        helpers.resetState();
+        await sleep(50);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
