@@ -8,14 +8,14 @@ export const POKEMON_MAP = {
   10: "Caterpie", 11: "Metapod",
   12: "Butterfree",
   25: "Pikachu", 26: "Raichu",
-  35: "Clefairy",
+  35: "Clefairy", 36: "Clefable",
   37: "Vulpix", 38: "Ninetales",
   39: "Jigglypuff", 40: "Wigglytuff",
   52: "Meowth", 53: "Persian",
   54: "Psyduck", 55: "Golduck",
   58: "Growlithe", 59: "Arcanine",
-  63: "Abra", 65: "Alakazam",
-  66: "Machop", 68: "Machamp",
+  63: "Abra", 64: "Kadabra", 65: "Alakazam",
+  66: "Machop", 67: "Machoke", 68: "Machamp",
   79: "Slowpoke", 80: "Slowbro",
   92: "Gastly", 93: "Haunter",
   94: "Gengar", 95: "Onix",
@@ -34,7 +34,7 @@ export const POKEMON_MAP = {
   175: "Togepi", 176: "Togetic",
   179: "Mareep", 180: "Flaaffy", 181: "Ampharos",
   194: "Wooper", 195: "Quagsire",
-  196: "Espeon", 197: "Umbreon",
+  196: "Espeon", 197: "Umbreon", 199: "Slowking",
   208: "Steelix",
   212: "Scizor", 214: "Heracross",
   228: "Houndour", 229: "Houndoom",
@@ -54,7 +54,7 @@ export const POKEMON_MAP = {
   387: "Turtwig", 388: "Grotle", 389: "Torterra",
   390: "Chimchar", 391: "Monferno", 392: "Infernape",
   393: "Piplup", 394: "Prinplup", 395: "Empoleon",
-  446: "Munchlax",
+  446: "Munchlax", 468: "Togekiss",
   447: "Riolu", 448: "Lucario",
   470: "Leafeon", 471: "Glaceon",
   483: "Dialga", 484: "Palkia", 487: "Giratina", 493: "Arceus",
@@ -83,7 +83,7 @@ export const POKEMON_MAP = {
   719: "Diancie", 720: "Hoopa",
   722: "Rowlet", 723: "Dartrix", 724: "Decidueye",
   725: "Litten", 726: "Torracat", 727: "Incineroar",
-  736: "Grubbin", 738: "Vikavolt",
+  736: "Grubbin", 737: "Charjabug", 738: "Vikavolt",
   744: "Rockruff", 745: "Lycanroc",
   757: "Salandit", 758: "Salazzle",
   778: "Mimikyu",
@@ -101,7 +101,7 @@ export const POKEMON_MAP = {
   872: "Snom", 873: "Frosmoth",
   885: "Dreepy", 886: "Drakloak", 887: "Dragapult",
   888: "Zacian", 889: "Zamazenta",
-  892: "Urshifu", 898: "Calyrex",
+  891: "Kubfu", 892: "Single Strike Urshifu", 898: "Calyrex", 900: "Kleavor",
   906: "Sprigatito", 907: "Floragato", 908: "Meowscarada",
   909: "Fuecoco", 910: "Crocalor", 911: "Skeledirge",
   912: "Quaxly", 913: "Quaxwell", 914: "Quaquaval",
@@ -126,28 +126,33 @@ export const POKEMON_MAP = {
   10188: "Crowned Sword Zacian", 10189: "Crowned Shield Zamazenta",
   10193: "Ice Rider Calyrex", 10194: "Shadow Rider Calyrex",
   10171: "Galarian Moltres",
-  10047: "Mega Heracross"
+  10047: "Mega Heracross",
+  10052: "Mega Mawile",
+  10057: "Mega Absol",
+  10174: "Galarian Zigzagoon",
+  10175: "Galarian Linoone",
+  10191: "Rapid Strike Urshifu"
 };
 
 export const TIER_1_IDS = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 25, 26, 35, 37, 38, 39, 40, 52, 53, 54, 
-  55, 58, 59, 63, 65, 66, 68, 79, 80, 92, 93, 94, 95, 129, 130, 131, 133, 134, 135, 136, 
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 25, 26, 35, 36, 37, 38, 39, 40, 52, 53, 54, 
+  55, 58, 59, 63, 64, 65, 66, 67, 68, 79, 80, 92, 93, 94, 95, 129, 130, 131, 133, 134, 135, 136, 
   143, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 172, 
-  174, 175, 176, 179, 180, 181, 194, 195, 196, 197, 208, 212, 214, 228, 229, 246, 247, 
+  174, 175, 176, 179, 180, 181, 194, 195, 196, 197, 199, 208, 212, 214, 228, 229, 246, 247, 
   248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 280, 282, 
   303, 328, 329, 330, 359, 374, 375, 376, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 
-  390, 391, 392, 393, 394, 395, 446, 447, 448, 470, 471, 483, 484, 487, 493
+  390, 391, 392, 393, 394, 395, 446, 447, 448, 468, 470, 471, 483, 484, 487, 493, 900
 ];
 
 export const TIER_2_IDS = [
   403, 404, 405, 443, 444, 445, 475, 494, 495, 496, 497, 498, 499, 500, 
   501, 502, 503, 610, 611, 612, 633, 634, 635, 636, 637, 643, 644, 646, 649, 
   653, 654, 655, 656, 657, 658, 679, 680, 681, 700, 704, 705, 706, 716, 717, 718, 
-  719, 720, 722, 723, 724, 725, 726, 727, 736, 738, 744, 745, 757, 758, 
+  719, 720, 722, 723, 724, 725, 726, 727, 736, 737, 738, 744, 745, 757, 758, 
   778, 789, 790, 791, 792, 800, 807, 810, 811, 812, 813, 814, 815, 821, 822, 823, 
-  831, 832, 847, 849, 863, 872, 873, 885, 886, 887, 888, 889, 892, 898, 906, 
+  831, 832, 847, 849, 863, 872, 873, 885, 886, 887, 888, 889, 891, 892, 898, 906, 
   907, 908, 909, 910, 911, 912, 913, 914, 926, 927, 935, 936, 937, 957, 958, 959, 1007, 
-  1008, 1017, 10171
+  1008, 1017, 10171, 10174, 10175, 10191
 ];
 
 export function getPokemonName(id) {
@@ -155,7 +160,11 @@ export function getPokemonName(id) {
 }
 
 export const POKEMON_SHORT_NAMES = {
-  10171: "G. Moltres"
+  10171: "G. Moltres",
+  10174: "G. Zigzagoon",
+  10175: "G. Linoone",
+  892: "Urshifu (Single)",
+  10191: "Urshifu (Rapid)"
 };
 
 export function getPokemonShortName(id) {
@@ -345,6 +354,12 @@ export const EVOLUTIONS = {
       { level: 5, id: '12', name: 'Butterfree' }
     ]
   },
+  '35': {
+    stages: [
+      { level: 1, id: '35', name: 'Clefairy' },
+      { level: 5, id: '36', name: 'Clefable' }
+    ]
+  },
   '37': {
     stages: [
       { level: 1, id: '37', name: 'Vulpix' },
@@ -379,19 +394,24 @@ export const EVOLUTIONS = {
   '63': {
     stages: [
       { level: 1, id: '63', name: 'Abra' },
-      { level: 5, id: '65', name: 'Alakazam' }
+      { level: 5, id: '64', name: 'Kadabra' },
+      { level: 10, id: '65', name: 'Alakazam' }
     ]
   },
   '66': {
     stages: [
       { level: 1, id: '66', name: 'Machop' },
-      { level: 5, id: '68', name: 'Machamp' }
+      { level: 5, id: '67', name: 'Machoke' },
+      { level: 10, id: '68', name: 'Machamp' }
     ]
   },
   '79': {
     stages: [
-      { level: 1, id: '79', name: 'Slowpoke' },
-      { level: 5, id: '80', name: 'Slowbro' }
+      { level: 1, id: '79', name: 'Slowpoke' }
+    ],
+    options: [
+      { id: '80', name: 'Slowbro', level: 5 },
+      { id: '199', name: 'Slowking', level: 5 }
     ]
   },
   '92': {
@@ -444,7 +464,8 @@ export const EVOLUTIONS = {
   '175': {
     stages: [
       { level: 1, id: '175', name: 'Togepi' },
-      { level: 5, id: '176', name: 'Togetic' }
+      { level: 5, id: '176', name: 'Togetic' },
+      { level: 10, id: '468', name: 'Togekiss' }
     ]
   },
   '179': {
@@ -509,11 +530,23 @@ export const EVOLUTIONS = {
       { id: '475', name: 'Gallade', level: 5 }
     ]
   },
+  '303': {
+    stages: [
+      { level: 1, id: '303', name: 'Mawile' },
+      { level: 10, id: '10052', name: 'Mega Mawile' }
+    ]
+  },
   '328': {
     stages: [
       { level: 1, id: '328', name: 'Trapinch' },
       { level: 5, id: '329', name: 'Vibrava' },
       { level: 10, id: '330', name: 'Flygon' }
+    ]
+  },
+  '359': {
+    stages: [
+      { level: 1, id: '359', name: 'Absol' },
+      { level: 10, id: '10057', name: 'Mega Absol' }
     ]
   },
   '374': {
@@ -643,7 +676,8 @@ export const EVOLUTIONS = {
   '736': {
     stages: [
       { level: 1, id: '736', name: 'Grubbin' },
-      { level: 5, id: '738', name: 'Vikavolt' }
+      { level: 5, id: '737', name: 'Charjabug' },
+      { level: 10, id: '738', name: 'Vikavolt' }
     ]
   },
   '744': {
@@ -724,8 +758,11 @@ export const EVOLUTIONS = {
   },
   '123': {
     stages: [
-      { level: 1, id: '123', name: 'Scyther' },
-      { level: 5, id: '212', name: 'Scizor' }
+      { level: 1, id: '123', name: 'Scyther' }
+    ],
+    options: [
+      { id: '212', name: 'Scizor', level: 5 },
+      { id: '900', name: 'Kleavor', level: 5 }
     ]
   },
   '636': {
@@ -775,6 +812,22 @@ export const EVOLUTIONS = {
       { id: '936', name: 'Armarouge', level: 5 },
       { id: '937', name: 'Ceruledge', level: 5 }
     ]
+  },
+  '891': {
+    stages: [
+      { level: 1, id: '891', name: 'Kubfu' }
+    ],
+    options: [
+      { id: '892', name: 'Single Strike Urshifu', level: 10 },
+      { id: '10191', name: 'Rapid Strike Urshifu', level: 10 }
+    ]
+  },
+  '10174': {
+    stages: [
+      { level: 1, id: '10174', name: 'Galarian Zigzagoon' },
+      { level: 5, id: '10175', name: 'Galarian Linoone' },
+      { level: 10, id: '863', name: 'Obstagoon' }
+    ]
   }
 };
 
@@ -784,14 +837,15 @@ export const EVOLVED_POKEMON_IDS = new Set([
   8, 9,       // Wartortle, Blastoise
   11, 12,     // Metapod, Butterfree
   25, 26,     // Pikachu, Raichu
+  36,         // Clefable
   38,         // Ninetales
   39, 40,     // Jigglypuff, Wigglytuff
   53,         // Persian
   55,         // Golduck
   59,         // Arcanine
-  65,         // Alakazam
-  68,         // Machamp
-  80,         // Slowbro
+  64, 65,     // Kadabra, Alakazam
+  67, 68,     // Machoke, Machamp
+  80, 199,    // Slowbro, Slowking
   93, 94,     // Haunter, Gengar
   130,        // Gyarados
   134, 135, 136, 196, 197, 470, 471, 700, // Eeveelutions
@@ -800,11 +854,11 @@ export const EVOLVED_POKEMON_IDS = new Set([
   153, 154,   // Bayleef, Meganium
   156, 157,   // Quilava, Typhlosion
   159, 160,   // Croconaw, Feraligatr
-  176,        // Togetic
+  176, 468,   // Togetic, Togekiss
   180, 181,   // Flaaffy, Ampharos
   195,        // Quagsire (Evolved form of Wooper)
   208,        // Steelix (Evolved form of Onix)
-  212,        // Scizor (Evolved form of Scyther)
+  212, 900,   // Scizor, Kleavor (Evolved forms of Scyther)
   229,        // Houndoom
   247, 248,   // Pupitar, Tyranitar
   253, 254,   // Grovyle, Sceptile
@@ -832,7 +886,7 @@ export const EVOLVED_POKEMON_IDS = new Set([
   705, 706,   // Sliggoo, Goodra
   723, 724,   // Dartrix, Decidueye
   726, 727,   // Torracat, Incineroar
-  738,        // Vikavolt
+  737, 738,   // Charjabug, Vikavolt
   745,        // Lycanroc
   758,        // Salazzle
   790, 791, 792, // Cosmoem, Solgaleo, Lunala
@@ -841,14 +895,17 @@ export const EVOLVED_POKEMON_IDS = new Set([
   822, 823,   // Corvisquire, Corviknight (Evolved forms of Rookidee)
   832,        // Dubwool
   849,        // Toxtricity (Evolved form of Toxel)
+  863,        // Obstagoon
   873,        // Frosmoth
   886, 887,   // Drakloak, Dragapult
+  892, 10191, // Single Strike Urshifu, Rapid Strike Urshifu
   907, 908,   // Floragato, Meowscarada
   910, 911,   // Crocalor, Skeledirge
   913, 914,   // Quaxwell, Quaquaval
   927,        // Dachsbun (Evolved form of Fidough)
   936, 937,   // Armarouge, Ceruledge (Evolved forms of Charcadet)
   958, 959,   // Tinkatuff, Tinkaton (Evolved forms of Tinkatink)
+  10175,      // Galarian Linoone
 
   // Mega / Primal / Origin Forms (Evolved)
   10043, 10044, // Mega Mewtwo X, Mega Mewtwo Y
@@ -865,6 +922,8 @@ export const EVOLVED_POKEMON_IDS = new Set([
   10188, 10189, // Crowned Sword Zacian, Crowned Shield Zamazenta
   10193, 10194, // Ice Rider Calyrex, Shadow Rider Calyrex
   10047,        // Mega Heracross
+  10052,        // Mega Mawile
+  10057,        // Mega Absol
 ]);
 
 export const POKEMON_TYPES = {
@@ -874,15 +933,15 @@ export const POKEMON_TYPES = {
   10: "Bug", 11: "Bug",
   12: "Bug",
   25: "Electric", 26: "Electric",
-  35: "Fairy",
+  35: "Fairy", 36: "Fairy",
   37: "Fire", 38: "Fire",
   39: "Normal", 40: "Normal",
   52: "Normal", 53: "Normal",
   54: "Water", 55: "Water",
   58: "Fire", 59: "Fire",
-  63: "Psychic", 65: "Psychic",
-  66: "Fighting", 68: "Fighting",
-  79: "Water", 80: "Water",
+  63: "Psychic", 64: "Psychic", 65: "Psychic",
+  66: "Fighting", 67: "Fighting", 68: "Fighting",
+  79: "Water", 80: "Water", 199: "Water",
   92: "Ghost", 93: "Ghost",
   94: "Ghost",
   95: "Rock",
@@ -890,7 +949,7 @@ export const POKEMON_TYPES = {
   130: "Water",
   131: "Water",
   133: "Normal", 134: "Water", 135: "Electric", 136: "Fire",
-  143: "Normal",
+  143: "Normal", 446: "Normal",
   147: "Dragon", 148: "Dragon",
   149: "Dragon",
   150: "Psychic", 151: "Psychic",
@@ -899,11 +958,11 @@ export const POKEMON_TYPES = {
   158: "Water", 159: "Water", 160: "Water",
   172: "Electric",
   174: "Normal",
-  175: "Fairy", 176: "Fairy",
+  175: "Fairy", 176: "Fairy", 468: "Fairy",
   179: "Electric", 180: "Electric", 181: "Electric",
   194: "Water", 195: "Water",
   196: "Psychic", 197: "Dark",
-  123: "Bug",
+  123: "Bug", 900: "Rock",
   208: "Steel",
   212: "Bug", 214: "Bug",
   228: "Dark", 229: "Dark",
@@ -950,7 +1009,7 @@ export const POKEMON_TYPES = {
   719: "Rock", 720: "Psychic",
   722: "Grass", 723: "Grass", 724: "Grass",
   725: "Fire", 726: "Fire", 727: "Fire",
-  736: "Bug", 738: "Bug",
+  736: "Bug", 737: "Bug", 738: "Bug",
   744: "Rock", 745: "Rock",
   757: "Poison", 758: "Poison",
   778: "Ghost",
@@ -967,11 +1026,11 @@ export const POKEMON_TYPES = {
   872: "Ice", 873: "Ice",
   885: "Dragon", 886: "Dragon", 887: "Dragon",
   888: "Fairy", 889: "Fighting",
-  892: "Fighting", 898: "Psychic",
+  891: "Fighting", 892: "Fighting", 898: "Psychic", 10191: "Fighting",
   906: "Grass", 907: "Grass", 908: "Grass",
   909: "Fire", 910: "Fire", 911: "Fire",
   912: "Water", 913: "Water", 914: "Water",
-  926: "Fairy", 927: "Fairy", 927: "Fairy",
+  926: "Fairy", 927: "Fairy",
   935: "Fire",
   936: "Fire", 937: "Fire",
   957: "Fairy", 958: "Fairy",
@@ -992,7 +1051,11 @@ export const POKEMON_TYPES = {
   10188: "Fairy", 10189: "Fighting",
   10193: "Psychic", 10194: "Psychic",
   10171: "Dark",
-  10047: "Bug"
+  10047: "Bug",
+  10052: "Steel",
+  10057: "Dark",
+  10174: "Dark",
+  10175: "Dark"
 };
 
 export const LEGENDARY_POKEMON_IDS = new Set([
@@ -1003,7 +1066,7 @@ export const LEGENDARY_POKEMON_IDS = new Set([
   643, 644, 646, 649,   // Gen 5 Legendaries
   716, 717, 718, 719, 720, // Gen 6 Legendaries
   789, 790, 791, 792, 800, 807, // Gen 7 Legendaries
-  888, 889, 892, 898,   // Gen 8 Legendaries
+  888, 889, 891, 892, 898, 10191, // Gen 8 Legendaries
   1007, 1008, 1017, 10171 // Gen 9 & Alternate Legendaries
 ]);
 

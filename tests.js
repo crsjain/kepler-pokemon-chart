@@ -3,7 +3,7 @@ import * as StateModule from './state.js';
 import { saveState, rollNewWeeklyBadge, getDefaultStateTemplate, DAYS, getTaskRequiredDays, runStateDiagnostics } from './state.js';
 import { getSunday, formatLocalDate, getDateOfColumn, getWeekStart, getLocalDate, getHistoricalWeekIntervals, getFormattedDateRange, getWeekColumnStates, getColumnState } from './date_utils.js';
 import { runMigrations } from './migrations.js';
-import { POKEMON_TYPES, LEGENDARY_POKEMON_IDS, getPokemonName, POKEMON_MAP, EVOLUTIONS, EVOLVED_POKEMON_IDS } from './pokemon_data.js';
+import { POKEMON_TYPES, LEGENDARY_POKEMON_IDS, getPokemonName, POKEMON_MAP, EVOLUTIONS, EVOLVED_POKEMON_IDS, getPokemonCost } from './pokemon_data.js';
 
 function getGridKey(dayIndex, taskId) {
   return `${getDateOfColumn(window.__app_state__.weekStartDate, dayIndex)}-${taskId}`;
@@ -6711,6 +6711,367 @@ async function runSuite() {
         assert(state.partnersData['214_test'].level === 9, "Heracross partner should level down to 9");
         assert(state.partnersData['214_test'].stageId === '214', "Heracross partner should devolve back to Heracross (214)");
         assert(document.getElementById('partner-name').textContent === 'Heracross', "Partner name should revert to Heracross");
+
+        notifModal = document.querySelector('.notif-modal');
+        if (notifModal && !notifModal.classList.contains('hidden')) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+
+        helpers.resetState();
+        await sleep(50);
+      }
+
+      // ==========================================
+      // TEST CASE 81: Priorities 1-6 Pokémon Shop Evolutions & Branching Modal
+      // ==========================================
+      {
+        console.log("Running Test Case 81: Priorities 1-6 Pokémon Shop Evolutions & Branching Modal...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        let state = window.__app_state__;
+        await sleep(50);
+
+        // 1. Static Data Integrity across Priorities 1-6
+        // Priority 1: Clefable (36), Mega Mawile (10052), Mega Absol (10057)
+        assert(POKEMON_MAP[36] === "Clefable", "Pokemon 36 should be Clefable");
+        assert(POKEMON_MAP[10052] === "Mega Mawile", "Pokemon 10052 should be Mega Mawile");
+        assert(POKEMON_MAP[10057] === "Mega Absol", "Pokemon 10057 should be Mega Absol");
+
+        // Priority 2: Togekiss (468)
+        assert(POKEMON_MAP[468] === "Togekiss", "Pokemon 468 should be Togekiss");
+
+        // Priority 3: Kadabra (64), Machoke (67), Charjabug (737)
+        assert(POKEMON_MAP[64] === "Kadabra", "Pokemon 64 should be Kadabra");
+        assert(POKEMON_MAP[67] === "Machoke", "Pokemon 67 should be Machoke");
+        assert(POKEMON_MAP[737] === "Charjabug", "Pokemon 737 should be Charjabug");
+
+        // Priority 4: Slowking (199), Kleavor (900)
+        assert(POKEMON_MAP[199] === "Slowking", "Pokemon 199 should be Slowking");
+        assert(POKEMON_MAP[900] === "Kleavor", "Pokemon 900 should be Kleavor");
+
+        // Priority 5: Kubfu (891), Single Strike Urshifu (892), Rapid Strike Urshifu (10191), Galarian Zigzagoon (10174), Galarian Linoone (10175)
+        assert(POKEMON_MAP[891] === "Kubfu", "Pokemon 891 should be Kubfu");
+        assert(POKEMON_MAP[892] === "Single Strike Urshifu", "Pokemon 892 should be Single Strike Urshifu");
+        assert(POKEMON_MAP[10191] === "Rapid Strike Urshifu", "Pokemon 10191 should be Rapid Strike Urshifu");
+        assert(POKEMON_MAP[10174] === "Galarian Zigzagoon", "Pokemon 10174 should be Galarian Zigzagoon");
+        assert(POKEMON_MAP[10175] === "Galarian Linoone", "Pokemon 10175 should be Galarian Linoone");
+
+        // Priority 6 & Types: Munchlax (446) bugfix and newly added types
+        assert(POKEMON_TYPES[446] === "Normal", "Munchlax (446) type should be Normal");
+        assert(POKEMON_TYPES[36] === "Fairy", "Clefable (36) type should be Fairy");
+        assert(POKEMON_TYPES[64] === "Psychic", "Kadabra (64) type should be Psychic");
+        assert(POKEMON_TYPES[67] === "Fighting", "Machoke (67) type should be Fighting");
+        assert(POKEMON_TYPES[199] === "Water", "Slowking (199) type should be Water");
+        assert(POKEMON_TYPES[468] === "Fairy", "Togekiss (468) type should be Fairy");
+        assert(POKEMON_TYPES[737] === "Bug", "Charjabug (737) type should be Bug");
+        assert(POKEMON_TYPES[891] === "Fighting", "Kubfu (891) type should be Fighting");
+        assert(POKEMON_TYPES[892] === "Fighting", "Urshifu (892) type should be Fighting");
+        assert(POKEMON_TYPES[10191] === "Fighting", "Rapid Strike Urshifu (10191) type should be Fighting");
+        assert(POKEMON_TYPES[900] === "Rock", "Kleavor (900) type should be Rock");
+        assert(POKEMON_TYPES[10052] === "Steel", "Mega Mawile (10052) type should be Steel");
+        assert(POKEMON_TYPES[10057] === "Dark", "Mega Absol (10057) type should be Dark");
+        assert(POKEMON_TYPES[10174] === "Dark", "Galarian Zigzagoon (10174) type should be Dark");
+        assert(POKEMON_TYPES[10175] === "Dark", "Galarian Linoone (10175) type should be Dark");
+
+        // Legendary Sets & Costs
+        assert(LEGENDARY_POKEMON_IDS.has(891), "Kubfu (891) must be in LEGENDARY_POKEMON_IDS");
+        assert(LEGENDARY_POKEMON_IDS.has(10191), "Rapid Strike Urshifu (10191) must be in LEGENDARY_POKEMON_IDS");
+        assert(getPokemonCost(891) === 15, "Kubfu (891) cost should be 15 stars");
+
+        // EVOLVED_POKEMON_IDS isolation
+        const evolvedIdsToCheck = [36, 64, 67, 199, 468, 737, 863, 892, 900, 10052, 10057, 10175, 10191];
+        evolvedIdsToCheck.forEach(id => {
+          assert(EVOLVED_POKEMON_IDS.has(id), `ID ${id} must be in EVOLVED_POKEMON_IDS`);
+        });
+
+        const baseIdsToCheck = [35, 63, 66, 79, 123, 175, 303, 359, 736, 891, 10174];
+        baseIdsToCheck.forEach(id => {
+          assert(!EVOLVED_POKEMON_IDS.has(id), `Base ID ${id} must NOT be in EVOLVED_POKEMON_IDS`);
+        });
+
+        // 2. Shop Verification (Sparkles on base forms, absence of evolved forms)
+        helpers.openPokemonShop();
+        await sleep(100);
+
+        const shopModal = document.getElementById('pokemon-shop-modal');
+        assert(shopModal && !shopModal.classList.contains('hidden'), "Shop modal should be open");
+
+        baseIdsToCheck.forEach(id => {
+          const card = document.querySelector(`#shop-items-grid .shop-item-card[data-id="${id}"]`);
+          assert(card !== null, `Base Pokemon card ${id} should exist in shop`);
+          const sparkle = card.querySelector('.shop-item-sparkle');
+          assert(sparkle !== null, `Base Pokemon card ${id} MUST have evolution sparkle ✨`);
+        });
+
+        evolvedIdsToCheck.forEach(id => {
+          const card = document.querySelector(`#shop-items-grid .shop-item-card[data-id="${id}"]`);
+          assert(card === null, `Evolved Pokemon ${id} must NOT be sold in the shop`);
+        });
+
+        const closeShopBtn = document.getElementById('close-shop-modal-btn');
+        if (closeShopBtn) closeShopBtn.click();
+        await sleep(50);
+
+        // 3. Branching Evolution via Eevee Modal: Slowpoke (79) -> Slowking (199)
+        state.reward = "Bonus Tablet Time";
+        state.megaReward = "Booster Pack";
+        state.weekStartDay = 0;
+        state.activeDay = 2;
+        state.activePartnerInstanceId = '79_test';
+        state.partnersData['79_test'] = {
+          familyId: '79',
+          level: 4,
+          xp: 95,
+          stageId: '79'
+        };
+        helpers.renderState(false);
+        await sleep(50);
+
+        const pianoCb = document.querySelector('input[data-day="2"][data-task="piano"]');
+        if (pianoCb.checked) {
+          pianoCb.click();
+          await sleep(50);
+        }
+        pianoCb.click(); // gain 5 XP -> Level 5 -> triggers branching evolution modal
+        await sleep(300);
+
+        const eeveeModal = document.getElementById('eevee-modal');
+        assert(eeveeModal && !eeveeModal.classList.contains('hidden'), "Eevee modal should open for Slowpoke evolution");
+        const titleEl = eeveeModal.querySelector('h2');
+        assert(titleEl && titleEl.textContent.includes("Slowpoke"), "Modal title should reference Slowpoke");
+
+        const slowpokeOptions = Array.from(eeveeModal.querySelectorAll('.eevee-option'));
+        assert(slowpokeOptions.length === 2, "Slowpoke should offer exactly 2 branching options");
+        const slowkingOpt = slowpokeOptions.find(opt => opt.textContent.includes("Slowking"));
+        assert(slowkingOpt !== undefined, "Slowking branch option must exist");
+        slowkingOpt.click();
+        await sleep(300);
+
+        assert(state.partnersData['79_test'].stageId === '199', "Slowpoke should have evolved to Slowking (199)");
+        assert(document.getElementById('partner-name').textContent === 'Slowking', "Partner name should update to Slowking");
+        assert(eeveeModal.classList.contains('hidden'), "Eevee modal should close after choosing branch");
+
+        let notifModal = document.querySelector('.notif-modal');
+        if (notifModal && !notifModal.classList.contains('hidden')) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+
+        // Devolve Slowpoke from Slowking back to Slowpoke on level decrease
+        state.partnersData['79_test'].level = 5;
+        state.partnersData['79_test'].xp = 0;
+        pianoCb.click(); // uncheck -> level 4
+        await sleep(300);
+        assert(state.partnersData['79_test'].level === 4, "Slowpoke level should drop to 4");
+        assert(state.partnersData['79_test'].stageId === '79', "Slowpoke should devolve back to Slowpoke (79)");
+        assert(document.getElementById('partner-name').textContent === 'Slowpoke', "Partner name should revert to Slowpoke");
+
+        notifModal = document.querySelector('.notif-modal');
+        if (notifModal && !notifModal.classList.contains('hidden')) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+
+        // 4. Branching Evolution via Eevee Modal: Scyther (123) -> Kleavor (900)
+        state.activePartnerInstanceId = '123_test';
+        state.partnersData['123_test'] = {
+          familyId: '123',
+          level: 4,
+          xp: 95,
+          stageId: '123'
+        };
+        helpers.renderState(false);
+        await sleep(50);
+
+        pianoCb.click(); // check -> level 5
+        await sleep(300);
+
+        assert(eeveeModal && !eeveeModal.classList.contains('hidden'), "Eevee modal should open for Scyther evolution");
+        const scytherTitle = eeveeModal.querySelector('h2');
+        assert(scytherTitle && scytherTitle.textContent.includes("Scyther"), "Modal title should reference Scyther");
+
+        const scytherOptions = Array.from(eeveeModal.querySelectorAll('.eevee-option'));
+        assert(scytherOptions.length === 2, "Scyther should offer exactly 2 branching options (Scizor and Kleavor)");
+        const kleavorOpt = scytherOptions.find(opt => opt.textContent.includes("Kleavor"));
+        assert(kleavorOpt !== undefined, "Kleavor branch option must exist");
+        kleavorOpt.click();
+        await sleep(300);
+
+        assert(state.partnersData['123_test'].stageId === '900', "Scyther should have evolved to Kleavor (900)");
+        assert(document.getElementById('partner-name').textContent === 'Kleavor', "Partner name should update to Kleavor");
+        assert(eeveeModal.classList.contains('hidden'), "Eevee modal should close after choosing Kleavor");
+
+        notifModal = document.querySelector('.notif-modal');
+        if (notifModal && !notifModal.classList.contains('hidden')) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+
+        // Devolve Scyther from Kleavor
+        state.partnersData['123_test'].level = 5;
+        state.partnersData['123_test'].xp = 0;
+        pianoCb.click(); // uncheck -> level 4
+        await sleep(300);
+        assert(state.partnersData['123_test'].level === 4, "Scyther level should drop to 4");
+        assert(state.partnersData['123_test'].stageId === '123', "Scyther should devolve back to Scyther (123)");
+        assert(document.getElementById('partner-name').textContent === 'Scyther', "Partner name should revert to Scyther");
+
+        notifModal = document.querySelector('.notif-modal');
+        if (notifModal && !notifModal.classList.contains('hidden')) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+
+        // 5. Branching Evolution via Eevee Modal: Kubfu (891) -> Rapid Strike Urshifu (10191)
+        state.activePartnerInstanceId = '891_test';
+        state.partnersData['891_test'] = {
+          familyId: '891',
+          level: 9,
+          xp: 95,
+          stageId: '891'
+        };
+        helpers.renderState(false);
+        await sleep(50);
+
+        pianoCb.click(); // check -> level 10
+        await sleep(300);
+
+        assert(eeveeModal && !eeveeModal.classList.contains('hidden'), "Eevee modal should open for Kubfu evolution");
+        const kubfuTitle = eeveeModal.querySelector('h2');
+        assert(kubfuTitle && kubfuTitle.textContent.includes("Kubfu"), "Modal title should reference Kubfu");
+
+        const kubfuOptions = Array.from(eeveeModal.querySelectorAll('.eevee-option'));
+        assert(kubfuOptions.length === 2, "Kubfu should offer 2 Urshifu forms");
+        const rapidOpt = kubfuOptions.find(opt => opt.textContent.includes("Rapid"));
+        assert(rapidOpt !== undefined, "Rapid Strike Urshifu option must exist");
+        rapidOpt.click();
+        await sleep(300);
+
+        assert(state.partnersData['891_test'].stageId === '10191', "Kubfu should have evolved to Rapid Strike Urshifu (10191)");
+        assert(document.getElementById('partner-name').textContent.includes("Urshifu"), "Partner name should update to Urshifu");
+        assert(eeveeModal.classList.contains('hidden'), "Eevee modal should close after choosing Urshifu form");
+
+        notifModal = document.querySelector('.notif-modal');
+        if (notifModal && !notifModal.classList.contains('hidden')) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+
+        // Devolve Kubfu from Urshifu
+        state.partnersData['891_test'].level = 10;
+        state.partnersData['891_test'].xp = 0;
+        pianoCb.click(); // uncheck -> level 9
+        await sleep(300);
+        assert(state.partnersData['891_test'].level === 9, "Kubfu level should drop to 9");
+        assert(state.partnersData['891_test'].stageId === '891', "Urshifu should devolve back to Kubfu (891)");
+        assert(document.getElementById('partner-name').textContent === 'Kubfu', "Partner name should revert to Kubfu");
+
+        notifModal = document.querySelector('.notif-modal');
+        if (notifModal && !notifModal.classList.contains('hidden')) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+
+        // 6. Multi-stage Evolution: Togepi (175) -> Togetic (176) -> Togekiss (468)
+        state.activePartnerInstanceId = '175_test';
+        state.partnersData['175_test'] = {
+          familyId: '175',
+          level: 4,
+          xp: 95,
+          stageId: '175'
+        };
+        helpers.renderState(false);
+        await sleep(50);
+
+        pianoCb.click(); // check -> level 5
+        await sleep(300);
+        assert(state.partnersData['175_test'].level === 5, "Togepi should level to 5");
+        assert(state.partnersData['175_test'].stageId === '176', "Togepi should evolve to Togetic (176)");
+        assert(document.getElementById('partner-name').textContent === 'Togetic', "Partner name should be Togetic");
+
+        notifModal = document.querySelector('.notif-modal');
+        if (notifModal && !notifModal.classList.contains('hidden')) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+
+        // Advance Togetic to Level 10 -> Togekiss (468)
+        if (pianoCb.checked) {
+          pianoCb.click();
+          await sleep(100);
+        }
+        state.partnersData['175_test'].level = 9;
+        state.partnersData['175_test'].xp = 95;
+        state.partnersData['175_test'].stageId = '176';
+        helpers.renderState(false);
+        await sleep(50);
+
+        pianoCb.click(); // check -> level 10
+        await sleep(300);
+        assert(state.partnersData['175_test'].level === 10, "Togetic should level to 10");
+        assert(state.partnersData['175_test'].stageId === '468', "Togetic should evolve to Togekiss (468)");
+        assert(document.getElementById('partner-name').textContent === 'Togekiss', "Partner name should be Togekiss");
+
+        notifModal = document.querySelector('.notif-modal');
+        if (notifModal && !notifModal.classList.contains('hidden')) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+
+        // 7. Multi-stage Evolution: Galarian Zigzagoon (10174) -> Galarian Linoone (10175) -> Obstagoon (863)
+        if (pianoCb.checked) {
+          pianoCb.click();
+          await sleep(100);
+        }
+        state.activePartnerInstanceId = '10174_test';
+        state.partnersData['10174_test'] = {
+          familyId: '10174',
+          level: 4,
+          xp: 95,
+          stageId: '10174'
+        };
+        helpers.renderState(false);
+        await sleep(50);
+
+        pianoCb.click(); // check -> level 5
+        await sleep(300);
+        assert(state.partnersData['10174_test'].level === 5, "G-Zigzagoon should level to 5");
+        assert(state.partnersData['10174_test'].stageId === '10175', "G-Zigzagoon should evolve to Galarian Linoone (10175)");
+        assert(document.getElementById('partner-name').textContent === 'Galarian Linoone', "Partner name should be Galarian Linoone");
+
+        notifModal = document.querySelector('.notif-modal');
+        if (notifModal && !notifModal.classList.contains('hidden')) {
+          const closeBtn = notifModal.querySelector('.notif-close-btn');
+          if (closeBtn) closeBtn.click();
+          await sleep(100);
+        }
+
+        // Advance to Level 10 -> Obstagoon (863)
+        if (pianoCb.checked) {
+          pianoCb.click();
+          await sleep(100);
+        }
+        state.partnersData['10174_test'].level = 9;
+        state.partnersData['10174_test'].xp = 95;
+        state.partnersData['10174_test'].stageId = '10175';
+        helpers.renderState(false);
+        await sleep(50);
+
+        pianoCb.click(); // check -> level 10
+        await sleep(300);
+        assert(state.partnersData['10174_test'].level === 10, "G-Linoone should level to 10");
+        assert(state.partnersData['10174_test'].stageId === '863', "G-Linoone should evolve to Obstagoon (863)");
+        assert(document.getElementById('partner-name').textContent === 'Obstagoon', "Partner name should be Obstagoon");
 
         notifModal = document.querySelector('.notif-modal');
         if (notifModal && !notifModal.classList.contains('hidden')) {

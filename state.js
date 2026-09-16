@@ -17,16 +17,27 @@ export function getStageInfo(familyId, stageId) {
     return { currentStage: { id: String(familyId), name: name }, nextStage: null, startLevel: 1, endLevel: null };
   }
   
-  // Branching evolution families (Eevee, Mewtwo, Kyurem, Calyrex, etc.)
+  // Branching evolution families (Eevee, Mewtwo, Kyurem, Calyrex, Slowpoke, Scyther, Kubfu, etc.)
   if (evo.options) {
-    if (String(stageId) !== String(familyId)) {
-      const chosen = evo.options.find(opt => String(opt.id) === String(stageId));
-      if (chosen) {
+    const chosen = evo.options.find(opt => String(opt.id) === String(stageId));
+    if (chosen) {
+      return {
+        currentStage: { level: chosen.level || 5, id: String(chosen.id), name: chosen.name },
+        nextStage: null,
+        startLevel: chosen.level || 5,
+        endLevel: null
+      };
+    }
+    if (evo.stages) {
+      const idx = evo.stages.findIndex(s => String(s.id) === String(stageId));
+      if (idx !== -1) {
+        const currentStage = evo.stages[idx];
+        const nextStage = evo.stages[idx + 1] || { level: evo.options[0]?.level || 5, id: 'choice', name: 'Evolution Choice' };
         return {
-          currentStage: { level: chosen.level || 5, id: String(chosen.id), name: chosen.name },
-          nextStage: null,
-          startLevel: chosen.level || 5,
-          endLevel: null
+          currentStage,
+          nextStage,
+          startLevel: currentStage.level,
+          endLevel: nextStage ? nextStage.level : null
         };
       }
     }
