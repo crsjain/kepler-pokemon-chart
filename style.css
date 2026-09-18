@@ -1064,34 +1064,10 @@ button:disabled,
   transform: scale(1.12);
 }
 
-@keyframes badgePopIn {
-  0% { transform: scale(0.6); opacity: 0.7; }
-  60% { transform: scale(1.18); }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.badge-pop {
-  animation: badgePopIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
 .weekly-grid td.day-total-cell.unlocked {
   opacity: 1 !important;
   background: rgba(254, 243, 199, 0.45) !important;
   border-radius: 6px;
-}
-
-.badge-indicator.super-trainer .earned-star-svg {
-  filter: drop-shadow(0 2px 0 rgba(180, 83, 9, 0.5)) drop-shadow(0 0 6px rgba(245, 158, 11, 0.6));
-  animation: superTrainerPulse 1.5s infinite alternate ease-in-out;
-}
-
-@keyframes superTrainerPulse {
-  0% {
-    transform: scale(1);
-  }
-  100% {
-    transform: scale(1.18);
-  }
 }
 
 .badge-indicator.future-star {
@@ -2319,15 +2295,22 @@ input:checked + .slider:before {
 
 /* Active Column Cells */
 .weekly-grid td.checkbox-cell.active-column,
-.weekly-grid td.day-total-cell.active-column {
+.weekly-grid td.day-total-cell.active-column:not(.unlocked) {
   opacity: 1 !important;
   background-color: #ffffff !important;
   pointer-events: auto !important;
 }
 
+.weekly-grid td.day-total-cell.unlocked {
+  opacity: 1 !important;
+  background: rgba(254, 243, 199, 0.45) !important;
+  border-radius: 6px;
+  pointer-events: auto !important;
+}
+
 /* Dimmed Inactive Columns in Normal Mode */
 .weekly-grid td.checkbox-cell:not(.active-column),
-.weekly-grid td.day-total-cell:not(.active-column) {
+.weekly-grid td.day-total-cell:not(.active-column):not(.unlocked) {
   opacity: 0.4;
   background-color: rgba(241, 245, 249, 0.4);
   pointer-events: none;
