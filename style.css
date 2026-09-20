@@ -2600,6 +2600,9 @@ input:checked + .slider:before {
 .vault-modal-content {
   max-width: 650px; /* Expand to perfectly fit the 10-column shelf without cutoff */
   width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: #ffffff !important;
   border: var(--pixel-border) !important;
   box-shadow: 0 10px 30px rgba(0,0,0,0.25) !important;
@@ -2613,7 +2616,7 @@ input:checked + .slider:before {
   color: var(--poke-blue) !important;
   text-shadow: none;
   margin-top: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 /* Close button for vault modal */
@@ -2636,61 +2639,60 @@ input:checked + .slider:before {
 /* Stats Cards */
 .vault-stats {
   display: flex;
-  justify-content: space-around;
-  gap: 12px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 14px;
   width: 100%;
 }
 
 .vault-stat-card {
   flex: 1;
-  min-width: 120px;
   background: #f8fafc;
-  border: 3px solid var(--border-color);
+  border: 2px solid var(--border-color);
   border-radius: 8px;
-  padding: 10px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   box-shadow: inset 1px 1px 0 #fff;
   text-align: center;
 }
 
 .vault-stat-card .stat-label {
   font-family: 'Fredoka One', cursive;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   color: #64748b;
-  min-height: 2.5em;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .vault-stat-card .stat-value {
   font-family: 'Fredoka One', cursive;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   color: var(--text-color);
+  line-height: 1.1;
   display: block;
 }
 
 .vault-stat-card.stat-spendable {
-  flex: 1.2;
+  flex: 1.25;
   border-color: #10b981;
   background: #ecfdf5;
   box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1), inset 1px 1px 0 #fff;
 }
 
 .vault-stat-card.stat-spendable .stat-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #047857;
 }
 
 .vault-stat-card.stat-spendable .stat-value {
-  font-size: 2.1rem;
+  font-size: 1.8rem;
   color: #10b981;
 }
 
@@ -2699,7 +2701,7 @@ input:checked + .slider:before {
 }
 
 .vault-trade-btn-container {
-  margin-bottom: 20px;
+  margin-bottom: 14px;
   display: flex;
   justify-content: center;
   width: 100%;
@@ -2980,39 +2982,140 @@ input:checked + .slider:before {
   }
 }
 
-/* Star Vault Legend */
-.vault-legend {
+/* Star Vault Pagination Controls */
+.vault-pagination {
   display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding: 10px;
-  background-color: rgba(241, 245, 249, 0.6);
-  border: 2px dashed #cbd5e1;
-  border-radius: 8px;
-  margin-bottom: 18px;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.vault-pagination .page-info {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.95rem;
+  color: var(--poke-blue);
+  user-select: none;
+}
+
+/* Streak Rarity Trophy Shelf (Bottom Section) */
+.vault-trophy-shelf-section {
+  width: 100%;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 2px dashed #cbd5e1;
+}
+
+.trophy-shelf-header {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.85rem;
+  color: var(--poke-blue);
+  text-align: left;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+.vault-trophy-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
   width: 100%;
   box-sizing: border-box;
 }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+@media (max-width: 480px) {
+  .vault-trophy-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
 }
 
-.vault-star-wrapper.mini {
-  width: 18px;
-  height: 18px;
+.trophy-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: #f8fafc;
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s, border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+}
+
+.trophy-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--poke-blue);
+  background: #ffffff;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
+}
+
+.trophy-metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.vault-star-wrapper.shelf-star {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
   cursor: default;
 }
 
-.legend-label {
+.vault-star-wrapper.shelf-star .vault-star-svg {
+  width: 22px;
+  height: 22px;
+}
+
+.trophy-count {
   font-family: 'Fredoka One', cursive;
-  font-size: 0.72rem;
-  color: #64748b;
+  font-size: 1.05rem;
+  color: var(--poke-blue, #1e3a8a);
+  line-height: 1;
+  display: inline-block;
+  transform: translateY(2px);
   user-select: none;
+}
+
+.trophy-tier-label {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.74rem;
+  color: #64748b;
+  line-height: 1;
+  letter-spacing: 0.2px;
+  user-select: none;
+}
+
+/* Star Vault Debug Panel */
+.vault-debug-panel {
+  border-top: 2px dashed var(--border-color);
+  margin-top: 15px;
+  padding-top: 15px;
+  width: 100%;
+}
+.vault-debug-panel h4 {
+  font-family: 'Fredoka One', cursive;
+  margin: 0 0 10px 0;
+  font-size: 0.95rem;
+  color: var(--poke-blue);
+  text-align: left;
+}
+.vault-debug-panel .testing-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 /* ==========================================================================

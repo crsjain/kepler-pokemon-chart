@@ -7084,6 +7084,92 @@ async function runSuite() {
         await sleep(50);
       }
 
+      // 80. Test Star Vault Dynamic Rarity Trophy Counts
+      {
+        console.log("Running Test Case 80: Star Vault Dynamic Rarity Trophy Counts...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        const vaultModal = document.getElementById('vault-modal');
+        const vaultOpenBtn = document.getElementById('open-vault-btn') || document.querySelector('.vault-nav-btn');
+        const closeVaultBtn = document.getElementById('close-vault-modal-btn');
+        
+        const countYellow = document.getElementById('vault-legend-count-yellow');
+        const countSilver = document.getElementById('vault-legend-count-silver');
+        const countBlue = document.getElementById('vault-legend-count-blue');
+        const countPrism = document.getElementById('vault-legend-count-prism');
+
+        assert(countYellow !== null, "Yellow rarity count element should exist in DOM");
+        assert(countSilver !== null, "Silver rarity count element should exist in DOM");
+        assert(countBlue !== null, "Blue rarity count element should exist in DOM");
+        assert(countPrism !== null, "Prism rarity count element should exist in DOM");
+
+        // 1. Cold start (0 stars earned)
+        state.starVault.earnedDates = [];
+        state.starVault.totalTraded = 0;
+        helpers.renderState(false);
+        if (helpers.openVault) helpers.openVault();
+        await sleep(30);
+
+        assert(countYellow.textContent === '×0', `Cold start: Yellow should be ×0, got ${countYellow.textContent}`);
+        assert(countSilver.textContent === '×0', `Cold start: Silver should be ×0, got ${countSilver.textContent}`);
+        assert(countBlue.textContent === '×0', `Cold start: Blue should be ×0, got ${countBlue.textContent}`);
+        assert(countPrism.textContent === '×0', `Cold start: Prism should be ×0, got ${countPrism.textContent}`);
+
+        // 2. Inject 12 consecutive streak days
+        // Days 1-2: 2 Yellow
+        // Days 3-4: 2 Silver
+        // Days 5-9: 5 Blue
+        // Days 10-12: 3 Prism
+        state.starVault.earnedDates = Array.from({ length: 12 }, (_, i) => {
+          const day = String(i + 1).padStart(2, '0');
+          return `2026-07-${day}`;
+        });
+        helpers.renderState(false);
+        if (helpers.openVault) helpers.openVault();
+        await sleep(30);
+
+        assert(countYellow.textContent === '×2', `12-day streak: Yellow should be ×2, got ${countYellow.textContent}`);
+        assert(countSilver.textContent === '×2', `12-day streak: Silver should be ×2, got ${countSilver.textContent}`);
+        assert(countBlue.textContent === '×5', `12-day streak: Blue should be ×5, got ${countBlue.textContent}`);
+        assert(countPrism.textContent === '×3', `12-day streak: Prism should be ×3, got ${countPrism.textContent}`);
+
+        // 3. Broken streak with gaps
+        // Run 1: 2026-07-01 to 2026-07-04 (4 days -> 2 Yellow, 2 Silver)
+        // GAP: 2026-07-05 missing
+        // Run 2: 2026-07-06 to 2026-07-08 (3 days -> 2 Yellow, 1 Silver)
+        // Total: 4 Yellow, 3 Silver, 0 Blue, 0 Prism
+        state.starVault.earnedDates = [
+          '2026-07-01', '2026-07-02', '2026-07-03', '2026-07-04',
+          '2026-07-06', '2026-07-07', '2026-07-08'
+        ];
+        helpers.renderState(false);
+        if (helpers.openVault) helpers.openVault();
+        await sleep(30);
+
+        assert(countYellow.textContent === '×4', `Broken streak: Yellow should be ×4, got ${countYellow.textContent}`);
+        assert(countSilver.textContent === '×3', `Broken streak: Silver should be ×3, got ${countSilver.textContent}`);
+        assert(countBlue.textContent === '×0', `Broken streak: Blue should be ×0, got ${countBlue.textContent}`);
+        assert(countPrism.textContent === '×0', `Broken streak: Prism should be ×0, got ${countPrism.textContent}`);
+
+        // 4. Defensive deduplication test
+        state.starVault.earnedDates = [
+          '2026-07-01', '2026-07-01', '2026-07-02', '2026-07-03'
+        ];
+        helpers.renderState(false);
+        if (helpers.openVault) helpers.openVault();
+        await sleep(30);
+
+        assert(countYellow.textContent === '×2', `Deduplication: Yellow should be ×2, got ${countYellow.textContent}`);
+        assert(countSilver.textContent === '×1', `Deduplication: Silver should be ×1, got ${countSilver.textContent}`);
+
+        // Clean up
+        if (closeVaultBtn) closeVaultBtn.click();
+        helpers.resetState();
+        await sleep(50);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

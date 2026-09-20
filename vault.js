@@ -21,6 +21,12 @@ let globalTooltip = null;
 // DOM element for spend shortcut
 let tradeOpenBtn = null;
 
+// Star rarity legend count DOM elements cache
+let legendCountYellow = null;
+let legendCountSilver = null;
+let legendCountBlue = null;
+let legendCountPrism = null;
+
 // Admin panel DOM elements cache
 let adminEarned = null;
 let adminTradedInput = null;
@@ -44,6 +50,12 @@ export function initVault() {
 
   // Spend shortcut binding
   tradeOpenBtn = document.getElementById('vault-trade-open-btn');
+
+  // Star rarity legend count DOM elements
+  legendCountYellow = document.getElementById('vault-legend-count-yellow');
+  legendCountSilver = document.getElementById('vault-legend-count-silver');
+  legendCountBlue = document.getElementById('vault-legend-count-blue');
+  legendCountPrism = document.getElementById('vault-legend-count-prism');
 
   if (pagePrevBtn) {
     pagePrevBtn.addEventListener('click', () => {
@@ -200,8 +212,8 @@ function parseLocalDate(dateStr) {
 export function getStarsFromDates(dates) {
   if (!dates || dates.length === 0) return [];
   
-  // YYYY-MM-DD strings sort alphabetically in chronological order
-  const sortedDates = [...dates].sort();
+  // YYYY-MM-DD strings sort alphabetically in chronological order (deduplicate defensively)
+  const sortedDates = [...new Set(dates)].sort();
   
   const stars = [];
   let currentStreak = [];
@@ -278,10 +290,30 @@ export function renderVault() {
     }
   }
 
+  const stars = getStarsFromDates(state.starVault.earnedDates);
+
+  // Update All-Time Star Rarity Trophy Counts
+  const rarityCounts = { yellow: 0, silver: 0, blue: 0, prism: 0 };
+  stars.forEach(s => {
+    if (rarityCounts[s.color] !== undefined) {
+      rarityCounts[s.color]++;
+    }
+  });
+
+  if (!legendCountYellow) {
+    legendCountYellow = document.getElementById('vault-legend-count-yellow');
+    legendCountSilver = document.getElementById('vault-legend-count-silver');
+    legendCountBlue = document.getElementById('vault-legend-count-blue');
+    legendCountPrism = document.getElementById('vault-legend-count-prism');
+  }
+
+  if (legendCountYellow) legendCountYellow.textContent = `×${rarityCounts.yellow}`;
+  if (legendCountSilver) legendCountSilver.textContent = `×${rarityCounts.silver}`;
+  if (legendCountBlue) legendCountBlue.textContent = `×${rarityCounts.blue}`;
+  if (legendCountPrism) legendCountPrism.textContent = `×${rarityCounts.prism}`;
+
   if (!vaultGrid) return;
   vaultGrid.innerHTML = '';
-
-  const stars = getStarsFromDates(state.starVault.earnedDates);
 
   const isMobile = window.innerWidth <= 480;
   const columns = isMobile ? 5 : 10;
