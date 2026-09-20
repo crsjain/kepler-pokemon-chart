@@ -81,6 +81,8 @@ export let state = {
   weekStartDay: 0, // Default Sunday (0) to Saturday (6)
   idleTimeout: 10, // Default 10 minutes
   adminPassword: 'zxcv', // Default parent admin passcode
+  lockPastDays: false, // Require parent passcode to edit previous days (per-profile; see docs/prd_parent_past_day_approval.md)
+  parentGraceMinutes: 2, // Parent edit window duration in minutes (1 | 2 | 5)
   timezoneOffset: 'default',
   weeklyRewardOptions: [...DEFAULT_WEEKLY_REWARDS],
   megaRewardOptions: [...DEFAULT_MEGA_REWARDS],
@@ -177,12 +179,16 @@ export function loadState() {
 
 export function getDefaultStateTemplate() {
   const t = {
+    // NOTE: Must remain 16. Migration v17 remaps the Pikachu family ('25') to the
+    // Pichu family ('172') and is load-bearing for the default template below.
     version: 16,
     activePartnerInstanceId: '25',
     partnerFamily: '25',
     weekStartDay: 0,
     idleTimeout: 10,
     adminPassword: 'zxcv',
+    lockPastDays: false,
+    parentGraceMinutes: 2,
     timezoneOffset: 'default',
     weeklyRewardOptions: [...DEFAULT_WEEKLY_REWARDS],
     megaRewardOptions: [...DEFAULT_MEGA_REWARDS],
@@ -577,6 +583,18 @@ export function runStateDiagnostics() {
     state.idleTimeout = 10;
     issues.push("Missing or invalid idleTimeout.");
     fixed.push("Set idleTimeout to default 10.");
+  }
+
+  if (typeof state.lockPastDays !== 'boolean') {
+    state.lockPastDays = false;
+    issues.push("Missing or invalid lockPastDays.");
+    fixed.push("Set lockPastDays to default false.");
+  }
+
+  if (typeof state.parentGraceMinutes !== 'number' || ![1, 2, 5].includes(state.parentGraceMinutes)) {
+    state.parentGraceMinutes = 2;
+    issues.push("Missing or invalid parentGraceMinutes.");
+    fixed.push("Set parentGraceMinutes to default 2.");
   }
 
   const isValidOption = (opt) => opt && typeof opt === 'object' && opt.value !== undefined && opt.text !== undefined;

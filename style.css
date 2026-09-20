@@ -6135,3 +6135,112 @@ body.has-banner .mini-hud.visible {
     gap: 5px;
   }
 }
+
+/* ==========================================================================
+   PARENT GRACE SESSION DOCK (Past Day Edit Approval)
+   Parent Domain / bottom thumb zone per UX Rule 17. Visual language is
+   deliberately matched to .exceptions-banner so both parent-mode docks read
+   as the same system.
+   ========================================================================== */
+
+.parent-grace-dock {
+  position: fixed;
+  bottom: max(18px, env(safe-area-inset-bottom, 18px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 998; /* Above mini-hud (995), below modals (1000) */
+  width: max-content;
+  max-width: calc(100% - 32px);
+  background: rgba(30, 41, 59, 0.96); /* Slate 800 */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 3px solid #2d3748;
+  border-radius: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 4px 0 #0f172a;
+  padding: 10px 16px;
+  box-sizing: border-box;
+  font-family: 'Fredoka One', cursive, sans-serif;
+  animation: dockSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px; /* Pure gap rhythm, zero child margins (UX Rule 12) */
+  pointer-events: auto;
+}
+
+.parent-grace-dock.hidden {
+  display: none;
+}
+
+.parent-grace-label {
+  color: #f8fafc;
+  font-size: 0.95rem;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.parent-grace-timer {
+  /* Tabular figures keep the countdown from shifting width as it ticks. */
+  font-family: 'Courier New', Courier, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: bold;
+  font-size: 1.15rem;
+  color: #fbbf24; /* Amber 400 - warning tone, not celebratory */
+  background: rgba(15, 23, 42, 0.75);
+  border: 2px solid #475569;
+  border-radius: 8px;
+  padding: 2px 10px;
+  min-width: 62px;
+  text-align: center;
+}
+
+.parent-grace-dock .pixel-btn {
+  min-height: 42px; /* Thumb-zone touch target (UX Rule 17) */
+  margin: 0;
+}
+
+@media (max-width: 480px) {
+  .parent-grace-dock {
+    width: calc(100% - 24px);
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .parent-grace-label {
+    font-size: 0.85rem;
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* Admin: past-day approval toggle row */
+.admin-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-toggle-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #2a71d0;
+  flex-shrink: 0;
+}
+
+.admin-toggle-text {
+  font-size: 0.9rem;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.admin-option-hint {
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.35;
+  padding: 0 2px;
+}
+

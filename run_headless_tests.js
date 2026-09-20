@@ -36,7 +36,7 @@ async function main() {
     '--no-first-run',
     '--no-default-browser-check',
     '--no-proxy-server',
-    'http://127.0.0.1:8000/index.html?runTests=true&headless=true'
+    'about:blank'
   ]);
 
   chrome.on('error', (err) => {
@@ -53,19 +53,18 @@ async function main() {
 
   // Get debug targets with retry
   let targets;
-  let retries = 5;
+  let retries = 100;
   while (retries > 0) {
     try {
-      console.log("Fetching debug targets...");
       targets = await getDebugTargets();
       if (targets && targets.length > 0) {
         break;
       }
     } catch (e) {
-      console.log(`Failed to fetch targets: ${e.message}. Retrying in 1s...`);
+      // Chrome has not bound the debug port yet; retry rapidly.
     }
     retries--;
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 100));
   }
 
   if (!targets || targets.length === 0) {

@@ -93,6 +93,134 @@ function getIdleTimeoutMs() {
   return minutes * 60 * 1000;
 }
 
+/* ============================================================
+   Parent Grace Session (Past Day Edit Approval)
+   See: docs/prd_parent_past_day_approval.md
+
+   Session state is RUNTIME-ONLY and never persisted to
+   localStorage or Firebase, so a refresh, PWA close, or device
+   switch immediately re-locks past-day editing.
+   ============================================================ */
+let parentGraceExpiresAt = 0; // Epoch ms; 0 = locked
+let parentGraceIntervalId = null;
+
+function getParentGraceMs() {
+  if (location.search.includes('runTests=true') || location.search.includes('runMigrationTest=true')) {
+    return 2000; // 2s in test mode so expiry is verifiable without stalling the suite
+  }
+  const mins = [1, 2, 5].includes(state && state.parentGraceMinutes) ? state.parentGraceMinutes : 2;
+  return mins * 60 * 1000;
+}
+
+// Is the current profile gated behind parent approval for past days?
+function isPastDayLocked() {
+  return Boolean(state && state.lockPastDays);
+}
+
+function isParentGraceActive() {
+  return Date.now() < parentGraceExpiresAt;
+}
+
+/**
+ * True when the given date requires a parent passcode right now.
+ * Past dates only; today and future days are unaffected by this feature.
+ */
+function requiresParentApproval(dateStr) {
+  if (!isPastDayLocked()) return false;
+  if (isParentGraceActive()) return false;
+  const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
+  return dateStr < todayStr;
+}
+
+function formatGraceClock(ms) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins}:${String(secs).padStart(2, '0')}`;
+}
+
+function renderParentGraceDock() {
+  const dock = document.getElementById('parent-grace-dock');
+  const timerEl = document.getElementById('parent-grace-timer');
+  if (!dock || !timerEl) return;
+
+  if (!isParentGraceActive()) {
+    dock.classList.add('hidden');
+    return;
+  }
+  dock.classList.remove('hidden');
+  timerEl.textContent = formatGraceClock(parentGraceExpiresAt - Date.now());
+}
+
+/**
+ * Ends the grace session. When the active column is a past day we return the
+ * child to Today so they are never left standing on an unlocked past column.
+ */
+function clearParentGrace({ revertToToday = true, notify = false } = {}) {
+  const wasActive = parentGraceExpiresAt !== 0;
+  parentGraceExpiresAt = 0;
+  if (parentGraceIntervalId) {
+    clearInterval(parentGraceIntervalId);
+    parentGraceIntervalId = null;
+  }
+
+  const dock = document.getElementById('parent-grace-dock');
+  if (dock) dock.classList.add('hidden');
+
+  if (!wasActive) return;
+
+  if (revertToToday) {
+    const todayRealDay = getLocalDate(state?.timezoneOffset).getDay();
+    if (state.activeDay !== todayRealDay) {
+      state.activeDay = todayRealDay;
+      saveState();
+      updateActiveColumnUI();
+    }
+  }
+
+  if (notify) {
+    showCustomNotification(
+      "Edit Window Closed 🔒",
+      "Parent edit window ended. Back to Today!"
+    );
+  }
+}
+
+function startParentGrace() {
+  // Expiry is computed once at unlock time, so changing the duration setting
+  // mid-session never extends or truncates a window already in flight.
+  parentGraceExpiresAt = Date.now() + getParentGraceMs();
+
+  if (parentGraceIntervalId) clearInterval(parentGraceIntervalId);
+  parentGraceIntervalId = setInterval(() => {
+    if (!isParentGraceActive()) {
+      clearParentGrace({ revertToToday: true, notify: true });
+      return;
+    }
+    renderParentGraceDock();
+  }, 250);
+
+  renderParentGraceDock();
+}
+
+/**
+ * Runs `onApproved` immediately when no approval is needed or a grace session
+ * is already running; otherwise prompts for the parent passcode first and
+ * opens a new grace window on success.
+ */
+function withParentApproval(dateStr, onApproved) {
+  if (!requiresParentApproval(dateStr)) {
+    onApproved();
+    return;
+  }
+  const mins = [1, 2, 5].includes(state && state.parentGraceMinutes) ? state.parentGraceMinutes : 2;
+  promptParentPassword(() => {
+    startParentGrace();
+    onApproved();
+  }, `Enter parent passcode to unlock editing for previous days (${mins}-minute window):`);
+}
+
+
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault, getStarsFromDates } from './vault.js';
 import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES } from './pokemon_data.js';
@@ -159,6 +287,8 @@ const closeAdminModalBtn = document.getElementById('close-admin-modal-btn');
 const toggleDebugSidebar = document.getElementById('toggle-debug-sidebar');
 const adminWeekStartSelect = document.getElementById('admin-week-start-select');
 const adminIdleTimeoutSelect = document.getElementById('admin-idle-timeout-select');
+const adminParentGraceSelect = document.getElementById('admin-parent-grace-select');
+const adminLockPastDaysToggle = document.getElementById('admin-lock-past-days-toggle');
 const adminTimezoneSelect = document.getElementById('admin-timezone-select');
 
 const editRewardsModal = document.getElementById('edit-rewards-modal');
@@ -765,6 +895,8 @@ function renderAdminProfilesList() {
 }
 
 function selectProfile(profileId) {
+  // Never leak one child's unlocked session into another's chart.
+  clearParentGrace({ revertToToday: false });
   activeProfileId = profileId;
   currentViewingWeekStartDate = null;
   localStorage.setItem('last_active_profile_id', profileId);
@@ -1275,6 +1407,13 @@ export function renderState(rebuildGrid = false) {
   if (adminIdleTimeoutSelect) {
     adminIdleTimeoutSelect.value = state.idleTimeout !== undefined ? state.idleTimeout.toString() : '10';
   }
+  if (adminParentGraceSelect) {
+    const mins = [1, 2, 5].includes(state.parentGraceMinutes) ? state.parentGraceMinutes : 2;
+    adminParentGraceSelect.value = mins.toString();
+  }
+  if (adminLockPastDaysToggle) {
+    adminLockPastDaysToggle.checked = Boolean(state.lockPastDays);
+  }
   if (adminTimezoneSelect) {
     adminTimezoneSelect.value = state.timezoneOffset !== undefined ? state.timezoneOffset.toString() : 'default';
   }
@@ -1772,7 +1911,29 @@ function handleCheckboxChange(e) {
   }
 
   const clickedRealDay = (state.weekStartDay + day) % 7;
-  
+
+  // Parent approval gate for previous days (docs/prd_parent_past_day_approval.md).
+  // Entering the passcode is itself a deliberate parent action, so on success we
+  // switch straight to the target day rather than stacking a second modal.
+  if (requiresParentApproval(dateStr)) {
+    const intendedChecked = cb.checked;
+    e.preventDefault();
+    cb.checked = !intendedChecked; // Revert until approved
+    withParentApproval(dateStr, () => {
+      if (state.activeDay !== clickedRealDay) {
+        state.activeDay = clickedRealDay;
+        saveState();
+        updateActiveColumnUI();
+      }
+      // Re-query: updateActiveColumnUI() may have re-rendered the input.
+      const input = document.querySelector(`input[data-day="${day}"][data-task="${taskId}"]`);
+      if (!input) return;
+      input.checked = intendedChecked;
+      handleCheckboxChange({ target: input, preventDefault: () => {} });
+    });
+    return;
+  }
+
   if (clickedRealDay !== state.activeDay) {
     cb.checked = !cb.checked; // Revert visually first
     
@@ -2318,6 +2479,17 @@ function setupEventListeners() {
           updateActiveColumnUI();
           return;
         }
+
+        // Parent approval gate for previous days. On success the passcode
+        // stands in for the "Switch Day?" confirmation.
+        if (requiresParentApproval(col.dateStr)) {
+          withParentApproval(col.dateStr, () => {
+            state.activeDay = clickedRealDay;
+            saveState();
+            updateActiveColumnUI();
+          });
+          return;
+        }
         
         const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
         const targetDayName = daysOfWeek[clickedRealDay];
@@ -2366,6 +2538,15 @@ function setupEventListeners() {
       state.activeDay = todayRealDay;
       saveState();
       updateActiveColumnUI();
+      // Returning to Today is an explicit exit from past-day editing.
+      clearParentGrace({ revertToToday: false });
+    });
+  }
+
+  const parentGraceLockBtn = document.getElementById('parent-grace-lock-btn');
+  if (parentGraceLockBtn) {
+    parentGraceLockBtn.addEventListener('click', () => {
+      clearParentGrace({ revertToToday: true });
     });
   }
 
@@ -2717,6 +2898,33 @@ function setupEventListeners() {
       state.idleTimeout = parseInt(adminIdleTimeoutSelect.value);
       saveState();
       resetIdleTimer();
+    });
+  }
+
+  if (adminParentGraceSelect) {
+    adminParentGraceSelect.addEventListener('change', () => {
+      const mins = parseInt(adminParentGraceSelect.value);
+      state.parentGraceMinutes = [1, 2, 5].includes(mins) ? mins : 2;
+      saveState();
+      // Intentionally does NOT touch parentGraceExpiresAt: a window already in
+      // flight keeps the duration it was opened with.
+    });
+  }
+
+  if (adminLockPastDaysToggle) {
+    adminLockPastDaysToggle.addEventListener('change', () => {
+      state.lockPastDays = adminLockPastDaysToggle.checked;
+      saveState();
+      if (!state.lockPastDays) {
+        // Policy switched off: drop any live session so the dock does not linger.
+        clearParentGrace({ revertToToday: false });
+      }
+      showCustomNotification(
+        state.lockPastDays ? "Past Days Locked 🔒" : "Past Days Unlocked 🔓",
+        state.lockPastDays
+          ? "This child now needs the parent passcode to edit previous days."
+          : "This child can edit previous days without a passcode."
+      );
     });
   }
   if (adminTimezoneSelect) {
@@ -4032,6 +4240,14 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     getActiveProfileId: () => activeProfileId,
     triggerProfilesUpdate: (profiles) => handleProfilesUpdate(profiles),
     selectProfile: (id) => selectProfile(id),
+    isParentGraceActive: () => isParentGraceActive(),
+    requiresParentApproval: (dateStr) => requiresParentApproval(dateStr),
+    clearParentGrace: (opts) => clearParentGrace(opts || { revertToToday: false }),
+    expireParentGrace: () => {
+      // Force the window to lapse so the interval tick performs the real
+      // expiry path (auto-relock + revert to Today) without a 2s wait.
+      parentGraceExpiresAt = Date.now() - 1;
+    },
     renderRewardDropdowns: () => renderRewardDropdowns(),
     canStartNextWeek: (state, viewingDateStr, forceCheck) => canStartNextWeek(state, viewingDateStr, forceCheck),
     isTaskActiveInWeek: (task, weekStartStr) => isTaskActiveInWeek(task, weekStartStr),

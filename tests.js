@@ -22,8 +22,36 @@ function assert(condition, message) {
 
 function sleep(ms, force = false) {
   const isHeadless = location.search.includes('headless=true');
-  const scale = (isHeadless && !force) ? 0.2 : 1.0;
+  const scale = (isHeadless && !force) ? 0.1 : 1.0;
   return new Promise(resolve => setTimeout(resolve, ms * scale));
+}
+
+/**
+ * Polls a condition in REAL time (never scaled) and resolves as soon as it is
+ * satisfied. Use this instead of a forced sleep whenever the app completes work
+ * on its own unscaled timers (e.g. the shop unlock animation chain), so the
+ * suite pays only for the time actually needed rather than a worst-case pad.
+ * Resolves (rather than throwing) on timeout so the following assert produces
+ * the meaningful failure message.
+ */
+function waitFor(conditionFn, timeoutMs = 3000, intervalMs = 25) {
+  return new Promise(resolve => {
+    const startedAt = Date.now();
+    const tick = () => {
+      let satisfied = false;
+      try {
+        satisfied = !!conditionFn();
+      } catch (e) {
+        satisfied = false; // Element not rendered yet; keep polling.
+      }
+      if (satisfied || Date.now() - startedAt >= timeoutMs) {
+        resolve(satisfied);
+        return;
+      }
+      setTimeout(tick, intervalMs);
+    };
+    tick();
+  });
 }
 
 async function runSuite() {
@@ -718,22 +746,22 @@ async function runSuite() {
         const initialPartnerCount = Object.keys(state.partnersData).length;
         
         holdBtn.dispatchEvent(new MouseEvent('mousedown'));
-        await sleep(100);
+        await sleep(20, true); // Real 20ms < real HOLD_DURATION (50ms)
         holdBtn.dispatchEvent(new MouseEvent('mouseleave')); // cancel
         await sleep(100);
 
         assert(Object.keys(state.partnersData).length === initialPartnerCount, "Should not unlock if released early");
 
-        // Test full hold (400ms > 300ms)
+        // Test full hold (real 120ms > real HOLD_DURATION of 50ms)
         holdBtn.dispatchEvent(new MouseEvent('mousedown'));
-        await sleep(400); // Wait for hold to complete
+        await sleep(120, true); // Wait for hold to complete
 
         // Verify that the animation overlay opened
         const animOverlay = document.getElementById('shop-unlock-animation-overlay');
         assert(animOverlay && !animOverlay.classList.contains('hidden'), "Unlock animation overlay should be visible");
         
         // Wait for animation to finish in test mode
-        await sleep(1500, true);
+        await waitFor(() => animOverlay.classList.contains('hidden'));
         
         // Overlay should now be hidden again
         assert(animOverlay.classList.contains('hidden'), "Animation overlay should close when done");
@@ -2397,8 +2425,8 @@ async function runSuite() {
         // Initially, we should be active (not idle) immediately after reset or interaction
         assert(document.body.classList.contains('idle-mode') === false, "Should not be in idle mode initially");
 
-        // Wait for IDLE_TIMEOUT (200ms in test mode) + some buffer
-        await sleep(300, true);
+        // Wait for IDLE_TIMEOUT (200ms in test mode)
+        await waitFor(() => document.body.classList.contains('idle-mode'));
         assert(document.body.classList.contains('idle-mode') === true, "Should enter idle mode after timeout");
 
         // Simulate interaction (click)
@@ -2407,7 +2435,7 @@ async function runSuite() {
         assert(document.body.classList.contains('idle-mode') === false, "Should leave idle mode on interaction");
 
         // Wait again to verify it re-enters idle mode
-        await sleep(300, true);
+        await waitFor(() => document.body.classList.contains('idle-mode'));
         assert(document.body.classList.contains('idle-mode') === true, "Should re-enter idle mode after timeout");
 
         // Clean up: return to active
@@ -3206,13 +3234,16 @@ async function runSuite() {
         const holdBtn = document.getElementById('shop-hold-unlock-btn');
         assert(holdBtn, "Hold unlock button should exist");
         
-        // Dispatch mousedown (HOLD_DURATION is 300ms in tests)
+        // Dispatch mousedown (real HOLD_DURATION is 50ms in tests)
         holdBtn.dispatchEvent(new MouseEvent('mousedown'));
-        await sleep(400);
+        await sleep(120, true);
         holdBtn.dispatchEvent(new MouseEvent('mouseup'));
         
-        // Wait for celebration fade and modal close (animation delay scaled down in test mode)
-        await sleep(2000, true);
+        // Wait for celebration fade and modal close (real unscaled animation timers)
+        await waitFor(() => {
+          const id = window.__app_state__.activePartnerInstanceId;
+          return id && id.startsWith('133_');
+        });
 
         // 5. Assert Eevee is now the active partner
         const activeInstanceId = window.__app_state__.activePartnerInstanceId;
@@ -3720,7 +3751,7 @@ async function runSuite() {
         assert(!holdBtn.disabled, 'Hold button should be enabled for Charmander with 5 stars');
 
         holdBtn.dispatchEvent(new MouseEvent('mousedown'));
-        await sleep(400); // Trigger complete hold
+        await sleep(120, true); // Trigger complete hold
 
         const animOverlay = document.getElementById('shop-unlock-animation-overlay');
         assert(animOverlay && !animOverlay.classList.contains('hidden'), 'Unlock overlay should open');
@@ -3729,7 +3760,7 @@ async function runSuite() {
         const slots = animOverlay.querySelectorAll('.anim-star-slot');
         assert(slots.length === 5, `Expected 5 star slots for Charmander, got ${slots.length}`);
 
-        await sleep(1500, true); // Wait for animation
+        await waitFor(() => state.starVault.totalTraded === 5); // Wait for animation
 
         assert(state.starVault.totalTraded === 5, `Expected 5 stars spent, got ${state.starVault.totalTraded}`);
 
@@ -6165,11 +6196,12 @@ async function runSuite() {
 
         // Dispatch hold unlock
         holdBtn.dispatchEvent(new MouseEvent('mousedown'));
-        await sleep(400);
+        await sleep(120, true);
         holdBtn.dispatchEvent(new MouseEvent('mouseup'));
 
-        // Wait for unlock completion
-        await sleep(2000, true);
+        // Wait for unlock completion (real timers: intro + star flights + rattle + celebration)
+        await waitFor(() => Object.values(stateObj.partnersData || {})
+          .filter(p => String(p.familyId) === '133').length >= 2);
 
         // 6. Verify second Eevee instance in state
         const eeveeInstances = Object.values(stateObj.partnersData || {}).filter(p => String(p.familyId) === '133');
@@ -6280,9 +6312,11 @@ async function runSuite() {
 
         // Unlock Galarian Moltres
         holdBtn.dispatchEvent(new MouseEvent('mousedown'));
-        await sleep(400);
+        await sleep(120, true);
         holdBtn.dispatchEvent(new MouseEvent('mouseup'));
-        await sleep(2000, true);
+        await waitFor(() => stateObj.partnerFamily === '10171' ||
+          (stateObj.partnersData && Object.values(stateObj.partnersData)
+            .some(p => String(p.familyId) === '10171')));
 
         // 5. Verify partner is set to Galarian Moltres
         assert(stateObj.partnerFamily === '10171' || (stateObj.partnersData && Object.values(stateObj.partnersData).some(p => String(p.familyId) === '10171')), "Galarian Moltres should be in partnersData");
@@ -7168,6 +7202,179 @@ async function runSuite() {
         if (closeVaultBtn) closeVaultBtn.click();
         helpers.resetState();
         await sleep(50);
+      }
+
+      // ==========================================
+      // Test Case 82: Parent Approval & Timed Grace Window for Past Day Editing
+      // See docs/prd_parent_past_day_approval.md
+      // ==========================================
+      console.log("Running Test Case 82: Parent Approval for Past Day Editing...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+        state = window.__app_state__;
+
+        const passwordModal = document.getElementById('password-modal');
+        const passwordInput = document.getElementById('password-input');
+        const passwordSubmit = document.getElementById('password-submit-btn');
+        const confirmModal = document.getElementById('confirm-modal');
+        const dock = document.getElementById('parent-grace-dock');
+
+        // --- A. Schema defaults and self-repair ---
+        assert(state.lockPastDays === false, `lockPastDays should default to false, got ${state.lockPastDays}`);
+        assert(state.parentGraceMinutes === 2, `parentGraceMinutes should default to 2, got ${state.parentGraceMinutes}`);
+
+        state.parentGraceMinutes = 7;   // Not an allowed value
+        state.lockPastDays = "yes";     // Wrong type
+        runStateDiagnostics();
+        assert(state.parentGraceMinutes === 2, `Diagnostics should repair parentGraceMinutes to 2, got ${state.parentGraceMinutes}`);
+        assert(state.lockPastDays === false, `Diagnostics should repair lockPastDays to false, got ${state.lockPastDays}`);
+
+        // --- Deterministic setup: shift the week so today is the LAST column.
+        // This guarantees 6 past columns no matter which weekday the suite runs on.
+        const today = getLocalDate(state?.timezoneOffset);
+        const todayDow = today.getDay();
+        const todayStr = formatLocalDate(today);
+        state.weekStartDay = (todayDow + 1) % 7;
+        state.weekStartDate = formatLocalDate(getWeekStart(today, state.weekStartDay));
+        state.activeDay = todayDow;
+        state.reward = "Blanket Fort";
+        state.megaReward = "Dessert Outing";
+        saveState();
+        // renderState() only back-fills currentViewingWeekStartDate when it is null,
+        // so the shifted week must be pushed in explicitly. Without this the grid
+        // handlers keep resolving column dates against the pre-shift week.
+        helpers.setViewingWeekStartDate(state.weekStartDate);
+        helpers.renderState(true);
+        await sleep(80);
+
+        const pastDateStr = getDateOfColumn(state.weekStartDate, 0);
+        const pastRealDay = (state.weekStartDay + 0) % 7;
+        assert(pastDateStr < todayStr, `Column 0 should be a past date (${pastDateStr} < ${todayStr})`);
+        assert(getDateOfColumn(state.weekStartDate, 6) === todayStr, "Column 6 should be today");
+
+        // --- B. Policy OFF (Kepler): standard Switch Day modal, zero passcode ---
+        assert(helpers.requiresParentApproval(pastDateStr) === false, "No approval needed while lockPastDays is false");
+
+        const pianoPast = document.querySelector('input[data-day="0"][data-task="piano"]');
+        assert(pianoPast !== null, "Past-day piano checkbox should exist");
+        pianoPast.click();
+        await sleep(100);
+        assert(confirmModal && !confirmModal.classList.contains('hidden'), "Policy OFF should open the standard Switch Day modal");
+        assert(passwordModal.classList.contains('hidden'), "Policy OFF must not prompt for a passcode");
+        document.getElementById('confirm-no-btn').click();
+        await sleep(60);
+
+        // --- C. Policy ON (Lyra): passcode gate ---
+        state.lockPastDays = true;
+        saveState();
+        assert(helpers.requiresParentApproval(pastDateStr) === true, "Approval required when locked and no grace window");
+        assert(helpers.requiresParentApproval(todayStr) === false, "Today must never require approval");
+
+        const pianoPast2 = document.querySelector('input[data-day="0"][data-task="piano"]');
+        pianoPast2.click();
+        await sleep(100);
+        assert(!passwordModal.classList.contains('hidden'), "Policy ON should prompt for the parent passcode");
+        assert(confirmModal.classList.contains('hidden'), "Passcode prompt must not stack with the Switch Day modal");
+        assert(pianoPast2.checked === false, "Checkbox should revert until approval is granted");
+
+        // Wrong passcode -> stays locked, nothing written
+        passwordInput.value = "not-the-code";
+        passwordSubmit.click();
+        await sleep(80);
+        assert(!passwordModal.classList.contains('hidden'), "Password modal stays open on a wrong passcode");
+        assert(helpers.isParentGraceActive() === false, "Wrong passcode must not open a grace window");
+        assert(state.grid[`${pastDateStr}-piano`] !== true, "Wrong passcode must not check the past chore");
+
+        // Correct passcode -> grace opens, day switches, chore applies
+        passwordInput.value = "zxcv";
+        passwordSubmit.click();
+        await sleep(150);
+        assert(passwordModal.classList.contains('hidden'), "Password modal closes on the correct passcode");
+        assert(helpers.isParentGraceActive() === true, "Correct passcode should open the grace window");
+        assert(state.activeDay === pastRealDay, `Active day should switch to the approved past day, got ${state.activeDay}`);
+        assert(state.grid[`${pastDateStr}-piano`] === true, "Approved past chore should be checked");
+
+        // --- D. Floating dock (UX Rule 17) ---
+        assert(dock && !dock.classList.contains('hidden'), "Grace dock should be visible during an active session");
+        const timerEl = document.getElementById('parent-grace-timer');
+        assert(/^\d+:\d{2}$/.test(timerEl.textContent), `Dock timer should render m:ss, got '${timerEl.textContent}'`);
+        assert(document.getElementById('parent-grace-lock-btn') !== null, "Dock must expose a Lock Now button");
+
+        // --- E. No re-prompt while the window is open ---
+        const mathPast = document.querySelector('input[data-day="0"][data-task="math"]');
+        mathPast.click();
+        await sleep(100);
+        assert(passwordModal.classList.contains('hidden'), "No passcode re-prompt during an active grace window");
+        assert(state.grid[`${pastDateStr}-math`] === true, "Second past chore should toggle directly during grace");
+
+        // --- F. Lock Now -> immediate relock + return to Today ---
+        document.getElementById('parent-grace-lock-btn').click();
+        await sleep(100);
+        assert(helpers.isParentGraceActive() === false, "Lock Now should end the grace session");
+        assert(dock.classList.contains('hidden'), "Dock should unmount after Lock Now");
+        assert(state.activeDay === todayDow, "Lock Now should return the child to Today");
+
+        const readingPast = document.querySelector('input[data-day="0"][data-task="reading"]');
+        readingPast.click();
+        await sleep(100);
+        assert(!passwordModal.classList.contains('hidden'), "Passcode should be required again after Lock Now");
+
+        // --- G. Expiry -> auto-relock + auto-revert to Today ---
+        passwordInput.value = "zxcv";
+        passwordSubmit.click();
+        await sleep(150);
+        assert(helpers.isParentGraceActive() === true, "Grace window should reopen for the expiry check");
+        assert(state.activeDay === pastRealDay, "Should be sitting on the past day before expiry");
+
+        helpers.expireParentGrace();
+        await waitFor(() => !helpers.isParentGraceActive() && state.activeDay === todayDow);
+        assert(helpers.isParentGraceActive() === false, "Grace should lapse once expired");
+        assert(state.activeDay === todayDow, "Expiry must auto-revert the child to Today");
+        assert(dock.classList.contains('hidden'), "Dock should unmount on expiry");
+
+        // Dismiss the "Edit Window Closed" notification raised by the expiry path
+        const notificationOkBtn = document.getElementById('notification-ok-btn');
+        if (notificationOkBtn) notificationOkBtn.click();
+        await sleep(60);
+
+        // --- H. Session teardown (the hook selectProfile() uses on profile switch) ---
+        readingPast.click();
+        await sleep(80);
+        passwordInput.value = "zxcv";
+        passwordSubmit.click();
+        await sleep(150);
+        assert(helpers.isParentGraceActive() === true, "Grace window should be open before teardown");
+        helpers.clearParentGrace({ revertToToday: false });
+        assert(helpers.isParentGraceActive() === false, "clearParentGrace must zero the session (profile-switch safety)");
+        assert(dock.classList.contains('hidden'), "Dock should unmount on teardown");
+
+        // --- I. Admin controls ---
+        const graceSelect = document.getElementById('admin-parent-grace-select');
+        const lockToggle = document.getElementById('admin-lock-past-days-toggle');
+        assert(graceSelect !== null, "Admin should expose the Parent Edit Window select");
+        assert(lockToggle !== null, "Admin should expose the Approve Past Days toggle");
+
+        graceSelect.value = '5';
+        graceSelect.dispatchEvent(new Event('change'));
+        await sleep(60);
+        assert(state.parentGraceMinutes === 5, `Admin select should persist 5, got ${state.parentGraceMinutes}`);
+
+        lockToggle.checked = false;
+        lockToggle.dispatchEvent(new Event('change'));
+        await sleep(60);
+        assert(state.lockPastDays === false, "Admin toggle should persist lockPastDays=false");
+        assert(helpers.requiresParentApproval(pastDateStr) === false, "Disabling the policy removes the approval requirement");
+        const notificationOkBtn2 = document.getElementById('notification-ok-btn');
+        if (notificationOkBtn2) notificationOkBtn2.click();
+        await sleep(60);
+
+        // Clean up
+        helpers.clearParentGrace({ revertToToday: false });
+        helpers.resetState();
+        await sleep(50);
+        state = window.__app_state__;
       }
 
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
