@@ -2999,101 +2999,38 @@ input:checked + .slider:before {
   user-select: none;
 }
 
-/* Streak Rarity Trophy Shelf (Bottom Section) */
-.vault-trophy-shelf-section {
+/* Star Streak Color Legend */
+.vault-legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 10px;
+  background-color: rgba(241, 245, 249, 0.6);
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  margin-bottom: 18px;
   width: 100%;
-  margin-top: 6px;
-  padding-top: 12px;
-  border-top: 2px dashed #cbd5e1;
+  box-sizing: border-box;
 }
 
-.trophy-shelf-header {
-  font-family: 'Fredoka One', cursive;
-  font-size: 0.85rem;
-  color: var(--poke-blue);
-  text-align: left;
-  margin-bottom: 8px;
+.legend-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  user-select: none;
 }
 
-.vault-trophy-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-@media (max-width: 480px) {
-  .vault-trophy-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-}
-
-.trophy-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  background: #f8fafc;
-  border: 2px solid #cbd5e1;
-  border-radius: 10px;
-  padding: 8px 10px;
-  box-sizing: border-box;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: transform 0.15s, border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
-}
-
-.trophy-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--poke-blue);
-  background: #ffffff;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
-}
-
-.trophy-metric-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-}
-
-.vault-star-wrapper.shelf-star {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.vault-star-wrapper.mini {
+  width: 18px;
+  height: 18px;
   pointer-events: none;
   cursor: default;
 }
 
-.vault-star-wrapper.shelf-star .vault-star-svg {
-  width: 22px;
-  height: 22px;
-}
-
-.trophy-count {
+.legend-label {
   font-family: 'Fredoka One', cursive;
-  font-size: 1.05rem;
-  color: var(--poke-blue, #1e3a8a);
-  line-height: 1;
-  display: inline-block;
-  transform: translateY(2px);
-  user-select: none;
-}
-
-.trophy-tier-label {
-  font-family: 'Fredoka One', cursive;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   color: #64748b;
-  line-height: 1;
-  letter-spacing: 0.2px;
   user-select: none;
 }
 

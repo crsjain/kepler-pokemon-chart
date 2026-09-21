@@ -3661,10 +3661,10 @@ async function runSuite() {
 
 
       // ==========================================
-      // Test Case 48: 3-Tier Star Pricing & Accelerando Swarm Validation
+      // Test Case 84: 3-Tier Star Pricing & Accelerando Swarm Validation
       // ==========================================
       {
-        console.log("Running Test Case 48: 3-Tier Star Pricing & Accelerando Swarm Validation...");
+        console.log("Running Test Case 84: 3-Tier Star Pricing & Accelerando Swarm Validation...");
         const helpers = window.__test_helpers__;
         const state = window.__app_state__;
         helpers.resetState();
@@ -4467,9 +4467,9 @@ async function runSuite() {
       }
 
       // ----------------------------------------------------
-      // TEST CASE 59: Week Start Change and Prev/Next Navigation Header Color Preservation
+      // TEST CASE 85: Week Start Change and Prev/Next Navigation Header Color Preservation
       // ----------------------------------------------------
-      console.log("Running Test Case 59: Week Start Change and Prev/Next Navigation Header Color Preservation...");
+      console.log("Running Test Case 85: Week Start Change and Prev/Next Navigation Header Color Preservation...");
       {
         const prevWeekBtn = document.getElementById('prev-week-btn');
         const nextWeekBtn = document.getElementById('next-week-btn');
@@ -7118,44 +7118,58 @@ async function runSuite() {
         await sleep(50);
       }
 
-      // 80. Test Star Vault Dynamic Rarity Trophy Counts
+      // 83. Test Star Vault Static Star Color Legend
       {
-        console.log("Running Test Case 80: Star Vault Dynamic Rarity Trophy Counts...");
+        console.log("Running Test Case 83: Star Vault Static Star Color Legend...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
         await sleep(50);
 
-        const vaultModal = document.getElementById('vault-modal');
-        const vaultOpenBtn = document.getElementById('open-vault-btn') || document.querySelector('.vault-nav-btn');
         const closeVaultBtn = document.getElementById('close-vault-modal-btn');
-        
-        const countYellow = document.getElementById('vault-legend-count-yellow');
-        const countSilver = document.getElementById('vault-legend-count-silver');
-        const countBlue = document.getElementById('vault-legend-count-blue');
-        const countPrism = document.getElementById('vault-legend-count-prism');
 
-        assert(countYellow !== null, "Yellow rarity count element should exist in DOM");
-        assert(countSilver !== null, "Silver rarity count element should exist in DOM");
-        assert(countBlue !== null, "Blue rarity count element should exist in DOM");
-        assert(countPrism !== null, "Prism rarity count element should exist in DOM");
+        // The dynamic "Star Counts" trophy shelf was removed; ensure it stays removed.
+        assert(document.querySelector('.vault-trophy-shelf-section') === null,
+          "Star Counts trophy shelf should no longer exist in the DOM");
+        assert(document.getElementById('vault-legend-count-yellow') === null,
+          "Yellow rarity count element should be removed from the DOM");
+        assert(document.getElementById('vault-legend-count-silver') === null,
+          "Silver rarity count element should be removed from the DOM");
+        assert(document.getElementById('vault-legend-count-blue') === null,
+          "Blue rarity count element should be removed from the DOM");
+        assert(document.getElementById('vault-legend-count-prism') === null,
+          "Prism rarity count element should be removed from the DOM");
 
-        // 1. Cold start (0 stars earned)
-        state.starVault.earnedDates = [];
-        state.starVault.totalTraded = 0;
-        helpers.renderState(false);
-        if (helpers.openVault) helpers.openVault();
-        await sleep(30);
+        // The static star color legend should be present inside the vault modal.
+        const legend = document.querySelector('#vault-modal .vault-legend');
+        assert(legend !== null, "Static star color legend should exist inside the vault modal");
 
-        assert(countYellow.textContent === '×0', `Cold start: Yellow should be ×0, got ${countYellow.textContent}`);
-        assert(countSilver.textContent === '×0', `Cold start: Silver should be ×0, got ${countSilver.textContent}`);
-        assert(countBlue.textContent === '×0', `Cold start: Blue should be ×0, got ${countBlue.textContent}`);
-        assert(countPrism.textContent === '×0', `Cold start: Prism should be ×0, got ${countPrism.textContent}`);
+        const legendItems = legend.querySelectorAll('.legend-item');
+        assert(legendItems.length === 4, `Legend should have 4 color items, got ${legendItems.length}`);
 
-        // 2. Inject 12 consecutive streak days
-        // Days 1-2: 2 Yellow
-        // Days 3-4: 2 Silver
-        // Days 5-9: 5 Blue
-        // Days 10-12: 3 Prism
+        const expectedTiers = [
+          { color: 'yellow', label: 'Day 1-2' },
+          { color: 'silver', label: 'Day 3-4' },
+          { color: 'blue', label: 'Day 5-9' },
+          { color: 'prism', label: 'Day 10+' }
+        ];
+
+        expectedTiers.forEach((tier, i) => {
+          const item = legendItems[i];
+          const swatch = item.querySelector('.vault-star-wrapper');
+          const label = item.querySelector('.legend-label');
+
+          assert(swatch !== null, `Legend item ${i} should contain a star swatch`);
+          assert(swatch.classList.contains(tier.color),
+            `Legend item ${i} swatch should have '${tier.color}' class`);
+          assert(swatch.classList.contains('mini'),
+            `Legend item ${i} swatch should have 'mini' class`);
+          assert(swatch.querySelector('svg.vault-star-svg') !== null,
+            `Legend item ${i} should render the star SVG`);
+          assert(label !== null && label.textContent.trim() === tier.label,
+            `Legend item ${i} label should be '${tier.label}', got '${label ? label.textContent.trim() : 'null'}'`);
+        });
+
+        // The legend is purely static: it must not change when stars are earned.
         state.starVault.earnedDates = Array.from({ length: 12 }, (_, i) => {
           const day = String(i + 1).padStart(2, '0');
           return `2026-07-${day}`;
@@ -7164,39 +7178,17 @@ async function runSuite() {
         if (helpers.openVault) helpers.openVault();
         await sleep(30);
 
-        assert(countYellow.textContent === '×2', `12-day streak: Yellow should be ×2, got ${countYellow.textContent}`);
-        assert(countSilver.textContent === '×2', `12-day streak: Silver should be ×2, got ${countSilver.textContent}`);
-        assert(countBlue.textContent === '×5', `12-day streak: Blue should be ×5, got ${countBlue.textContent}`);
-        assert(countPrism.textContent === '×3', `12-day streak: Prism should be ×3, got ${countPrism.textContent}`);
+        const labelsAfterStars = Array.from(
+          document.querySelectorAll('#vault-modal .vault-legend .legend-label')
+        ).map(el => el.textContent.trim());
 
-        // 3. Broken streak with gaps
-        // Run 1: 2026-07-01 to 2026-07-04 (4 days -> 2 Yellow, 2 Silver)
-        // GAP: 2026-07-05 missing
-        // Run 2: 2026-07-06 to 2026-07-08 (3 days -> 2 Yellow, 1 Silver)
-        // Total: 4 Yellow, 3 Silver, 0 Blue, 0 Prism
-        state.starVault.earnedDates = [
-          '2026-07-01', '2026-07-02', '2026-07-03', '2026-07-04',
-          '2026-07-06', '2026-07-07', '2026-07-08'
-        ];
-        helpers.renderState(false);
-        if (helpers.openVault) helpers.openVault();
-        await sleep(30);
+        assert(labelsAfterStars.join('|') === 'Day 1-2|Day 3-4|Day 5-9|Day 10+',
+          `Legend labels should remain static after earning stars, got ${labelsAfterStars.join('|')}`);
 
-        assert(countYellow.textContent === '×4', `Broken streak: Yellow should be ×4, got ${countYellow.textContent}`);
-        assert(countSilver.textContent === '×3', `Broken streak: Silver should be ×3, got ${countSilver.textContent}`);
-        assert(countBlue.textContent === '×0', `Broken streak: Blue should be ×0, got ${countBlue.textContent}`);
-        assert(countPrism.textContent === '×0', `Broken streak: Prism should be ×0, got ${countPrism.textContent}`);
-
-        // 4. Defensive deduplication test
-        state.starVault.earnedDates = [
-          '2026-07-01', '2026-07-01', '2026-07-02', '2026-07-03'
-        ];
-        helpers.renderState(false);
-        if (helpers.openVault) helpers.openVault();
-        await sleep(30);
-
-        assert(countYellow.textContent === '×2', `Deduplication: Yellow should be ×2, got ${countYellow.textContent}`);
-        assert(countSilver.textContent === '×1', `Deduplication: Silver should be ×1, got ${countSilver.textContent}`);
+        // The vault grid itself should still render the earned stars.
+        const renderedStars = document.querySelectorAll('#vault-grid .vault-star-wrapper');
+        assert(renderedStars.length === 12,
+          `Vault grid should render 12 earned stars, got ${renderedStars.length}`);
 
         // Clean up
         if (closeVaultBtn) closeVaultBtn.click();

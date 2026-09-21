@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.52">
+  <link rel="stylesheet" href="style.css?v=10.53">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
@@ -398,6 +398,42 @@
           </button>
         </div>
 
+        <!-- Star Streak Color Legend -->
+        <div class="vault-legend">
+          <div class="legend-item">
+            <div class="vault-star-wrapper yellow mini">
+              <svg class="vault-star-svg" viewBox="0 0 24 24">
+                <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.787 1.4 8.168L12 18.896l-7.334 3.857 1.4-8.168L.132 9.21l8.2-1.192z"/>
+              </svg>
+            </div>
+            <span class="legend-label">Day 1-2</span>
+          </div>
+          <div class="legend-item">
+            <div class="vault-star-wrapper silver mini">
+              <svg class="vault-star-svg" viewBox="0 0 24 24">
+                <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.787 1.4 8.168L12 18.896l-7.334 3.857 1.4-8.168L.132 9.21l8.2-1.192z"/>
+              </svg>
+            </div>
+            <span class="legend-label">Day 3-4</span>
+          </div>
+          <div class="legend-item">
+            <div class="vault-star-wrapper blue mini">
+              <svg class="vault-star-svg" viewBox="0 0 24 24">
+                <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.787 1.4 8.168L12 18.896l-7.334 3.857 1.4-8.168L.132 9.21l8.2-1.192z"/>
+              </svg>
+            </div>
+            <span class="legend-label">Day 5-9</span>
+          </div>
+          <div class="legend-item">
+            <div class="vault-star-wrapper prism mini">
+              <svg class="vault-star-svg" viewBox="0 0 24 24">
+                <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.787 1.4 8.168L12 18.896l-7.334 3.857 1.4-8.168L.132 9.21l8.2-1.192z"/>
+              </svg>
+            </div>
+            <span class="legend-label">Day 10+</span>
+          </div>
+        </div>
+
         <!-- Royal Velvet Star Cabinet (Hero Centerpiece) -->
         <div class="vault-grid-container">
           <div id="vault-grid" class="vault-grid">
@@ -412,58 +448,6 @@
           <button id="vault-page-next" class="pixel-btn small info" disabled>Next ▶</button>
         </div>
 
-        <!-- Bottom Trophy & Streak Shelf (Concept 1 Vertical Micro-Cards) -->
-        <div class="vault-trophy-shelf-section">
-          <div class="trophy-shelf-header">
-            <span>⭐ Star Counts</span>
-          </div>
-          <div class="vault-legend vault-trophy-grid">
-            <div class="trophy-card" id="legend-item-yellow">
-              <div class="trophy-metric-row">
-                <div class="vault-star-wrapper yellow shelf-star">
-                  <svg class="vault-star-svg" viewBox="0 0 24 24">
-                    <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.787 1.4 8.168L12 18.896l-7.334 3.857 1.4-8.168L.132 9.21l8.2-1.192z"/>
-                  </svg>
-                </div>
-                <span id="vault-legend-count-yellow" class="trophy-count">×0</span>
-              </div>
-              <span class="trophy-tier-label">Day 1-2</span>
-            </div>
-            <div class="trophy-card" id="legend-item-silver">
-              <div class="trophy-metric-row">
-                <div class="vault-star-wrapper silver shelf-star">
-                  <svg class="vault-star-svg" viewBox="0 0 24 24">
-                    <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.787 1.4 8.168L12 18.896l-7.334 3.857 1.4-8.168L.132 9.21l8.2-1.192z"/>
-                  </svg>
-                </div>
-                <span id="vault-legend-count-silver" class="trophy-count">×0</span>
-              </div>
-              <span class="trophy-tier-label">Day 3-4</span>
-            </div>
-            <div class="trophy-card" id="legend-item-blue">
-              <div class="trophy-metric-row">
-                <div class="vault-star-wrapper blue shelf-star">
-                  <svg class="vault-star-svg" viewBox="0 0 24 24">
-                    <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.787 1.4 8.168L12 18.896l-7.334 3.857 1.4-8.168L.132 9.21l8.2-1.192z"/>
-                  </svg>
-                </div>
-                <span id="vault-legend-count-blue" class="trophy-count">×0</span>
-              </div>
-              <span class="trophy-tier-label">Day 5-9</span>
-            </div>
-            <div class="trophy-card" id="legend-item-prism">
-              <div class="trophy-metric-row">
-                <div class="vault-star-wrapper prism shelf-star">
-                  <svg class="vault-star-svg" viewBox="0 0 24 24">
-                    <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.787 1.4 8.168L12 18.896l-7.334 3.857 1.4-8.168L.132 9.21l8.2-1.192z"/>
-                  </svg>
-                </div>
-                <span id="vault-legend-count-prism" class="trophy-count">×0</span>
-              </div>
-              <span class="trophy-tier-label">Day 10+</span>
-            </div>
-          </div>
-        </div>
 
         <!-- Star Vault Debug Panel (only visible when debug sidebar is enabled) -->
         <div id="vault-debug-panel" class="vault-debug-panel hidden">
@@ -904,7 +888,7 @@
   </div>
 
   <script src="particles.js?v=10.3"></script>
-  <script type="module" src="app.js?v=10.44" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.45" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 
