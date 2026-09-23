@@ -43,7 +43,8 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - **Profile Management**: Manage profiles directly from the list, including deleting profiles or opening a dedicated **Spacious Dashboard Modal** to customize lists of available weekly/mega rewards per-child.
   - **Parent Approval & Timed Grace Window for Past Days**: Protects against accidental past-day clicks (especially for younger children like 5yo Lyra). Parents can toggle `🔒 Approve Past Days` per profile in Admin Settings and choose a configurable edit window (`1 min`, `2 min`, `5 min`). Once unlocked via the parent passcode (`zxcv`), a floating bottom dock (`🗝️ Parent Edit Active [Lock Now 🔒]`) displays a digital countdown, allowing frictionless review and correction of past tasks. Editing auto-relocks immediately upon timer expiration, tapping "Lock Now", tapping "Back to Today", or switching profiles, safely returning the active column to Today.
   - **Screensaver Inactivity Timeout**: Adjust the inactivity timer (10m, 5m, or off) before the idle screensaver kicks in to pause animations and conserve battery.
-  - **Diagnostics & Healing**: Click "Run Diagnostics" to auto-detect and heal any state schema inconsistency.
+  - **Diagnostics & Healing**: Click "Run Diagnostics" to auto-detect and heal any state schema inconsistency, safely quarantining corrupted partner records and refunding stars.
+  - **Fix Glitched Partners**: Admin tool in System & Debug to preview, remove, and refund phantom duplicate partners created by the multi-touch adoption glitch, protecting all legitimate Pokémon.
   - **Developer Debug Mode**: Toggle the right-aligned Debug Sidebar to test milestones, level up instantly, or force devolution for testing (includes a convenient direct close button on the panel).
 - ✍️ **Reward Customization & Choice**: Dedicated drop-down options for Kepler to select his weekly and mega (4-week loop) target rewards. Available rewards can be customized per profile, and "Recent Rewards" are automatically suggested.
   - **Inline Editing (✏️)**: Parents can edit existing rewards in place with quick save/cancel controls and keyboard shortcuts (<kbd>Enter</kbd> to save, <kbd>Escape</kbd> to cancel).
@@ -66,13 +67,19 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
 
 ## How to Run Locally
 
-1. Open the project folder.
-2. Double-click the `index.html` file to open it in any web browser.
-3. *Alternative (to test with local server)*: Run the following command in your terminal inside the project directory:
+This app is built from native ES6 modules, so it **must be served over HTTP**.
+Opening `index.html` directly from the filesystem (`file://`) will fail — browsers
+block module imports on `file://` for security reasons, and the page will show a
+"Failed to load application script module" error.
+
+1. In your terminal, from inside the project directory, start a static server:
    ```bash
    python3 -m http.server 8000
    ```
-   Then open `http://localhost:8000` in your browser.
+2. Open `http://localhost:8000` in your browser.
+
+*(There is no build step and no `npm install` — the files you edit are the files
+that run.)*
 
 ---
 
@@ -82,17 +89,21 @@ To access the app on Kepler's tablet or your phone, the files need to be hosted 
 
 ### Option 1: Vercel (Easiest, No Git required)
 1. Go to [Vercel Direct Upload](https://vercel.com/import/deploy).
-2. Drag and drop the `pokemon-reward-chart` folder directly onto the upload area.
+2. Drag and drop the `kepler-pokemon-chart` folder directly onto the upload area.
 3. Vercel will instantly generate a public URL (e.g., `https://keplers-pokemon-chart.vercel.app`) that you can open on any device!
 
 ### Option 2: Netlify Drop (No Git required)
 1. Go to [Netlify Drop](https://app.netlify.com/drop).
-2. Drag and drop the `pokemon-reward-chart` folder.
+2. Drag and drop the `kepler-pokemon-chart` folder.
 3. Netlify will host it instantly and give you a shareable link.
 
 ### Option 3: GitHub Pages (Best for long-term updates)
 1. Create a public repository on GitHub.
-2. Push these files (`index.html`, `style.css`, `app.js`, `particles.js`) to the repository.
+2. Push the **entire project folder** to the repository. The app imports a dozen
+   ES6 modules at runtime (`state.js`, `migrations.js`, `pokemon_data.js`,
+   `date_utils.js`, `admin.js`, `vault.js`, `shop.js`, `badges.js`, `guide.js`,
+   `audio.js`, `firebase.js`), plus `service-worker.js`, `manifest.json`, and
+   `icon.png` — cherry-picking only a few files will deploy a broken site.
 3. Go to **Settings** -> **Pages** in your repository.
 4. Select `main` branch as the build source and click **Save**.
 5. Your chart will be live at `https://<your-username>.github.io/<repo-name>`.

@@ -26,6 +26,10 @@ let adminEarned = null;
 let adminTradedInput = null;
 let adminRemaining = null;
 
+// One-shot listener binding guards (see initShop for the full rationale).
+let isVaultInitialized = false;
+let areVaultAdminElementsBound = false;
+
 export function initVault() {
   vaultModal = document.getElementById('vault-modal');
   closeVaultBtn = document.getElementById('close-vault-modal-btn');
@@ -44,6 +48,15 @@ export function initVault() {
 
   // Spend shortcut binding
   tradeOpenBtn = document.getElementById('vault-trade-open-btn');
+
+  // Refresh DOM references on every call, but attach listeners only once.
+  // initVault() re-runs on every Firestore snapshot; re-binding here stacked
+  // duplicate handlers, so one "next page" click jumped N pages at a time.
+  if (isVaultInitialized) {
+    bindAdminElements();
+    return;
+  }
+  isVaultInitialized = true;
 
   if (pagePrevBtn) {
     pagePrevBtn.addEventListener('click', () => {
@@ -92,9 +105,15 @@ function bindAdminElements() {
   adminTradedInput = document.getElementById('admin-vault-traded-input');
   adminRemaining = document.getElementById('admin-vault-remaining');
 
+  // Refs are refreshed above on every call; listeners bind once only.
+  if (areVaultAdminElementsBound) return;
+
   const plusBtn = document.getElementById('admin-vault-traded-plus');
   const minusBtn = document.getElementById('admin-vault-traded-minus');
   const saveBtn = document.getElementById('admin-save-vault-btn');
+
+  if (!plusBtn && !minusBtn && !saveBtn && !adminTradedInput) return;
+  areVaultAdminElementsBound = true;
 
   if (plusBtn && adminTradedInput) {
     plusBtn.addEventListener('click', () => {

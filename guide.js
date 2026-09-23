@@ -5,11 +5,18 @@ let closeGuideBtn = null;
 let guideTasksList = null;
 let openGuideBtn = null;
 
+// One-shot listener binding guard (see initShop for the full rationale).
+let isGuideInitialized = false;
+
 export function initGuide() {
   guideModal = document.getElementById('guide-modal');
   closeGuideBtn = document.getElementById('close-guide-modal-btn');
   guideTasksList = document.getElementById('guide-tasks-list');
   openGuideBtn = document.getElementById('open-guide-btn');
+
+  // initGuide() re-runs on every Firestore snapshot; bind listeners once.
+  if (isGuideInitialized) return;
+  isGuideInitialized = true;
 
   if (openGuideBtn) {
     openGuideBtn.addEventListener('click', openGuide);

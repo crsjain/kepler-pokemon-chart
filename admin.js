@@ -3,6 +3,8 @@ import {
   saveState, 
   loadState, 
   runStateDiagnostics,
+  findPhantomPartners,
+  cleanupPhantomPartners,
   replaceState,
   ADMIN_PASSWORD,
   DAYS,
@@ -43,6 +45,7 @@ let passwordCancelBtn = null;
 let passwordError = null;
 
 let adminDiagnosticsBtn = null;
+let adminCleanupPartnersBtn = null;
 let adminExportBtn = null;
 let adminImportBtn = null;
 let adminCloudExportBtn = null;
@@ -83,6 +86,7 @@ export function initAdmin(callbacks) {
   passwordError = document.getElementById('password-error');
 
   adminDiagnosticsBtn = document.getElementById('admin-diagnostics-btn');
+  adminCleanupPartnersBtn = document.getElementById('admin-cleanup-partners-btn');
   adminExportBtn = document.getElementById('admin-export-btn');
   adminImportBtn = document.getElementById('admin-import-btn');
   adminCloudExportBtn = document.getElementById('admin-cloud-export-btn');
@@ -165,6 +169,10 @@ export function initAdmin(callbacks) {
         'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/max-repel.png'
       );
     });
+  }
+
+  if (adminCleanupPartnersBtn) {
+    adminCleanupPartnersBtn.addEventListener('click', handleCleanupPhantomPartners);
   }
 
   if (adminExportBtn) {
@@ -320,6 +328,73 @@ function renderAdminTasksList() {
       removeTask(taskId);
     });
   });
+}
+
+/**
+ * Admin recovery tool for the duplicate-adoption glitch.
+ *
+ * Previews what will be removed before touching anything, since this deletes
+ * partners. Must be run once per affected child profile — state is per-profile.
+ */
+function handleCleanupPhantomPartners() {
+  const phantoms = findPhantomPartners();
+
+  if (phantoms.length === 0) {
+    showCustomNotification(
+      "All Clear! ✨",
+      "No glitched partners found on this trainer's profile. Everything in the party was earned legitimately!",
+      'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/max-repel.png'
+    );
+    return;
+  }
+
+  const launderedCount = phantoms.filter(p => p.wasLaundered).length;
+  const refundEstimate = phantoms.length * 5;
+
+  const launderedNote = launderedCount > 0
+    ? `<div class="transition-info-callout">
+         <div class="transition-callout-title">ℹ️ Why do they look like real Pichus?</div>
+         <div class="transition-callout-desc">${launderedCount} of these were created without a Pokémon ID. A previous <strong>Run Diagnostics</strong> relabelled them as Pichu, but their internal records still identify them as glitched. Genuinely purchased Pichus are <strong>not</strong> affected.</div>
+       </div>`
+    : '';
+
+  const cleanupHtml = `
+    <div class="confirm-detail">
+      <div class="schedule-hero-card" style="background: #fef2f2; border-color: #fca5a5;">
+        <div class="schedule-hero-label">🧹 REMOVE GLITCHED PARTNERS</div>
+        <div class="schedule-hero-main">${phantoms.length} Phantom Partner${phantoms.length === 1 ? '' : 's'}</div>
+        <div class="schedule-hero-sub">Remove them and refund up to <strong>⭐ ${refundEstimate} stars</strong> back to the vault?</div>
+      </div>
+      ${launderedNote}
+      <div class="transition-info-callout">
+        <div class="transition-callout-title">✅ Safe to run</div>
+        <div class="transition-callout-desc">Only partners created by the glitch are removed. Legitimately adopted Pokémon, their levels, XP, badges, and star history are untouched. Run this once for each affected trainer.</div>
+      </div>
+    </div>
+  `;
+
+  showCustomConfirm(
+    "Fix Glitched Partners? 🧹",
+    cleanupHtml,
+    () => {
+      const summary = cleanupPhantomPartners();
+      renderState(true);
+
+      const activeNote = summary.reassignedActive
+        ? "\n\nYour active partner was one of the glitched ones, so it has been switched back to a real Pokémon."
+        : "";
+
+      showCustomNotification(
+        "Party Restored! 🎉",
+        `Removed ${summary.removed} glitched partner${summary.removed === 1 ? '' : 's'} and refunded ⭐ ${summary.refunded} stars to the vault.${activeNote}`,
+        'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/full-restore.png'
+      );
+    },
+    () => {},
+    "Remove & Refund 🧹",
+    "Cancel",
+    "pixel-btn danger"
+  );
 }
 
 function removeTask(taskId) {

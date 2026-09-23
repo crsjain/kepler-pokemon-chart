@@ -7369,6 +7369,211 @@ async function runSuite() {
         state = window.__app_state__;
       }
 
+      // 86. Test Case 86: Shop Listener De-duplication (Phantom Pichu Regression)
+      // Guards the root cause of the prod incident: initShop() runs on every
+      // Firestore snapshot, and an anonymous touchstart listener meant one tap
+      // spawned N hold-timers, N-1 of which survived cancelHold().
+      console.log("Running Test Case 86: Shop Listener De-duplication (Phantom Pichu Regression)...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        const stateObj = window.__app_state__;
+        stateObj.starVault.earnedDates = [
+          "2026-07-01", "2026-07-02", "2026-07-03", "2026-07-04", "2026-07-05",
+          "2026-07-06", "2026-07-07", "2026-07-08", "2026-07-09", "2026-07-10",
+          "2026-07-11", "2026-07-12", "2026-07-13", "2026-07-14", "2026-07-15"
+        ];
+        stateObj.starVault.totalTraded = 0;
+        helpers.saveState();
+        helpers.renderState(true);
+        await sleep(50);
+
+        const partnersBefore = Object.keys(stateObj.partnersData).length;
+        const tradedBefore = stateObj.starVault.totalTraded || 0;
+
+        // Simulate a snapshot storm: five extra init passes over the same DOM.
+        for (let i = 0; i < 5; i++) {
+          helpers.reinitShop();
+        }
+        await sleep(30);
+
+        helpers.openPokemonShop();
+        await sleep(100);
+
+        const eeveeCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="133"]');
+        assert(eeveeCard, "Eevee shop card should exist for the de-dup test");
+        eeveeCard.click();
+        await sleep(80);
+
+        const holdBtn = document.getElementById('shop-hold-unlock-btn');
+        assert(holdBtn, "Hold unlock button should exist for the de-dup test");
+
+        // ONE touch gesture. Pre-fix this produced six startHold() calls.
+        holdBtn.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, cancelable: true }));
+        await sleep(120, true);
+        holdBtn.dispatchEvent(new TouchEvent('touchend', { bubbles: true, cancelable: true }));
+
+        await waitFor(() => {
+          const id = window.__app_state__.activePartnerInstanceId;
+          return id && id.startsWith('133_');
+        });
+        // Let any zombie timers that the old code would have left behind fire.
+        await sleep(400, true);
+
+        const partnersAfter = Object.keys(window.__app_state__.partnersData).length;
+        const tradedAfter = window.__app_state__.starVault.totalTraded || 0;
+        const added = partnersAfter - partnersBefore;
+
+        assert(added === 1, `One tap must adopt exactly 1 Pokémon after 6 init passes, got ${added}`);
+        assert(
+          tradedAfter - tradedBefore === getPokemonCost(133),
+          `Exactly one Eevee's cost should be charged, got ${tradedAfter - tradedBefore}`
+        );
+
+        // No phantom instance keys may exist.
+        const phantomKeys = Object.keys(window.__app_state__.partnersData)
+          .filter(k => /^(?:null|undefined|NaN)_\d+$/.test(k));
+        assert(phantomKeys.length === 0, `No phantom partner keys should be created, got ${phantomKeys.length}`);
+
+        // And no partner should have been laundered into a Pichu.
+        const pichuCount = Object.values(window.__app_state__.partnersData)
+          .filter(p => String(p.familyId) === '172').length;
+        assert(pichuCount <= 1, `At most the starter Pichu should exist, got ${pichuCount}`);
+
+        helpers.resetState();
+        await sleep(50);
+      }
+
+      // 87. Test Case 87: Phantom Partner Detection & Cleanup
+      console.log("Running Test Case 87: Phantom Partner Detection & Cleanup...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        const stateObj = window.__app_state__;
+        stateObj.starVault.earnedDates = Array.from({ length: 30 }, (_, i) => {
+          const d = new Date('2026-07-01T00:00:00');
+          d.setDate(d.getDate() + i);
+          return formatLocalDate(d);
+        });
+        stateObj.starVault.totalTraded = 20;
+
+        // A legitimately purchased Eevee, plus a real Pichu purchase, plus three
+        // phantoms — two already laundered by a prior Run Diagnostics into
+        // familyId '172', one still raw.
+        stateObj.partnersData = {
+          '172': { familyId: '172', level: 3, xp: 40, stageId: '172' },
+          '133_1790000000001': { familyId: '133', level: 2, xp: 60, stageId: '133' },
+          '172_1790000000002': { familyId: '172', level: 1, xp: 0, stageId: '172' },
+          'null_1790142184235': { familyId: '172', level: 1, xp: 0, stageId: '172' },
+          'null_1790142184236': { familyId: '172', level: 1, xp: 0, stageId: '172' },
+          'null_1790142184237': { familyId: 'null', level: 1, xp: 0, stageId: 'null' }
+        };
+        stateObj.activePartnerInstanceId = 'null_1790142184237';
+        helpers.saveState();
+        await sleep(30);
+
+        const detected = StateModule.findPhantomPartners();
+        assert(detected.length === 3, `Should detect exactly 3 phantoms, got ${detected.length}`);
+
+        const launderedCount = detected.filter(p => p.wasLaundered).length;
+        assert(launderedCount === 2, `Should flag 2 laundered phantoms, got ${launderedCount}`);
+
+        // Critically: the genuinely purchased Pichu must NOT be detected.
+        const detectedIds = detected.map(p => p.instanceId);
+        assert(!detectedIds.includes('172_1790000000002'), "A legitimately bought Pichu must never be flagged");
+        assert(!detectedIds.includes('172'), "The starter Pichu must never be flagged");
+        assert(!detectedIds.includes('133_1790000000001'), "A legitimately bought Eevee must never be flagged");
+
+        const summary = StateModule.cleanupPhantomPartners();
+        assert(summary.removed === 3, `Cleanup should remove 3 phantoms, got ${summary.removed}`);
+        assert(summary.refunded === 15, `Cleanup should refund 15 stars, got ${summary.refunded}`);
+        assert(summary.reassignedActive === true, "Active partner pointed at a phantom, so it must be reassigned");
+
+        const remaining = window.__app_state__.partnersData;
+        assert(Object.keys(remaining).length === 3, `3 legitimate partners should survive, got ${Object.keys(remaining).length}`);
+        assert(remaining['172'] && remaining['172'].level === 3, "Starter Pichu should survive untouched with its level");
+        assert(remaining['133_1790000000001'], "Purchased Eevee should survive");
+        assert(remaining['172_1790000000002'], "Purchased Pichu should survive");
+        assert(window.__app_state__.starVault.totalTraded === 5, `totalTraded should drop 20 -> 5, got ${window.__app_state__.starVault.totalTraded}`);
+        assert(
+          remaining[window.__app_state__.activePartnerInstanceId],
+          "Active partner must point at a surviving instance after cleanup"
+        );
+
+        // Running again on clean data must be a no-op.
+        const secondPass = StateModule.cleanupPhantomPartners();
+        assert(secondPass.removed === 0, "Cleanup must be idempotent");
+        assert(window.__app_state__.starVault.totalTraded === 5, "Idempotent run must not refund twice");
+
+        helpers.resetState();
+        await sleep(50);
+      }
+
+      // 88. Test Case 88: Diagnostics Must Not Launder Corrupt Partners Into Pichus
+      console.log("Running Test Case 88: Diagnostics Must Not Launder Corrupt Partners Into Pichus...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        const stateObj = window.__app_state__;
+        stateObj.partnersData = {
+          '172': { familyId: '172', level: 1, xp: 0, stageId: '172' },
+          'null_1790142184240': { familyId: 'null', level: 1, xp: 0, stageId: 'null' },
+          'null_1790142184241': { familyId: 'null', level: 1, xp: 0, stageId: 'null' }
+        };
+        stateObj.activePartnerInstanceId = '172';
+        stateObj.starVault.earnedDates = Array.from({ length: 20 }, (_, i) => {
+          const d = new Date('2026-07-01T00:00:00');
+          d.setDate(d.getDate() + i);
+          return formatLocalDate(d);
+        });
+        stateObj.starVault.totalTraded = 10;
+        helpers.saveState();
+        await sleep(30);
+
+        const { fixed } = runStateDiagnostics();
+
+        const keys = Object.keys(window.__app_state__.partnersData);
+        assert(keys.length === 1, `Diagnostics should quarantine both corrupt records, got ${keys.length} partners`);
+        assert(keys[0] === '172', "Only the genuine starter Pichu should remain");
+
+        const removalMessages = fixed.filter(f => f.includes('Removed corrupted partner instance'));
+        assert(removalMessages.length === 2, `Diagnostics should report 2 removals, got ${removalMessages.length}`);
+
+        const laundered = fixed.filter(f => f.includes("Reset familyId to '172'"));
+        assert(laundered.length === 0, "Diagnostics must never relabel a phantom as Pichu");
+
+        // Both repair paths must refund identically, so it never matters which
+        // button the parent happens to press first.
+        assert(
+          window.__app_state__.starVault.totalTraded === 0,
+          `Diagnostics should refund 10 stars (2 x 5), got totalTraded=${window.__app_state__.starVault.totalTraded}`
+        );
+        assert(
+          fixed.some(f => f.includes('Refunded 10 stars')),
+          "Diagnostics should report the star refund"
+        );
+
+        // Idempotency: a second pass must not refund again.
+        const secondRun = runStateDiagnostics();
+        assert(
+          window.__app_state__.starVault.totalTraded === 0,
+          "A second diagnostics run must not refund twice"
+        );
+        assert(
+          !secondRun.fixed.some(f => f.includes('Refunded')),
+          "A second diagnostics run should report no refund"
+        );
+
+        helpers.resetState();
+        await sleep(50);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

@@ -1,3 +1,8 @@
+---
+trigger: always_on
+description: "UX/UI guidelines and styling invariants for the Kepler Pokémon Chart. Read before any UI work."
+---
+
 # Kepler Pokémon Chart UX/UI Guidelines
 
 This document outlines core UX principles and styling constraints for Kepler Pokémon Chart development. Follow these rules to avoid common layout bugs and ensure accessibility.

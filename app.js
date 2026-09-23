@@ -227,7 +227,7 @@ import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, 
 import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
 import { initAdmin } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
-import { initShop, openPokemonShop } from './shop.js';
+import { initShop, openPokemonShop, resetShopSession } from './shop.js';
 
 // DOM Elements
 const pokemonSprite = document.getElementById('pokemon-sprite');
@@ -897,6 +897,10 @@ function renderAdminProfilesList() {
 function selectProfile(profileId) {
   // Never leak one child's unlocked session into another's chart.
   clearParentGrace({ revertToToday: false });
+  // Likewise, abandon any half-finished shop adoption. Its grant callback fires
+  // seconds after the hold and would otherwise write into the profile that
+  // happens to be active when it lands.
+  resetShopSession();
   activeProfileId = profileId;
   currentViewingWeekStartDate = null;
   localStorage.setItem('last_active_profile_id', profileId);
@@ -4226,6 +4230,10 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     openGuide: () => openGuide(),
     renderGuide: () => renderGuide(),
     openPokemonShop: () => openPokemonShop(),
+    // Simulates the repeated init that a Firestore snapshot storm triggers,
+    // used to prove listeners are not stacking (see Test Case 86).
+    reinitShop: () => initShop({ renderAppState: (rebuild) => renderState(rebuild) }),
+    resetShopSession: () => resetShopSession(),
     setProfilesList: (list) => { profilesList = list; },
     getProfilesList: () => profilesList,
     renderAdminProfilesList: () => renderAdminProfilesList(),

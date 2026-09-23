@@ -1,4 +1,4 @@
-import { TIER_1_IDS, TIER_2_IDS, getPokemonName, MEGA_POKEMON, STARTER_OPTIONS, STARTER_FAMILIES, EVOLUTIONS, POKEMON_MAP, EVOLVED_POKEMON_IDS } from './pokemon_data.js';
+import { TIER_1_IDS, TIER_2_IDS, getPokemonName, MEGA_POKEMON, STARTER_OPTIONS, STARTER_FAMILIES, EVOLUTIONS, POKEMON_MAP, EVOLVED_POKEMON_IDS, getPokemonCost } from './pokemon_data.js';
 import { formatLocalDate, getWeekStart, getSunday, getDateOfColumn, getLocalDate } from './date_utils.js';
 import { runMigrations, DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS } from './migrations.js';
 
@@ -272,6 +272,97 @@ function getColumnDateStr(weekStartDateStr, dayIndex) {
   return formatLocalDate(baseDate);
 }
 
+/**
+ * Instance keys minted by the duplicate-listener adoption bug.
+ *
+ * The buggy grant built its key as `${pokemonId}_${Date.now()}` with a null id,
+ * producing "null_1790142184235". Crucially, runStateDiagnostics() only ever
+ * rewrote the *familyId* of these records (to '172', i.e. Pichu) — it never
+ * renamed the key. So the key remains a reliable forensic marker even after
+ * diagnostics has made the record look like a legitimate Pichu.
+ *
+ * Genuine purchases are keyed `<dexId>_<timestamp>` and legacy starters use a
+ * bare dex id, so neither can match this pattern.
+ */
+export const PHANTOM_INSTANCE_KEY_RE = /^(?:null|undefined|NaN)_\d+$/;
+
+const PHANTOM_FAMILY_IDS = ['null', 'undefined', 'NaN', ''];
+
+/**
+ * Returns the list of partner instances that were created by the adoption bug.
+ * Read-only — safe to call for a preview before asking the parent to confirm.
+ */
+export function findPhantomPartners() {
+  const found = [];
+  if (!state.partnersData) return found;
+
+  Object.keys(state.partnersData).forEach(instanceId => {
+    const pData = state.partnersData[instanceId];
+    const keyIsPhantom = PHANTOM_INSTANCE_KEY_RE.test(instanceId);
+    const familyIsPhantom = !!pData && PHANTOM_FAMILY_IDS.includes(String(pData.familyId));
+    if (keyIsPhantom || familyIsPhantom) {
+      found.push({
+        instanceId,
+        familyId: pData ? pData.familyId : null,
+        // Diagnostics may have already laundered familyId to '172'; record that
+        // so the confirmation dialog can be honest about what it is removing.
+        wasLaundered: keyIsPhantom && !familyIsPhantom
+      });
+    }
+  });
+
+  return found;
+}
+
+/**
+ * Removes phantom partners and refunds the stars the glitch spent on them.
+ *
+ * Every phantom was charged getPokemonCost(null), which falls through the
+ * legendary/rare tiers to the base price. Derived from the pricing table rather
+ * than hardcoded so it stays correct if prices change.
+ *
+ * @returns {{removed:number, refunded:number, reassignedActive:boolean, instanceIds:string[]}}
+ */
+export function cleanupPhantomPartners() {
+  const summary = { removed: 0, refunded: 0, reassignedActive: false, instanceIds: [] };
+  const phantoms = findPhantomPartners();
+  if (phantoms.length === 0) return summary;
+
+  const refundPerPhantom = getPokemonCost(null);
+
+  phantoms.forEach(({ instanceId }) => {
+    delete state.partnersData[instanceId];
+    summary.instanceIds.push(instanceId);
+  });
+  summary.removed = phantoms.length;
+
+  // Refund, clamped so totalTraded can never go negative.
+  if (state.starVault && typeof state.starVault === 'object') {
+    const traded = state.starVault.totalTraded || 0;
+    const refund = Math.min(traded, refundPerPhantom * summary.removed);
+    state.starVault.totalTraded = traded - refund;
+    summary.refunded = refund;
+  }
+
+  // The last phantom to land also hijacked activePartnerInstanceId, so repoint
+  // it at a surviving partner (or restore the default starter if none remain).
+  if (!state.partnersData[state.activePartnerInstanceId]) {
+    const fallbackId = Object.keys(state.partnersData)[0];
+    if (fallbackId) {
+      state.activePartnerInstanceId = fallbackId;
+      state.partnerFamily = String(state.partnersData[fallbackId].familyId || fallbackId);
+    } else {
+      state.activePartnerInstanceId = '172';
+      state.partnersData['172'] = { familyId: '172', level: 1, xp: 0, stageId: '172' };
+      state.partnerFamily = '172';
+    }
+    summary.reassignedActive = true;
+  }
+
+  saveState();
+  return summary;
+}
+
 export function runStateDiagnostics() {
   let issues = [];
   let fixed = [];
@@ -291,6 +382,11 @@ export function runStateDiagnostics() {
 
   const families = ['172', '4', '1', '7', '133'];
   
+  // Phantoms removed below were paid for with real stars, so the refund must
+  // happen here too. Otherwise whichever repair button the parent happens to
+  // press first would decide whether the child gets their stars back.
+  let phantomsRemoved = 0;
+
   if (state.partnersData) {
     Object.keys(state.partnersData).forEach(instanceId => {
       const pData = state.partnersData[instanceId];
@@ -298,6 +394,18 @@ export function runStateDiagnostics() {
         delete state.partnersData[instanceId];
         issues.push(`Null partner data for instance ${instanceId}.`);
         fixed.push(`Removed null partner instance ${instanceId}.`);
+        return;
+      }
+
+      // A phantom-keyed record can never be recovered into a meaningful
+      // Pokémon: there is no dex id to fall back on. Silently rewriting these
+      // to '172' is what turned the adoption glitch into a wall of
+      // indistinguishable "real" Pichus, so remove them instead.
+      if (PHANTOM_INSTANCE_KEY_RE.test(instanceId)) {
+        delete state.partnersData[instanceId];
+        phantomsRemoved++;
+        issues.push(`Corrupted partner instance '${instanceId}' (no recoverable Pokémon id).`);
+        fixed.push(`Removed corrupted partner instance '${instanceId}'.`);
         return;
       }
 
@@ -531,6 +639,17 @@ export function runStateDiagnostics() {
       state.starVault.totalTraded = 0;
       issues.push("Negative starVault.totalTraded.");
       fixed.push("Reset starVault.totalTraded to 0.");
+    }
+
+    // Refund the stars spent on any phantom partners removed above. Runs here,
+    // after totalTraded is known to be a valid non-negative number.
+    if (phantomsRemoved > 0) {
+      const traded = state.starVault.totalTraded || 0;
+      const refund = Math.min(traded, getPokemonCost(null) * phantomsRemoved);
+      if (refund > 0) {
+        state.starVault.totalTraded = traded - refund;
+        fixed.push(`Refunded ${refund} stars for ${phantomsRemoved} corrupted partner(s).`);
+      }
     }
   }
 

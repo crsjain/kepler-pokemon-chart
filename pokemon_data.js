@@ -1082,3 +1082,19 @@ export function getPokemonCost(id) {
   if (RARE_POKEMON_IDS.has(numId)) return 10;
   return 5;
 }
+
+/**
+ * Single source of truth for "is this a real Pokémon that can be adopted?".
+ *
+ * Guards against null/undefined/NaN/garbage ids reaching persistence. Without
+ * this, `String(null)` produced partners with familyId "null", which state
+ * diagnostics later silently rewrote to '172' (Pichu) — see docs/checkpoint_56.md.
+ * Evolved-only stages are excluded: they are earned by levelling up, not bought.
+ */
+export function isBuyablePokemonId(id) {
+  if (id === null || id === undefined || id === '') return false;
+  const numId = Number(id);
+  if (!Number.isFinite(numId)) return false;
+  if (!POKEMON_MAP[numId]) return false;
+  return !EVOLVED_POKEMON_IDS.has(numId);
+}

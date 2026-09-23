@@ -93,8 +93,10 @@ async function main() {
   let screenshotCmdId = -1;
   let screenshotPathToSave = '';
 
+  const TEST_TIMEOUT_MS = 60000;
+
   let testTimeout = setTimeout(() => {
-    console.error("❌ Test suite timed out after 30 seconds! Capturing CDP screenshot...");
+    console.error(`❌ Test suite timed out after ${TEST_TIMEOUT_MS / 1000} seconds! Capturing CDP screenshot...`);
     screenshotPathToSave = '/usr/local/google/home/crsjain/kepler-pokemon-chart/screenshot_timeout.png';
     screenshotCmdId = commandId;
     send('Page.captureScreenshot');
@@ -106,7 +108,7 @@ async function main() {
       chrome.kill();
       process.exit(1);
     }, 5000);
-  }, 60000);
+  }, TEST_TIMEOUT_MS);
 
   let initialized = false;
   let runtimeEnabled = false;

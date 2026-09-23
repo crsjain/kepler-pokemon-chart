@@ -3,12 +3,19 @@ import { getPokemonName } from './pokemon_data.js';
 
 let badgeSortMethod = 'date'; // 'date' or 'dex'
 
+// One-shot listener binding guard (see initShop for the full rationale).
+let isBadgeCaseInitialized = false;
+
 export function initBadgeCase() {
   const openBtn = document.getElementById('open-badges-btn');
   const closeBtn = document.getElementById('close-badges-modal-btn');
   const modal = document.getElementById('badges-modal');
   const sortByDateBtn = document.getElementById('sort-badges-date');
   const sortByDexBtn = document.getElementById('sort-badges-dex');
+
+  // initBadgeCase() re-runs on every Firestore snapshot; bind listeners once.
+  if (isBadgeCaseInitialized) return;
+  isBadgeCaseInitialized = true;
 
   if (openBtn) {
     openBtn.addEventListener('click', openBadgeCase);

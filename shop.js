@@ -1,5 +1,6 @@
 import { state, saveState } from './state.js';
-import { POKEMON_MAP, EVOLUTIONS, getPokemonName, getPokemonShortName, EVOLVED_POKEMON_IDS, POKEMON_TYPES, LEGENDARY_POKEMON_IDS, RARE_POKEMON_IDS, getPokemonCost } from './pokemon_data.js';
+import { POKEMON_MAP, EVOLUTIONS, getPokemonName, getPokemonShortName, EVOLVED_POKEMON_IDS, POKEMON_TYPES, LEGENDARY_POKEMON_IDS, RARE_POKEMON_IDS, getPokemonCost, isBuyablePokemonId } from './pokemon_data.js';
+
 import { playSound } from './audio.js';
 
 // DOM elements
@@ -39,6 +40,15 @@ let holdProgressInterval = null;
 let holdStartTime = null;
 let HOLD_DURATION = (location.search.includes('runTests=true') || location.search.includes('headless=true')) ? 50 : 3000; // 3s, or 50ms for tests
 
+// Bind DOM listeners exactly once. initShop() is re-invoked on every Firestore
+// snapshot, so re-binding here would stack duplicate listeners on the shared
+// hold button and multiply a single press into N adoptions.
+let isShopInitialized = false;
+
+// Serializes grants: only one adoption may be in flight at a time.
+let isUnlockInFlight = false;
+
+
 let renderAppStateCallback = null;
 
 export function initShop(callbacks = {}) {
@@ -73,6 +83,11 @@ export function initShop(callbacks = {}) {
   animLockContainer = document.getElementById('anim-lock-container');
   animLockIcon = document.getElementById('anim-lock-icon');
 
+  // DOM references above are refreshed on every call (elements may be replaced
+  // by re-renders), but listeners must only ever be attached once.
+  if (isShopInitialized) return;
+  isShopInitialized = true;
+
   if (closeShopBtn) {
     closeShopBtn.addEventListener('click', closeShop);
   }
@@ -90,19 +105,24 @@ export function initShop(callbacks = {}) {
     shopSortSelect.addEventListener('change', showBrowse);
   }
 
-  // Setup hold-to-unlock gesture events
+  // Setup hold-to-unlock gesture events.
+  // NOTE: every handler here must be a named, stable function reference. The DOM
+  // only de-duplicates addEventListener when type + listener + capture all match,
+  // so an inline arrow would register a brand new listener on each call.
   if (holdBtn) {
     holdBtn.addEventListener('mousedown', startHold);
-    holdBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault(); // prevent mouse emulation
-      startHold();
-    });
+    holdBtn.addEventListener('touchstart', handleTouchStart);
 
     holdBtn.addEventListener('mouseup', cancelHold);
     holdBtn.addEventListener('mouseleave', cancelHold);
     holdBtn.addEventListener('touchend', cancelHold);
     holdBtn.addEventListener('touchcancel', cancelHold);
   }
+}
+
+function handleTouchStart(e) {
+  e.preventDefault(); // prevent mouse emulation
+  startHold();
 }
 
 export function openPokemonShop() {
@@ -296,6 +316,13 @@ function selectPokemon(id) {
 }
 
 function startHold() {
+  // Re-entrancy guard: if a hold is somehow already armed (duplicate listener,
+  // multi-touch, or a synthesized mouse event following a touch), tear it down
+  // first. Overwriting holdTimer without clearing it would orphan the previous
+  // timeout, which then fires unattended and grants a phantom Pokémon.
+  clearHoldTimers();
+
+  if (isUnlockInFlight) return;
   if (!selectedPokemonId) return;
   const cost = getPokemonCost(selectedPokemonId);
   const earnedCount = state.starVault.earnedDates.length;
@@ -312,7 +339,7 @@ function startHold() {
   holdTimer = setTimeout(completeUnlock, HOLD_DURATION);
 }
 
-function cancelHold() {
+function clearHoldTimers() {
   if (holdTimer) {
     clearTimeout(holdTimer);
     holdTimer = null;
@@ -321,6 +348,10 @@ function cancelHold() {
     clearInterval(holdProgressInterval);
     holdProgressInterval = null;
   }
+}
+
+function cancelHold() {
+  clearHoldTimers();
   if (holdStartTime) {
     playSound('uncheck');
   }
@@ -345,14 +376,26 @@ function updateHoldProgress() {
 }
 
 function completeUnlock() {
-  if (holdTimer) clearTimeout(holdTimer);
-  if (holdProgressInterval) clearInterval(holdProgressInterval);
-  holdTimer = null;
-  holdProgressInterval = null;
+  clearHoldTimers();
   holdStartTime = null;
 
   const id = selectedPokemonId;
   selectedPokemonId = null;
+
+  // A duplicate or stray timer can reach this point after the first unlock has
+  // already consumed selectedPokemonId. Granting on a null id used to mint a
+  // partner with familyId "null" (broken sprite) that diagnostics then rewrote
+  // to Pichu. Refuse anything that isn't a real, adoptable Pokémon.
+  if (!isBuyablePokemonId(id)) {
+    console.warn(`Shop: ignoring unlock for invalid Pokémon id '${id}'.`);
+    return;
+  }
+
+  if (isUnlockInFlight) {
+    console.warn('Shop: ignoring unlock, another adoption is already in flight.');
+    return;
+  }
+  isUnlockInFlight = true;
 
   triggerUnlockFlow(id);
 }
@@ -361,39 +404,68 @@ function triggerUnlockFlow(pokemonId) {
   const cost = getPokemonCost(pokemonId);
   
   playUnlockAnimation(pokemonId, cost, () => {
-    // Spend stars
-    state.starVault.totalTraded = (state.starVault.totalTraded || 0) + cost;
-    
-    const instanceId = `${pokemonId}_${Date.now()}`;
-    
-    if (!state.partnersData) state.partnersData = {};
-    state.partnersData[instanceId] = {
-      familyId: String(pokemonId),
-      level: 1,
-      xp: 0,
-      stageId: String(pokemonId)
-    };
-    
-    state.activePartnerInstanceId = instanceId;
-    state.partnerFamily = String(pokemonId);
-    
-    saveState();
-    
-    if (renderAppStateCallback) {
-      renderAppStateCallback(true);
-    }
+    try {
+      // Re-validate affordability at GRANT time. The balance was last checked
+      // when the hold began, several seconds of animation ago, and the active
+      // profile may even have changed since. Never let the vault go into debt.
+      const earnedCount = state.starVault.earnedDates.length;
+      const tradedCount = state.starVault.totalTraded || 0;
+      const remainingStars = Math.max(0, earnedCount - tradedCount);
+      if (remainingStars < cost) {
+        console.warn(`Shop: aborting adoption, only ${remainingStars} of ${cost} stars available at grant time.`);
+        return;
+      }
 
-    // Trigger visual feedback glow on main screen active partner sprite
-    const mainPokemonSprite = document.getElementById('pokemon-sprite');
-    if (mainPokemonSprite) {
-      mainPokemonSprite.classList.add('new-unlock-glow');
-      setTimeout(() => {
-        mainPokemonSprite.classList.remove('new-unlock-glow');
-      }, 3000); // 3 seconds total (2 bounce loop cycles)
+      // Spend stars
+      state.starVault.totalTraded = (state.starVault.totalTraded || 0) + cost;
+      
+      const instanceId = `${pokemonId}_${Date.now()}`;
+      
+      if (!state.partnersData) state.partnersData = {};
+      state.partnersData[instanceId] = {
+        familyId: String(pokemonId),
+        level: 1,
+        xp: 0,
+        stageId: String(pokemonId)
+      };
+      
+      state.activePartnerInstanceId = instanceId;
+      state.partnerFamily = String(pokemonId);
+      
+      saveState();
+      
+      if (renderAppStateCallback) {
+        renderAppStateCallback(true);
+      }
+
+      // Trigger visual feedback glow on main screen active partner sprite
+      const mainPokemonSprite = document.getElementById('pokemon-sprite');
+      if (mainPokemonSprite) {
+        mainPokemonSprite.classList.add('new-unlock-glow');
+        setTimeout(() => {
+          mainPokemonSprite.classList.remove('new-unlock-glow');
+        }, 3000); // 3 seconds total (2 bounce loop cycles)
+      }
+    } finally {
+      isUnlockInFlight = false;
+      closeShop();
     }
-    
-    closeShop();
   });
+}
+
+/**
+ * Tears down any in-progress adoption. Called when switching child profiles so
+ * a hold or animation started by one child can never resolve into another
+ * child's save file.
+ */
+export function resetShopSession() {
+  clearHoldTimers();
+  holdStartTime = null;
+  selectedPokemonId = null;
+  isUnlockInFlight = false;
+  resetHoldProgress();
+  if (animOverlay) animOverlay.classList.add('hidden');
+  if (shopModal) shopModal.classList.add('hidden');
 }
 
 function getAnimDuration(baseMs) {
