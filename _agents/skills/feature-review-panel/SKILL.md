@@ -16,6 +16,17 @@ When evaluating any proposed feature, UI enhancement, gamification mechanic, or 
 
 This review process follows a strict, sequential pipeline to eliminate wasteful engineering rework, protect child motivation, ensure real-world family harmony, and ruthlessly eliminate technical debt.
 
+> [!NOTE]
+> **When to convene the panel:** new features, new game mechanics, changes to the
+> reward or XP economy, anything a child sees or touches, schema changes, and any
+> PRD in `docs/`.
+>
+> **When to skip it:** typo and copy fixes, single-line bug fixes, refactors with
+> no user-visible change, test-only changes, and documentation edits. Running the
+> full five stages on a one-line fix wastes a session. If only one stage is
+> genuinely relevant, say so and run that stage alone.
+
+
 ---
 
 ## 1. The Optimal Review Sequence (The Funnel of Certainty)
@@ -92,13 +103,13 @@ Reviews must **always** execute in this exact 5-stage sequence:
 ### Stage 4: Senior Staff UX Designer (Sensory & Layout Architecture)
 *   **Target Standards**: [`_agents/rules/ux-guidelines.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/_agents/rules/ux-guidelines.md).
 *   **Core Responsibilities**:
-    - **Strict UX Guidelines Compliance**:
-      - Rule 4 & 8: Zero inline `style="..."` attributes; all dimensions and responsive heights in `style.css`.
-      - Rule 5: Transparent scrollbar tracks on rounded containers (`.modal-content`).
-      - Rule 10 & 11: Tonal matching microcopy (`"Awesome! 🌟"`) and zero orphan emojis.
-      - Rule 12: Standardized spacing rhythm (pure flex `gap: 12px`, zero mixed margins, `0 4px 0` shadow compensation).
-      - Rule 13.C: Strict Zero Horizontal Scroll policy on desktop/tablet ($\ge 768\text{px}$) and sandboxed scrolling on mobile.
-      - Rule 17: Spatial separation of Parent Domain (bottom dock) vs. Child Domain (top mini-HUD).
+    - **Strict UX Guidelines Compliance** (cited by name — rule numbers shift when rules are added or removed):
+      - *Zero Inline Styles for Modal Containers* and *Multi-Column Dashboard Modals*: no inline `style="..."`; all dimensions and responsive heights in `style.css`.
+      - *Keep Scrollbar Tracks Transparent for Rounded Containers*: `.modal-content` and friends.
+      - *Avoid Awkward Text Wrapping* and *Tonal Matching & Action-Oriented CTA Microcopy*: no orphan emojis; celebratory copy only for genuine wins.
+      - *Standardized Spacing Rhythm & Shadow Compensation*: pure flex `gap`, never mixed margins, `0 4px 0` shadow compensation.
+      - *Responsive Viewport Policy* (Weekly Grid rules §C): zero horizontal scroll at ≥768px, sandboxed horizontal scroll below it.
+      - *Persistent Mode Toolbars & Floating Dock Hierarchy*: Parent Domain at the bottom, Child Domain (mini-HUD) at the top.
     - **Tactile Ergonomics**: Minimum $42\text{px} - 48\text{px}$ touch targets, active tap depression states (`transform: translateY(2px)`).
     - **Visual Hierarchy & Contrast**: WCAG 2.1 AAA contrast ratios on colorful elemental/Pikachu yellow backgrounds.
 *   **Gate Verdict**: **Pass** (UX Guidelines 100% compliant) or **Red-Flag** (Layout risk, contrast failure, or inline style violation).
@@ -106,7 +117,7 @@ Reviews must **always** execute in this exact 5-stage sequence:
 ---
 
 ### Stage 5: Senior Staff Engineer & Chaos Architect (Technical Gatekeeper & Tech Debt Killer)
-*   **Target Systems**: `state.js` (Schema V18+), `app.js`, `style.css`, `service-worker.js`, `tests.js`, `run_headless_tests.js`.
+*   **Target Systems**: `state.js` (check the current schema version in the latest checkpoint — do not assume), `app.js`, `style.css`, `service-worker.js`, `tests.js`, `run_headless_tests.js`.
 *   **Core Responsibilities**:
     1. **Tech Debt & Complexity Control (Occam's Razor)**:
        - **Over-Engineering Radar**: Is this solving a 10-line UI need with an unnecessary 200-line framework or redundant state machine?
@@ -152,7 +163,7 @@ When executing this skill, output the review using this structured synthesis:
 - **Verdict**: [PASS / CONCERN]
 
 ### Stage 4: 🎨 Senior Staff UX Designer
-- **UX Guidelines Compliance**: [Audit against Rules 4, 5, 8, 10, 11, 12, 13.C, 17]
+- **UX Guidelines Compliance**: [Audit against the named rules in `_agents/rules/ux-guidelines.md`]
 - **Tactile Ergonomics & Contrast**: [Touch targets and contrast]
 - **Verdict**: [PASS / CONCERN]
 

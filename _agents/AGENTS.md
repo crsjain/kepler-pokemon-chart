@@ -312,13 +312,43 @@ Two that get violated most often:
 
 ---
 
+### 6.5 Which skill to use
+
+| Situation | Use | Notes |
+| :--- | :--- | :--- |
+| Proposing a feature, UI change, or game mechanic | **`feature-review-panel`** | 5-stage funnel. Skip it for typos, one-line fixes, and doc-only edits. |
+| Pressure-testing a PRD in `docs/` | **`feature-review-panel`** | Same panel — Stage 1–3 carry most of the value for a PRD. |
+| Ending a work session | **`pokemon-session-wrapup`** | Cache check → tests → README → checkpoint → commit → merge to `main`. **The only sanctioned way to push.** |
+| Trying something throwaway | *No skill* — just commit locally | Your dev branch is already the safe space; `git checkout -- .` discards. |
+
+Both live in `_agents/skills/`, so they load only in this workspace.
+
+> [!NOTE]
+> **Retired 2026-09-23** — moved to `~/.gemini/config/skills/_archived/` (two
+> levels deep, so outside the one-level discovery scan). Don't reinstate without
+> fixing the underlying problem:
+>
+> - **`sandbox-prototype`** — hardcoded `git checkout main` and merged there.
+>   `main` is the production/deploy branch, so it would have pushed experiments
+>   live, bypassing `prototype/pokemon-badge-collection`.
+> - **`prd-review-panel`** — a Google Launch Cal simulator (Legal/Privacy/
+>   Security/Buganizer). Wrong domain for a family chore chart, and it read a
+>   `context-library/` directory that doesn't exist. It also competed with
+>   `feature-review-panel` for the same requests.
+> - **global `session-wrapup`** — superseded by the repo-scoped copy. The old one
+>   asked the user to run tests manually in a browser and picked the next
+>   checkpoint number by lexical sort, which could overwrite an existing file.
+
+
+---
+
 ## 7. Git policy
 
 - Work on `prototype/pokemon-badge-collection`. Confirm with
   `git branch --show-current` before starting.
 - Commit locally as you go. **Never push mid-session.**
 - Pushing and the merge to `main` (which deploys GitHub Pages) happen only via the
-  `session-wrapup` skill at the end of a session.
+  `pokemon-session-wrapup` skill at the end of a session.
 
 ---
 
@@ -328,7 +358,7 @@ When wrapping up, the established pattern is: update `README.md` if features
 changed, write the next `docs/checkpoint_NN.md` (following the existing six-section
 structure — Outstanding Requests incl. **Known Follow-ups**, Metadata, Active
 Schema, Work Accomplished, Files and Code, Validation Instructions), then commit
-and deploy. Use the `session-wrapup` skill; don't improvise the push.
+and deploy. Use the `pokemon-session-wrapup` skill; don't improvise the push.
 
 ## 9. Agent customizations in this repo
 
