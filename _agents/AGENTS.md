@@ -12,6 +12,69 @@ Verify with `pwd` before editing. Working branch: `prototype/pokemon-badge-colle
 
 ---
 
+## 0. Session start protocol
+
+Run this **only** when the user asks to start, initialize, or resume a session.
+Skip it for one-off questions and follow-up turns.
+
+Work through it autonomously. **Self-heal** anything in the first list without
+asking. **Stop and ask** only for a hard gate.
+
+### Self-heal — fix these silently, then report in one line each
+
+1. **Location.** Confirm the working directory is
+   `/usr/local/google/home/crsjain/kepler-pokemon-chart`. If a command lands
+   elsewhere, use absolute paths rather than guessing.
+2. **Load-check against this manifest.** These should be in your context
+   automatically. For each one that is *not*, read it with `view_file` now.
+   Discovery can fail silently, so never assume — check, then fall back.
+
+   | Expected | Fallback if absent |
+   | :--- | :--- |
+   | `_agents/AGENTS.md` (this file) | read it |
+   | `_agents/rules/ux-guidelines.md` | read it in full before any UI work |
+   | `_agents/skills/feature-review-panel/SKILL.md` | note the path; read on demand |
+
+3. **Branch.** Run `git branch --show-current`. If it is not
+   `prototype/pokemon-badge-collection` **and** `git status --porcelain` is
+   empty, switch with `git checkout prototype/pokemon-badge-collection` and say
+   so. If the tree is dirty, that is a hard gate.
+4. **Checkpoint.** `ls docs/checkpoint_*.md | sort -V | tail -1`. Parse the
+   number as an integer. If it is below 55 the sort misfired — re-derive by
+   extracting integers and taking the max. Read the winner with `view_file`.
+5. **Local server.** The headless suite does *not* start one.
+   `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/index.html`
+   If that is not `200`, start `python3 -m http.server 8000` in the background
+   before testing.
+6. **Test numbering audit.** `grep` is blocked as a shell command here, so use:
+   ```bash
+   node -e "const m=[...require('fs').readFileSync('tests.js','utf8').matchAll(/Running Test Case (\d+)/g)].map(x=>+x[1]);const s=[...m].sort((a,b)=>a-b);const d=[...new Set(s.filter((v,i)=>s[i+1]===v))];console.log('blocks:'+m.length,'unique:'+new Set(m).size,'dupes:'+(d.join(',')||'none'))"
+   ```
+   `dupes:12` is expected. Any other duplicate is a defect — report it, don't fix
+   it unasked.
+7. **Test suite.** `node run_headless_tests.js`. Expect 100% green in ~17–25s.
+
+### Hard gates — stop and ask
+
+- The checkpoint number is still below 55 after re-deriving.
+- The working tree has changes you did not make (report them; never stash,
+  revert, or commit them on your own).
+- The branch is wrong *and* the tree is dirty.
+- The test suite fails, hangs, or exceeds ~60s. Report the failing test; do not
+  start fixing unless asked.
+- Any manifest file above is missing from disk entirely.
+
+### Then report
+
+- 📌 Branch, checkpoint number loaded, tree clean or dirty
+- 🧪 Test result (pass count + wall-clock)
+- 🔧 Anything you self-healed (or "nothing")
+- 📑 Top 2–3 items from the checkpoint's **Known Follow-ups** (say "none listed"
+  rather than inferring)
+- 🚀 Suggested first task
+
+---
+
 ## 1. Start every session from the latest checkpoint
 
 `docs/` holds numbered checkpoints that are the real project memory — far more
@@ -32,6 +95,36 @@ schema version, the current cache/asset versions, and validation steps.
 
 Older context also lives in `.gemini/handoffs/` (two session handoff docs,
 including the Sept 2026 "do not refactor" assessment).
+
+### Reference documents
+
+Checkpoints tell you *what changed last*. These tell you *why a subsystem works
+the way it does*. Read the relevant one before modifying its area — they encode
+decisions that are expensive to rediscover.
+
+| Doc (`docs/`) | Covers |
+| :--- | :--- |
+| `prd_star_vault.md` | Star Vault & streak economy (yellow→silver→blue→prism tiers) |
+| `prd_badge_collection.md` | Weekly Gym Badge collection and the badge case |
+| `prd_historical_weeks.md` | Adaptive week scheduling, modal design system, grid state spec (v3.0) |
+| `plan_historical_weeks.md` | Implementation plan for dynamic week boundaries & archiving (v2.1) |
+| `prd_column_state_machine.md` | The 8-state column state machine & visual hierarchy |
+| `plan_header_refactoring.md` | Refactoring plan behind that state machine |
+| `prd_rest_day_passes_and_bonus_tasks.md` | Rest passes 💤, bonus tasks ✨, Great Ball, icon states |
+| `prd_parent_past_day_approval.md` | Parent approval + timed grace window for past-day edits |
+| `prd_legendary_evolutions.md` | Mega and branching evolutions (Eevee, Onix→Steelix) |
+| `prd_alternating_activity_pairs.md` | Alternating activity pairs & dynamic schedule swapping |
+| `prd_kindness_quests.md` | Kindness Quests & partner berry feeding |
+| `prd_admin_panel_redesign.md` | **Seed, v0.1.0** — parent admin left-nav redesign, not yet specced |
+| `refactoring_assessment_2026_09_12.md` | Why the codebase is deliberately *not* being refactored |
+
+Manual/verification guides: `test_plan_pokemon_shop_evolutions.md`,
+`test_plan_rest_day_passes_and_bonus_tasks.md`,
+`test_plan_unearned_badge_and_reward_carryover.md`,
+`manual_test_guide_adaptive_weeks.md`.
+
+UX rules live separately in `_agents/rules/ux-guidelines.md` (see §6.3).
+
 
 ---
 
@@ -150,13 +243,12 @@ Other harnesses: `node run_migration_test.js`, `node run_verify_all.js`,
 
 ### Test numbering discipline
 
-Test numbers must stay unique:
+Test numbers must stay unique. Use the node audit in §0 step 6 — `grep` is
+blocked as a shell command in this environment, so the old
+`grep -oE … | uniq -d` pipeline will not run.
 
-```bash
-grep -oE "Running Test Case [0-9]+" tests.js | grep -oE "[0-9]+" | sort -n | uniq -d
-```
-
-Current state (verified): 73 test blocks, 72 unique numbers, range 11–85.
+Counts drift as tests are added, so don't hardcode them — run the audit.
+The durable invariant is that
 `12` is the **only** expected duplicate (`Test Case 12` / `12 part 2` — one
 migration feature split into two phases). Anything else printed by that command is
 a bug. Numbers **40, 43, 44** are deliberate historical gaps — do not backfill them;
