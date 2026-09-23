@@ -27,7 +27,7 @@ An in-depth technical assessment of the `kepler-pokemon-chart` repository confir
 
 | Metric | Sept 12, 2026 (original) | **Sept 23, 2026 (measured)** |
 | :--- | :--- | :--- |
-| Test suite | 77/77 passing, ~17 s | **83 blocks / 76 numbered cases, 100% green, ~25 s** |
+| Test suite | 77/77 passing, ~17 s | **76 blocks / 75 unique numbers, 100% green, ~25–30 s** |
 | `app.js` | 4,259 lines | **4,487 lines** |
 | `style.css` | ~5,900 lines | **6,183 lines** |
 | `tests.js` | 6,330 lines | **7,601 lines** |
@@ -117,7 +117,15 @@ The application intentionally uses native browser features without a JavaScript 
 - The UI runs at a consistent 60fps on mobile and tablet browsers.
 - The 1.5-second debounced cloud synchronization (`debounceWithFlush`) bundles rapid checkbox taps into a single Firestore write, preventing network thrashing.
 - Checkbox toggles trigger targeted updates (`updateGridCheckboxes()`) without destroying or rebuilding DOM nodes.
-- Total headless test execution across all 83 test blocks takes **~25 seconds** (re-measured Sept 23; was reported as ~17 s).
+- Total headless test execution across all 76 test blocks takes **~25–30 s** (four runs on Sept 23 measured 23.2 s, 25 s, 26.3 s and 29.6 s). Previously reported as ~17 s.
+
+> [!NOTE]
+> Checkpoint 57 recorded "83 test blocks," which was also wrong. The audit
+> command yields **76 blocks / 75 unique numbers** (range 11–39, 41–42, 45–88,
+> with 40/43/44 as deliberate historical gaps and `12` the one expected
+> duplicate). Notably, the *numbering range* Checkpoint 57 quoted sums to exactly
+> 75 — so only the headline count was bad. Another instance of a figure being
+> carried forward instead of measured.
 
 #### Measured attribution of a ~26 s run (Sept 23, 2026)
 
