@@ -53,6 +53,11 @@ asking. **Stop and ask** only for a hard gate.
    `dupes:12` is expected. Any other duplicate is a defect — report it, don't fix
    it unasked.
 7. **Test suite.** `node run_headless_tests.js`. Expect 100% green in ~17–25s.
+8. **Commit identity.** `git config --get user.email` must return
+   `crsjain@gmail.com` (this repo pushes to public GitHub — see §7). If it
+   returns the corp address or nothing, the `.git/config` override was lost to a
+   re-clone; restore it with the two `git config --local` commands in §7 and say
+   so. Never set it globally.
 
 ### Hard gates — stop and ask
 
@@ -349,6 +354,37 @@ Both live in `_agents/skills/`, so they load only in this workspace.
 - Commit locally as you go. **Never push mid-session.**
 - Pushing and the merge to `main` (which deploys GitHub Pages) happen only via the
   `pokemon-session-wrapup` skill at the end of a session.
+
+### Commit identity
+
+This repo pushes to **public** GitHub (`git@github.com:crsjain/kepler-pokemon-chart.git`),
+so it commits under a personal identity, not the corp one. Configured
+2026-09-23:
+
+| Scope | Identity | Applies to |
+| :--- | :--- | :--- |
+| **Local** (this repo) | `crsjain <crsjain@gmail.com>` | all commits here |
+| **Global** (cloudtop) | `Christina Jain <crsjain@google.com>` | google3 and other work repos |
+
+> [!IMPORTANT]
+> `.git/config` is **not version-controlled**, so the local override is lost on a
+> fresh clone. If `git config --get user.email` in this repo returns anything
+> other than `crsjain@gmail.com`, restore it before committing:
+>
+> ```bash
+> git config --local user.name  "crsjain"
+> git config --local user.email "crsjain@gmail.com"
+> ```
+>
+> Do **not** set the personal identity globally — that would leak it into
+> google3 and other work repos on this machine.
+
+Historical note: commits before 2026-09-23 have no explicit identity and were
+auto-derived from username/hostname, which is why history contains 169 commits
+as `Christina Jain <crsjain@google.com>` alongside 11 as
+`crsjain <crsjain@gmail.com>`. This is not being rewritten — the repo is
+deployed, and rewriting published history would be more disruptive than the
+inconsistency.
 
 ---
 
