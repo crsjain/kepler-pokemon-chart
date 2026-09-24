@@ -2294,6 +2294,32 @@ export function triggerShowcaseCheer() {
 }
 
 function setupEventListeners() {
+  // Registration order is load-bearing: several handlers depend on
+  // document-level click-outside behaviour and stopPropagation ordering.
+  // Keep these calls in this exact sequence.
+  bindProfileSwitchEvents();
+  bindGridBodyEvents();
+  bindRewardSelectEvents();
+  bindWeekResetEvents();
+  bindExceptionModeEvents();
+  bindWeekNavigationEvents();
+  bindPartnerModalEvents();
+  bindPartnerShowcaseEvents();
+  bindDayHeaderEvents();
+  bindDebugTestEvents();
+  bindDebugVaultEvents();
+  bindDebugBadgeEvents();
+  bindDebugSidebarToggle();
+  bindWeekStartDayEvents();
+  bindAdminSettingsEvents();
+  bindRewardsEditorEvents();
+  bindMobileStickyHudEvents();
+}
+
+/**
+ * Profile switcher button and click-outside dismissal of the profile modal.
+ */
+function bindProfileSwitchEvents() {
   // Switch Profile Action
   if (switchProfileBtn) {
     switchProfileBtn.addEventListener('click', () => {
@@ -2320,6 +2346,12 @@ function setupEventListeners() {
       }
     });
   }
+}
+
+/**
+ * Delegated checkbox/click handling on the weekly grid body.
+ */
+function bindGridBodyEvents() {
   const tbody = document.getElementById('grid-tbody');
   if (tbody) {
     tbody.addEventListener('change', (e) => {
@@ -2329,7 +2361,12 @@ function setupEventListeners() {
     });
     tbody.addEventListener('click', handleGridClick);
   }
+}
 
+/**
+ * Weekly and mega reward dropdown selection.
+ */
+function bindRewardSelectEvents() {
   rewardSelect.addEventListener('change', () => {
     state.reward = rewardSelect.value;
     addRewardToHistory(state.reward, 'weekly');
@@ -2343,7 +2380,12 @@ function setupEventListeners() {
     saveState();
     renderRewardDropdowns();
   });
+}
 
+/**
+ * Reset Training Grid button and its confirmation modal.
+ */
+function bindWeekResetEvents() {
     if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       if (resetBtn.disabled || !canStartNextWeek(state, currentViewingWeekStartDate)) {
@@ -2373,7 +2415,13 @@ function setupEventListeners() {
       );
     });
   }
+}
 
+/**
+ * Parent Exception Mode enter/exit, plus the global Escape key handler
+ * that dismisses the showcase modal or leaves exception mode.
+ */
+function bindExceptionModeEvents() {
   if (exceptionsBtn) {
     exceptionsBtn.addEventListener('click', startExceptionMode);
   }
@@ -2393,6 +2441,12 @@ function setupEventListeners() {
       }
     }
   });
+}
+
+/**
+ * Previous/next historical week navigation.
+ */
+function bindWeekNavigationEvents() {
   if (prevWeekBtn) {
     prevWeekBtn.addEventListener('click', () => {
       const intervals = getHistoricalWeekIntervals(state, currentViewingWeekStartDate);
@@ -2418,8 +2472,12 @@ function setupEventListeners() {
       }
     });
   }
+}
 
-
+/**
+ * Change Partner modal open/close.
+ */
+function bindPartnerModalEvents() {
   if (changePartnerBtn) {
     changePartnerBtn.addEventListener('click', () => {
       renderPartnerSelector();
@@ -2432,7 +2490,12 @@ function setupEventListeners() {
       partnerModal.classList.add('hidden');
     });
   }
+}
 
+/**
+ * Partner Showcase modal: sprite activation, close buttons, cheer, backdrop.
+ */
+function bindPartnerShowcaseEvents() {
   // Partner Showcase Modal listeners
   if (pokemonSpriteWrapper) {
     pokemonSpriteWrapper.addEventListener('click', openPartnerShowcaseModal);
@@ -2465,7 +2528,13 @@ function setupEventListeners() {
       }
     });
   }
+}
 
+/**
+ * Weekly grid day-header clicks, including the parent approval gate for past
+ * days, Back to Today, and the parent grace lock button.
+ */
+function bindDayHeaderEvents() {
   // Header day clicks
   const headers = document.querySelectorAll('.day-header');
   headers.forEach(th => {
@@ -2553,7 +2622,12 @@ function setupEventListeners() {
       clearParentGrace({ revertToToday: true });
     });
   }
+}
 
+/**
+ * Debug sidebar test shortcuts (milestones, evolution, level up, week jumps).
+ */
+function bindDebugTestEvents() {
   // Admin Panel modal events are handled inside admin.js
 
   testMilestoneMinusOneBtn.addEventListener('click', () => {
@@ -2591,8 +2665,12 @@ function setupEventListeners() {
       renderDebugSidebarVisibility();
     });
   }
+}
 
-
+/**
+ * Debug sidebar Star Vault manipulation buttons.
+ */
+function bindDebugVaultEvents() {
   const addTodayBtn = document.getElementById('debug-vault-add-today');
   if (addTodayBtn) {
     addTodayBtn.addEventListener('click', () => {
@@ -2672,7 +2750,12 @@ function setupEventListeners() {
       renderState(false);
     });
   }
+}
 
+/**
+ * Debug sidebar badge collection buttons.
+ */
+function bindDebugBadgeEvents() {
   // Badge Debug Buttons
   const addBadgeBtn = document.getElementById('debug-badge-add-random');
   if (addBadgeBtn) {
@@ -2721,7 +2804,12 @@ function setupEventListeners() {
       }
     });
   }
+}
 
+/**
+ * Admin toggle that shows or hides the debug sidebar.
+ */
+function bindDebugSidebarToggle() {
   if (toggleDebugSidebar) {
     toggleDebugSidebar.addEventListener('change', () => {
       state.debugSidebarEnabled = toggleDebugSidebar.checked;
@@ -2729,7 +2817,13 @@ function setupEventListeners() {
       renderDebugSidebarVisibility();
     });
   }
+}
 
+/**
+ * Admin week-start-day change: Case A (future shift, pending schedule) and
+ * Case B (immediate shift with archive into weeklyHistory).
+ */
+function bindWeekStartDayEvents() {
   if (adminWeekStartSelect) {
     adminWeekStartSelect.addEventListener('change', () => {
       const newStartDay = parseInt(adminWeekStartSelect.value);
@@ -2894,9 +2988,12 @@ function setupEventListeners() {
       );
     });
   }
+}
 
-
-
+/**
+ * Admin settings: idle timeout, parent grace window, past-day lock, timezone.
+ */
+function bindAdminSettingsEvents() {
   if (adminIdleTimeoutSelect) {
     adminIdleTimeoutSelect.addEventListener('change', () => {
       state.idleTimeout = parseInt(adminIdleTimeoutSelect.value);
@@ -2940,7 +3037,12 @@ function setupEventListeners() {
       showCustomNotification("Timezone Updated 🌐", `App timezone set to ${tzText}.`);
     });
   }
+}
 
+/**
+ * Edit Rewards modal: add weekly/mega reward, cancel, and cloud save.
+ */
+function bindRewardsEditorEvents() {
   if (addWeeklyRewardBtn) {
     addWeeklyRewardBtn.addEventListener('click', () => {
       const val = newWeeklyRewardInput.value.trim();
@@ -3028,7 +3130,12 @@ function setupEventListeners() {
       }
     });
   }
+}
 
+/**
+ * Mobile sticky mini-HUD click-to-top and its IntersectionObserver.
+ */
+function bindMobileStickyHudEvents() {
   // Mobile Sticky HUD Setup
   const miniHud = document.getElementById('mini-hud');
   const trainerCard = document.querySelector('.trainer-card');
