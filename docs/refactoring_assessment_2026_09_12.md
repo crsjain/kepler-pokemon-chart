@@ -110,6 +110,8 @@ A common myth is that "micro-files (100–200 lines) are easier for AI coding as
 ### Pillar 2: Architectural Reality of a Vanilla PWA
 The application intentionally uses native browser features without a JavaScript bundler (no Webpack, Vite, or Rollup):
 - **Native ES Module Traps:** In native browser `<script type="module">`, circular dependencies throw fatal runtime errors (`ReferenceError: Cannot access 'X' before initialization`). Splitting `app.js` into interconnected modules that share `state`, `playSound()`, `showCustomConfirm()`, and `renderState()` creates immediate circular dependency hazards.
+  > [!NOTE]
+  > **Corrected Sept 24, 2026 (Checkpoint 61).** The hazard is real but *conditional*: it only bites if an extracted module imports from `app.js`. Verified at `8a3e0e7`: **no module imports `app.js`**, statically or dynamically. The repo already has a working mitigation. `admin.js` receives `showCustomConfirm`, `showCustomNotification`, `renderState` and the cloud/wipe functions through **callback injection** (`initAdmin(appCallbacks)`, [`admin.js:13`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/admin.js#L13), wired at [`app.js:1003`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/app.js#L1003)), and `shop.js` uses the same `initShop(callbacks)` shape. The only outside consumer of an `app.js` export is `tests.js`, via `window.__test_helpers__`. Extraction risk therefore lives in **reassigned module-level `let`s** (ESM importers cannot reassign imported bindings) and **test mock seams**, not in the import graph.
 - **Service Worker & Cache Invalidation:** The app relies on `service-worker.js` caching (`ASSETS_TO_CACHE`) and query-string cache busting (`style.css?v=X.XX`, `app.js?v=X.XX`) for offline tablet usage. Every additional split file increases the risk of stale cache mismatches and offline white-screen failures.
 - **Cascade Specificity in CSS:** `style.css` (6,183 lines) has carefully tuned cascade specificity for modal overrides and responsive breakpoints. Splitting into multiple files with `@import` risks cascade order anomalies and increases initial page load latency.
 
@@ -277,11 +279,11 @@ any extraction. Functional clusters, brace-matched:
 | :--- | ---: | ---: | :--- |
 | `setupEventListeners` (single function) | **764** | 1 | ⚠️ **Split in place — see 6.3** |
 | Grid / cell / column core | 679 | 9 | ✅ **Keep.** This is the heart of the app |
-| Reward admin (drag, edit, list) | 314 | 6 | 🔶 Extraction candidate |
+| Reward admin (drag, edit, list) | ~~314~~ **373** | ~~6~~ **5** | 🔶 Extraction candidate — boundary corrected in 6.4 |
 | `initFirebaseUI` (single function) | 313 | 1 | 🔶 Extraction candidate |
 | XP / level / celebration | 277 | 7 | ✅ Keep — tightly coupled to the grid |
 | Profile management | 258 | 4 | 🔶 Weak candidate |
-| Modal helpers | 185 | 6 | ✅ **Keep.** `showCustomConfirm` / `showCustomNotification` are imported repo-wide |
+| Modal helpers | 185 | 6 | ✅ **Keep.** `showCustomConfirm` / `showCustomNotification` are ~~imported repo-wide~~ *injected* into `admin.js` via `appCallbacks` (corrected Sept 24) |
 
 ### 6.3 Highest-value cleanup: split `setupEventListeners` *in place*
 
@@ -309,10 +311,19 @@ Verified properties that make it safe:
 
 Only if Trigger 1c (context-window tax) actually fires. In priority order:
 
-1. **Reward admin → `rewards_admin.js` (~314 lines).** Parent-facing, not
-   kid-facing; the cleanest true domain seam left. Caveat:
-   `renderRewardDropdowns` is currently exported, so the import graph needs
-   checking first.
+1. **Reward editor → `rewards_admin.js` (~373 lines).** Parent-facing, not
+   kid-facing; the cleanest true domain seam left. *Boundary corrected Sept 24
+   (Checkpoint 61):* `renderRewardDropdowns`, its helper `populateSelect`, and
+   `addRewardToHistory` are **kid-facing** (main-screen reward dropdowns) and
+   stay in `app.js`, so the old "it's exported" caveat disappears. The real
+   cluster is `openEditRewardsModal`, `renderEditRewardsLists`,
+   `renderRewardList`, `bindRewardDragEvents` **and `bindRewardsEditorEvents`**
+   (previously omitted), in two places (L3049–3137, L4028–4314). Its five
+   mutable `let`s (L359–363) are referenced nowhere else, so they move with it;
+   `profilesList` / `activeProfileId` are passed as getters, and
+   `saveProfileRewardsToCloudFn` stays in `app.js` behind a late-binding arrow so
+   `setSaveProfileRewardsMock` survives. Full plan:
+   [`prd_admin_panel_redesign.md` §7](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/docs/prd_admin_panel_redesign.md).
 2. **`initFirebaseUI` → alongside `firebase.js` (~313 lines).** One self-contained
    function, not exported, called once at
    [`app.js:1020`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/app.js#L1020).
@@ -328,8 +339,10 @@ layer-based split.
 > **Do not extract the grid/cell/column core or the modal helpers.** The grid
 > cluster is the application's reason for existing and is densely interconnected
 > with XP and rendering. `showCustomConfirm` / `showCustomNotification` are
-> imported across the repo — relocating them is a guaranteed circular-dependency
-> incident for zero gain.
+> ~~imported across the repo~~ owned by `app.js` and *injected* into `admin.js`
+> (corrected Sept 24). Relocating them gains nothing, and moving them to a module
+> that other modules then import would create the very import coupling the
+> injection pattern avoids.
 
 ### 6.5 The durable rule
 
@@ -345,6 +358,19 @@ natural moment to take the reward-admin cluster (6.4 #1) with it.
 ---
 
 ## 7. Revision History
+
+### September 24, 2026 (Checkpoint 61) — import-graph claim corrected
+
+**Verdict unchanged.** Spec session for the Admin Panel Redesign re-checked the
+extraction premises:
+
+- **"Imported repo-wide" was wrong.** No module imports `app.js`. `admin.js` and
+  `shop.js` receive app functions via callback injection. Pillar 2, §6.2 and the
+  §6.4 warning are annotated in place.
+- **§6.4 #1 cluster boundary was wrong.** Two of the six listed functions are
+  kid-facing and one editor function was missing. Corrected to 5 functions /
+  ~373 lines. Extraction is recommended as an optional, separate, pure-move commit
+  inside the redesign's implementation phase — see the PRD §7.
 
 ### September 23, 2026 (Checkpoint 57) — metrics re-measured, Trigger 1 retired
 
