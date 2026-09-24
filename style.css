@@ -5542,6 +5542,24 @@ body.has-banner .mini-hud.visible {
   line-height: 1.35;
 }
 
+/* Keeps dates / date ranges on one line inside schedule copy (was inline style) */
+.nowrap-text {
+  white-space: nowrap;
+}
+
+/* "Revert to <day>" button inside the pending-schedule status pill (was inline style) */
+.pixel-btn.admin-revert-schedule-btn {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  padding: 6px 10px;
+  width: 100%;
+  text-align: center;
+  background: #e2e8f0;
+  color: #1e293b;
+  border-color: #94a3b8;
+  font-family: 'Fredoka One', cursive;
+}
+
 /* Confirmation Date Badges & Transition Callouts */
 /* Schedule Summary Hero Card */
 .schedule-hero-card {

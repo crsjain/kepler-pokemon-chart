@@ -62,7 +62,7 @@ Then:
 node run_headless_tests.js
 ```
 
-**Gate:** must be 100% green. Expect ~17–25s; investigate if it exceeds ~60s or
+**Gate:** must be 100% green. Expect ~23–30s; investigate if it exceeds ~60s or
 hangs. Do not proceed to commit with a failing suite.
 
 ## 5. Update the README
@@ -170,7 +170,14 @@ application. **Use this block to initialize your next pair-programming session.*
 
 1. `git status` — review before staging. Do not stage files you did not touch
    without flagging them.
-2. `git add -A` (the new checkpoint in `docs/` is included).
+2. Stage **explicit paths** — the files you changed plus the new checkpoint:
+   ```bash
+   git add app.js style.css index.html service-worker.js docs/checkpoint_<N>.md   # adjust to your changes
+   ```
+   Do **not** use `git add -A` / `git commit -a`. On 2026-09-23 a wrap-up that
+   used `git add -A` swept a *concurrent* Jetski session's uncommitted `app.js`
+   into a "docs-only, no JS changed" commit with no cache bump. After staging,
+   `git diff --cached --stat` must list only files you touched.
 3. Commit with a descriptive message:
    ```bash
    git commit -m "feat: <summary of work> and checkpoint <N>"

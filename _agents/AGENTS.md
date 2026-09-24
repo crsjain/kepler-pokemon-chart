@@ -52,7 +52,7 @@ asking. **Stop and ask** only for a hard gate.
    ```
    `dupes:12` is expected. Any other duplicate is a defect — report it, don't fix
    it unasked.
-7. **Test suite.** `node run_headless_tests.js`. Expect 100% green in ~17–25s.
+7. **Test suite.** `node run_headless_tests.js`. Expect 100% green in ~23–30s.
 8. **Commit identity.** `git config --get user.email` must return
    `crsjain@gmail.com` (this repo pushes to public GitHub — see §7). If it
    returns the corp address or nothing, the `.git/config` override was lost to a
@@ -138,13 +138,13 @@ UX rules live separately in `_agents/rules/ux-guidelines.md` (see §6.3).
 This repo has a few files big enough to blow a context window. Always grep or
 read line ranges; never dump them whole.
 
-| File | Lines | Notes |
+| File | Lines (≈, Sept 2026) | Notes |
 | :--- | ---: | :--- |
-| `tests.js` | 7,396 | The entire regression suite. **Never read whole.** |
-| `style.css` | 6,183 | All styling. Grep by class name. |
-| `app.js` | 4,479 | Main controller. Grep by function name. |
-| `pokemon_data.js` | 1,084 | Static Pokédex tables. |
-| `index.html` | 902 | Single page, all modal markup inline. |
+| `tests.js` | 7,600 | The entire regression suite. **Never read whole.** |
+| `style.css` | 6,200 | All styling. Grep by class name. |
+| `app.js` | 4,600 | Main controller. Grep by function name. |
+| `pokemon_data.js` | 1,100 | Static Pokédex tables. |
+| `index.html` | 900 | Single page, all modal markup inline. |
 | `firebase-debug.log` | ~15 MB | **Never read.** Gitignored emulator noise. |
 | `firestore-debug.log` | ~3 MB | **Never read.** Gitignored emulator noise. |
 
@@ -177,8 +177,12 @@ Key entry points:
 
 - [`app.js`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/app.js) —
   bootstraps the app, renders the weekly grid, owns the column state machine and
-  all modal helpers. Exports [`showCustomConfirm`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/app.js#L1061)
-  and [`showCustomNotification`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/app.js#L1133).
+  all modal helpers. Exports [`showCustomConfirm`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/app.js#L1065)
+  and [`showCustomNotification`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/app.js#L1137)
+  (11 exports total — treat that list as the module's public surface).
+  Event wiring lives in `setupEventListeners()`, a short ordered list of private
+  `bind*Events()` helpers; **their call order is load-bearing** (click-outside
+  and `stopImmediatePropagation` handlers), so don't reorder them.
 - [`state.js`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/state.js) —
   the single `state` object, `saveState` / `loadState`, `runStateDiagnostics`, and
   the XP constants (`XP_PER_TASK` 5, `XP_DAILY_BONUS` 15, `XP_BONUS_TASK` 10,
@@ -228,7 +232,9 @@ state helpers on `window`), `?runMigrationTest=true`.
 node run_headless_tests.js
 ```
 
-~17–25s wall clock; Chrome launch and sprite fetches dominate. Must be **100%
+~23–30s wall clock (measured Sept 2026); Chrome cold start and deliberate
+`sleep()` padding dominate — see Pillar 3 of
+`docs/refactoring_assessment_2026_09_12.md`. Must be **100%
 green** before you report done. Flag it only if it exceeds ~60s or hangs.
 
 > [!WARNING]
@@ -277,9 +283,16 @@ Both of these, every time, or the kids' tablets serve stale code from the servic
 worker:
 
 1. Bump `CACHE_NAME` in [`service-worker.js`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/service-worker.js#L1)
-   — currently `poke-chart-cache-v160`.
-2. Bump the `?v=` query strings in `index.html` — currently `style.css?v=10.53`,
-   `app.js?v=10.45`, `particles.js?v=10.3`.
+   (`poke-chart-cache-vNNN`).
+2. Bump the `?v=` query string in `index.html` for **each** asset you changed
+   (`style.css?v=`, `app.js?v=`, `particles.js?v=`).
+
+Versions change every session, so this file deliberately does **not** record
+them — hardcoded values here went stale within days. Read the live values first:
+
+```bash
+node -e "const f=require('fs');console.log(f.readFileSync('service-worker.js','utf8').match(/poke-chart-cache-v\d+/)[0]);console.log(f.readFileSync('index.html','utf8').match(/\w+\.(css|js)\?v=[\d.]+/g).join('  '))"
+```
 
 If you add a new module file, also add it to `ASSETS_TO_CACHE` in the service worker.
 

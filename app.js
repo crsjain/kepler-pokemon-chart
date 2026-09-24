@@ -1382,8 +1382,8 @@ export function renderState(rebuildGrid = false) {
       statusBadge.className = 'admin-status-badge pending';
       statusBadge.innerHTML = `
         <div class="admin-status-title">📅 Shift Scheduled (${pendingDayName})</div>
-        <div class="admin-status-desc">Current chart ends <strong>${dayBeforeName}</strong>. New <strong>${pendingDayName}</strong> chart starts <span style="white-space: nowrap;">${state.pendingWeekStartDate}</span>.</div>
-        <button id="admin-revert-schedule-btn" class="pixel-btn" style="margin-top:8px; font-size:0.75rem; padding:6px 10px; width:100%; text-align:center; background:#e2e8f0; color:#1e293b; border-color:#94a3b8; font-family:'Fredoka One', cursive;">↩️ Revert to ${origDayName}</button>
+        <div class="admin-status-desc">Current chart ends <strong>${dayBeforeName}</strong>. New <strong>${pendingDayName}</strong> chart starts <span class="nowrap-text">${state.pendingWeekStartDate}</span>.</div>
+        <button id="admin-revert-schedule-btn" class="pixel-btn admin-revert-schedule-btn">↩️ Revert to ${origDayName}</button>
       `;
       statusBadge.classList.remove('hidden');
 
@@ -2386,7 +2386,7 @@ function bindRewardSelectEvents() {
  * Reset Training Grid button and its confirmation modal.
  */
 function bindWeekResetEvents() {
-    if (resetBtn) {
+  if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       if (resetBtn.disabled || !canStartNextWeek(state, currentViewingWeekStartDate)) {
         return;
@@ -2778,7 +2778,11 @@ function bindDebugBadgeEvents() {
           renderBadgeCaseGrid();
         }
       } else {
-        alert("All curated badges collected!");
+        showCustomNotification(
+          "All Badges Collected 🏅",
+          "Every curated badge is already in the collection.",
+          null, false, null, '', "Got it", "greyed-out"
+        );
       }
     });
   }
@@ -2869,7 +2873,7 @@ function bindWeekStartDayEvents() {
           <div class="confirm-detail">
             <div class="schedule-hero-card future">
               <div class="schedule-hero-label">🗓️ UPCOMING SCHEDULE</div>
-              <div class="schedule-hero-main">Starts ${newDayName} • <span style="white-space: nowrap;">${targetDateForNewDay}</span></div>
+              <div class="schedule-hero-main">Starts ${newDayName} • <span class="nowrap-text">${targetDateForNewDay}</span></div>
               <div class="schedule-hero-sub">The current chart will end early on <strong>${dayBeforeName}</strong>, and <strong>${newDayName}</strong> through the weekend will start your new chart.</div>
             </div>
             <div class="transition-info-callout">
@@ -2892,7 +2896,7 @@ function bindWeekStartDayEvents() {
             if (statusBadge) {
               statusBadge.innerHTML = `
                 <div class="admin-status-title">✅ Schedule Updated!</div>
-                <div class="admin-status-desc">Current chart ends <strong>${dayBeforeName}</strong>. New <strong>${newDayName}</strong> chart starts <span style="white-space: nowrap;">${targetDateForNewDay}</span>.</div>
+                <div class="admin-status-desc">Current chart ends <strong>${dayBeforeName}</strong>. New <strong>${newDayName}</strong> chart starts <span class="nowrap-text">${targetDateForNewDay}</span>.</div>
               `;
               statusBadge.classList.remove('hidden');
             }
@@ -2917,7 +2921,7 @@ function bindWeekStartDayEvents() {
         <div class="confirm-detail">
           <div class="schedule-hero-card">
             <div class="schedule-hero-label">🗓️ NEW SCHEDULE</div>
-            <div class="schedule-hero-main">Starts ${newDayName} • <span style="white-space: nowrap;">${thisWeekRangeDisplay}</span></div>
+            <div class="schedule-hero-main">Starts ${newDayName} • <span class="nowrap-text">${thisWeekRangeDisplay}</span></div>
           </div>
           <div class="transition-warning-callout">
             <div class="transition-callout-title">⚠️ Permanent Schedule Change</div>
@@ -2973,7 +2977,7 @@ function bindWeekStartDayEvents() {
             const formattedRange = getFormattedDateRange(chosenStartDate, getDateOfColumn(chosenStartDate, 6));
             statusBadge.innerHTML = `
               <div class="admin-status-title">✅ Schedule Updated!</div>
-              <div class="admin-status-desc">Active chart now starts <strong>${newDayName}</strong> <span style="white-space: nowrap;">(${formattedRange})</span></div>
+              <div class="admin-status-desc">Active chart now starts <strong>${newDayName}</strong> <span class="nowrap-text">(${formattedRange})</span></div>
             `;
             statusBadge.classList.remove('hidden');
           }
