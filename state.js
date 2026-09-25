@@ -259,6 +259,41 @@ export function resetStateToDefault() {
   saveState();
 }
 
+// Fields that survive "Wipe All Progress": the child's identity and everything a
+// parent configured. Everything else (partners, XP, levels, badges, stars, grid,
+// exceptions, weekly history, reward picks/history) resets to defaults.
+// See docs/prd_admin_panel_redesign.md (D7).
+export const WIPE_PRESERVED_KEYS = [
+  'childName',
+  'tasks',
+  'weeklyRewardOptions',
+  'megaRewardOptions',
+  'weekStartDay',
+  'timezoneOffset',
+  'idleTimeout',
+  'parentGraceMinutes',
+  'lockPastDays',
+  'adminPassword',
+  'volume',
+  'debugSidebarEnabled'
+];
+
+// Pure: returns a fresh, fully-migrated state for ONE child with progress reset
+// and WIPE_PRESERVED_KEYS deep-copied from `current`. Does not touch `state`.
+export function buildWipedChildState(current) {
+  const fresh = runMigrations(getDefaultStateTemplate());
+  WIPE_PRESERVED_KEYS.forEach(key => {
+    if (current && current[key] !== undefined) {
+      fresh[key] = JSON.parse(JSON.stringify(current[key]));
+    }
+  });
+  // Re-anchor the calendar to the preserved week-start day and timezone.
+  const today = getLocalDate(fresh.timezoneOffset);
+  fresh.activeDay = today.getDay();
+  fresh.weekStartDate = formatLocalDate(getWeekStart(today, fresh.weekStartDay));
+  return fresh;
+}
+
 // Backwards compatibility stubs for legacy cached clients during SW upgrades
 export function saveAutoBackup() {}
 export function getBackupHistory() { return []; }

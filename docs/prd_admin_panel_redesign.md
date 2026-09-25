@@ -1,10 +1,10 @@
 # PRD: Parent Admin Panel Redesign (Left Navigation)
 
 **Document**: `docs/prd_admin_panel_redesign.md`  
-**Version**: 1.0.0  
+**Version**: 1.1.0  
 **Status**: Decisions Locked — Ready for Implementation (not yet started)  
 **Authors**: crsjain & Jetski  
-**Requested By**: crsjain (2026-09-20, seed) · specced 2026-09-24 (Checkpoint 61)  
+**Requested By**: crsjain (2026-09-20, seed) · specced 2026-09-24 (Checkpoint 61) · amended 2026-09-25 (Checkpoint 62: D7, D8)  
 **Target Systems**: `index.html`, `style.css`, `admin.js`, `app.js`, `tests.js`, `service-worker.js` (+ optional new `rewards_admin.js`, §7)  
 **Schema Impact**: **None** — stays V18. No new persisted field.  
 **Companion Standards**: [`_agents/rules/ux-guidelines.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/_agents/rules/ux-guidelines.md) (Rules 2, 4, 5, 6, 8, 10, 11, 12, 13B, 17), [`docs/prd_parent_past_day_approval.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/docs/prd_parent_past_day_approval.md), [`docs/refactoring_assessment_2026_09_12.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/docs/refactoring_assessment_2026_09_12.md) §6.4
@@ -21,7 +21,7 @@
 
 `#admin-modal` ([`index.html:621–766`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/index.html#L621-L766)) is a single `.admin-grid`. It is one column below 768px and a `320px 1fr 1fr` three-column grid above it ([`style.css:2434`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/style.css#L2434)). The first column, *Quick Actions*, holds five unrelated groups stacked vertically: Activity Settings, Backup & Sync, System & Debug, Parent Passcode, and the Danger Zone. That's the column that keeps growing. The shell is **not** Rule 4 compliant today (`max-width: 950px`, no fixed height, whole-modal scroll).
 
-It contains **25 static IDs**, and **23 of them are referenced by `tests.js`**. With the dynamic rows, the stacked rewards editor, and adjacent admin surfaces, the admin area accounts for 47 IDs referenced by the suite (full audit in §6).
+It contained **25 static IDs** at `8a3e0e7`, and **23 of them were referenced by `tests.js`** (26 after the D8 placeholder landed in Checkpoint 62). With the dynamic rows, the stacked rewards editor, and adjacent admin surfaces, the admin area accounts for 47 IDs referenced by the suite (full audit in §6).
 
 ### 1.3 The Hidden Problem: Scope Is Invisible
 
@@ -29,7 +29,7 @@ This finding came out of the spec session and wasn't in the seed. **Every contro
 
 Nothing in today's UI says so. A parent who sets Screensaver to 5 minutes while Kepler is active has *not* changed Lyra's.
 
-The inverse trap is worse: **Wipe All Progress wipes every child** (`importFamilyData({ profiles: {} })`, [`app.js:997`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/app.js#L997)). Its confirm copy only says "levels, XP, and badges".
+The inverse trap was worse: **Wipe All Progress wiped every child** (`importFamilyData({ profiles: {} })`), while its confirm copy only said "levels, XP, and badges". **Resolved in Checkpoint 62 (D7):** Wipe now resets only the active child and is already shipped ahead of the redesign.
 
 ### 1.4 Proposed Solution
 
@@ -38,7 +38,7 @@ Keep `#admin-modal`, but rebuild its interior as a **Rule-4-compliant two-pane s
 - The nav is grouped into **This child** (Today, Schedule, Tasks, Rewards) and **Family** (Children, Passcode, Data).
 - A read-only **"Editing: Kepler"** scope chip in the header names the child the "This child" sections apply to.
 - The panel always opens to **Today**, which holds the nightly-use controls.
-- **All 25 existing IDs stay stable.**
+- **All existing IDs stay stable** (25, plus the D8 placeholder).
 
 ---
 
@@ -54,6 +54,8 @@ All six were answered directly by crsjain in the Checkpoint 61 session. They res
 | D4 | Search or filter? | **No.** 7 sections and about 20 controls don't warrant it. |
 | D5 | Rewards editor | **Stays a stacked modal** (`#edit-rewards-modal`), now also launched from the Rewards section for the active child. The profile-row launcher stays too. Zero ID or test churn. |
 | D6 | Landing section | **Always open to Today** (Set Exceptions, Parent Edit Window, Approve Past Days). No memory, so no state field. |
+| D7 *(2026-09-25)* | What does Wipe All Progress delete? | **Only the active child's progress.** Partners, XP, levels, badges, stars, grid, exceptions, weekly history, and reward picks/history reset to defaults. The child's identity and parent configuration survive: `childName`, tasks, reward options, week start, timezone, screensaver, edit window, approve-past-days, passcode, volume, and debug flag (`WIPE_PRESERVED_KEYS`, `state.js`). Other children are never touched. **Shipped in Checkpoint 62** in the current panel; the redesign carries it forward unchanged. |
+| D8 *(2026-09-25)* | Under-5 chart presentation | **Placeholder only.** A greyed-out, inert **🧸 Chart Style** control (`#admin-chart-style-placeholder`) offers two options, *Big Buttons (under 5)* and *Standard (5+)*. Standard is shown selected, both are disabled, and it carries a "Coming soon" tag. It isn't wired to state and has no listener. The future feature: children under 5 with only one or two activities get much bigger, more satisfying buttons instead of a sparse chart. **Shipped in Checkpoint 62** in the current panel (Activity Settings); it moves to the redesign's **Tasks** section. It needs its own PRD and panel review before it's built. |
 
 > [!NOTE]
 > D3's answer named the child group "Schedule & Rules, Tasks, Rewards". D6 then moved the two *rules* controls (Edit Window, Approve Past Days) into **Today**, so the remaining section is just **Schedule**.
@@ -70,7 +72,7 @@ Every existing control has exactly one home. **No ID changes.**
 |---|---|---|---|
 | *This child* | 🌙 **Today** (`today`, landing) | `#exceptions-btn` · `#admin-parent-grace-select` · `#admin-lock-past-days-toggle` + `.admin-option-hint` | `app.js` `bindExceptionModeEvents` · `bindAdminSettingsEvents` (×2) |
 | | 🗓️ **Schedule** (`schedule`) | `#admin-week-start-select` + `#admin-week-start-status` · `#admin-timezone-select` · `#admin-idle-timeout-select` | `app.js` `bindWeekStartDayEvents` · `bindAdminSettingsEvents` (×2) |
-| | ✅ **Tasks** (`tasks`) | `#admin-tasks-list` · `#admin-add-task-btn` · `#admin-save-tasks-btn` | `admin.js` (unchanged) |
+| | ✅ **Tasks** (`tasks`) | `#admin-tasks-list` · `#admin-add-task-btn` · `#admin-save-tasks-btn` · `#admin-chart-style-placeholder` (D8, inert, top of pane) | `admin.js` (unchanged) · placeholder: none |
 | | 🎁 **Rewards** (`rewards`) | 🆕 `#admin-customize-rewards-btn` (opens `#edit-rewards-modal` for the active child) · `#claimed-rewards-history-list` | 🆕 button: rewards-editor owner (`app.js` `bindRewardsEditorEvents` body, or `rewards_admin.js` if §7 lands first) · history: `admin.js` |
 | *Family* | 👥 **Children** (`children`) | `#admin-profiles-list` (rows keep their per-row 🎁 and 🗑️ buttons) | `app.js` `renderAdminProfilesList` (render-time listeners) |
 | | 🔑 **Passcode** (`passcode`) | `#admin-new-passcode-input` · `#admin-change-passcode-btn` | `admin.js` (unchanged) |
@@ -136,9 +138,11 @@ The **footer row** holds `#close-admin-modal-btn`, pinned to the bottom (Rule 17
 
 The Data pane runs top to bottom: **This child (Kepler)** backup row → **Whole family** backup row → **System** → a divider → the red `.danger-zone-section` holding `#admin-wipe-btn`. The existing `.danger-zone-section` styles ([`style.css:4213`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/style.css#L4213)) are reused as-is, minus the margins listed in §4.3.
 
-**Required copy fix:** Wipe is family-wide, so the confirm body must say so.
+**Wipe scope (D7, shipped in Checkpoint 62):** Wipe resets only the active child. The confirm names the child and says what is kept:
 
-> *"This permanently deletes **every child's profile** — levels, partner Pokémon, badges, and weekly progress for all children on this account. Use **Export Family** first if you might want it back. This cannot be undone."*
+> *"This resets Kepler's levels, partner Pokémon, XP, badges, stars, and chart history back to the start. Kepler's activities, rewards, and settings are kept, and other children are not affected. This cannot be undone."*
+
+The CTA reads **"Reset Kepler"** (`pixel-btn danger`). A hint under the button says *"Resets only the active child's progress. Activities, rewards, and settings are kept."* The quarantined block therefore sits under **This child (Kepler)** export, which is the matching backup step. The redesign should render the confirm body with the R8-2 `.danger` modifier.
 
 The title `"Wipe All Progress? 🚨"` is **unchanged**, because TC27 asserts it ([`tests.js:2315`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/tests.js#L2315)). The body text isn't asserted anywhere. The CTA stays neutral and non-celebratory (Rule 11).
 
@@ -194,11 +198,12 @@ Checkpoint 60 set the pattern: move inline styles to named classes in `style.css
 
 - **The nightly path must not get longer.** Today, *Set Exceptions* is the first button in the first column. Under D6 it's the first control in the landing pane, so it stays at passcode → 1 tap. ✅ Parity holds.
 - **"Which kid am I changing?"** This is the biggest real-world win. Before, a parent had no way to tell that Screensaver or Week Start were per-child. The chip plus the *This child* / *Family* groups answer it at a glance. ✅
-- **🚩 Wipe is family-wide, and its copy says otherwise.** With "Editing: Kepler" in the header, a tired parent could reasonably believe *Wipe All Progress* clears only Kepler, and lose Lyra's months of progress too. **Mitigation (required):** the §4.5 copy fix, the `.danger` confirm styling, and placement directly under *Export Family* (D2).
+- **🚩 Wipe was family-wide, and its copy said otherwise.** With "Editing: Kepler" in the header, a tired parent could reasonably believe *Wipe All Progress* clears only Kepler, and lose Lyra's months of progress too. **Resolved by D7 (2026-09-25):** Wipe is now scoped to the active child, which matches the chip. The confirm names the child and states what is kept.
+- **D8 placeholder (2026-09-25 addendum):** a greyed "Coming soon" control is honest signposting. The parent can see the under-5 mode is planned, can't mistake it for a broken toggle (it's disabled, has a tag, and has a `not-allowed` cursor), and doesn't need to configure anything.
 - **Unsaved task edits.** A parent edits a chore name, checks Rewards, and comes back. The edit must still be there. **Mitigation (required):** pane switching never re-renders (§4.3). Closing the modal without saving behaves as it does today (not a regression, and out of scope).
 - **Passcode as its own section** is thin (one input and one button). Accepted per D3. It's rarely used, and a dedicated slot makes it easy to find the one time a year it's needed.
 - **Hold-to-unlock for Wipe** (Rule 6 recommends it for irreversible actions). It's desirable, but it would change TC27's click-to-confirm flow. **Deferred to §9** so v1.0 stays zero-regression.
-- **Verdict:** **PASS with 2 required mitigations** (Wipe copy; no re-render on switch).
+- **Verdict:** **PASS with 1 required mitigation** (no re-render on switch). The Wipe mitigation is resolved by D7.
 
 ### Stage 4: 🎨 Senior Staff UX Designer — *weighted*
 
@@ -228,13 +233,13 @@ Checkpoint 60 set the pattern: move inline styles to named classes in `style.css
 
 ### 🛡️ Consolidated Action & Implementation Checklist
 
-1. **(Stage 3)** Replace the Wipe confirm body per §4.5, keeping the title. Render it with the R8-2 `.danger` modifier.
+1. **(Stage 3)** ~~Replace the Wipe confirm body~~ Done in Checkpoint 62 (D7). The redesign only restyles it with the R8-2 `.danger` modifier.
 2. **(Stage 3 / 5)** Pane switching toggles classes only and never re-renders.
 3. **(Stage 4)** Fix R8-1 through R8-4, and meet the `[style]` count = 0 acceptance criterion.
 4. **(Stage 4)** R8-1 parity step, then bump the icon buttons to 42×42 as a separate step.
 5. **(Stage 4)** Rule 4 shell, Rule 5 tracks, Rule 12 margin removal, and a Rule 13B yellow/charcoal active tab.
 6. **(Stage 5)** TC30 activates the Schedule pane before measuring and asserts non-zero width.
-7. **(Stage 5)** Add TC89 (§6.3). Keep all 25 IDs. Retire unused wrapper classes only after a grep.
+7. **(Stage 5)** Add TC90 (§6.3). Keep all 26 IDs (25 + the D8 placeholder). Retire unused wrapper classes only after a grep.
 
 ---
 
@@ -270,7 +275,8 @@ Measured by parsing `index.html:621–766` and counting exact-token references i
 | `admin-diagnostics-btn` | 1 | admin.js | Data |
 | `admin-force-update-btn` | 1 | admin.js | Data |
 | `toggle-debug-sidebar` | 1 | app.js | Data |
-| `admin-wipe-btn` | 1 | admin.js | Data (quarantined) |
+| `admin-wipe-btn` | 2 | admin.js | Data (quarantined) |
+| `admin-chart-style-placeholder` *(D8, Checkpoint 62)* | 1 | — (inert) | Tasks |
 
 The "~44 admin-area IDs" figure from the request corresponds to the wider sweep: **47** admin-related IDs are referenced by `tests.js`. The other 24 live outside `#admin-modal`: `#admin-btn`, `#edit-rewards-modal` and its children, `#add-profile-*`, `#profile-select-modal`, `#parent-grace-*`, `#exceptions-banner`/`-done-btn`, `#debug-sidebar`, and `#reward-select`/`#mega-reward-select`. **None of them move.**
 
@@ -284,7 +290,7 @@ Class selectors pinned by tests, all unchanged: `.admin-task-item`, `.admin-prof
 
 **No other existing test needs to change.** Every other admin interaction uses `.click()`, `.value` + `dispatchEvent`, or DOM queries, and all of those work on hidden panes. The rewards editor tests (TC31, TC46, TC57) drive the stacked `#edit-rewards-modal`, which D5 leaves as it is.
 
-### 6.3 New Test: TC89 (next number above the current max of 88)
+### 6.3 New Test: TC90 (next number; TC89 was taken by D7/D8 in Checkpoint 62)
 
 1. Open Admin with the passcode. Assert the Today pane is visible, the other 6 have `.hidden`, and exactly one `.admin-nav-btn` has `aria-selected="true"`.
 2. Click each nav button in turn. After each click, assert that exactly one pane is visible and it matches `data-admin-section`.
@@ -294,7 +300,7 @@ Class selectors pinned by tests, all unchanged: `.admin-task-item`, `.admin-prof
 6. With `helpers.setProfilesList([...])` and `helpers.setActiveProfileId(…)`, assert that `#admin-scope-chip` text includes the active child's name. With no active profile, assert it has `.hidden`.
 7. **Rule 8:** the `[style]` count = 0 criterion from §4.7, after rendering the profile rows, a delete confirm, and the rewards editor (empty and populated).
 8. `#admin-customize-rewards-btn` opens `#edit-rewards-modal` titled for the active child.
-9. The Wipe confirm body includes "every child's profile".
+9. The D8 placeholder lives in the Tasks pane. TC89 already covers the Wipe scope and the placeholder's inertness.
 
 The mobile tab strip can't be resized reliably in the current harness. It's covered by the manual checks in §8.
 
@@ -354,7 +360,7 @@ Each phase is its own local commit. Run `node run_headless_tests.js` after each 
 |---|---|---|
 | **0: Rule 8 class moves** | R8-1 (class only, 36×32 kept), R8-2, R8-3, R8-4. Wipe copy (§4.5). | CDP computed-style parity: 0 diffs on the profile buttons, delete card, empty list, and rewards add-row (the Checkpoint 60 method). Suite green. |
 | **1: Reward-editor extraction** *(optional, §7)* | `rewards_admin.js`, `ASSETS_TO_CACHE` | Suite green with `tests.js` **unchanged**. `node --check`. `app.js` export count stays at 11 (`renderRewardDropdowns` stays). |
-| **2: Shell + nav** | Markup regrouping into 7 panes, Rule 4 grid, nav switching in `admin.js`, scope chip, `#admin-customize-rewards-btn`, retire unused wrapper classes | TC30 update + TC89. Suite green. Numbering audit (`dupes:12` only). |
+| **2: Shell + nav** | Markup regrouping into 7 panes, Rule 4 grid, nav switching in `admin.js`, scope chip, `#admin-customize-rewards-btn`, retire unused wrapper classes | TC30 update + TC90. Suite green. Numbering audit (`dupes:12` only). |
 | **3: Intentional visual deltas** | Icon buttons 36×32 → 42×42 | Manual check on desktop, a 768px tablet, and a 360px phone. |
 | **Wrap-up** | One `CACHE_NAME` bump plus `style.css?v=` / `app.js?v=` covering every phase shipped. README "Parent Admin" bullets. Checkpoint. | `pokemon-session-wrapup` |
 
@@ -377,4 +383,5 @@ Each phase is its own local commit. Run `node run_headless_tests.js` after each 
 | Version | Date | Change |
 |---|---|---|
 | 0.1.0 | 2026-09-20 | Seed: problem statement, candidate sections, open questions. |
+| 1.1.0 | 2026-09-25 | Checkpoint 62. D7: Wipe resets only the active child (shipped). D8: greyed-out Chart Style (under 5 / 5+) placeholder (shipped, inert). The redesign's new test is renumbered TC89 → TC90. |
 | 1.0.0 | 2026-09-24 | Specced (Checkpoint 61). D1–D6 locked by crsjain. Per-child scope finding. Wipe blast-radius finding. Full ID and test audit. Rule 8 debt R8-1..4. 5-stage panel (Parent/UX weighted), APPROVED WITH MITIGATIONS. Reward-editor boundary corrected and extraction recommended as an optional separate commit. |

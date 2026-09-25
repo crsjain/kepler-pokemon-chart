@@ -6199,3 +6199,90 @@ body.has-banner .mini-hud.visible {
   padding: 0 2px;
 }
 
+/* Admin: danger-zone scope hint under "Wipe All Progress" */
+.danger-zone-section .danger-zone-hint {
+  margin-top: 8px;
+  color: #7f1d1d;
+}
+
+/* Admin: "coming soon" feature placeholder — greyed out and inert.
+   Chart Style (under 5 / 5+) is not built yet; see prd_admin_panel_redesign.md D8. */
+.admin-coming-soon {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: not-allowed;
+}
+
+.admin-coming-soon-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.coming-soon-tag {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #475569;
+  background: #e2e8f0;
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.admin-segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  opacity: 0.55;
+  filter: grayscale(1);
+  pointer-events: none;
+}
+
+.admin-segment {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #475569;
+  text-align: center;
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+.admin-segment:has(input:checked) {
+  background: #ffffff;
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+
+.admin-segment input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.admin-segment-text .subtext {
+  display: block;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+

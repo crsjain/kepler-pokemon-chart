@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.56">
+  <link rel="stylesheet" href="style.css?v=10.57">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
@@ -685,6 +685,25 @@
                 </div>
                 <div class="admin-option-hint">Requires the parent passcode before this child can edit previous days. Recommended for younger children.</div>
 
+                <!-- Placeholder only: not wired to state; see prd_admin_panel_redesign.md D8 -->
+                <div id="admin-chart-style-placeholder" class="admin-coming-soon" aria-disabled="true" title="Coming soon: a big-button chart for younger children.">
+                  <div class="admin-coming-soon-header">
+                    <span>🧸 Chart Style</span>
+                    <span class="coming-soon-tag">Coming soon</span>
+                  </div>
+                  <div class="admin-segmented" role="radiogroup" aria-label="Chart style (coming soon)">
+                    <label class="admin-segment">
+                      <input type="radio" name="admin-chart-style" value="big-buttons" disabled>
+                      <span class="admin-segment-text">Big Buttons<span class="subtext">under 5</span></span>
+                    </label>
+                    <label class="admin-segment">
+                      <input type="radio" name="admin-chart-style" value="standard" checked disabled>
+                      <span class="admin-segment-text">Standard<span class="subtext">5+</span></span>
+                    </label>
+                  </div>
+                  <div class="admin-option-hint">Fewer, bigger buttons for younger children with just one or two activities.</div>
+                </div>
+
               </div>
               
               <div class="admin-action-group">
@@ -725,6 +744,7 @@
             <div class="danger-zone-section">
               <h4>⚠️ Danger Zone</h4>
               <button id="admin-wipe-btn" class="pixel-btn danger">Wipe All Progress (Reset)</button>
+              <div class="admin-option-hint danger-zone-hint">Resets only the active child's progress. Activities, rewards, and settings are kept.</div>
             </div>
           </div>
 
@@ -888,7 +908,7 @@
   </div>
 
   <script src="particles.js?v=10.3"></script>
-  <script type="module" src="app.js?v=10.49" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.50" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 

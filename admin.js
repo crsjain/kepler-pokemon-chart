@@ -184,9 +184,11 @@ export function initAdmin(callbacks) {
   }
   if (adminWipeBtn) {
     adminWipeBtn.addEventListener('click', () => {
+      // Resets ONLY the active child (see wipeActiveChildProgress in app.js).
+      const childName = state.childName || 'this child';
       showCustomConfirm(
         "Wipe All Progress? 🚨",
-        "This will completely erase all levels, XP, and badges, and restore defaults! This cannot be undone.",
+        `This resets ${childName}'s levels, partner Pokémon, XP, badges, stars, and chart history back to the start. ${childName}'s activities, rewards, and settings are kept, and other children are not affected. This cannot be undone.`,
         async () => {
           try {
             if (appCallbacks.wipeData) {
@@ -200,7 +202,7 @@ export function initAdmin(callbacks) {
           }
         },
         null,
-        "Wipe Everything",
+        `Reset ${childName}`,
         "Cancel",
         "pixel-btn danger",
         "pixel-btn greyed-out"

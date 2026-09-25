@@ -2332,6 +2332,115 @@ async function runSuite() {
         await sleep(100);
       }
 
+      console.log("Running Test Case 89: Wipe All Progress resets only the active child & Chart Style placeholder is inert...");
+      {
+        const helpers = window.__test_helpers__;
+        const snapshot = JSON.parse(JSON.stringify(window.__app_state__));
+
+        // --- A. Pure builder: progress resets, identity + parent config survive ---
+        const current = JSON.parse(JSON.stringify(window.__app_state__));
+        current.childName = 'Wipe Kid';
+        current.tasks = [{ id: 'piano', name: 'Piano Only', emoji: '🎹', concept: 'x', instructions: 'y', active: true, createdAt: '2026-07-01', deletedAt: null }];
+        current.weeklyRewardOptions = [{ value: 'Custom Weekly', text: 'Custom Weekly' }];
+        current.megaRewardOptions = [{ value: 'Custom Mega', text: 'Custom Mega' }];
+        current.weekStartDay = 3;
+        current.timezoneOffset = 'America/New_York';
+        current.idleTimeout = 5;
+        current.parentGraceMinutes = 5;
+        current.lockPastDays = true;
+        current.volume = 20;
+        current.grid = { '2026-01-01-piano': true };
+        current.excused = { '2026-01-02-piano': 'rest' };
+        current.weeklyHistory = { '2026-01-01': { weekStartDay: 0 } };
+        current.collectedBadges = [25];
+        current.starVault = { earnedDates: ['2026-01-01'], totalTraded: 2 };
+        current.megaWeeks = 3;
+        current.pendingWeekStartDay = 2;
+        Object.values(current.partnersData).forEach(p => { p.level = 9; p.xp = 50; });
+
+        const wiped = StateModule.buildWipedChildState(current);
+        assert(wiped.version === 18, `Wiped state should be fully migrated (v18), got v${wiped.version}`);
+        assert(wiped.childName === 'Wipe Kid', "childName must survive the wipe");
+        assert(wiped.tasks.length === 1 && wiped.tasks[0].name === 'Piano Only', "Custom activities must survive the wipe");
+        assert(wiped.weeklyRewardOptions[0].text === 'Custom Weekly', "Weekly reward options must survive");
+        assert(wiped.megaRewardOptions[0].text === 'Custom Mega', "Mega reward options must survive");
+        assert(wiped.weekStartDay === 3 && wiped.timezoneOffset === 'America/New_York', "Schedule settings must survive");
+        assert(wiped.idleTimeout === 5 && wiped.parentGraceMinutes === 5 && wiped.lockPastDays === true, "Parent settings must survive");
+        assert(wiped.volume === 20, "Volume must survive");
+        assert(Object.keys(wiped.grid).length === 0, "Grid progress must reset");
+        assert(Object.keys(wiped.excused).length === 0, "Exceptions must reset");
+        assert(Object.keys(wiped.weeklyHistory).length === 0, "Weekly history must reset");
+        assert(wiped.collectedBadges.length === 0, "Badges must reset");
+        assert(wiped.starVault.earnedDates.length === 0 && wiped.starVault.totalTraded === 0, "Star Vault must reset");
+        assert(wiped.megaWeeks === 0, "Mega weeks must reset");
+        assert(wiped.pendingWeekStartDay === undefined, "A pending schedule transition must not survive");
+        assert(Object.values(wiped.partnersData).every(p => p.level === 1 && p.xp === 0), "All partners must return to level 1 / 0 XP");
+        assert(new Date(wiped.weekStartDate + 'T00:00:00').getDay() === 3, `weekStartDate must re-anchor to the preserved start day, got ${wiped.weekStartDate}`);
+        wiped.tasks[0].name = 'Mutated';
+        assert(current.tasks[0].name === 'Piano Only', "Preserved fields must be deep copies, not shared references");
+
+        // --- B. Real UI path (setWipeDataMock(null) must restore the real wipe) ---
+        helpers.setWipeDataMock(null);
+        let reloadCalled = false;
+        helpers.setReloadMock(() => { reloadCalled = true; });
+
+        const live = window.__app_state__;
+        live.childName = 'Wipe Kid';
+        live.grid = { '2026-01-01-piano': true };
+        live.collectedBadges = [25];
+        live.idleTimeout = 5;
+        StateModule.saveState();
+
+        document.getElementById('admin-btn').click();
+        await sleep(100);
+        document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+        document.getElementById('password-submit-btn').click();
+        await sleep(100);
+
+        document.getElementById('admin-wipe-btn').click();
+        await sleep(100);
+        const confirmModal = document.getElementById('confirm-modal');
+        assert(!confirmModal.classList.contains('hidden'), "Wipe confirm should open");
+        assert(confirmModal.querySelector('#confirm-title').textContent.includes("Wipe All Progress"), "Wipe confirm title unchanged");
+        const confirmText = confirmModal.textContent;
+        assert(confirmText.includes("Wipe Kid") && confirmText.includes("other children are not affected"), "Wipe confirm must name the child and say siblings are unaffected");
+        const yesBtn = document.getElementById('confirm-yes-btn');
+        assert(yesBtn.textContent.includes("Reset Wipe Kid"), `Wipe CTA should name the child, got "${yesBtn.textContent}"`);
+        yesBtn.click();
+        await sleep(150);
+
+        const after = window.__app_state__;
+        assert(reloadCalled === true, "Reload should follow a successful wipe");
+        assert(Object.keys(after.grid).length === 0 && after.collectedBadges.length === 0, "Real wipe must reset the active child's progress");
+        assert(after.childName === 'Wipe Kid' && after.idleTimeout === 5, "Real wipe must keep identity and settings");
+
+        helpers.setReloadMock(null);
+        const closeBtn = document.getElementById('close-admin-modal-btn');
+        if (closeBtn) closeBtn.click();
+        await sleep(80);
+
+        // --- C. Chart Style placeholder: visible, greyed out, fully inert ---
+        const placeholder = document.getElementById('admin-chart-style-placeholder');
+        assert(placeholder !== null, "Chart Style placeholder should exist in the admin panel");
+        assert(placeholder.getAttribute('aria-disabled') === 'true', "Placeholder should declare aria-disabled");
+        assert(placeholder.querySelector('.coming-soon-tag').textContent.trim() === 'Coming soon', "Placeholder should carry a Coming soon tag");
+        const radios = [...placeholder.querySelectorAll('input[name="admin-chart-style"]')];
+        assert(radios.length === 2 && radios.every(r => r.disabled), "Both chart style options must be disabled");
+        const standard = radios.find(r => r.value === 'standard');
+        const big = radios.find(r => r.value === 'big-buttons');
+        assert(standard.checked && !big.checked, "Standard (5+) should be shown selected");
+        big.click();
+        assert(standard.checked && !big.checked, "Clicking the disabled option must not change the selection");
+        assert(window.__app_state__.chartStyle === undefined, "Placeholder must not write any state");
+        assert(placeholder.querySelectorAll('[style]').length === 0, "Placeholder must have zero inline styles (UX Rule 8)");
+
+        // Restore the pre-test state
+        StateModule.replaceState(snapshot);
+        StateModule.saveState();
+        helpers.renderState(true);
+        await sleep(80);
+      }
+
       console.log("Running Test Case 28: Keep exceptions on Week Start Day change (date-keyed)...");
       {
         const helpers = window.__test_helpers__;

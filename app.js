@@ -17,6 +17,7 @@ import {
   getTaskRequiredDays,
   replaceState,
   getDefaultStateTemplate,
+  buildWipedChildState,
   registerOnSave,
   getEarliestDataWeekStartDate
 } from './state.js';
@@ -990,14 +991,21 @@ let importCloudDataFn = async (data) => {
   await importFamilyData(data);
 };
 
-let wipeCloudDataFn = async () => {
-  if (location.search.includes('runTests=true')) {
-    throw new Error("Cloud operations not available in Test Mode");
+// "Wipe All Progress" resets ONLY the active child: progress goes back to
+// defaults, while identity and parent configuration survive (WIPE_PRESERVED_KEYS
+// in state.js). Other children are never touched. It previously wiped the whole
+// family via importFamilyData({ profiles: {} }). See prd_admin_panel_redesign.md D7.
+async function wipeActiveChildProgress() {
+  replaceState(buildWipedChildState(state));
+  saveState();
+  // The debounced cloud save would race the reload that follows a wipe, so
+  // write the reset state straight through and wait for it.
+  if (activeProfileId && !location.search.includes('runTests=true')) {
+    await saveProfileStateToCloud(activeProfileId, state);
   }
-  await importFamilyData({ profiles: {} });
-  localStorage.removeItem('last_active_profile_id');
-  localStorage.clear();
-};
+}
+
+let wipeCloudDataFn = wipeActiveChildProgress;
 
 let reloadFn = () => {
   location.reload();
@@ -4353,7 +4361,7 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     setSaveProfileRewardsMock: (fn) => { saveProfileRewardsToCloudFn = fn || saveProfileRewardsToCloud; },
     setExportCloudDataMock: (fn) => { exportCloudDataFn = fn; },
     setImportCloudDataMock: (fn) => { importCloudDataFn = fn; },
-    setWipeDataMock: (fn) => { wipeCloudDataFn = fn; },
+    setWipeDataMock: (fn) => { wipeCloudDataFn = fn || wipeActiveChildProgress; },
     setReloadMock: (fn) => { reloadFn = fn || (() => location.reload()); },
     setActiveProfileId: (id) => { activeProfileId = id; },
     getActiveProfileId: () => activeProfileId,
