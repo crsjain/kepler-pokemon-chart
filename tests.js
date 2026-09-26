@@ -7683,6 +7683,99 @@ async function runSuite() {
         await sleep(50);
       }
 
+      // 90. Test Case 90: Service worker never links a fresh app.js to a stale cached module
+      console.log("Running Test Case 90: Service worker serves local modules network-first & stale-module self-heal...");
+      {
+        // The headless run never registers the SW, so exercise its real fetch
+        // handler in a sandbox with fake caches/fetch. Regression for Checkpoint 63:
+        // prod showed "'./state.js' does not provide an export named
+        // 'buildWipedChildState'" because state.js was served cache-first.
+        const swSource = await (await fetch('service-worker.js?t=' + Date.now(), { cache: 'no-store' })).text();
+        const origin = window.location.origin;
+        const makeSandbox = ({ online }) => {
+          const log = { fetched: [], matched: [], put: [] };
+          const handlers = {};
+          const fakeSelf = {
+            location: { origin },
+            addEventListener: (type, fn) => { handlers[type] = fn; },
+            skipWaiting: () => Promise.resolve(),
+            clients: { claim: () => Promise.resolve() }
+          };
+          const fakeCaches = {
+            open: async () => ({
+              put: async (key) => { log.put.push(typeof key === 'string' ? key : key.url); },
+              addAll: async () => {}
+            }),
+            match: async (req, opts) => {
+              log.matched.push({ key: typeof req === 'string' ? req : req.url, opts });
+              return new Response('STALE', { status: 200 });
+            },
+            keys: async () => []
+          };
+          const fakeFetch = async (req) => {
+            log.fetched.push(req);
+            if (!online) throw new TypeError('Failed to fetch');
+            return new Response('FRESH', { status: 200 });
+          };
+          new Function('self', 'caches', 'fetch', 'Request', swSource)(fakeSelf, fakeCaches, fakeFetch, Request);
+          const dispatch = async (request) => {
+            let responded = null;
+            handlers.fetch({ request, respondWith: (p) => { responded = p; } });
+            return responded ? await (await responded).text() : null;
+          };
+          return { log, dispatch };
+        };
+
+        // (A) Online: a bare-path module import must come from the network, not the cache.
+        {
+          const sb = makeSandbox({ online: true });
+          const body = await sb.dispatch(new Request(origin + '/kepler-pokemon-chart/state.js'));
+          assert(body === 'FRESH', `state.js must be served from the network when online, got ${body}`);
+          assert(sb.log.matched.length === 0, "Cache must not be consulted for local modules when the network succeeds");
+          assert(sb.log.fetched.length === 1 && sb.log.fetched[0].cache === 'no-cache',
+            "Local module fetches must use cache:'no-cache' so the 10-minute HTTP max-age can't serve stale code");
+        }
+        // (B) Every cached local module is network-first, not just state.js.
+        {
+          const sb = makeSandbox({ online: true });
+          for (const f of ['admin.js', 'migrations.js', 'date_utils.js', 'app.js?v=1', 'style.css?v=1']) {
+            const body = await sb.dispatch(new Request(origin + '/kepler-pokemon-chart/' + f));
+            assert(body === 'FRESH', `${f} must be served network-first, got ${body}`);
+          }
+        }
+        // (C) Offline: fall back to the cache.
+        {
+          const sb = makeSandbox({ online: false });
+          const body = await sb.dispatch(new Request(origin + '/kepler-pokemon-chart/state.js'));
+          assert(body === 'STALE', `Offline, state.js must fall back to the cache, got ${body}`);
+          const nav = await sb.dispatch({ url: origin + '/kepler-pokemon-chart/', mode: 'navigate', method: 'GET' });
+          assert(nav === 'STALE', "Offline navigation must fall back to the cached index.html");
+          assert(sb.log.matched.some(m => m.key === './index.html'), "Navigation fallback must look up './index.html'");
+        }
+        // (D) Sprites stay cache-first (immutable, and the offline experience depends on it).
+        {
+          const sb = makeSandbox({ online: true });
+          const body = await sb.dispatch(new Request('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png'));
+          assert(body === 'STALE', "Sprites must be served from the cache when present");
+          assert(sb.log.fetched.length === 0, "A cached sprite must not hit the network");
+        }
+        // (E) Non-GET and unrelated requests are left alone.
+        {
+          const sb = makeSandbox({ online: true });
+          assert(await sb.dispatch(new Request(origin + '/kepler-pokemon-chart/state.js', { method: 'POST' })) === null,
+            "Non-GET requests must not be intercepted");
+          assert(await sb.dispatch(new Request('https://firestore.googleapis.com/v1/x')) === null,
+            "Firestore requests must not be intercepted");
+        }
+        // (F) index.html self-heal recognises the stale-module error and never reloads in headless.
+        assert(typeof window.__isStaleModuleError === 'function', "index.html must define __isStaleModuleError");
+        assert(window.__isStaleModuleError("Uncaught SyntaxError: The requested module './state.js' does not provide an export named 'buildWipedChildState'"),
+          "Chrome's missing-export error must be recognised as a stale module");
+        assert(window.__isStaleModuleError("TypeError: Importing a module script failed."), "Safari's module error must be recognised");
+        assert(!window.__isStaleModuleError("TypeError: Cannot read properties of undefined"), "Ordinary errors must not trigger a reload");
+        assert(window.__tryStaleModuleReload() === false, "Self-heal must never reload the page in headless mode");
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

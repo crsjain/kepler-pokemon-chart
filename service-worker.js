@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poke-chart-cache-v165';
+const CACHE_NAME = 'poke-chart-cache-v166';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -48,63 +48,70 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch Event - network-first for navigation, cache-busting aware for local assets
+// Fetch Event
+//
+// Local app code (HTML, JS modules, CSS, manifest) is NETWORK-FIRST, with the
+// cache used only as an offline fallback. Only the entry `app.js` carries a
+// `?v=` tag; every other module is imported by bare path (`./state.js`). When
+// these were served cache-first, the first open after a deploy got a fresh
+// `app.js` linked against the *previous* deploy's cached `state.js`, and the
+// whole module graph failed with "does not provide an export named …"
+// (Checkpoint 63). Network-first keeps every module from the same deploy.
+//
+// `cache: 'no-cache'` makes the browser revalidate with GitHub Pages' ETag
+// instead of trusting its 10-minute `max-age`, so an unchanged file is a cheap
+// 304 and a changed file is never served stale from the HTTP cache.
+//
+// PokeAPI sprites are immutable, so they stay cache-first.
 self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
-  
+
   // Handle PokeAPI sprite requests (external GitHub raw URLs)
   const isPokeapiSprite = url.hostname === 'raw.githubusercontent.com' && (url.pathname.includes('/sprites/pokemon/') || url.pathname.includes('/sprites/items/'));
-  const isLocalAsset = ASSETS_TO_CACHE.some(asset => {
+  const isNavigation = event.request.mode === 'navigate';
+  const isLocalAsset = url.origin === self.location.origin && (isNavigation || ASSETS_TO_CACHE.some(asset => {
     if (asset === './') {
-      return url.pathname === '/' || url.pathname === '/index.html';
+      return url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
     }
-    const cleanAsset = asset.replace('./', '');
-    return url.pathname.endsWith(cleanAsset);
-  });
+    return url.pathname.endsWith(asset.replace('./', ''));
+  }));
 
-  if (isLocalAsset || isPokeapiSprite) {
-    // For navigation requests (index.html), use Network-First so app updates load immediately when online
-    if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
-      event.respondWith(
-        fetch(event.request)
-          .then(networkResponse => {
-            if (networkResponse && networkResponse.status === 200) {
-              const responseToCache = networkResponse.clone();
-              caches.open(CACHE_NAME).then(cache => cache.put('./index.html', responseToCache));
-            }
-            return networkResponse;
-          })
-          .catch(() => caches.match('./index.html', { ignoreSearch: true }))
-      );
-      return;
-    }
-
-    // For local assets with explicit query parameters (e.g. style.css?v=10.25), do NOT ignoreSearch
-    // so cache-busting query strings fetch fresh code instead of returning stale cached CSS/JS!
-    const matchOptions = (isLocalAsset && url.search) ? {} : { ignoreSearch: true };
+  if (isLocalAsset) {
+    // Navigations are cached under './index.html' so the offline fallback finds them.
+    const cacheKey = isNavigation ? './index.html' : event.request;
+    const networkRequest = isNavigation ? event.request : new Request(event.request.url, { cache: 'no-cache' });
     event.respondWith(
-      caches.match(event.request, matchOptions)
+      fetch(networkRequest)
+        .then(networkResponse => {
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(cacheKey, responseToCache));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(cacheKey, { ignoreSearch: true }))
+    );
+    return;
+  }
+
+  if (isPokeapiSprite) {
+    event.respondWith(
+      caches.match(event.request, { ignoreSearch: true })
         .then(cachedResponse => {
           if (cachedResponse) {
             return cachedResponse;
           }
-
-          // Fetch from network and cache
           return fetch(event.request)
             .then(networkResponse => {
-              if (!networkResponse || networkResponse.status !== 200 || (networkResponse.type !== 'basic' && !isPokeapiSprite)) {
-                return networkResponse;
+              if (networkResponse && networkResponse.status === 200) {
+                const responseToCache = networkResponse.clone();
+                caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
               }
-              const responseToCache = networkResponse.clone();
-              caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseToCache));
               return networkResponse;
             })
-            .catch(() => {
-              // Offline fallback for images if not cached
-              if (isPokeapiSprite) {
-                return caches.match('./icon.png');
-              }
-            });
+            // Offline fallback for sprites that were never cached
+            .catch(() => caches.match('./icon.png'));
         })
     );
   }

@@ -11,8 +11,39 @@
   <link rel="stylesheet" href="style.css?v=10.57">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
+    // Stale-module self-heal (Checkpoint 63). If a fresh app.js gets linked
+    // against an older cached module, the import fails before app.js runs, so
+    // app.js's own service-worker reload listener never gets a chance to fire.
+    // Recover here instead. The flag stops a reload loop if the error persists.
+    window.__isStaleModuleError = function(msg) {
+      return /does not provide an export named|Importing a module script failed|error loading dynamically imported module/i.test(String(msg || ''));
+    };
+    window.__tryStaleModuleReload = function() {
+      if (window.location.search.includes('headless=true')) return false;
+      var KEY = 'staleModuleReloadAt';
+      var last = 0;
+      try { last = +sessionStorage.getItem(KEY) || 0; } catch (e) {}
+      if (Date.now() - last < 60000) return false;
+      try { sessionStorage.setItem(KEY, String(Date.now())); } catch (e) {}
+      var reloaded = false;
+      var reload = function() { if (!reloaded) { reloaded = true; window.location.reload(); } };
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+        navigator.serviceWorker.addEventListener('controllerchange', reload);
+        navigator.serviceWorker.getRegistration()
+          .then(function(reg) { return reg && reg.update(); })
+          .then(reload, reload);
+        setTimeout(reload, 4000);
+      } else {
+        reload();
+      }
+      return true;
+    };
+
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
     window.onerror = function(msg, url, line, col, error) {
+      if (window.__isStaleModuleError(msg) && window.__tryStaleModuleReload()) {
+        return true;
+      }
       var div = document.createElement('div');
       div.style.color = '#7f1d1d';
       div.style.background = '#fef2f2';
