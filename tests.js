@@ -7969,6 +7969,61 @@ async function runSuite() {
         assert(getComputedStyle(document.getElementById('partner-name')).display !== 'none', "Partner name must be visible after ready");
       }
 
+      // 94. Test Case 94: Shop card status rail (✨ / Poké Ball / 🔒 never crowd the ribbon or sprite)
+      console.log("Running Test Case 94: Shop card status rail keeps corner icons clear of the ribbon and sprite...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+        helpers.openPokemonShop();
+        await sleep(100);
+
+        const overlaps = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+
+        // Pichu (#172) is caught by default and can evolve: ribbon + ✨ + Poké Ball all present.
+        const card = document.querySelector('#shop-items-grid .shop-item-card[data-id="172"]');
+        assert(card !== null, "Pichu (#172) card should exist in shop");
+        const sparkle = card.querySelector('.shop-item-sparkle');
+        const ball = card.querySelector('.shop-item-pokeball-badge');
+        const ribbon = card.querySelector('.shop-item-caught-ribbon');
+        const sprite = card.querySelector('.shop-item-sprite');
+        assert(sparkle && ball && ribbon && sprite, "Pichu card must render ✨, Poké Ball, CAUGHT ribbon and sprite");
+
+        // (A) Corner icons anchor to the card, not the sprite box.
+        assert(sparkle.offsetParent === card, "✨ must be positioned relative to .shop-item-card");
+        assert(ball.offsetParent === card, "Poké Ball stamp must be positioned relative to .shop-item-card");
+
+        // (B) Rail geometry: icons sit below the top border (with bounce headroom) and above the sprite.
+        const cardRect = card.getBoundingClientRect();
+        const innerTop = cardRect.top + parseFloat(getComputedStyle(card).borderTopWidth);
+        const spriteRect = sprite.getBoundingClientRect();
+        [['✨', sparkle], ['Poké Ball', ball]].forEach(([label, el]) => {
+          const r = el.getBoundingClientRect();
+          assert(r.top >= innerTop + 3, `${label} needs >= 3px headroom below the card border, got ${(r.top - innerTop).toFixed(1)}px`);
+          assert(r.bottom <= spriteRect.top + 1, `${label} must sit in the rail above the sprite (bottom ${r.bottom.toFixed(1)} > sprite top ${spriteRect.top.toFixed(1)})`);
+          assert(!overlaps(r, ribbon.getBoundingClientRect()), `${label} must not overlap the CAUGHT ribbon`);
+        });
+        assert(!overlaps(sparkle.getBoundingClientRect(), ball.getBoundingClientRect()), "✨ and Poké Ball must not overlap");
+
+        // (C) Sprite enlarged to 72px.
+        const container = card.querySelector('.shop-item-sprite-container');
+        assert(Math.round(container.getBoundingClientRect().height) === 72, `Sprite container must be 72px tall, got ${container.getBoundingClientRect().height}px`);
+
+        // (D) Lock badge (if any locked card is present) uses the same rail.
+        const lockBadge = document.querySelector('#shop-items-grid .shop-item-lock-badge');
+        if (lockBadge) {
+          const lockCard = lockBadge.closest('.shop-item-card');
+          assert(lockBadge.offsetParent === lockCard, "🔒 must be positioned relative to .shop-item-card");
+          assert(lockBadge.getBoundingClientRect().bottom <= lockCard.querySelector('.shop-item-sprite').getBoundingClientRect().top + 1,
+            "🔒 must sit in the rail above the sprite");
+        }
+
+        document.getElementById('close-shop-modal-btn').click();
+        await sleep(30);
+        helpers.resetState();
+        await sleep(50);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
