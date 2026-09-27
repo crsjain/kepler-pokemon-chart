@@ -8003,9 +8003,10 @@ async function runSuite() {
           assert(!overlaps(r, ribbon.getBoundingClientRect()), `${label} must not overlap the CAUGHT ribbon`);
         });
 
-        // (C) Sprite enlarged to 72px.
+        // (C) Compact proportions: 64px sprite, and the card stays close to square (height <= 1.25 x width).
         const container = card.querySelector('.shop-item-sprite-container');
-        assert(Math.round(container.getBoundingClientRect().height) === 72, `Sprite container must be 72px tall, got ${container.getBoundingClientRect().height}px`);
+        assert(Math.round(container.getBoundingClientRect().height) === 64, `Sprite container must be 64px tall, got ${container.getBoundingClientRect().height}px`);
+        assert(cardRect.height <= cardRect.width * 1.25, `Shop card should not be stretched vertically (h ${cardRect.height.toFixed(0)} > 1.25 x w ${cardRect.width.toFixed(0)})`);
 
         // (D) Lock badge (if any locked card is present) uses the same rail.
         const lockBadge = document.querySelector('#shop-items-grid .shop-item-lock-badge');

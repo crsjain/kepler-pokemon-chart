@@ -4476,7 +4476,7 @@ body.idle-mode * {
   position: relative; /* corner icons (✨, Poké Ball, 🔒) anchor to the card */
   border: 3px solid #e2e8f0;
   border-radius: 8px;
-  padding: 30px 6px 10px; /* 30px top = status rail for the corner icons */
+  padding: 26px 6px 8px; /* 26px top = status rail for the corner icons */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4562,8 +4562,8 @@ body.idle-mode * {
 
 .shop-item-sprite-container {
   position: static; /* badges inside anchor to .shop-item-card, not the sprite */
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
 }
 
 .shop-item-sprite {
@@ -4574,8 +4574,8 @@ body.idle-mode * {
 
 .shop-item-lock-badge {
   position: absolute;
-  top: 7px;
-  right: 8px;
+  top: 5px;
+  right: 7px;
   background: #475569;
   border-radius: 50%;
   width: 20px;
@@ -4594,7 +4594,7 @@ body.idle-mode * {
   line-height: 20px;
   height: 20px;
   color: #334155;
-  margin-top: 8px;
+  margin-top: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4605,7 +4605,7 @@ body.idle-mode * {
 .shop-item-price-container {
   width: 100%;
   margin-top: auto;
-  padding-top: 6px;
+  padding-top: 4px;
 }
 
 .shop-item-progress-bg {
@@ -5198,8 +5198,8 @@ body.has-banner {
 
 .shop-item-sprite-container .shop-item-sparkle {
   position: absolute;
-  top: 7px;
-  left: 8px;
+  top: 6px;
+  left: 7px;
   margin-left: 0;
   font-size: 1rem;
   z-index: 2;
