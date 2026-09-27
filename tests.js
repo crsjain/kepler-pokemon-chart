@@ -8082,6 +8082,14 @@ async function runSuite() {
         const confirmModal = document.getElementById('confirm-modal');
         let inline = adminModal.querySelectorAll('[style]').length;
         assert(inline === 0, `#admin-modal must have zero inline styles, found ${inline}`);
+
+        // Phase 3: profile-row icon buttons meet the 42px touch-target minimum.
+        document.querySelector('.admin-nav-btn[data-admin-section="children"]').click();
+        adminModal.querySelector('.modal-content').getAnimations().forEach(a => a.finish());
+        for (const sel of ['.edit-rewards-btn', '.delete-profile-btn']) {
+          const r = document.querySelector(`${sel}[data-id="${kidId}"]`).getBoundingClientRect();
+          assert(Math.round(r.width) >= 42 && Math.round(r.height) >= 42, `${sel} must be at least 42x42, got ${r.width}x${r.height}`);
+        }
         document.querySelector(`.delete-profile-btn[data-id="${kidId}"]`).click();
         await sleep(50);
         assert(confirmModal.querySelector('.schedule-hero-card.danger') !== null, "Delete confirm should use the .danger hero card");
