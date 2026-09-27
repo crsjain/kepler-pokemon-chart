@@ -224,7 +224,7 @@ function withParentApproval(dateStr, onApproved) {
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault, getStarsFromDates } from './vault.js';
-import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES } from './pokemon_data.js';
+import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES, getStageIndexForLevel } from './pokemon_data.js';
 import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
 import { initAdmin } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
@@ -3553,14 +3553,7 @@ function addXp(amount) {
 
       if (stats.level < branchThreshold) {
         if (evo.stages) {
-          let stageIdx = 0;
-          for (let i = 1; i < evo.stages.length; i++) {
-            if (stats.level >= evo.stages[i].level) {
-              stageIdx = i;
-            } else {
-              break;
-            }
-          }
+          const stageIdx = getStageIndexForLevel(evo, stats.level, stats.minStageId);
           const targetStageId = String(evo.stages[stageIdx].id);
           if (String(stats.stageId) !== targetStageId) {
             const isDevolvingFromBranch = hasBranching && evo.options.some(opt => String(opt.id) === String(stats.stageId));
@@ -4352,6 +4345,7 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
       renderState(true);
     },
     renderState: (rebuildGrid) => renderState(rebuildGrid),
+    addXp: (amount) => addXp(amount),
     setViewingWeekStartDate: (dateStr) => { currentViewingWeekStartDate = dateStr; },
     ADMIN_PASSWORD: ADMIN_PASSWORD,
     resetWeekGrid: (carryOver) => resetWeekGrid(carryOver),

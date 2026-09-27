@@ -1,4 +1,4 @@
-import { TIER_1_IDS, EVOLUTIONS } from './pokemon_data.js';
+import { TIER_1_IDS, EVOLUTIONS, STARTER_PIKACHU_INSTANCE_ID, STARTER_PIKACHU_STAGE_ID } from './pokemon_data.js';
 import { formatLocalDate, getWeekStart, getDateOfColumn } from './date_utils.js';
 
 
@@ -499,8 +499,34 @@ export const MIGRATIONS = [
       }
       return s;
     }
+  },
+  {
+    version: 19,
+    migrate: (s) => {
+      // Starter Pikachu: the starter partner (bare instance key '172') becomes a
+      // Pikachu with a `minStageId` floor so it can never devolve into a Pichu.
+      // Only starters still below the Pichu→Pikachu threshold (Lv 5) are
+      // converted; level and XP are preserved. Shop-bought Pichus are keyed
+      // '172_<timestamp>' and are never touched, so raising a Pichu remains the
+      // only way to get additional Pikachu. The default template (V16) also flows
+      // through here, so new profiles and wipes get the Pikachu starter too.
+      const starter = s.partnersData && s.partnersData[STARTER_PIKACHU_INSTANCE_ID];
+      if (starter && String(starter.familyId) === '172') {
+        const evo = EVOLUTIONS['172'];
+        const pikachuStage = evo.stages.find(st => String(st.id) === STARTER_PIKACHU_STAGE_ID);
+        const lvl = typeof starter.level === 'number' ? starter.level : 1;
+        if (lvl < pikachuStage.level) {
+          starter.stageId = STARTER_PIKACHU_STAGE_ID;
+          starter.minStageId = STARTER_PIKACHU_STAGE_ID;
+        }
+      }
+      return s;
+    }
   }
 ];
+
+// Single source of truth for the current schema version (the last migration).
+export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
 
 export function runMigrations(parsedState) {
   let currentVersion = parsedState.version;

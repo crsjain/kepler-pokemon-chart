@@ -77,7 +77,7 @@ async function runSuite() {
 
     let state = window.__app_state__;
     console.log("DEBUG: state before assert:", JSON.stringify(state));
-    assert(state.version === 18, "State version should be 18 (actual: " + state.version + ")");
+    assert(state.version === 19, "State version should be 19 (actual: " + state.version + ")");
     assert(state.weeklyClaimed === false, "Weekly claimed should be false");
     assert(window.__grid_rebuild_count__ === 1, `Grid should have been built exactly once on reset (actual: ${window.__grid_rebuild_count__})`);
 
@@ -333,6 +333,7 @@ async function runSuite() {
       console.log("Testing State Diagnostics...");
       
       // Corrupt state
+      const expectedRecoveredStage = state.partnersData['172'].minStageId || '172';
       state.partnersData['172'].xp = 180; // Invalid XP
       state.partnersData['172'].stageId = 'invalid_id'; // Invalid evolution stage ID
 
@@ -343,7 +344,9 @@ async function runSuite() {
 
       // Verify heals
       assert(state.partnersData['172'].xp === 99, "XP should clamp to 99");
-      assert(state.partnersData['172'].stageId === '172', "Stage ID should recover to default Pichu");
+      // V19: the default starter is a Pikachu with a minStageId floor, so an invalid
+      // stage recovers to that floor rather than to the Pichu base form.
+      assert(state.partnersData['172'].stageId === expectedRecoveredStage, `Stage ID should recover to '${expectedRecoveredStage}' (actual: ${state.partnersData['172'].stageId})`);
 
       // Test Force App Update Button (UI Flow only to avoid reload loop)
       {
@@ -782,7 +785,7 @@ async function runSuite() {
         console.log("Running Test Case 11: Badge Case & Collection...");
         
         // Verify state initial V10 fields
-        assert(state.version === 18, "State version should be 18");
+        assert(state.version === 19, "State version should be 19");
         assert(Array.isArray(state.collectedBadges), "collectedBadges should be an array");
         assert(state.collectedBadges.length === 0, "Initially collected badges should be empty");
         assert(Array.isArray(state.badgePool), "badgePool should be an array");
@@ -912,7 +915,7 @@ async function runSuite() {
         window.__test_helpers__.loadState();
         let migratedState = window.__app_state__;
         
-        assert(migratedState.version === 18, "Migrated state version should be 18");
+        assert(migratedState.version === 19, "Migrated state version should be 19");
         assert(migratedState.idleTimeout === 10, "Migrated state should have default idleTimeout 10");
         assert(Array.isArray(migratedState.weeklyRewardOptions), "weeklyRewardOptions should be initialized on migration");
         assert(Array.isArray(migratedState.megaRewardOptions), "megaRewardOptions should be initialized on migration");
@@ -954,7 +957,7 @@ async function runSuite() {
         window.__test_helpers__.loadState();
         migratedState = window.__app_state__;
         
-        assert(migratedState.version === 18, "Migrated state version should be 18");
+        assert(migratedState.version === 19, "Migrated state version should be 19");
         assert(migratedState.idleTimeout === 10, "Migrated state should have default idleTimeout 10");
         assert(Array.isArray(migratedState.weeklyRewardOptions), "weeklyRewardOptions should be initialized on migration");
         assert(Array.isArray(migratedState.megaRewardOptions), "megaRewardOptions should be initialized on migration");
@@ -2361,7 +2364,7 @@ async function runSuite() {
         Object.values(current.partnersData).forEach(p => { p.level = 9; p.xp = 50; });
 
         const wiped = StateModule.buildWipedChildState(current);
-        assert(wiped.version === 18, `Wiped state should be fully migrated (v18), got v${wiped.version}`);
+        assert(wiped.version === 19, `Wiped state should be fully migrated (v19), got v${wiped.version}`);
         assert(wiped.childName === 'Wipe Kid', "childName must survive the wipe");
         assert(wiped.tasks.length === 1 && wiped.tasks[0].name === 'Piano Only', "Custom activities must survive the wipe");
         assert(wiped.weeklyRewardOptions[0].text === 'Custom Weekly', "Weekly reward options must survive");
@@ -2777,7 +2780,7 @@ async function runSuite() {
 
         const migrated = runMigrations(v14State);
 
-        assert(migrated.version === 18, "Migrated state version should be 18");
+        assert(migrated.version === 19, "Migrated state version should be 19");
         assert(migrated.weeklyHistory !== undefined, "weeklyHistory should be initialized");
         
         assert(migrated.grid["2026-07-26-piano"] === true, "Day 0 piano should migrate to 2026-07-26-piano");
@@ -3120,10 +3123,13 @@ async function runSuite() {
 
         const migrated = runMigrations(v15State);
 
-        assert(migrated.version === 18, "Migrated state version should be 18");
+        assert(migrated.version === 19, "Migrated state version should be 19");
         assert(migrated.activePartnerInstanceId === '4', "activePartnerInstanceId should be set to partnerFamily '4'");
         assert(migrated.partnersData['172'].familyId === '172', "Pikachu should be migrated to Pichu family '172'");
-        assert(migrated.partnersData['172'].stageId === '172', "Pikachu level 2 should devolve to Pichu stage '172' to match level");
+        // V17 devolves the Lv 2 starter to Pichu; V19 then restores it as the
+        // floored starter Pikachu (see createStarterPikachu in pokemon_data.js).
+        assert(migrated.partnersData['172'].stageId === '25', `Lv 2 starter should end as the V19 starter Pikachu (actual: ${migrated.partnersData['172'].stageId})`);
+        assert(migrated.partnersData['172'].minStageId === '25', "V19 starter Pikachu should carry a minStageId floor of '25'");
         assert(migrated.partnersData['4'].familyId === '4', "Charmander should get familyId '4'");
         assert(migrated.partnersData['172'].level === 2, "Pichu level should be preserved");
         assert(migrated.partnersData['4'].level === 3, "Charmander level should be preserved");
@@ -5043,7 +5049,7 @@ async function runSuite() {
         assert(!serialized.includes('NaN'), "Serialized JSON must not contain NaN");
 
         const deserialized = JSON.parse(serialized);
-        assert(deserialized.version === 18, `JSON version must be 18, got ${deserialized.version}`);
+        assert(deserialized.version === 19, `JSON version must be 19, got ${deserialized.version}`);
         assert(typeof deserialized.grid === 'object' && !Array.isArray(deserialized.grid), "Grid must remain a key-value map");
         assert(typeof deserialized.excused === 'object' && !Array.isArray(deserialized.excused), "Excused must remain a key-value map");
         assert(typeof deserialized.weeklyHistory === 'object' && !Array.isArray(deserialized.weeklyHistory), "weeklyHistory must remain an object map");
@@ -8021,6 +8027,99 @@ async function runSuite() {
 
         document.getElementById('close-shop-modal-btn').click();
         await sleep(30);
+        helpers.resetState();
+        await sleep(50);
+      }
+
+      // 95. Test Case 95: Starter Pikachu (V19) — new children start with a Pikachu that never devolves to Pichu
+      console.log("Running Test Case 95: Starter Pikachu with minStageId floor (V19)...");
+      {
+        const helpers = window.__test_helpers__;
+
+        // (A) New profile: the V16 template runs every migration and ends as a floored Lv 1 Pikachu.
+        const fresh = runMigrations(getDefaultStateTemplate());
+        assert(fresh.version === 19, `New profile should migrate to v19, got v${fresh.version}`);
+        assert(fresh.activePartnerInstanceId === '172', `New profile active partner should be the starter '172', got '${fresh.activePartnerInstanceId}'`);
+        const starter = fresh.partnersData['172'];
+        assert(starter && starter.familyId === '172' && starter.stageId === '25' && starter.minStageId === '25',
+          `New profile starter must be a Pikachu (stage '25', floor '25') in the Pichu family, got ${JSON.stringify(starter)}`);
+        assert(starter.level === 1 && starter.xp === 0, "New profile starter Pikachu should start at Lv 1 with 0 XP");
+        ['4', '1', '7', '133'].forEach(fid => {
+          const p = fresh.partnersData[fid];
+          assert(p && p.stageId === fid && p.level === 1 && p.minStageId === undefined, `Starter ${fid} should be unchanged at its base form`);
+        });
+
+        // (B) Wipe All Progress rebuilds from the same template.
+        const wiped = StateModule.buildWipedChildState(state);
+        assert(wiped.partnersData['172'].stageId === '25' && wiped.partnersData['172'].minStageId === '25', "Wiped child should restart with the starter Pikachu");
+
+        // (C) Existing children: only the bare-key starter below Lv 5 converts; purchased Pichus never do.
+        const v18Young = runMigrations({
+          version: 18,
+          activePartnerInstanceId: '172',
+          partnerFamily: '172',
+          partnersData: {
+            '172': { familyId: '172', level: 3, xp: 40, stageId: '172' },
+            '172_1790000000001': { familyId: '172', level: 2, xp: 10, stageId: '172' }
+          }
+        });
+        assert(v18Young.partnersData['172'].stageId === '25' && v18Young.partnersData['172'].minStageId === '25', "Existing Lv 3 starter Pichu should convert to the floored starter Pikachu");
+        assert(v18Young.partnersData['172'].level === 3 && v18Young.partnersData['172'].xp === 40, "Converted starter keeps its level and XP");
+        const bought = v18Young.partnersData['172_1790000000001'];
+        assert(bought.stageId === '172' && bought.minStageId === undefined, "A shop-bought Pichu must stay a Pichu with no floor");
+
+        const v18Grown = runMigrations({
+          version: 18,
+          partnersData: { '172': { familyId: '172', level: 7, xp: 5, stageId: '25' } }
+        });
+        assert(v18Grown.partnersData['172'].stageId === '25' && v18Grown.partnersData['172'].minStageId === undefined, "A starter already at Lv 5+ is left untouched");
+
+        // (D) Floor behaviour through the real addXp path.
+        helpers.resetState();
+        await sleep(50);
+        assert(state.activePartnerInstanceId === '172', "Reset state should activate the starter");
+        assert(document.getElementById('partner-name').textContent === 'Pikachu', `Trainer card should show Pikachu after reset, got '${document.getElementById('partner-name').textContent}'`);
+
+        const p = state.partnersData['172'];
+        p.level = 1; p.xp = 95;
+        helpers.addXp(5);
+        assert(p.level === 2 && p.stageId === '25', `Lv 1→2 starter must stay Pikachu (stage '${p.stageId}')`);
+        helpers.addXp(-5);
+        assert(p.level === 1 && p.xp === 95 && p.stageId === '25', `Lv 2→1 starter must never devolve to Pichu (stage '${p.stageId}')`);
+
+        p.level = 9; p.xp = 95; p.stageId = '25';
+        helpers.addXp(5);
+        assert(p.level === 10 && p.stageId === '26', `Starter Pikachu should evolve to Raichu at Lv 10 (stage '${p.stageId}')`);
+        helpers.addXp(-5);
+        assert(p.level === 9 && p.stageId === '25', `Raichu dropping to Lv 9 returns to Pikachu, not Pichu (stage '${p.stageId}')`);
+
+        // A floorless (shop-bought) Pichu still follows the normal Lv 5 thresholds.
+        state.partnersData['172_1790000000009'] = { familyId: '172', level: 4, xp: 95, stageId: '172' };
+        state.activePartnerInstanceId = '172_1790000000009';
+        helpers.addXp(5);
+        assert(state.partnersData['172_1790000000009'].stageId === '25', "Bought Pichu should evolve into Pikachu at Lv 5");
+        helpers.addXp(-5);
+        assert(state.partnersData['172_1790000000009'].stageId === '172', "Bought Pichu should devolve back to Pichu below Lv 5");
+        state.activePartnerInstanceId = '172';
+        document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+
+        // (E) Diagnostics raise a stage below its floor and drop a floor from the wrong family.
+        state.partnersData['172'] = { familyId: '172', level: 2, xp: 0, stageId: '172', minStageId: '25' };
+        state.partnersData['4'] = { familyId: '4', level: 1, xp: 0, stageId: '4', minStageId: '25' };
+        runStateDiagnostics();
+        assert(state.partnersData['172'].stageId === '25', `Diagnostics must raise a below-floor stage to the floor (stage '${state.partnersData['172'].stageId}')`);
+        assert(state.partnersData['4'].minStageId === undefined && state.partnersData['4'].stageId === '4', "Diagnostics must drop a minStageId that isn't a stage of the partner's family");
+
+        // (F) Pichu stays buyable in the Partner Shop; Pikachu does not.
+        assert(!EVOLVED_POKEMON_IDS.has(172), "Pichu must remain a buyable base form");
+        assert(EVOLVED_POKEMON_IDS.has(25), "Pikachu must stay unbuyable (raise a Pichu to get more)");
+        helpers.openPokemonShop();
+        await sleep(100);
+        assert(document.querySelector('#shop-items-grid .shop-item-card[data-id="172"]') !== null, "Pichu card must still be listed in the Partner Shop");
+        assert(document.querySelector('#shop-items-grid .shop-item-card[data-id="25"]') === null, "Pikachu must not be listed in the Partner Shop");
+        document.getElementById('close-shop-modal-btn').click();
+        await sleep(30);
+
         helpers.resetState();
         await sleep(50);
       }

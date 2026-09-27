@@ -1,6 +1,6 @@
-import { TIER_1_IDS, TIER_2_IDS, getPokemonName, MEGA_POKEMON, STARTER_OPTIONS, STARTER_FAMILIES, EVOLUTIONS, POKEMON_MAP, EVOLVED_POKEMON_IDS, getPokemonCost } from './pokemon_data.js';
+import { TIER_1_IDS, TIER_2_IDS, getPokemonName, MEGA_POKEMON, STARTER_OPTIONS, STARTER_FAMILIES, EVOLUTIONS, POKEMON_MAP, EVOLVED_POKEMON_IDS, getPokemonCost, createStarterPikachu, getStageIndexForLevel } from './pokemon_data.js';
 import { formatLocalDate, getWeekStart, getSunday, getDateOfColumn, getLocalDate } from './date_utils.js';
-import { runMigrations, DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS } from './migrations.js';
+import { runMigrations, DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS, LATEST_SCHEMA_VERSION } from './migrations.js';
 
 export const ADMIN_PASSWORD = "zxcv";
 export const DAYS = [0, 1, 2, 3, 4, 5, 6];
@@ -75,9 +75,9 @@ export function getStageInfo(familyId, stageId) {
 
 // State V16 (Star Vault & Partner Unlock Shop)
 export let state = {
-  version: 18,
+  version: 19,
   activePartnerInstanceId: '172',
-  partnerFamily: '172', // Default Pichu Family
+  partnerFamily: '172', // Pichu family; the starter begins at the Pikachu stage (V19)
   weekStartDay: 0, // Default Sunday (0) to Saturday (6)
   idleTimeout: 10, // Default 10 minutes
   adminPassword: 'zxcv', // Default parent admin passcode
@@ -89,7 +89,7 @@ export let state = {
   excused: {}, // key format: "YYYY-MM-DD-task" -> 'bonus' | 'rest' | boolean (legacy true = 'rest')
   weeklyHistory: {}, // key format: "YYYY-MM-DD" -> { weekStartDay, reward, megaReward, weeklyClaimed, badgeId, xpEarned, megaWeeks }
   partnersData: {
-    '172': { familyId: '172', level: 1, xp: 0, stageId: '172' },
+    '172': createStarterPikachu(),
     '4': { familyId: '4', level: 1, xp: 0, stageId: '4' },
     '1': { familyId: '1', level: 1, xp: 0, stageId: '1' },
     '7': { familyId: '7', level: 1, xp: 0, stageId: '7' },
@@ -388,7 +388,7 @@ export function cleanupPhantomPartners() {
       state.partnerFamily = String(state.partnersData[fallbackId].familyId || fallbackId);
     } else {
       state.activePartnerInstanceId = '172';
-      state.partnersData['172'] = { familyId: '172', level: 1, xp: 0, stageId: '172' };
+      state.partnersData['172'] = createStarterPikachu();
       state.partnerFamily = '172';
     }
     summary.reassignedActive = true;
@@ -478,17 +478,23 @@ export function runStateDiagnostics() {
         fixed.push(`Clamped XP for instance ${instanceId} between 0 and 99.`);
       }
       
+      // V19 stage floor (starter Pikachu). A floor that isn't a stage of this
+      // family is meaningless, so drop it rather than let it pin a wrong form.
+      if (pData.minStageId !== undefined) {
+        const floorEvo = EVOLUTIONS[fid];
+        const floorIsValid = pData.minStageId !== null && !!floorEvo && !!floorEvo.stages &&
+          floorEvo.stages.some(s => String(s.id) === String(pData.minStageId));
+        if (!floorIsValid) {
+          issues.push(`Invalid minStageId '${pData.minStageId}' for instance ${instanceId}.`);
+          delete pData.minStageId;
+          fixed.push(`Removed invalid minStageId for instance ${instanceId}.`);
+        }
+      }
+
       if (!pData.stageId) {
         const evo = EVOLUTIONS[fid];
-        let index = 0;
         if (evo && evo.stages) {
-          for (let i = 1; i < evo.stages.length; i++) {
-            if (pData.level >= evo.stages[i].level) {
-              index = i;
-            } else {
-              break;
-            }
-          }
+          const index = getStageIndexForLevel(evo, pData.level, pData.minStageId);
           pData.stageId = String(evo.stages[index].id);
         } else {
           pData.stageId = fid;
@@ -501,14 +507,7 @@ export function runStateDiagnostics() {
           const threshold = evo.options[0]?.level || 5;
           if (pData.level < threshold) {
             if (evo.stages) {
-              let expectedIndex = 0;
-              for (let i = 1; i < evo.stages.length; i++) {
-                if (pData.level >= evo.stages[i].level) {
-                  expectedIndex = i;
-                } else {
-                  break;
-                }
-              }
+              const expectedIndex = getStageIndexForLevel(evo, pData.level, pData.minStageId);
               const expectedStageId = String(evo.stages[expectedIndex].id);
               if (String(pData.stageId) !== expectedStageId) {
                 issues.push(`Stage ${pData.stageId} invalid for level ${pData.level} (expected ${expectedStageId}) in mixed family ${fid}.`);
@@ -535,8 +534,16 @@ export function runStateDiagnostics() {
           const isValidStage = evo.stages.some(s => String(s.id) === String(pData.stageId));
           if (!isValidStage) {
             issues.push(`Invalid stageId for instance ${instanceId} (family ${fid}): ${pData.stageId}`);
-            pData.stageId = fid;
-            fixed.push(`Reset stageId to ${fid}.`);
+            pData.stageId = pData.minStageId !== undefined ? String(pData.minStageId) : fid;
+            fixed.push(`Reset stageId to ${pData.stageId}.`);
+          } else if (pData.minStageId !== undefined) {
+            const currentIndex = evo.stages.findIndex(s => String(s.id) === String(pData.stageId));
+            const floorIndex = evo.stages.findIndex(s => String(s.id) === String(pData.minStageId));
+            if (currentIndex < floorIndex) {
+              issues.push(`Stage ${pData.stageId} is below the minStageId floor for instance ${instanceId}.`);
+              pData.stageId = String(pData.minStageId);
+              fixed.push(`Raised stageId to floor '${pData.stageId}' for instance ${instanceId}.`);
+            }
           }
         }
       }
@@ -548,7 +555,8 @@ export function runStateDiagnostics() {
     issues.push(`activePartnerInstanceId '${state.activePartnerInstanceId}' not found in partnersData.`);
     state.activePartnerInstanceId = Object.keys(state.partnersData)[0] || '172';
     if (!state.partnersData[state.activePartnerInstanceId]) {
-      state.partnersData[state.activePartnerInstanceId] = { familyId: '172', level: 1, xp: 0, stageId: '172' };
+      // Only reachable when partnersData is empty, so the key is always '172'.
+      state.partnersData[state.activePartnerInstanceId] = createStarterPikachu();
     }
     fixed.push(`Reset active partner to '${state.activePartnerInstanceId}'.`);
   }
@@ -765,10 +773,10 @@ export function runStateDiagnostics() {
     fixed.push("Reset megaRewardOptions to defaults.");
   }
 
-  if (state.version !== 18) {
-    issues.push(`State version mismatch. Current: ${state.version}, Expected: 18`);
-    state.version = 18;
-    fixed.push("Forced state version to 18.");
+  if (state.version !== LATEST_SCHEMA_VERSION) {
+    issues.push(`State version mismatch. Current: ${state.version}, Expected: ${LATEST_SCHEMA_VERSION}`);
+    state.version = LATEST_SCHEMA_VERSION;
+    fixed.push(`Forced state version to ${LATEST_SCHEMA_VERSION}.`);
   }
 
   if (fixed.length > 0) {

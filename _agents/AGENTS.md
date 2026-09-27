@@ -188,8 +188,11 @@ Key entry points:
   the XP constants (`XP_PER_TASK` 5, `XP_DAILY_BONUS` 15, `XP_BONUS_TASK` 10,
   `XP_LEVEL_THRESHOLD` 100). `ADMIN_PASSWORD` is `"zxcv"`.
 - [`migrations.js`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/migrations.js) —
-  versioned schema migrations. Current schema is **V18**; the full shape is printed
-  in the latest checkpoint. Any new persisted field needs a migration here.
+  versioned schema migrations. Current schema is **V19** (starter Pikachu
+  `minStageId` floor); the full shape is printed in the latest checkpoint. Any
+  new persisted field needs a migration here. `LATEST_SCHEMA_VERSION` is derived
+  from the last migration — never hardcode the version elsewhere (diagnostics
+  once pinned it to 18 and silently downgraded every V19 state).
 - [`date_utils.js`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/date_utils.js) —
   all week-boundary math. Grid keys are `"YYYY-MM-DD-task"`; never build date
   strings by hand, use `formatLocalDate`.

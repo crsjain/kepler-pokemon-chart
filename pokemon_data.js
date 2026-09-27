@@ -190,6 +190,50 @@ export const STARTER_OPTIONS = [
 
 export const STARTER_FAMILIES = STARTER_OPTIONS.map(o => o.familyId);
 
+/**
+ * Starter Pikachu (schema V19).
+ *
+ * Game lore: Pikachu is one of the first Pokémon a trainer meets, so the starter
+ * lives in the Pichu family ('172') but begins at the Pikachu stage. The
+ * `minStageId` floor stops the level-driven evolution engine from ever
+ * devolving it back into a Pichu; it still evolves into Raichu at the family's
+ * normal Lv 10 threshold (same pacing as the other starters). Pichu itself stays
+ * in the Partner Shop, so any *additional* Pikachu must be raised from a Pichu.
+ */
+export const STARTER_PIKACHU_INSTANCE_ID = '172';
+export const STARTER_PIKACHU_STAGE_ID = '25';
+
+export function createStarterPikachu() {
+  return {
+    familyId: '172',
+    level: 1,
+    xp: 0,
+    stageId: STARTER_PIKACHU_STAGE_ID,
+    minStageId: STARTER_PIKACHU_STAGE_ID
+  };
+}
+
+/**
+ * Returns the index into `evo.stages` for a partner at `level`, honouring an
+ * optional per-partner `minStageId` floor. An unknown floor is ignored.
+ */
+export function getStageIndexForLevel(evo, level, minStageId) {
+  if (!evo || !evo.stages || evo.stages.length === 0) return 0;
+  let index = 0;
+  for (let i = 1; i < evo.stages.length; i++) {
+    if (level >= evo.stages[i].level) {
+      index = i;
+    } else {
+      break;
+    }
+  }
+  if (minStageId !== undefined && minStageId !== null) {
+    const floorIndex = evo.stages.findIndex(s => String(s.id) === String(minStageId));
+    if (floorIndex > index) index = floorIndex;
+  }
+  return index;
+}
+
 // Evolution configurations
 export const EVOLUTIONS = {
   '172': {
