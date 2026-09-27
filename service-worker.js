@@ -14,6 +14,7 @@ const ASSETS_TO_CACHE = [
   './pokemon_data.js',
   './date_utils.js',
   './admin.js',
+  './rewards_admin.js',
   './audio.js',
   './particles.js',
   './icon.png',
