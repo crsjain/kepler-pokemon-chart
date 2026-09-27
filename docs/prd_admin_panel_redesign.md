@@ -239,7 +239,7 @@ Checkpoint 60 set the pattern: move inline styles to named classes in `style.css
 4. **(Stage 4)** R8-1 parity step, then bump the icon buttons to 42×42 as a separate step.
 5. **(Stage 4)** Rule 4 shell, Rule 5 tracks, Rule 12 margin removal, and a Rule 13B yellow/charcoal active tab.
 6. **(Stage 5)** TC30 activates the Schedule pane before measuring and asserts non-zero width.
-7. **(Stage 5)** Add TC92 (§6.3). Keep all 26 IDs (25 + the D8 placeholder). Retire unused wrapper classes only after a grep.
+7. **(Stage 5)** Add TC93 (§6.3). Keep all 26 IDs (25 + the D8 placeholder). Retire unused wrapper classes only after a grep.
 
 ---
 
@@ -290,7 +290,7 @@ Class selectors pinned by tests, all unchanged: `.admin-task-item`, `.admin-prof
 
 **No other existing test needs to change.** Every other admin interaction uses `.click()`, `.value` + `dispatchEvent`, or DOM queries, and all of those work on hidden panes. The rewards editor tests (TC31, TC46, TC57) drive the stacked `#edit-rewards-modal`, which D5 leaves as it is.
 
-### 6.3 New Test: TC92 (next number; TC89 was taken by D7/D8 in Checkpoint 62, TC90–TC91 in Checkpoint 63)
+### 6.3 New Test: TC93 (next number; TC89 was taken by D7/D8 in Checkpoint 62, TC90–TC92 in Checkpoint 63)
 
 1. Open Admin with the passcode. Assert the Today pane is visible, the other 6 have `.hidden`, and exactly one `.admin-nav-btn` has `aria-selected="true"`.
 2. Click each nav button in turn. After each click, assert that exactly one pane is visible and it matches `data-admin-section`.
@@ -360,7 +360,7 @@ Each phase is its own local commit. Run `node run_headless_tests.js` after each 
 |---|---|---|
 | **0: Rule 8 class moves** | R8-1 (class only, 36×32 kept), R8-2, R8-3, R8-4. Wipe copy (§4.5). | CDP computed-style parity: 0 diffs on the profile buttons, delete card, empty list, and rewards add-row (the Checkpoint 60 method). Suite green. |
 | **1: Reward-editor extraction** *(optional, §7)* | `rewards_admin.js`, `ASSETS_TO_CACHE` | Suite green with `tests.js` **unchanged**. `node --check`. `app.js` export count stays at 11 (`renderRewardDropdowns` stays). |
-| **2: Shell + nav** | Markup regrouping into 7 panes, Rule 4 grid, nav switching in `admin.js`, scope chip, `#admin-customize-rewards-btn`, retire unused wrapper classes | TC30 update + TC92. Suite green. Numbering audit (`dupes:12` only). |
+| **2: Shell + nav** | Markup regrouping into 7 panes, Rule 4 grid, nav switching in `admin.js`, scope chip, `#admin-customize-rewards-btn`, retire unused wrapper classes | TC30 update + TC93. Suite green. Numbering audit (`dupes:12` only). |
 | **3: Intentional visual deltas** | Icon buttons 36×32 → 42×42 | Manual check on desktop, a 768px tablet, and a 360px phone. |
 | **Wrap-up** | One `CACHE_NAME` bump plus `style.css?v=` / `app.js?v=` covering every phase shipped. README "Parent Admin" bullets. Checkpoint. | `pokemon-session-wrapup` |
 

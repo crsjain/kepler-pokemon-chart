@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kepler's Pokémon Training Chart</title>
+  <title>Pokémon Training Chart</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.59">
+  <link rel="stylesheet" href="style.css?v=10.61">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Stale-module self-heal (Checkpoint 63). If a fresh app.js gets linked
@@ -39,11 +39,41 @@
       return true;
     };
 
+    // Boot state (Checkpoint 63 panel review). <body> starts with class
+    // "app-booting" so the trainer card and grid render as a neutral skeleton
+    // instead of placeholder data until the child's real profile arrives.
+    // app.js calls __markAppReady() on every startup exit path (first profile
+    // render, login screen, profile picker, errors, test mode). The watchdog
+    // turns a stalled start (e.g. offline) into a retry prompt instead of an
+    // endless skeleton.
+    window.__BOOT_WATCHDOG_MS = 10000;
+    window.__markAppReady = function() {
+      if (window.__bootWatchdog) {
+        clearTimeout(window.__bootWatchdog);
+        window.__bootWatchdog = null;
+      }
+      if (document.body) {
+        document.body.classList.remove('app-booting', 'app-boot-failed');
+      }
+    };
+    window.__showBootFailed = function() {
+      if (document.body && document.body.classList.contains('app-booting')) {
+        document.body.classList.add('app-boot-failed');
+      }
+    };
+    window.__bootWatchdog = setTimeout(window.__showBootFailed, window.__BOOT_WATCHDOG_MS);
+    document.addEventListener('DOMContentLoaded', function() {
+      var retryBtn = document.getElementById('boot-retry-btn');
+      if (retryBtn) retryBtn.addEventListener('click', function() { window.location.reload(); });
+    });
+
     // Visual Error Logger for debugging remote devices (e.g. tablets/phones)
     window.onerror = function(msg, url, line, col, error) {
       if (window.__isStaleModuleError(msg) && window.__tryStaleModuleReload()) {
         return true;
       }
+      // Never hide a real error behind the boot skeleton.
+      window.__markAppReady();
       var div = document.createElement('div');
       div.style.color = '#7f1d1d';
       div.style.background = '#fef2f2';
@@ -76,7 +106,7 @@
     }
   </script>
 </head>
-<body>
+<body class="app-booting">
   <div id="env-banner" class="hidden"></div>
   <canvas id="celebration-canvas"></canvas>
 
@@ -84,7 +114,7 @@
     <div class="app-container">
     <!-- Header -->
     <header class="game-header">
-      <h1 class="title"><span class="trainer-name-label">Kepler</span>'s Pokémon Training</h1>
+      <h1 class="title"><span class="trainer-possessive"><span class="trainer-name-label"></span>'s </span>Pokémon Training</h1>
       <p class="subtitle">"Gotta Catch 'Em All!"</p>
     </header>
     
@@ -112,14 +142,19 @@
       <div class="trainer-info">
         <div class="avatar-container">
           <div class="pokemon-sprite-wrapper" id="pokemon-sprite-wrapper" title="Click to view partner details!">
-            <img id="pokemon-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="Active Pokemon" tabindex="0" role="button" aria-label="View enlarged partner Pokémon">
+            <img id="pokemon-sprite" alt="Active Pokemon" tabindex="0" role="button" aria-label="View enlarged partner Pokémon">
             <span class="sprite-inspect-badge" aria-hidden="true">🔍</span>
           </div>
           <button id="change-partner-btn" class="pixel-btn small">Change Partner</button>
         </div>
         <div class="stats-container">
-          <div class="trainer-title">TRAINER <span class="trainer-name-label">Kepler</span></div>
-          <div class="partner-name" id="partner-name">Pikachu</div>
+          <div class="trainer-title">TRAINER <span class="trainer-name-label"></span></div>
+          <div class="boot-status" id="boot-status" role="status" aria-live="polite">
+            <span class="boot-status-loading">Finding your partner…</span>
+            <span class="boot-status-failed">Can't reach the Pokémon Center 📡</span>
+            <button id="boot-retry-btn" class="pixel-btn info boot-retry-btn">Try Again 🔄</button>
+          </div>
+          <div class="partner-name" id="partner-name"></div>
           <div class="level-badge">LV <span id="pokemon-level">1</span></div>
           <div class="xp-bar-container">
             <div class="xp-label">XP: <span id="current-xp">0</span> / <span id="next-level-xp">100</span></div>
@@ -163,7 +198,7 @@
       <div class="week-navigation-container">
         <button id="prev-week-btn" class="pixel-btn info">◀ Prev</button>
         <div class="week-nav-center">
-          <span id="week-range-display" class="week-range-text">Loading Week...</span>
+          <span id="week-range-display" class="week-range-text"></span>
           <button id="back-to-today-btn" class="pixel-btn warning small back-to-today-pill hidden" aria-label="Switch active highlight back to today">⚡ Back to Today</button>
         </div>
         <button id="next-week-btn" class="pixel-btn info">Next ▶</button>
@@ -292,7 +327,7 @@
         <button id="close-partner-showcase-btn" class="modal-close-btn" aria-label="Close modal">&times;</button>
         
         <div class="showcase-header">
-          <div class="showcase-eyebrow"><span>TRAINER</span> <span class="trainer-name-label">Kepler</span></div>
+          <div class="showcase-eyebrow"><span>TRAINER</span> <span class="trainer-name-label"></span></div>
           <div class="showcase-pokemon-identity">
             <h2 id="showcase-pokemon-name" class="showcase-name">Pikachu</h2>
             <div class="showcase-meta-row">
@@ -403,7 +438,7 @@
     <!-- Star Vault Modal -->
     <div id="vault-modal" class="modal hidden">
       <div class="modal-content vault-modal-content">
-        <h2><span class="trainer-name-label">Kepler</span>'s Star Vault 🏆</h2>
+        <h2><span class="trainer-name-label"></span>'s Star Vault 🏆</h2>
         <button id="close-vault-modal-btn" class="modal-close-btn">&times;</button>
         
         <!-- Top Stats HUD -->
@@ -617,7 +652,7 @@
     <!-- Badge Case Modal -->
     <div id="badges-modal" class="modal hidden">
       <div class="modal-content badges-modal-content pixel-card">
-        <h2><span class="trainer-name-label">Kepler</span>'s Badge Case 🏆</h2>
+        <h2><span class="trainer-name-label"></span>'s Badge Case 🏆</h2>
         
         <!-- Controls: Filter & Sorting (matches Pokémon Shop bar) -->
         <div class="shop-filter-bar badge-case-controls">
@@ -664,7 +699,7 @@
     <div id="guide-modal" class="modal hidden" style="z-index: 100000;">
       <div class="modal-content guide-modal-content pixel-card">
         <h2>Pokémon Training Guide 📖</h2>
-        <p class="guide-subtitle">Here is what <span class="trainer-name-label">Kepler</span> needs to do to earn a pokeball for each task!</p>
+        <p class="guide-subtitle">Here is what <span class="trainer-name-label"></span> needs to do to earn a pokeball for each task!</p>
         
         <div class="guide-list" id="guide-tasks-list">
           <!-- Guide items rendered dynamically -->
@@ -965,7 +1000,7 @@
   </div>
 
   <script src="particles.js?v=10.3"></script>
-  <script type="module" src="app.js?v=10.52" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.53" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 

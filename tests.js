@@ -7913,6 +7913,62 @@ async function runSuite() {
         await sleep(50);
       }
 
+      // 92. Test Case 92: Boot skeleton hides placeholder data until the real profile renders
+      console.log("Running Test Case 92: Boot skeleton & retry watchdog (no Pikachu/Kepler placeholder flash)...");
+      {
+        // (A) Static markup ships neutral: nothing to flash even before CSS/JS.
+        const rawHtml = await (await fetch('index.html?t=' + Date.now(), { cache: 'no-store' })).text();
+        assert(/<body class="app-booting">/.test(rawHtml), "index.html <body> must start with class 'app-booting'");
+        assert(!/id="pokemon-sprite"[^>]*25\.png/.test(rawHtml), "#pokemon-sprite must not ship a hard-coded Pikachu (25.png) src");
+        assert(!/id="partner-name"[^>]*>\s*Pikachu/.test(rawHtml), "#partner-name must not ship placeholder 'Pikachu' text");
+        assert(!/trainer-name-label">Kepler/.test(rawHtml), "No .trainer-name-label may ship a hard-coded child name");
+        assert(!/Loading Week\.\.\./.test(rawHtml), "Week label must not ship 'Loading Week...' placeholder text");
+
+        // (B) Startup cleared the boot state and its watchdog.
+        const body = document.body;
+        assert(!body.classList.contains('app-booting') && !body.classList.contains('app-boot-failed'),
+          "Test-mode startup must clear the boot state");
+        assert(window.__bootWatchdog === null, "Boot watchdog must be cleared once the app is ready");
+
+        // (C) Idempotent ready; failed-state is a no-op once ready.
+        window.__markAppReady();
+        window.__markAppReady();
+        window.__showBootFailed();
+        assert(!body.classList.contains('app-boot-failed'), "__showBootFailed must be a no-op after the app is ready");
+
+        // (D) Skeleton: partner name hidden, calm loading copy shown, retry hidden.
+        const bootStatus = document.getElementById('boot-status');
+        const loadingEl = bootStatus.querySelector('.boot-status-loading');
+        const failedEl = bootStatus.querySelector('.boot-status-failed');
+        const retryBtn = document.getElementById('boot-retry-btn');
+        assert(getComputedStyle(bootStatus).display === 'none', "Boot status must be hidden when not booting");
+
+        body.classList.add('app-booting');
+        assert(getComputedStyle(document.getElementById('partner-name')).display === 'none', "Partner name must be hidden during boot");
+        assert(getComputedStyle(document.getElementById('pokemon-sprite')).visibility === 'hidden', "Partner sprite must be hidden during boot");
+        assert(getComputedStyle(document.querySelector('.trainer-possessive')).visibility === 'hidden', "Header child name must be hidden during boot");
+        assert(getComputedStyle(bootStatus).display !== 'none', "Boot status must show during boot");
+        assert(getComputedStyle(loadingEl).display !== 'none' && loadingEl.textContent.includes('Finding your partner'),
+          "Boot must show calm 'Finding your partner…' copy");
+        assert(getComputedStyle(retryBtn).display === 'none', "Retry button must be hidden while still loading");
+
+        // (E) Watchdog failure state: actionable retry with a >= 42px touch target.
+        window.__showBootFailed();
+        assert(body.classList.contains('app-boot-failed'), "__showBootFailed must add 'app-boot-failed' while booting");
+        assert(getComputedStyle(loadingEl).display === 'none', "Loading copy must hide in the failed state");
+        assert(getComputedStyle(failedEl).display !== 'none', "Failed copy must show in the failed state");
+        assert(getComputedStyle(retryBtn).display !== 'none' && retryBtn.getBoundingClientRect().height >= 42,
+          `Retry button must be visible with a >= 42px touch target, got ${retryBtn.getBoundingClientRect().height}px`);
+
+        // (F) Ready clears both classes; zero inline styles in boot markup (Rule 8).
+        window.__markAppReady();
+        assert(!body.classList.contains('app-booting') && !body.classList.contains('app-boot-failed'),
+          "__markAppReady must clear both boot classes");
+        assert(bootStatus.querySelectorAll('[style]').length === 0 && !bootStatus.hasAttribute('style'),
+          "Boot status markup must have zero inline styles");
+        assert(getComputedStyle(document.getElementById('partner-name')).display !== 'none', "Partner name must be visible after ready");
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

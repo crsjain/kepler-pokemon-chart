@@ -382,6 +382,13 @@ const addProfileSubmitBtn = document.getElementById('add-profile-submit-btn');
 const addProfileCancelBtn = document.getElementById('add-profile-cancel-btn');
 const addProfileError = document.getElementById('add-profile-error');
 
+// Clears the <body class="app-booting"> skeleton (inline controller in
+// index.html). Idempotent; must run on every startup exit path so the kids never
+// get stuck on the skeleton. See docs/checkpoint_63.md.
+function markAppReady() {
+  if (typeof window.__markAppReady === 'function') window.__markAppReady();
+}
+
 function handleProfilesUpdate(profiles) {
   console.log("Received profiles list from Firestore! Count:", profiles.length);
   profilesList = profiles;
@@ -405,6 +412,7 @@ function handleProfilesUpdate(profiles) {
         appContainer.style.pointerEvents = 'none';
       }
       if (profileSelectModal) profileSelectModal.classList.remove('hidden');
+      markAppReady();
     }
     return;
   }
@@ -425,6 +433,7 @@ function handleProfilesUpdate(profiles) {
       appContainer.style.pointerEvents = 'none';
     }
     if (profileSelectModal) profileSelectModal.classList.remove('hidden');
+    markAppReady();
   }
 }
 
@@ -467,6 +476,7 @@ function initFirebaseUI() {
     initGuide();
     initShop({ renderAppState: (rebuild) => renderState(rebuild) });
     renderState(true);
+    markAppReady();
   }
 
   if (!isTestMode) {
@@ -511,6 +521,7 @@ function initFirebaseUI() {
         if (familyLoginModal) familyLoginModal.classList.remove('hidden');
         if (profileSelectModal) profileSelectModal.classList.add('hidden');
         if (addProfileModal) addProfileModal.classList.add('hidden');
+        markAppReady();
       } else {
         console.log("User is logged in. Hiding login modal and fetching profiles...");
         if (familyLoginModal) familyLoginModal.classList.add('hidden');
@@ -521,6 +532,7 @@ function initFirebaseUI() {
           handleProfilesUpdate(profiles);
         }, (err) => {
           console.error("Profiles subscription failed:", err);
+          markAppReady();
           showCustomNotification("Database Error ❌", "Failed to connect to profiles: " + err.message);
           logoutFamily().catch(() => {});
         });
@@ -969,9 +981,11 @@ function selectProfile(profileId) {
       
       // Re-render UI
       renderState(true);
+      markAppReady();
     }
   }, (err) => {
     console.error("Profile sync failed:", err);
+    markAppReady();
     showCustomNotification("Sync Error ❌", "Failed to sync profile: " + err.message);
     logoutFamily().catch(() => {});
   });
