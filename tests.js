@@ -3796,21 +3796,21 @@ async function runSuite() {
         helpers.openPokemonShop();
         await sleep(100);
 
-        // Verify visual evolution indicators (Sparkles)
+        // Verify visual evolution indicators (Sparkles in sprite corner)
         const pichuCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="172"]');
-        assert(pichuCard && pichuCard.querySelector('.shop-item-name').textContent.includes('✨'), 'Pichu card should have sparkle emoji');
+        assert(pichuCard && pichuCard.querySelector('.shop-item-sprite-container .shop-item-sparkle') !== null, 'Pichu card should have sparkle badge on sprite container');
 
         const charmanderCardObj = document.querySelector('#shop-items-grid .shop-item-card[data-id="4"]');
-        assert(charmanderCardObj && charmanderCardObj.querySelector('.shop-item-name').textContent.includes('✨'), 'Charmander card should have sparkle emoji');
+        assert(charmanderCardObj && charmanderCardObj.querySelector('.shop-item-sprite-container .shop-item-sparkle') !== null, 'Charmander card should have sparkle badge on sprite container');
 
         const snorlaxCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="143"]');
         assert(!snorlaxCard, 'Snorlax card should not be in shop (evolved form)');
 
         const munchlaxCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="446"]');
-        assert(munchlaxCard && munchlaxCard.querySelector('.shop-item-name').textContent.includes('✨'), 'Munchlax card should have sparkle emoji');
+        assert(munchlaxCard && munchlaxCard.querySelector('.shop-item-sprite-container .shop-item-sparkle') !== null, 'Munchlax card should have sparkle badge on sprite container');
 
         const mewCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="151"]');
-        assert(mewCard && !mewCard.querySelector('.shop-item-name').textContent.includes('✨'), 'Mew card should not have sparkle emoji');
+        assert(mewCard && mewCard.querySelector('.shop-item-sparkle') === null, 'Mew card should not have sparkle badge');
 
         const costSelect = document.getElementById('shop-filter-cost');
         assert(costSelect !== null, 'Cost filter select should exist in shop');
@@ -7890,6 +7890,22 @@ async function runSuite() {
         assert(JSON.stringify(shopIds) === JSON.stringify(expectedShopIds), "Partner Shop 'type' sort must order by type A-Z then Dex #");
         shopSortSelect.value = 'number';
         shopSortSelect.dispatchEvent(new Event('change'));
+        await sleep(30);
+
+        // (H) Zero name truncation across all buyable shop cards (Charmander, Sprigatito, G. Zigzagoon, etc.)
+        const allShopCards = Array.from(document.querySelectorAll('#shop-items-grid .shop-item-card'));
+        const charmanderShopCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="4"]');
+        assert(charmanderShopCard.querySelector('.shop-item-name').textContent === 'Charmander',
+          "Charmander's .shop-item-name must contain only 'Charmander' (sparkle moved to sprite corner)");
+        assert(charmanderShopCard.querySelector('.shop-item-sprite-container .shop-item-sparkle') !== null,
+          "Charmander's evolution sparkle must be inside .shop-item-sprite-container");
+        const truncatedNames = allShopCards
+          .map(c => c.querySelector('.shop-item-name'))
+          .filter(el => el && el.scrollWidth > el.clientWidth + 1)
+          .map(el => `${el.textContent} (${el.scrollWidth}px > ${el.clientWidth}px)`);
+        assert(truncatedNames.length === 0,
+          `No Pokémon name in the Partner Shop should truncate with an ellipsis, got: ${truncatedNames.join(', ')}`);
+
         document.getElementById('close-shop-modal-btn').click();
         await sleep(30);
 

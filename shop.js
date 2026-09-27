@@ -250,9 +250,10 @@ function showBrowse() {
       ${ribbonHtml}
       <div class="shop-item-sprite-container">
         <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png" class="shop-item-sprite" alt="${name}" loading="lazy">
+        ${sparkleHtml}
         ${badgeHtml}
       </div>
-      <span class="shop-item-name" title="${name}">${shortName}${sparkleHtml}</span>
+      <span class="shop-item-name" title="${name}">${shortName}</span>
       <div class="shop-item-price-container">
         ${isLocked ? `
           <div class="shop-item-progress-bg">
