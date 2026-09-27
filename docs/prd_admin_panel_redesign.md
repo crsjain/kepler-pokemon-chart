@@ -1,12 +1,12 @@
 # PRD: Parent Admin Panel Redesign (Left Navigation)
 
 **Document**: `docs/prd_admin_panel_redesign.md`  
-**Version**: 1.1.0  
+**Version**: 1.1.1  
 **Status**: Decisions Locked — Ready for Implementation (not yet started)  
 **Authors**: crsjain & Jetski  
 **Requested By**: crsjain (2026-09-20, seed) · specced 2026-09-24 (Checkpoint 61) · amended 2026-09-25 (Checkpoint 62: D7, D8)  
 **Target Systems**: `index.html`, `style.css`, `admin.js`, `app.js`, `tests.js`, `service-worker.js` (+ optional new `rewards_admin.js`, §7)  
-**Schema Impact**: **None** — stays V18. No new persisted field.  
+**Schema Impact**: **None** — no new persisted field (current schema is V19 as of Checkpoint 64).  
 **Companion Standards**: [`_agents/rules/ux-guidelines.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/_agents/rules/ux-guidelines.md) (Rules 2, 4, 5, 6, 8, 10, 11, 12, 13B, 17), [`docs/prd_parent_past_day_approval.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/docs/prd_parent_past_day_approval.md), [`docs/refactoring_assessment_2026_09_12.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/docs/refactoring_assessment_2026_09_12.md) §6.4
 
 ---
@@ -142,7 +142,7 @@ The Data pane runs top to bottom: **This child (Kepler)** backup row → **Whole
 
 > *"This resets Kepler's levels, partner Pokémon, XP, badges, stars, and chart history back to the start. Kepler's activities, rewards, and settings are kept, and other children are not affected. This cannot be undone."*
 
-The CTA reads **"Reset Kepler"** (`pixel-btn danger`). A hint under the button says *"Resets only the active child's progress. Activities, rewards, and settings are kept."* The quarantined block therefore sits under **This child (Kepler)** export, which is the matching backup step. The redesign should render the confirm body with the R8-2 `.danger` modifier.
+The button itself reads **"Reset This Child's Progress"** (renamed in Checkpoint 65), and the confirm CTA reads **"Reset Kepler"** (`pixel-btn danger`). A hint under the button says *"Activities, rewards, and settings are kept. Other children are not affected."* The quarantined block therefore sits under **This child (Kepler)** export, which is the matching backup step. The redesign should render the confirm body with the R8-2 `.danger` modifier.
 
 The title `"Wipe All Progress? 🚨"` is **unchanged**, because TC27 asserts it ([`tests.js:2315`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/tests.js#L2315)). The body text isn't asserted anywhere. The CTA stays neutral and non-celebratory (Rule 11).
 
@@ -383,5 +383,6 @@ Each phase is its own local commit. Run `node run_headless_tests.js` after each 
 | Version | Date | Change |
 |---|---|---|
 | 0.1.0 | 2026-09-20 | Seed: problem statement, candidate sections, open questions. |
+| 1.1.1 | 2026-09-27 | Checkpoint 65. Wipe button renamed to "Reset This Child's Progress" and its hint reworded; TC89 pins the label. Schema line updated to V19. |
 | 1.1.0 | 2026-09-25 | Checkpoint 62. D7: Wipe resets only the active child (shipped). D8: greyed-out Chart Style (under 5 / 5+) placeholder (shipped, inert). The redesign's new test is renumbered TC89 → TC90. |
 | 1.0.0 | 2026-09-24 | Specced (Checkpoint 61). D1–D6 locked by crsjain. Per-child scope finding. Wipe blast-radius finding. Full ID and test audit. Rule 8 debt R8-1..4. 5-stage panel (Parent/UX weighted), APPROVED WITH MITIGATIONS. Reward-editor boundary corrected and extraction recommended as an optional separate commit. |

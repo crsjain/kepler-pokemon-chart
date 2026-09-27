@@ -2402,7 +2402,9 @@ async function runSuite() {
         document.getElementById('password-submit-btn').click();
         await sleep(100);
 
-        document.getElementById('admin-wipe-btn').click();
+        const wipeBtnEl = document.getElementById('admin-wipe-btn');
+        assert(wipeBtnEl.textContent.trim() === "Reset This Child's Progress", `Wipe button label should state its per-child scope, got "${wipeBtnEl.textContent.trim()}"`);
+        wipeBtnEl.click();
         await sleep(100);
         const confirmModal = document.getElementById('confirm-modal');
         assert(!confirmModal.classList.contains('hidden'), "Wipe confirm should open");
