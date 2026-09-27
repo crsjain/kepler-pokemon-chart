@@ -186,9 +186,21 @@ export function initAdmin(callbacks) {
     adminWipeBtn.addEventListener('click', () => {
       // Resets ONLY the active child (see wipeActiveChildProgress in app.js).
       const childName = state.childName || 'this child';
+      const wipeConfirmHtml = `
+        <div class="confirm-detail">
+          <div class="schedule-hero-card danger">
+            <div class="schedule-hero-label">🚨 RESET PROGRESS</div>
+            <div class="schedule-hero-main">${childName}</div>
+          </div>
+          <div class="transition-warning-callout danger">
+            <div class="transition-callout-title">⚠️ Cannot Be Undone</div>
+            <div class="transition-callout-desc">This resets ${childName}'s levels, partner Pokémon, XP, badges, stars, and chart history back to the start. ${childName}'s activities, rewards, and settings are kept, and other children are not affected. This cannot be undone.</div>
+          </div>
+        </div>
+      `;
       showCustomConfirm(
         "Wipe All Progress? 🚨",
-        `This resets ${childName}'s levels, partner Pokémon, XP, badges, stars, and chart history back to the start. ${childName}'s activities, rewards, and settings are kept, and other children are not affected. This cannot be undone.`,
+        wipeConfirmHtml,
         async () => {
           try {
             if (appCallbacks.wipeData) {

@@ -2169,6 +2169,22 @@ input:checked + .slider:before {
   fill: white;
 }
 
+/* Admin > profile rows: 🎁 / 🗑️ icon buttons (UX Rule 8 — replaces inline styles) */
+.admin-profile-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.admin-profile-actions .pixel-btn.admin-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 32px;
+  padding: 0;
+}
+
 /* Partner Modal Specific Styles (Bigger Dialog) */
 #partner-modal .modal-content {
   max-width: 650px;
@@ -4437,6 +4453,33 @@ body.idle-mode * {
   }
 }
 
+/* Rewards editor: list spacing + add-row (UX Rule 8 — replaces inline styles) */
+.reward-modal-grid .admin-tasks-list {
+  margin-bottom: 10px;
+}
+
+.reward-add-row {
+  display: flex;
+  gap: 8px;
+}
+
+.reward-add-row .pixel-input {
+  flex: 1;
+  padding: 8px;
+}
+
+.reward-add-row .pixel-btn {
+  padding: 8px 12px;
+}
+
+/* Empty-state line in the rewards editor lists */
+.no-items {
+  color: #64748b;
+  font-size: 0.85rem;
+  font-style: italic;
+  padding: 5px;
+}
+
 /* Ready to Unlock button in Star Vault (glowing/pulsing green) */
 .pixel-btn.ready-to-unlock {
   --badge-glow-rgba-low: rgba(16, 185, 129, 0.4);
@@ -5660,6 +5703,33 @@ body.has-banner .mini-hud.visible {
 
 .transition-info-callout .transition-callout-desc {
   color: #1e3a8a;
+}
+
+/* Destructive confirm modifier (Delete Profile, Reset Child) — UX Rule 8 */
+.schedule-hero-card.danger {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.schedule-hero-card.danger .schedule-hero-label {
+  color: #dc2626;
+}
+
+.schedule-hero-card.danger .schedule-hero-main {
+  color: #991b1b;
+}
+
+.transition-warning-callout.danger {
+  background: #fff1f2;
+  border-color: #f87171;
+}
+
+.transition-warning-callout.danger .transition-callout-title {
+  color: #991b1b;
+}
+
+.transition-warning-callout.danger .transition-callout-desc {
+  color: #881337;
 }
 
 .admin-status-badge.pending {
