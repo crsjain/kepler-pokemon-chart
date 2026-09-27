@@ -7983,6 +7983,10 @@ async function runSuite() {
         await sleep(50);
         helpers.openPokemonShop();
         await sleep(100);
+        // In headless mode sleep(100) is 10ms, so if body.idle-mode is not active the
+        // 300ms modalPopIn entry animation (scale 0.85 -> 1) is still in flight and scales
+        // getBoundingClientRect() to 54.4px (64 * 0.85). Advance it to its settled state.
+        document.querySelector('#pokemon-shop-modal .modal-content')?.getAnimations().forEach(a => a.finish());
 
         const overlaps = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 
