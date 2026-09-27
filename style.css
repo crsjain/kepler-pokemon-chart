@@ -4560,32 +4560,6 @@ body.idle-mode * {
   z-index: 2;
 }
 
-.shop-item-pokeball-badge {
-  position: absolute;
-  top: 7px;
-  right: 8px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid #1e293b;
-  background: linear-gradient(to bottom, #ef4444 0%, #ef4444 48%, #1e293b 48%, #1e293b 54%, #ffffff 54%, #ffffff 100%);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2;
-  box-sizing: border-box;
-}
-
-.shop-item-pokeball-center {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 1.5px solid #1e293b;
-  box-sizing: border-box;
-}
-
 .shop-item-sprite-container {
   position: static; /* badges inside anchor to .shop-item-card, not the sprite */
   width: 72px;

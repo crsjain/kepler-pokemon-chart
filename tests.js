@@ -6244,7 +6244,7 @@ async function runSuite() {
         const shopModal = document.getElementById('pokemon-shop-modal');
         assert(shopModal && !shopModal.classList.contains('hidden'), "Shop modal should be open");
 
-        // 2. Verify Owned Starters have Option A caught styling (ribbon, pokeball stamp, data-caught='true')
+        // 2. Verify Owned Starters have Option A caught styling (ribbon, data-caught='true')
         const shopGrid = document.getElementById('shop-items-grid');
         assert(shopGrid !== null, "Shop items grid should exist");
         const gridPaddingTop = parseInt(window.getComputedStyle(shopGrid).paddingTop, 10);
@@ -6261,16 +6261,16 @@ async function runSuite() {
         const ribbonTop = parseInt(pichuRibbonStyle.top, 10);
         assert(ribbonTop < 0, `Caught ribbon should extend upward past card boundary (negative top), got '${pichuRibbonStyle.top}'`);
         assert(pichuRibbonStyle.borderRadius === '4px', `Caught ribbon should have 4-corner border radius, got '${pichuRibbonStyle.borderRadius}'`);
-        const pichuPokeball = pichuCard.querySelector('.shop-item-pokeball-badge');
-        assert(pichuPokeball !== null, "Pichu card should have 2D Poké Ball stamp in corner");
-        assert(pichuPokeball.querySelector('.shop-item-pokeball-center') !== null, "Poké Ball stamp should have center button");
+        // Duplicate Poké Ball stamp was removed (Checkpoint 63): the CAUGHT ribbon is the sole caught signal.
+        assert(pichuCard.querySelector('.shop-item-pokeball-badge') === null, "Caught Pichu card must NOT render the removed Poké Ball stamp");
+        assert(pichuCard.querySelector('.shop-item-lock-badge') === null, "Caught Pichu card must NOT render a lock badge");
 
         const eeveeCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="133"]');
         assert(eeveeCard !== null, "Eevee (#133) card should exist in shop");
         assert(eeveeCard.classList.contains('caught'), "Eevee card should have .caught class");
         assert(eeveeCard.dataset.caught === 'true', "Eevee card should have data-caught='true'");
         assert(eeveeCard.querySelector('.shop-item-caught-ribbon') !== null, "Eevee card should have caught ribbon");
-        assert(eeveeCard.querySelector('.shop-item-pokeball-badge') !== null, "Eevee card should have Poké Ball stamp");
+        assert(eeveeCard.querySelector('.shop-item-pokeball-badge') === null, "Eevee card must NOT render the removed Poké Ball stamp");
 
         // 3. Verify Unowned Pokemon do NOT have caught styling
         const mewCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="151"]');
@@ -7969,7 +7969,7 @@ async function runSuite() {
         assert(getComputedStyle(document.getElementById('partner-name')).display !== 'none', "Partner name must be visible after ready");
       }
 
-      // 94. Test Case 94: Shop card status rail (✨ / Poké Ball / 🔒 never crowd the ribbon or sprite)
+      // 94. Test Case 94: Shop card status rail (✨ / 🔒 never crowd the ribbon or sprite; no duplicate Poké Ball)
       console.log("Running Test Case 94: Shop card status rail keeps corner icons clear of the ribbon and sprite...");
       {
         const helpers = window.__test_helpers__;
@@ -7980,30 +7980,28 @@ async function runSuite() {
 
         const overlaps = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 
-        // Pichu (#172) is caught by default and can evolve: ribbon + ✨ + Poké Ball all present.
+        // Pichu (#172) is caught by default and can evolve: ribbon + ✨, and no duplicate Poké Ball stamp.
         const card = document.querySelector('#shop-items-grid .shop-item-card[data-id="172"]');
         assert(card !== null, "Pichu (#172) card should exist in shop");
         const sparkle = card.querySelector('.shop-item-sparkle');
-        const ball = card.querySelector('.shop-item-pokeball-badge');
         const ribbon = card.querySelector('.shop-item-caught-ribbon');
         const sprite = card.querySelector('.shop-item-sprite');
-        assert(sparkle && ball && ribbon && sprite, "Pichu card must render ✨, Poké Ball, CAUGHT ribbon and sprite");
+        assert(sparkle && ribbon && sprite, "Pichu card must render ✨, CAUGHT ribbon and sprite");
+        assert(card.querySelector('.shop-item-pokeball-badge') === null, "Caught cards must not render the duplicate Poké Ball stamp");
 
         // (A) Corner icons anchor to the card, not the sprite box.
         assert(sparkle.offsetParent === card, "✨ must be positioned relative to .shop-item-card");
-        assert(ball.offsetParent === card, "Poké Ball stamp must be positioned relative to .shop-item-card");
 
         // (B) Rail geometry: icons sit below the top border (with bounce headroom) and above the sprite.
         const cardRect = card.getBoundingClientRect();
         const innerTop = cardRect.top + parseFloat(getComputedStyle(card).borderTopWidth);
         const spriteRect = sprite.getBoundingClientRect();
-        [['✨', sparkle], ['Poké Ball', ball]].forEach(([label, el]) => {
+        [['✨', sparkle]].forEach(([label, el]) => {
           const r = el.getBoundingClientRect();
           assert(r.top >= innerTop + 3, `${label} needs >= 3px headroom below the card border, got ${(r.top - innerTop).toFixed(1)}px`);
           assert(r.bottom <= spriteRect.top + 1, `${label} must sit in the rail above the sprite (bottom ${r.bottom.toFixed(1)} > sprite top ${spriteRect.top.toFixed(1)})`);
           assert(!overlaps(r, ribbon.getBoundingClientRect()), `${label} must not overlap the CAUGHT ribbon`);
         });
-        assert(!overlaps(sparkle.getBoundingClientRect(), ball.getBoundingClientRect()), "✨ and Poké Ball must not overlap");
 
         // (C) Sprite enlarged to 72px.
         const container = card.querySelector('.shop-item-sprite-container');
@@ -8014,6 +8012,8 @@ async function runSuite() {
         if (lockBadge) {
           const lockCard = lockBadge.closest('.shop-item-card');
           assert(lockBadge.offsetParent === lockCard, "🔒 must be positioned relative to .shop-item-card");
+          const lockSparkle = lockCard.querySelector('.shop-item-sparkle');
+          if (lockSparkle) assert(!overlaps(lockSparkle.getBoundingClientRect(), lockBadge.getBoundingClientRect()), "✨ and 🔒 must not overlap");
           assert(lockBadge.getBoundingClientRect().bottom <= lockCard.querySelector('.shop-item-sprite').getBoundingClientRect().top + 1,
             "🔒 must sit in the rail above the sprite");
         }

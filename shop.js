@@ -242,9 +242,8 @@ function showBrowse() {
       ? `<div class="shop-item-caught-ribbon" title="Already caught! On your team">${ownedCount > 1 ? `CAUGHT ×${ownedCount}` : 'CAUGHT!'}</div>`
       : '';
 
-    const badgeHtml = isCaught
-      ? `<div class="shop-item-pokeball-badge" title="Caught! On your team"><div class="shop-item-pokeball-center"></div></div>`
-      : (isLocked ? '<div class="shop-item-lock-badge">🔒</div>' : '');
+    // Caught cards rely on the CAUGHT ribbon alone (duplicate Poké Ball stamp removed).
+    const badgeHtml = (!isCaught && isLocked) ? '<div class="shop-item-lock-badge">🔒</div>' : '';
 
     card.innerHTML = `
       ${ribbonHtml}
