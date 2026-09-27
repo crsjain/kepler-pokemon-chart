@@ -13,8 +13,8 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - Daily totals completed are saved as stars in the **Star Vault**.
   - **Star Streak Color Legend**: A simple at-a-glance legend shows what each star color means as streaks grow (🌟 `Day 1-2 Yellow`, 🥈 `Day 3-4 Silver`, 📘 `Day 5-9 Blue`, 🌈 `Day 10+ Prism`).
   - Spend 5, 10, or 15 stars from your vault to purchase and unlock new partners from the **Partner Shop** featuring 100+ different Pokémon (including Legendaries like Galarian Moltres)!
-  - Filter shop items dynamically by type (Fire, Water, Grass, Dark, etc.), cost tier, or sort alphabetically / numerically.
-  - Interactive "CAUGHT!" badges and multi-purchase counters (`CAUGHT ×2`) track Kepler's growing collection with crisp elevated ribbon badges, single-line name formatting (`G. Moltres`), and vertically aligned star progress bars.
+  - Filter shop items dynamically by type (Fire, Water, Grass, Dark, Flying, etc.) or cost tier, and sort by Dex #, A–Z, Cost, or Type (`Sort: Type ⚡`, with Dex # tiebreaker).
+  - Clean card layout with a 26px top status rail (`✨` can-evolve marker in the top-left corner, `🔒` in the top-right on locked cards, 64px sprite), full single-line names with zero truncation (including Charmander and `G. Moltres`), interactive "CAUGHT!" / `CAUGHT ×2` ribbons, and vertically aligned star progress bars.
 - 📈 **XP & Evolution System**: 
   - Each task checked adds **5 XP**.
   - Clearing all tasks in a day unlocks the **Daily Total (⭐)** and grants a **+15 XP Bonus**.
@@ -30,10 +30,10 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - **Evolution Celebrations**: Reaching Level 5 (and Level 10 for Charmander, Bulbasaur, and Squirtle) triggers a full-screen evolution event! The Pokémon transforms into its next stage (e.g., Pikachu -> Raichu, or Charmander -> Charmeleon -> Charizard) with a custom modal.
 - 🏆 **Weekly Badges & Collection**: Reaching the weekly task goals awards Kepler the active weekly badge.
   - **Immediate Case Award**: Badges are added to his permanent case immediately upon grid completion so he can view them without waiting to reset his week.
-  - **Badge Case Grid**: Open the Case modal to view all earned badges. Cards are scaled 50% larger for high-fidelity sprite previews, displaying in 3 columns on tablet/desktop and 2 columns on mobile.
+  - **Badge Case Grid, Filter & Sort**: Open the Case modal to view all earned badges in a 3-column grid (2 columns on mobile), filter by Pokémon type (18 types including Flying), or sort by Date Earned, Dex #, A–Z, or Type using the same filter bar as the Partner Shop.
   - **Mega Milestone Celebrations**: Completing Week 4 triggers a grand Mega Celebration. The modal dynamically displays the **exact 4 weekly badges** Kepler earned to qualify for the milestone reward.
 - 🔊 **Audio & Bouncy Animations**: Game-synthesized audio beeps play on checkbox toggles, daily totals, and level-ups. Completing milestone events triggers a bouncy card entrance zoom-in transition and plays a triumphant 6-note 8-bit RPG-style victory fanfare (`megaSuccess`).
-- 📲 **PWA Offline Support**: Fully compatible as a Progressive Web App. Once loaded, it works entirely offline and caches PokeAPI sprite assets locally.
+- 📲 **PWA Offline Support & Boot Skeleton**: Fully compatible as a Progressive Web App. Local code modules load network-first (with cached offline fallback and automatic one-shot reload on stale module errors), while PokeAPI sprites stay cache-first. On launch, an in-place boot skeleton (`Finding your partner…` with a wobbling Pokéball and a 10s retry watchdog) hides placeholder data until the child's real profile renders.
 - 💾 **Local Progress Saving**: Progress is saved automatically in the browser's local storage.
 - 📖 **Pokémon Training Guide**: Tap the "📖 Guide" button in the grid column header to view task-specific rules (e.g., Piano: "Play all pieces 3x...") describing exactly what needs to be done to earn a pokeball.
 - 🔒 **Parent Admin Panel**: Password-protected (`zxcv`) options dashboard in the footer:
