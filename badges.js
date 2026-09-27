@@ -1,7 +1,8 @@
 import { state, saveState, rollNewWeeklyBadge } from './state.js';
-import { getPokemonName } from './pokemon_data.js';
+import { getPokemonName, POKEMON_TYPES } from './pokemon_data.js';
 
-let badgeSortMethod = 'date'; // 'date' or 'dex'
+let badgeSortMethod = 'date'; // 'date' | 'dex' | 'name' | 'type'
+let badgeFilterType = 'all';
 
 // One-shot listener binding guard (see initShop for the full rationale).
 let isBadgeCaseInitialized = false;
@@ -10,8 +11,8 @@ export function initBadgeCase() {
   const openBtn = document.getElementById('open-badges-btn');
   const closeBtn = document.getElementById('close-badges-modal-btn');
   const modal = document.getElementById('badges-modal');
-  const sortByDateBtn = document.getElementById('sort-badges-date');
-  const sortByDexBtn = document.getElementById('sort-badges-dex');
+  const filterTypeSelect = document.getElementById('badges-filter-type');
+  const sortSelect = document.getElementById('badges-sort-by');
 
   // initBadgeCase() re-runs on every Firestore snapshot; bind listeners once.
   if (isBadgeCaseInitialized) return;
@@ -23,17 +24,15 @@ export function initBadgeCase() {
   if (closeBtn) {
     closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
   }
-  if (sortByDateBtn) {
-    sortByDateBtn.addEventListener('click', () => {
-      badgeSortMethod = 'date';
-      updateSortButtons();
+  if (filterTypeSelect) {
+    filterTypeSelect.addEventListener('change', () => {
+      badgeFilterType = filterTypeSelect.value || 'all';
       renderBadgeCaseGrid();
     });
   }
-  if (sortByDexBtn) {
-    sortByDexBtn.addEventListener('click', () => {
-      badgeSortMethod = 'dex';
-      updateSortButtons();
+  if (sortSelect) {
+    sortSelect.addEventListener('change', () => {
+      badgeSortMethod = sortSelect.value || 'date';
       renderBadgeCaseGrid();
     });
   }
@@ -48,25 +47,20 @@ export function initBadgeCase() {
   }
 }
 
-function updateSortButtons() {
-  const sortByDateBtn = document.getElementById('sort-badges-date');
-  const sortByDexBtn = document.getElementById('sort-badges-dex');
-  if (!sortByDateBtn || !sortByDexBtn) return;
-  
-  if (badgeSortMethod === 'date') {
-    sortByDateBtn.classList.add('active');
-    sortByDexBtn.classList.remove('active');
-  } else {
-    sortByDateBtn.classList.remove('active');
-    sortByDexBtn.classList.add('active');
-  }
+function syncBadgeControls() {
+  const filterTypeSelect = document.getElementById('badges-filter-type');
+  const sortSelect = document.getElementById('badges-sort-by');
+  if (filterTypeSelect) filterTypeSelect.value = badgeFilterType;
+  if (sortSelect) sortSelect.value = badgeSortMethod;
 }
 
 export function openBadgeCase() {
   const modal = document.getElementById('badges-modal');
   if (modal) {
+    badgeFilterType = 'all';
+    badgeSortMethod = 'date';
+    syncBadgeControls();
     modal.classList.remove('hidden');
-    updateSortButtons();
     renderBadgeCaseGrid();
   }
 }
@@ -74,26 +68,60 @@ export function openBadgeCase() {
 export function renderBadgeCaseGrid() {
   const grid = document.getElementById('badges-grid');
   if (!grid) return;
-  
+
+  const filterTypeSelect = document.getElementById('badges-filter-type');
+  const sortSelect = document.getElementById('badges-sort-by');
+  const selectedType = filterTypeSelect ? filterTypeSelect.value : badgeFilterType;
+  const sortBy = sortSelect ? sortSelect.value : badgeSortMethod;
+  badgeFilterType = selectedType;
+  badgeSortMethod = sortBy;
+
   grid.innerHTML = '';
-  
-  let badges = [...(state.collectedBadges || [])];
-  
-  if (badgeSortMethod === 'dex') {
+
+  const allBadges = [...(state.collectedBadges || [])];
+  if (allBadges.length === 0) {
+    grid.innerHTML = `<div class="no-badges">No badges collected yet. Complete your weekly goals to earn them! 🏆</div>`;
+    return;
+  }
+
+  let badges = allBadges;
+  if (selectedType !== 'all') {
+    badges = badges.filter(b => (POKEMON_TYPES[b.id] || 'Normal') === selectedType);
+  }
+
+  if (badges.length === 0) {
+    grid.innerHTML = `<div class="no-badges">No ${selectedType} badges collected yet. Keep training to earn more! 🏆</div>`;
+    return;
+  }
+
+  if (sortBy === 'dex' || sortBy === 'number') {
     badges.sort((a, b) => a.id - b.id);
+  } else if (sortBy === 'name') {
+    badges.sort((a, b) => {
+      const nameA = (a.name || getPokemonName(a.id)).toLowerCase();
+      const nameB = (b.name || getPokemonName(b.id)).toLowerCase();
+      if (nameA < nameB) return -1;
+      if (nameA > nameB) return 1;
+      return a.id - b.id;
+    });
+  } else if (sortBy === 'type') {
+    badges.sort((a, b) => {
+      const typeA = (POKEMON_TYPES[a.id] || 'Normal').toLowerCase();
+      const typeB = (POKEMON_TYPES[b.id] || 'Normal').toLowerCase();
+      if (typeA < typeB) return -1;
+      if (typeA > typeB) return 1;
+      return a.id - b.id;
+    });
   } else {
     // Default: Sort by Date (newest first)
     badges.sort((a, b) => new Date(b.dateEarned) - new Date(a.dateEarned));
   }
-  
-  if (badges.length === 0) {
-    grid.innerHTML = `<div class="no-badges" style="grid-column: 1/-1; text-align: center; font-family: 'Fredoka One', cursive; color: #64748b; padding: 40px 0;">No badges collected yet. Complete your weekly goals to earn them! 🏆</div>`;
-    return;
-  }
-  
+
   badges.forEach(badge => {
     const card = document.createElement('div');
     card.className = 'badge-case-card pixel-card';
+    card.dataset.id = badge.id;
+    card.dataset.type = POKEMON_TYPES[badge.id] || 'Normal';
     
     const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badge.id}.png`;
     

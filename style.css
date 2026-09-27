@@ -3079,6 +3079,10 @@ input:checked + .slider:before {
 }
 
 /* Badge Case Modal */
+#badges-modal {
+  z-index: 100000;
+}
+
 .badges-modal-content {
   max-width: 550px;
   width: 90%;
@@ -3095,22 +3099,20 @@ input:checked + .slider:before {
 }
 
 .badge-case-controls {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 20px;
+  margin: 5px 0 16px 0;
   width: 100%;
-  justify-content: center;
-  font-family: 'Fredoka One', cursive;
 }
-.badge-case-controls .controls-label {
-  font-size: 0.9rem;
+
+.badge-case-controls select {
+  border-color: #c4a47c;
   color: #5c3a21;
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
 }
-.badge-case-controls .pixel-btn.active {
-  background-color: var(--poke-blue);
-  color: white;
-  box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2);
+
+.badge-case-controls select:hover,
+.badge-case-controls select:focus {
+  border-color: #8b5a2b;
 }
 
 .badges-grid-container {
@@ -3124,13 +3126,13 @@ input:checked + .slider:before {
   width: 10px;
 }
 .badges-grid-container::-webkit-scrollbar-track {
-  background: #e2d4b7;
+  background: transparent;
   border-radius: 4px;
 }
 .badges-grid-container::-webkit-scrollbar-thumb {
   background: #8b5a2b;
   border-radius: 4px;
-  border: 2px solid #e2d4b7;
+  border: 2px solid #fdf6e2;
 }
 
 .badges-grid {
@@ -3140,6 +3142,18 @@ input:checked + .slider:before {
   width: 100%;
   padding: 10px 5px;
   box-sizing: border-box;
+}
+
+.badges-grid .no-badges {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-family: 'Fredoka One', cursive;
+  color: #64748b;
+  padding: 40px 0;
+}
+
+.badges-close-btn {
+  margin-top: 20px;
 }
 
 /* Badge Card */

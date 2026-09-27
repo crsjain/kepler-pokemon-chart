@@ -207,6 +207,14 @@ function showBrowse() {
       if (nameA > nameB) return 1;
       return a - b; // Secondary sort by ID (number)
     });
+  } else if (sortBy === 'type') {
+    filteredIds.sort((a, b) => {
+      const typeA = (POKEMON_TYPES[a] || 'Normal').toLowerCase();
+      const typeB = (POKEMON_TYPES[b] || 'Normal').toLowerCase();
+      if (typeA < typeB) return -1;
+      if (typeA > typeB) return 1;
+      return a - b; // Secondary sort by ID (number)
+    });
   } else {
     // Default sort by number (ID)
     filteredIds.sort((a, b) => a - b);

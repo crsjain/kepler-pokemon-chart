@@ -23,10 +23,14 @@ The system is designed to mimic the core Pokémon experience of "filling the Pok
 ### 3.2. Badge Case Modal
 *   **Access**: Click the "🏆 Case" button in the weekly badge header.
 *   **UI**: Renders a wooden-styled case displaying all collected badges.
-*   **Sorting**:
-    *   **Date Earned**: Sorts badges chronologically (newest first).
-    *   **Dex #**: Sorts badges numerically by their National Pokédex ID.
-*   **Empty State**: Shows an encouraging message if no badges have been collected yet.
+*   **Filtering & Sorting** (matches the Pokémon Partner Shop dropdown bar):
+    *   **Type Filter (`#badges-filter-type`)**: Filters badges by Pokémon Type (`All Types` default, or any elemental type).
+    *   **Sort By (`#badges-sort-by`)**:
+        *   **Date Earned** (default on open): Sorts badges chronologically (newest first).
+        *   **No. (Dex #)**: Sorts badges numerically by their National Pokédex ID.
+        *   **A–Z**: Sorts badges alphabetically by Pokémon name (tie-broken by Dex #).
+        *   **Type**: Sorts badges alphabetically by Pokémon Type (tie-broken by Dex #).
+*   **Empty State**: Shows an encouraging message if no badges have been collected yet (or if none match the active type filter).
 
 ### 3.3. Dynamic Badge Pool & Roller
 *   **Initial Pool**: Starts with curated Tier 1 Pokémon (e.g., starters like Pikachu, Charmander, Bulbasaur, Squirtle, Eevee).

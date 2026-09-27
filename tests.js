@@ -849,8 +849,10 @@ async function runSuite() {
         assert(cards.length === 2, "Should show 2 badge cards");
         
         // Sort by Dex
-        const sortDexBtn = document.getElementById('sort-badges-dex');
-        sortDexBtn.click();
+        const badgeSortSelect = document.getElementById('badges-sort-by');
+        assert(badgeSortSelect !== null, "Badge sort select should exist");
+        badgeSortSelect.value = 'dex';
+        badgeSortSelect.dispatchEvent(new Event('change'));
         await sleep(50);
         
         const sortedIds = Array.from(badgesGrid.querySelectorAll('.badge-case-card')).map(card => {
@@ -861,8 +863,8 @@ async function runSuite() {
         assert(sortedIds[0] < sortedIds[1], "Badges should be sorted numerically by Dex #");
         
         // Sort by Date
-        const sortDateBtn = document.getElementById('sort-badges-date');
-        sortDateBtn.click();
+        badgeSortSelect.value = 'date';
+        badgeSortSelect.dispatchEvent(new Event('change'));
         await sleep(50);
         
         const sortedCards = badgesGrid.querySelectorAll('.badge-case-card');
@@ -7774,6 +7776,125 @@ async function runSuite() {
         assert(window.__isStaleModuleError("TypeError: Importing a module script failed."), "Safari's module error must be recognised");
         assert(!window.__isStaleModuleError("TypeError: Cannot read properties of undefined"), "Ordinary errors must not trigger a reload");
         assert(window.__tryStaleModuleReload() === false, "Self-heal must never reload the page in headless mode");
+      }
+
+      // 91. Test Case 91: Badge Case Shop-style Type filter & Date / Dex # / A–Z / Type sorting
+      console.log("Running Test Case 91: Badge Case Type filter & Date / Dex # / A-Z / Type sorting...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+
+        const badgesModal = document.getElementById('badges-modal');
+        const badgesGrid = document.getElementById('badges-grid');
+        const openBadgesBtn = document.getElementById('open-badges-btn');
+        const closeBadgesBtn = document.getElementById('close-badges-modal-btn');
+        const filterSelect = document.getElementById('badges-filter-type');
+        const sortSelect = document.getElementById('badges-sort-by');
+
+        assert(filterSelect !== null && sortSelect !== null, "Badge Case must have Type filter and Sort dropdowns");
+        assert(filterSelect.closest('.shop-filter-bar.badge-case-controls') !== null,
+          "Badge Case controls must reuse .shop-filter-bar for responsive layout (UX Rule 7)");
+        assert(badgesModal.querySelectorAll('[style]').length === 0 && !badgesModal.hasAttribute('style'),
+          "Badge Case modal must have zero inline style attributes (UX Rule 8)");
+
+        const stateObj = window.__app_state__;
+        stateObj.collectedBadges = [
+          { id: 8,   name: 'Wartortle', dateEarned: '2026-08-01T12:00:00.000Z' }, // Water
+          { id: 94,  name: 'Gengar',    dateEarned: '2026-08-08T12:00:00.000Z' }, // Ghost
+          { id: 135, name: 'Jolteon',   dateEarned: '2026-08-15T12:00:00.000Z' }, // Electric
+          { id: 155, name: 'Cyndaquil', dateEarned: '2026-08-22T12:00:00.000Z' }, // Fire
+          { id: 179, name: 'Mareep',    dateEarned: '2026-08-29T12:00:00.000Z' }  // Electric (tie-breaker test)
+        ];
+        helpers.saveState();
+
+        openBadgesBtn.click();
+        await sleep(50);
+
+        const getRenderedBadgeIds = () =>
+          Array.from(badgesGrid.querySelectorAll('.badge-case-card')).map(c => Number(c.dataset.id));
+
+        // (A) Default on open: All Types + Date Earned (newest first)
+        assert(filterSelect.value === 'all', "Filter should default to 'all' on open");
+        assert(sortSelect.value === 'date', "Sort should default to 'date' on open");
+        assert(JSON.stringify(getRenderedBadgeIds()) === JSON.stringify([179, 155, 135, 94, 8]),
+          `Date sort should order newest first, got ${JSON.stringify(getRenderedBadgeIds())}`);
+
+        // Badge card content stays sprite + name + #Dex only
+        const firstCard = badgesGrid.querySelector('.badge-case-card');
+        assert(firstCard.querySelector('.type-pill') === null, "Badge cards must remain sprite, name, and #Dex only");
+
+        // (B) Sort: Dex #
+        sortSelect.value = 'dex';
+        sortSelect.dispatchEvent(new Event('change'));
+        await sleep(30);
+        assert(JSON.stringify(getRenderedBadgeIds()) === JSON.stringify([8, 94, 135, 155, 179]),
+          `Dex sort should order ascending by ID, got ${JSON.stringify(getRenderedBadgeIds())}`);
+
+        // (C) Sort: A–Z (Cyndaquil, Gengar, Jolteon, Mareep, Wartortle)
+        sortSelect.value = 'name';
+        sortSelect.dispatchEvent(new Event('change'));
+        await sleep(30);
+        assert(JSON.stringify(getRenderedBadgeIds()) === JSON.stringify([155, 94, 135, 179, 8]),
+          `A-Z sort should order alphabetically, got ${JSON.stringify(getRenderedBadgeIds())}`);
+
+        // (D) Sort: Pokémon Type (Electric [135, 179], Fire [155], Ghost [94], Water [8])
+        sortSelect.value = 'type';
+        sortSelect.dispatchEvent(new Event('change'));
+        await sleep(30);
+        assert(JSON.stringify(getRenderedBadgeIds()) === JSON.stringify([135, 179, 155, 94, 8]),
+          `Type sort should group by type A-Z then Dex #, got ${JSON.stringify(getRenderedBadgeIds())}`);
+
+        // (E) Filter by Type: Electric -> only Jolteon & Mareep
+        filterSelect.value = 'Electric';
+        filterSelect.dispatchEvent(new Event('change'));
+        await sleep(30);
+        assert(JSON.stringify(getRenderedBadgeIds()) === JSON.stringify([135, 179]),
+          `Electric filter should show only Electric badges, got ${JSON.stringify(getRenderedBadgeIds())}`);
+
+        // Filter by Type with 0 matches -> specific encouraging message, zero inline styles
+        filterSelect.value = 'Dragon';
+        filterSelect.dispatchEvent(new Event('change'));
+        await sleep(30);
+        const noBadgesEl = badgesGrid.querySelector('.no-badges');
+        assert(noBadgesEl !== null && noBadgesEl.textContent.includes('No Dragon badges'),
+          "Empty type filter should explain no badges of that type are collected yet");
+        assert(!noBadgesEl.hasAttribute('style'), ".no-badges must not use inline styles (UX Rule 8)");
+
+        // (F) Re-opening the Badge Case resets filter to 'all' and sort to 'date'
+        closeBadgesBtn.click();
+        await sleep(30);
+        openBadgesBtn.click();
+        await sleep(30);
+        assert(filterSelect.value === 'all' && sortSelect.value === 'date',
+          "Reopening Badge Case must reset filter to 'all' and sort to 'date'");
+        assert(getRenderedBadgeIds().length === 5, "Reopening Badge Case must show all 5 badges again");
+        closeBadgesBtn.click();
+        await sleep(30);
+
+        // (G) Partner Shop also supports Sort: Type
+        helpers.openPokemonShop();
+        await sleep(50);
+        const shopSortSelect = document.getElementById('shop-sort-by');
+        shopSortSelect.value = 'type';
+        shopSortSelect.dispatchEvent(new Event('change'));
+        await sleep(50);
+        const shopIds = Array.from(document.querySelectorAll('#shop-items-grid .shop-item-card')).map(c => Number(c.dataset.id));
+        const expectedShopIds = [...shopIds].sort((a, b) => {
+          const tA = (POKEMON_TYPES[a] || 'Normal').toLowerCase();
+          const tB = (POKEMON_TYPES[b] || 'Normal').toLowerCase();
+          if (tA < tB) return -1;
+          if (tA > tB) return 1;
+          return a - b;
+        });
+        assert(JSON.stringify(shopIds) === JSON.stringify(expectedShopIds), "Partner Shop 'type' sort must order by type A-Z then Dex #");
+        shopSortSelect.value = 'number';
+        shopSortSelect.dispatchEvent(new Event('change'));
+        document.getElementById('close-shop-modal-btn').click();
+        await sleep(30);
+
+        helpers.resetState();
+        await sleep(50);
       }
 
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");

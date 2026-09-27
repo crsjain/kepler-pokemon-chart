@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.57">
+  <link rel="stylesheet" href="style.css?v=10.58">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Stale-module self-heal (Checkpoint 63). If a fresh app.js gets linked
@@ -514,6 +514,7 @@
               <option value="Fighting">Fighting 🥊</option>
               <option value="Rock">Rock 🪨</option>
               <option value="Ground">Ground 🏔️</option>
+              <option value="Flying">Flying 🦅</option>
               <option value="Dragon">Dragon 🐲</option>
               <option value="Steel">Steel ⚙️</option>
               <option value="Ice">Ice ❄️</option>
@@ -533,6 +534,7 @@
             <select id="shop-sort-by">
               <option value="number">Sort: No. 🔢</option>
               <option value="name">Sort: A-Z 🔤</option>
+              <option value="type">Sort: Type ⚡</option>
             </select>
           </div>
           
@@ -613,15 +615,39 @@
     </svg>
 
     <!-- Badge Case Modal -->
-    <div id="badges-modal" class="modal hidden" style="z-index: 100000;">
+    <div id="badges-modal" class="modal hidden">
       <div class="modal-content badges-modal-content pixel-card">
         <h2><span class="trainer-name-label">Kepler</span>'s Badge Case 🏆</h2>
         
-        <!-- Controls: Sorting -->
-        <div class="badge-case-controls">
-          <span class="controls-label">Sort By:</span>
-          <button id="sort-badges-date" class="pixel-btn small info active">Date Earned</button>
-          <button id="sort-badges-dex" class="pixel-btn small info">Dex #</button>
+        <!-- Controls: Filter & Sorting (matches Pokémon Shop bar) -->
+        <div class="shop-filter-bar badge-case-controls">
+          <select id="badges-filter-type" aria-label="Filter badges by Pokémon type">
+            <option value="all">All Types</option>
+            <option value="Grass">Grass 🌿</option>
+            <option value="Fire">Fire 🔥</option>
+            <option value="Water">Water 💧</option>
+            <option value="Electric">Electric ⚡</option>
+            <option value="Psychic">Psychic 🔮</option>
+            <option value="Fighting">Fighting 🥊</option>
+            <option value="Rock">Rock 🪨</option>
+            <option value="Ground">Ground 🏔️</option>
+            <option value="Flying">Flying 🦅</option>
+            <option value="Dragon">Dragon 🐲</option>
+            <option value="Steel">Steel ⚙️</option>
+            <option value="Ice">Ice ❄️</option>
+            <option value="Ghost">Ghost 👻</option>
+            <option value="Bug">Bug 🐛</option>
+            <option value="Dark">Dark 🌙</option>
+            <option value="Fairy">Fairy ✨</option>
+            <option value="Normal">Normal 🔘</option>
+            <option value="Poison">Poison ☠️</option>
+          </select>
+          <select id="badges-sort-by" aria-label="Sort badges by">
+            <option value="date">Sort: Date Earned 📅</option>
+            <option value="dex">Sort: No. 🔢</option>
+            <option value="name">Sort: A-Z 🔤</option>
+            <option value="type">Sort: Type ⚡</option>
+          </select>
         </div>
 
         <div class="badges-grid-container">
@@ -630,7 +656,7 @@
           </div>
         </div>
         
-        <button id="close-badges-modal-btn" class="pixel-btn" style="margin-top: 20px;">Close</button>
+        <button id="close-badges-modal-btn" class="pixel-btn badges-close-btn">Close</button>
       </div>
     </div>
 
@@ -939,7 +965,7 @@
   </div>
 
   <script src="particles.js?v=10.3"></script>
-  <script type="module" src="app.js?v=10.50" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.51" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 
