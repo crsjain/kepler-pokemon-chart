@@ -709,170 +709,205 @@
       </div>
     </div>
 
-    <!-- Admin Modal -->
+    <!-- Admin Modal: left-nav shell (docs/prd_admin_panel_redesign.md). Pane switching toggles
+         .hidden + aria-selected only (admin.js); it never re-renders pane contents. -->
     <div id="admin-modal" class="modal hidden">
       <div class="modal-content admin-modal-content">
         <div class="admin-modal-header">
-          <h2>Parent Admin Panel ⚙️</h2>
+          <div class="admin-modal-title">
+            <h2>Parent Admin Panel ⚙️</h2>
+            <span id="admin-scope-chip" class="admin-scope-chip hidden"></span>
+          </div>
           <button id="close-admin-header-btn" class="admin-header-close-btn" aria-label="Close Admin Panel" title="Close">&times;</button>
         </div>
-        
-        <div class="admin-grid">
-          <!-- Quick Actions -->
-          <div class="admin-section quick-actions-section">
-            <h3>⚙️ Quick Actions</h3>
-            <div class="admin-options-container">
-              
-              <div class="admin-action-group">
-                <h4>Activity Settings</h4>
-                <button id="exceptions-btn" class="pixel-btn info">Set Exceptions</button>
-                <div class="admin-option-row">
-                  <span>Week Start:</span>
-                  <select id="admin-week-start-select" class="pixel-select">
-                    <option value="0">Sunday</option>
-                    <option value="1">Monday</option>
-                    <option value="2">Tuesday</option>
-                    <option value="3">Wednesday</option>
-                    <option value="4">Thursday</option>
-                    <option value="5">Friday</option>
-                    <option value="6">Saturday</option>
-                  </select>
-                </div>
-                <div id="admin-week-start-status" class="admin-status-badge hidden"></div>
-                <div class="admin-option-row">
-                  <span>App Timezone:</span>
-                  <select id="admin-timezone-select" class="pixel-select">
-                    <option value="default">Automatic (Use Device Time)</option>
-                    <option value="America/Los_Angeles">Pacific Time (US & Canada)</option>
-                    <option value="America/Denver">Mountain Time (US & Canada)</option>
-                    <option value="America/Chicago">Central Time (US & Canada)</option>
-                    <option value="America/New_York">Eastern Time (US & Canada)</option>
-                  </select>
-                </div>
-                <div class="admin-option-row">
-                  <span>Screensaver:</span>
-                  <select id="admin-idle-timeout-select" class="pixel-select">
-                    <option value="1">1 min</option>
-                    <option value="5">5 min</option>
-                    <option value="10">10 min</option>
-                    <option value="15">15 min</option>
-                    <option value="30">30 min</option>
-                    <option value="0">Never</option>
-                  </select>
-                </div>
-                <div class="admin-option-row">
-                  <span>Parent Edit Window:</span>
-                  <select id="admin-parent-grace-select" class="pixel-select" title="How long past-day editing stays unlocked after entering the passcode.">
-                    <option value="1">1 min</option>
-                    <option value="2">2 min</option>
-                    <option value="5">5 min</option>
-                  </select>
-                </div>
-                <div class="admin-option-row">
-                  <span>🔒 Approve Past Days:</span>
-                  <label class="admin-toggle-label" for="admin-lock-past-days-toggle">
-                    <input type="checkbox" id="admin-lock-past-days-toggle">
-                    <span class="admin-toggle-text">Ask for passcode</span>
-                  </label>
-                </div>
-                <div class="admin-option-hint">Requires the parent passcode before this child can edit previous days. Recommended for younger children.</div>
 
-                <!-- Placeholder only: not wired to state; see prd_admin_panel_redesign.md D8 -->
-                <div id="admin-chart-style-placeholder" class="admin-coming-soon" aria-disabled="true" title="Coming soon: a big-button chart for younger children.">
-                  <div class="admin-coming-soon-header">
-                    <span>🧸 Chart Style</span>
-                    <span class="coming-soon-tag">Coming soon</span>
-                  </div>
-                  <div class="admin-segmented" role="radiogroup" aria-label="Chart style (coming soon)">
-                    <label class="admin-segment">
-                      <input type="radio" name="admin-chart-style" value="big-buttons" disabled>
-                      <span class="admin-segment-text">Big Buttons<span class="subtext">under 5</span></span>
-                    </label>
-                    <label class="admin-segment">
-                      <input type="radio" name="admin-chart-style" value="standard" checked disabled>
-                      <span class="admin-segment-text">Standard<span class="subtext">5+</span></span>
-                    </label>
-                  </div>
-                  <div class="admin-option-hint">Fewer, bigger buttons for younger children with just one or two activities.</div>
-                </div>
+        <nav id="admin-nav" class="admin-nav" role="tablist" aria-orientation="vertical" aria-label="Admin sections">
+          <span class="admin-nav-group-label">This child</span>
+          <button type="button" id="admin-tab-today" class="admin-nav-btn" role="tab" data-admin-section="today" aria-controls="admin-pane-today" aria-selected="true">🌙 Today</button>
+          <button type="button" id="admin-tab-schedule" class="admin-nav-btn" role="tab" data-admin-section="schedule" aria-controls="admin-pane-schedule" aria-selected="false">🗓️ Schedule</button>
+          <button type="button" id="admin-tab-tasks" class="admin-nav-btn" role="tab" data-admin-section="tasks" aria-controls="admin-pane-tasks" aria-selected="false">✅ Tasks</button>
+          <button type="button" id="admin-tab-rewards" class="admin-nav-btn" role="tab" data-admin-section="rewards" aria-controls="admin-pane-rewards" aria-selected="false">🎁 Rewards</button>
+          <span class="admin-nav-divider" aria-hidden="true"></span>
+          <span class="admin-nav-group-label">Family</span>
+          <button type="button" id="admin-tab-children" class="admin-nav-btn" role="tab" data-admin-section="children" aria-controls="admin-pane-children" aria-selected="false">👥 Children</button>
+          <button type="button" id="admin-tab-passcode" class="admin-nav-btn" role="tab" data-admin-section="passcode" aria-controls="admin-pane-passcode" aria-selected="false">🔑 Passcode</button>
+          <button type="button" id="admin-tab-data" class="admin-nav-btn" role="tab" data-admin-section="data" aria-controls="admin-pane-data" aria-selected="false">💾 Data</button>
+        </nav>
 
-              </div>
-              
-              <div class="admin-action-group">
-                <h4>Backup & Sync</h4>
-                <div class="admin-action-row-buttons">
-                  <button id="admin-export-btn" class="pixel-btn info" title="Export current child's progress code to clipboard">Export Child</button>
-                  <button id="admin-import-btn" class="pixel-btn info" title="Import current child's progress from clipboard code">Import Child</button>
-                </div>
-                <div class="admin-action-row-buttons">
-                  <button id="admin-cloud-export-btn" class="pixel-btn success" title="Export all family profiles and settings code to clipboard">Export Family</button>
-                  <button id="admin-cloud-import-btn" class="pixel-btn success" title="Import all family profiles and settings from clipboard code">Import Family</button>
-                </div>
-              </div>
-              
-              <div class="admin-action-group">
-                <h4>System & Debug</h4>
-                <button id="admin-diagnostics-btn" class="pixel-btn">Run Diagnostics</button>
-                <button id="admin-force-update-btn" class="pixel-btn warning">Force App Update</button>
-                <div class="admin-option-row">
-                  <span>Debug Sidebar:</span>
-                  <label class="switch">
-                    <input type="checkbox" id="toggle-debug-sidebar">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-              </div>
-
-              <div class="admin-action-group">
-                <h4>Parent Passcode</h4>
-                <div class="admin-option-row">
-                  <input type="password" id="admin-new-passcode-input" class="pixel-input" placeholder="New passcode" minlength="4">
-                </div>
-                <button id="admin-change-passcode-btn" class="pixel-btn warning">Update Passcode</button>
-              </div>
-              
+        <!-- This child: Today (landing) -->
+        <section id="admin-pane-today" class="admin-pane" role="tabpanel" data-admin-section="today" aria-labelledby="admin-tab-today">
+          <h3 class="admin-pane-title">🌙 Today</h3>
+          <div class="admin-action-group">
+            <h4>Tonight's Check-in</h4>
+            <button id="exceptions-btn" class="pixel-btn info">Set Exceptions</button>
+            <div class="admin-option-row">
+              <span>Parent Edit Window:</span>
+              <select id="admin-parent-grace-select" class="pixel-select" title="How long past-day editing stays unlocked after entering the passcode.">
+                <option value="1">1 min</option>
+                <option value="2">2 min</option>
+                <option value="5">5 min</option>
+              </select>
             </div>
-            
-            <div class="danger-zone-section">
-              <h4>⚠️ Danger Zone</h4>
-              <button id="admin-wipe-btn" class="pixel-btn danger">Reset This Child's Progress</button>
-              <div class="admin-option-hint danger-zone-hint">Activities, rewards, and settings are kept. Other children are not affected.</div>
+            <div class="admin-option-row">
+              <span>🔒 Approve Past Days:</span>
+              <label class="admin-toggle-label" for="admin-lock-past-days-toggle">
+                <input type="checkbox" id="admin-lock-past-days-toggle">
+                <span class="admin-toggle-text">Ask for passcode</span>
+              </label>
+            </div>
+            <div class="admin-option-hint">Requires the parent passcode before this child can edit previous days. Recommended for younger children.</div>
+          </div>
+        </section>
+
+        <!-- This child: Schedule -->
+        <section id="admin-pane-schedule" class="admin-pane hidden" role="tabpanel" data-admin-section="schedule" aria-labelledby="admin-tab-schedule">
+          <h3 class="admin-pane-title">🗓️ Schedule</h3>
+          <div class="admin-action-group">
+            <h4>Week &amp; Clock</h4>
+            <div class="admin-option-row">
+              <span>Week Start:</span>
+              <select id="admin-week-start-select" class="pixel-select">
+                <option value="0">Sunday</option>
+                <option value="1">Monday</option>
+                <option value="2">Tuesday</option>
+                <option value="3">Wednesday</option>
+                <option value="4">Thursday</option>
+                <option value="5">Friday</option>
+                <option value="6">Saturday</option>
+              </select>
+            </div>
+            <div id="admin-week-start-status" class="admin-status-badge hidden"></div>
+            <div class="admin-option-row">
+              <span>App Timezone:</span>
+              <select id="admin-timezone-select" class="pixel-select">
+                <option value="default">Automatic (Use Device Time)</option>
+                <option value="America/Los_Angeles">Pacific Time (US &amp; Canada)</option>
+                <option value="America/Denver">Mountain Time (US &amp; Canada)</option>
+                <option value="America/Chicago">Central Time (US &amp; Canada)</option>
+                <option value="America/New_York">Eastern Time (US &amp; Canada)</option>
+              </select>
+            </div>
+            <div class="admin-option-row">
+              <span>Screensaver:</span>
+              <select id="admin-idle-timeout-select" class="pixel-select">
+                <option value="1">1 min</option>
+                <option value="5">5 min</option>
+                <option value="10">10 min</option>
+                <option value="15">15 min</option>
+                <option value="30">30 min</option>
+                <option value="0">Never</option>
+              </select>
             </div>
           </div>
+        </section>
 
-          <!-- Customize Activities & Goals -->
-          <div class="admin-section customize-section">
-            <h3>📋 Customize Activities & Goals</h3>
-            <div id="admin-tasks-list" class="admin-tasks-list">
-              <!-- Populated dynamically via JS -->
+        <!-- This child: Tasks -->
+        <section id="admin-pane-tasks" class="admin-pane hidden" role="tabpanel" data-admin-section="tasks" aria-labelledby="admin-tab-tasks">
+          <h3 class="admin-pane-title">✅ Tasks</h3>
+
+          <!-- Placeholder only: not wired to state; see prd_admin_panel_redesign.md D8 -->
+          <div id="admin-chart-style-placeholder" class="admin-coming-soon" aria-disabled="true" title="Coming soon: a big-button chart for younger children.">
+            <div class="admin-coming-soon-header">
+              <span>🧸 Chart Style</span>
+              <span class="coming-soon-tag">Coming soon</span>
             </div>
-            <div class="admin-tasks-actions">
-              <button id="admin-add-task-btn" class="pixel-btn info">Add Activity</button>
-              <button id="admin-save-tasks-btn" class="pixel-btn success">Save Activities</button>
+            <div class="admin-segmented" role="radiogroup" aria-label="Chart style (coming soon)">
+              <label class="admin-segment">
+                <input type="radio" name="admin-chart-style" value="big-buttons" disabled>
+                <span class="admin-segment-text">Big Buttons<span class="subtext">under 5</span></span>
+              </label>
+              <label class="admin-segment">
+                <input type="radio" name="admin-chart-style" value="standard" checked disabled>
+                <span class="admin-segment-text">Standard<span class="subtext">5+</span></span>
+              </label>
             </div>
+            <div class="admin-option-hint">Fewer, bigger buttons for younger children with just one or two activities.</div>
           </div>
 
-          <!-- Manage Profiles -->
-          <div class="admin-section manage-profiles-section">
-            <h3>👥 Manage Profiles</h3>
-            <div id="admin-profiles-list" class="admin-profiles-list">
-              <!-- Populated dynamically via JS -->
+          <div id="admin-tasks-list" class="admin-tasks-list">
+            <!-- Populated dynamically via JS -->
+          </div>
+          <div class="admin-tasks-actions">
+            <button id="admin-add-task-btn" class="pixel-btn info">Add Activity</button>
+            <button id="admin-save-tasks-btn" class="pixel-btn success">Save Activities</button>
+          </div>
+        </section>
+
+        <!-- This child: Rewards -->
+        <section id="admin-pane-rewards" class="admin-pane hidden" role="tabpanel" data-admin-section="rewards" aria-labelledby="admin-tab-rewards">
+          <h3 class="admin-pane-title">🎁 Rewards</h3>
+          <div class="admin-action-group">
+            <h4>Reward Choices</h4>
+            <button id="admin-customize-rewards-btn" class="pixel-btn info">Customize Rewards</button>
+            <div class="admin-option-hint">Edit the weekly and mega milestone rewards this child can pick from.</div>
+          </div>
+          <h4 class="admin-pane-subtitle">🏆 Claimed Rewards History</h4>
+          <div id="claimed-rewards-history-list" class="claimed-rewards-history-list">
+            <p class="no-rewards">No rewards claimed yet.</p>
+          </div>
+        </section>
+
+        <!-- Family: Children -->
+        <section id="admin-pane-children" class="admin-pane hidden" role="tabpanel" data-admin-section="children" aria-labelledby="admin-tab-children">
+          <h3 class="admin-pane-title">👥 Children</h3>
+          <div id="admin-profiles-list" class="admin-profiles-list">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </section>
+
+        <!-- Family: Passcode -->
+        <section id="admin-pane-passcode" class="admin-pane hidden" role="tabpanel" data-admin-section="passcode" aria-labelledby="admin-tab-passcode">
+          <h3 class="admin-pane-title">🔑 Passcode</h3>
+          <div class="admin-action-group">
+            <h4>Parent Passcode</h4>
+            <div class="admin-option-hint">One passcode for the whole family. It applies to every child.</div>
+            <div class="admin-option-row">
+              <input type="password" id="admin-new-passcode-input" class="pixel-input" placeholder="New passcode" minlength="4">
+            </div>
+            <button id="admin-change-passcode-btn" class="pixel-btn warning">Update Passcode</button>
+          </div>
+        </section>
+
+        <!-- Family: Data (backup, system, quarantined danger block — D2) -->
+        <section id="admin-pane-data" class="admin-pane hidden" role="tabpanel" data-admin-section="data" aria-labelledby="admin-tab-data">
+          <h3 class="admin-pane-title">💾 Data</h3>
+          <div class="admin-action-group">
+            <h4>This child<span class="admin-child-name" data-admin-child-name></span></h4>
+            <div class="admin-action-row-buttons">
+              <button id="admin-export-btn" class="pixel-btn info" title="Export current child's progress code to clipboard">Export Child</button>
+              <button id="admin-import-btn" class="pixel-btn info" title="Import current child's progress from clipboard code">Import Child</button>
             </div>
           </div>
-
-
-          <!-- Claimed Rewards History -->
-          <div class="admin-section claimed-rewards-section">
-            <h3>🏆 Claimed Rewards History</h3>
-            <div id="claimed-rewards-history-list" class="claimed-rewards-history-list">
-              <p class="no-rewards">No rewards claimed yet.</p>
+          <div class="admin-action-group">
+            <h4>Whole family</h4>
+            <div class="admin-action-row-buttons">
+              <button id="admin-cloud-export-btn" class="pixel-btn success" title="Export all family profiles and settings code to clipboard">Export Family</button>
+              <button id="admin-cloud-import-btn" class="pixel-btn success" title="Import all family profiles and settings from clipboard code">Import Family</button>
             </div>
           </div>
+          <div class="admin-action-group">
+            <h4>System</h4>
+            <button id="admin-diagnostics-btn" class="pixel-btn">Run Diagnostics</button>
+            <button id="admin-force-update-btn" class="pixel-btn warning">Force App Update</button>
+            <div class="admin-option-row">
+              <span>Debug Sidebar:</span>
+              <label class="switch">
+                <input type="checkbox" id="toggle-debug-sidebar">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+          <hr class="admin-danger-divider">
+          <div class="danger-zone-section">
+            <h4>⚠️ Danger Zone</h4>
+            <button id="admin-wipe-btn" class="pixel-btn danger">Reset This Child's Progress</button>
+            <div class="admin-option-hint danger-zone-hint">Activities, rewards, and settings are kept. Other children are not affected.</div>
+          </div>
+        </section>
 
-
+        <div class="admin-modal-footer">
+          <button id="close-admin-modal-btn" class="pixel-btn greyed-out">Close</button>
         </div>
-
-        <button id="close-admin-modal-btn" class="pixel-btn greyed-out">Close</button>
       </div>
     </div>
 

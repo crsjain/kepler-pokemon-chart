@@ -226,7 +226,7 @@ import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault, getStarsFromDates } from './vault.js';
 import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES, getStageIndexForLevel } from './pokemon_data.js';
 import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
-import { initAdmin } from './admin.js';
+import { initAdmin, refreshAdminScopeChip } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
 import { initShop, openPokemonShop, resetShopSession } from './shop.js';
 
@@ -784,6 +784,7 @@ function renderProfilesGrid() {
 }
 
 function renderAdminProfilesList() {
+  refreshAdminScopeChip();
   const container = document.getElementById('admin-profiles-list');
   if (!container) return;
   
@@ -1022,6 +1023,10 @@ initAdmin({
   reload: () => reloadFn(),
   saveAdminPassword: async (newPassword) => {
     await saveAdminPasswordToCloud(newPassword, profilesList);
+  },
+  getActiveProfileName: () => {
+    const profile = activeProfileId ? profilesList.find(p => p.id === activeProfileId) : null;
+    return profile && profile.name ? profile.name : null;
   }
 });
 initRewardsAdmin({

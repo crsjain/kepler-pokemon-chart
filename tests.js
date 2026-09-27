@@ -2588,10 +2588,15 @@ async function runSuite() {
         // Verify right-alignment of all 3 admin dropdowns
         const weekSelect = document.getElementById('admin-week-start-select');
         const tzSelect = document.getElementById('admin-timezone-select');
+        // They live in the Schedule pane; hidden panes measure as zero rects and
+        // would make the alignment asserts below pass vacuously.
+        document.querySelector('.admin-nav-btn[data-admin-section="schedule"]').click();
+        await sleep(50);
         if (weekSelect && tzSelect && select) {
           const rWeek = weekSelect.getBoundingClientRect();
           const rTz = tzSelect.getBoundingClientRect();
           const rIdle = select.getBoundingClientRect();
+          assert(rWeek.width > 0, `Schedule pane must be visible so the alignment check is real (Week Start width ${rWeek.width})`);
           assert(Math.abs(rWeek.right - rTz.right) < 2, `Week Start (${rWeek.right}) and Timezone (${rTz.right}) should be right-aligned`);
           assert(Math.abs(rTz.right - rIdle.right) < 2, `Timezone (${rTz.right}) and Screensaver (${rIdle.right}) should be right-aligned`);
           assert(Math.abs(rWeek.width - rIdle.width) < 2, "All admin dropdowns should have uniform width");
@@ -7975,6 +7980,154 @@ async function runSuite() {
         assert(bootStatus.querySelectorAll('[style]').length === 0 && !bootStatus.hasAttribute('style'),
           "Boot status markup must have zero inline styles");
         assert(getComputedStyle(document.getElementById('partner-name')).display !== 'none', "Partner name must be visible after ready");
+      }
+
+      // 93. Test Case 93: Admin left-nav shell (docs/prd_admin_panel_redesign.md §6.3)
+      console.log("Running Test Case 93: Admin left-nav shell, pane home map, scope chip & zero inline styles...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+        const live = window.__app_state__;
+        const kidId = 'tc93_nova';
+        helpers.setProfilesList([{ id: kidId, name: 'Nova', avatarId: '25', state: JSON.parse(JSON.stringify(live)) }]);
+        helpers.setActiveProfileId(kidId);
+
+        const SECTIONS = ['today', 'schedule', 'tasks', 'rewards', 'children', 'passcode', 'data'];
+        const adminModal = document.getElementById('admin-modal');
+        const panes = () => SECTIONS.map(s => document.getElementById(`admin-pane-${s}`));
+        const navBtns = () => [...document.querySelectorAll('#admin-nav .admin-nav-btn')];
+        const visiblePanes = () => panes().filter(p => p && !p.classList.contains('hidden'));
+        const openAdmin = async () => {
+          document.getElementById('admin-btn').click();
+          await sleep(100);
+          document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+          document.getElementById('password-submit-btn').click();
+          await sleep(100);
+        };
+
+        // 1. Opens on Today; the other six panes are hidden; exactly one tab selected.
+        await openAdmin();
+        assert(!adminModal.classList.contains('hidden'), "Admin modal should open");
+        assert(panes().every(p => p !== null), "All 7 admin panes should exist");
+        assert(navBtns().length === 7, `Nav should have 7 tabs, got ${navBtns().length}`);
+        assert(visiblePanes().length === 1 && visiblePanes()[0].id === 'admin-pane-today', "Admin must open on the Today pane only");
+        const selected = navBtns().filter(b => b.getAttribute('aria-selected') === 'true');
+        assert(selected.length === 1 && selected[0].dataset.adminSection === 'today', "Exactly one tab (Today) should be aria-selected");
+
+        // 2. Every tab shows exactly its own pane.
+        for (const btn of navBtns()) {
+          btn.click();
+          const vis = visiblePanes();
+          assert(vis.length === 1 && vis[0].dataset.adminSection === btn.dataset.adminSection,
+            `Clicking ${btn.dataset.adminSection} should show exactly its pane, got ${vis.map(p => p.id).join(',')}`);
+          assert(navBtns().filter(b => b.getAttribute('aria-selected') === 'true').length === 1, "Exactly one tab stays selected");
+          assert(btn.getAttribute('aria-selected') === 'true', `${btn.dataset.adminSection} tab should be selected after click`);
+        }
+
+        // 3. Home map: each existing control lives in its PRD §3.1 section; shell IDs sit outside every pane.
+        const HOME = {
+          today: ['exceptions-btn', 'admin-parent-grace-select', 'admin-lock-past-days-toggle'],
+          schedule: ['admin-week-start-select', 'admin-week-start-status', 'admin-timezone-select', 'admin-idle-timeout-select'],
+          tasks: ['admin-tasks-list', 'admin-add-task-btn', 'admin-save-tasks-btn', 'admin-chart-style-placeholder'],
+          rewards: ['admin-customize-rewards-btn', 'claimed-rewards-history-list'],
+          children: ['admin-profiles-list'],
+          passcode: ['admin-new-passcode-input', 'admin-change-passcode-btn'],
+          data: ['admin-export-btn', 'admin-import-btn', 'admin-cloud-export-btn', 'admin-cloud-import-btn',
+                 'admin-diagnostics-btn', 'admin-force-update-btn', 'toggle-debug-sidebar', 'admin-wipe-btn']
+        };
+        for (const [section, ids] of Object.entries(HOME)) {
+          for (const id of ids) {
+            const el = document.getElementById(id);
+            assert(el !== null, `#${id} should exist`);
+            const pane = el.closest('.admin-pane');
+            assert(pane && pane.dataset.adminSection === section, `#${id} should live in the ${section} pane, got ${pane ? pane.id : 'none'}`);
+          }
+        }
+        for (const id of ['close-admin-header-btn', 'close-admin-modal-btn', 'admin-scope-chip', 'admin-nav']) {
+          const el = document.getElementById(id);
+          assert(el && adminModal.contains(el) && !el.closest('.admin-pane'), `Shell element #${id} must be inside the modal but outside every pane`);
+        }
+
+        // 4. Unsaved task edits survive a tab switch (no re-render).
+        document.querySelector('.admin-nav-btn[data-admin-section="tasks"]').click();
+        const nameInput = document.querySelector('#admin-tasks-list .task-name-input');
+        assert(nameInput !== null, "Tasks pane should render at least one task row");
+        nameInput.value = 'TC93 Unsaved Edit';
+        document.querySelector('.admin-nav-btn[data-admin-section="rewards"]').click();
+        document.querySelector('.admin-nav-btn[data-admin-section="tasks"]').click();
+        assert(document.querySelector('#admin-tasks-list .task-name-input') === nameInput, "Switching tabs must not re-render the task list");
+        assert(nameInput.value === 'TC93 Unsaved Edit', "Unsaved task edit must survive a tab switch");
+
+        // 5. D6: close on Data, reopen, lands on Today again.
+        document.querySelector('.admin-nav-btn[data-admin-section="data"]').click();
+        document.getElementById('close-admin-modal-btn').click();
+        await sleep(50);
+        await openAdmin();
+        assert(visiblePanes().length === 1 && visiblePanes()[0].id === 'admin-pane-today', "Reopening Admin must land on Today (D6)");
+
+        // 6. Scope chip names the active child; hides with no active profile.
+        const chip = document.getElementById('admin-scope-chip');
+        assert(!chip.classList.contains('hidden') && chip.textContent.includes('Nova'), `Scope chip should read "Editing: Nova", got "${chip.textContent}"`);
+        assert(document.querySelector('[data-admin-child-name]').textContent.includes('Nova'), "Data pane 'This child' label should name the active child");
+        helpers.setActiveProfileId(null);
+        helpers.renderAdminProfilesList();
+        assert(chip.classList.contains('hidden'), "Scope chip must hide when there is no active profile");
+        assert(!chip.textContent.includes('undefined'), "Scope chip must never render 'undefined'");
+        helpers.setActiveProfileId(kidId);
+        helpers.renderAdminProfilesList();
+        assert(!chip.classList.contains('hidden') && chip.textContent.includes('Nova'), "Scope chip should refresh when the profile list re-renders");
+
+        // 7. Rule 8: zero inline styles across the admin shell, delete/reset confirms, and the rewards editor.
+        const confirmModal = document.getElementById('confirm-modal');
+        let inline = adminModal.querySelectorAll('[style]').length;
+        assert(inline === 0, `#admin-modal must have zero inline styles, found ${inline}`);
+        document.querySelector(`.delete-profile-btn[data-id="${kidId}"]`).click();
+        await sleep(50);
+        assert(confirmModal.querySelector('.schedule-hero-card.danger') !== null, "Delete confirm should use the .danger hero card");
+        inline = confirmModal.querySelectorAll('.confirm-detail [style]').length;
+        assert(inline === 0, `Delete confirm body must have zero inline styles, found ${inline}`);
+        document.getElementById('confirm-no-btn').click();
+        await sleep(30);
+        document.getElementById('admin-wipe-btn').click();
+        await sleep(50);
+        assert(confirmModal.querySelector('.schedule-hero-card.danger') !== null, "Reset confirm should use the .danger hero card");
+        assert(confirmModal.querySelectorAll('.confirm-detail [style]').length === 0, "Reset confirm body must have zero inline styles");
+        document.getElementById('confirm-no-btn').click();
+        await sleep(30);
+
+        // 8. Rewards pane launcher opens the stacked editor for the active child.
+        const editRewardsModal = document.getElementById('edit-rewards-modal');
+        document.querySelector('.admin-nav-btn[data-admin-section="rewards"]').click();
+        document.getElementById('admin-customize-rewards-btn').click();
+        await sleep(50);
+        assert(!editRewardsModal.classList.contains('hidden'), "#admin-customize-rewards-btn should open #edit-rewards-modal");
+        assert(document.getElementById('edit-rewards-title').textContent.includes('Nova'), "Rewards editor should be titled for the active child");
+        assert(document.querySelectorAll('#weekly-rewards-list .reward-list-item').length > 0, "Populated editor should list rewards");
+        assert(editRewardsModal.querySelectorAll('[style]').length === 0, "Populated rewards editor must have zero inline styles");
+        let guard = 50;
+        while (guard-- > 0 && document.querySelector('#weekly-rewards-list .delete-reward-btn')) {
+          document.querySelector('#weekly-rewards-list .delete-reward-btn').click();
+        }
+        assert(document.querySelector('#weekly-rewards-list .no-items') !== null, "Empty editor should show the .no-items line");
+        assert(editRewardsModal.querySelectorAll('[style]').length === 0, "Empty rewards editor must have zero inline styles");
+        document.getElementById('edit-rewards-cancel-btn').click();
+        await sleep(30);
+        assert(editRewardsModal.classList.contains('hidden'), "Cancel should close the rewards editor");
+
+        // 9. D8 placeholder moved to the top of the Tasks pane.
+        const tasksPane = document.getElementById('admin-pane-tasks');
+        const placeholder = document.getElementById('admin-chart-style-placeholder');
+        assert(placeholder.closest('.admin-pane') === tasksPane, "Chart Style placeholder should live in the Tasks pane");
+        assert(placeholder.compareDocumentPosition(document.getElementById('admin-tasks-list')) & Node.DOCUMENT_POSITION_FOLLOWING,
+          "Chart Style placeholder should sit above the task list");
+
+        // Clean up
+        document.getElementById('close-admin-modal-btn').click();
+        helpers.setProfilesList([]);
+        helpers.setActiveProfileId(null);
+        helpers.resetState();
+        await sleep(50);
       }
 
       // 94. Test Case 94: Shop card status rail (✨ / 🔒 never crowd the ribbon or sprite; no duplicate Poké Ball)

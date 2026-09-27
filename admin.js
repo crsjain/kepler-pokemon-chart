@@ -18,7 +18,8 @@ let appCallbacks = {
   exportCloudData: async () => { return null; },
   importCloudData: async () => {},
   wipeData: async () => {},
-  reload: () => location.reload()
+  reload: () => location.reload(),
+  getActiveProfileName: () => null
 };
 
 function renderState(...args) {
@@ -97,11 +98,22 @@ export function initAdmin(callbacks) {
   if (adminBtn) {
     adminBtn.addEventListener('click', () => {
       promptParentPassword(() => {
-        adminModal.classList.remove('hidden');
-        renderAdminTasksList();
-        renderClaimedRewardsHistory();
-        appCallbacks.renderAdminProfilesList();
+        openAdminPanel();
       });
+    });
+  }
+
+  // Left-nav switching: toggles .hidden / aria-selected only, never re-renders a
+  // pane (unsaved #admin-tasks-list edits must survive a tab switch).
+  const adminNav = document.getElementById('admin-nav');
+  if (adminNav) {
+    adminNav.addEventListener('click', (e) => {
+      const btn = e.target.closest('.admin-nav-btn');
+      if (!btn || !adminNav.contains(btn)) return;
+      showAdminSection(btn.dataset.adminSection);
+      if (typeof btn.scrollIntoView === 'function') {
+        btn.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+      }
     });
   }
 
@@ -276,12 +288,68 @@ function handlePasswordSubmit() {
       passwordSuccessCallback();
       passwordSuccessCallback = null;
     } else {
-      adminModal.classList.remove('hidden');
-      renderAdminTasksList();
-      renderClaimedRewardsHistory();
+      openAdminPanel();
     }
   } else {
     passwordError.classList.remove('hidden');
+  }
+}
+
+const ADMIN_LANDING_SECTION = 'today';
+
+/**
+ * Shows exactly one admin pane. Class/ARIA toggling only — never re-renders.
+ */
+function showAdminSection(section) {
+  const modal = adminModal || document.getElementById('admin-modal');
+  if (!modal || !section) return;
+  modal.querySelectorAll('.admin-nav-btn').forEach(btn => {
+    btn.setAttribute('aria-selected', btn.dataset.adminSection === section ? 'true' : 'false');
+  });
+  modal.querySelectorAll('.admin-pane').forEach(pane => {
+    pane.classList.toggle('hidden', pane.dataset.adminSection !== section);
+  });
+}
+
+/**
+ * Refreshes the read-only "Editing: <child>" chip and the Data pane's
+ * "This child (<name>)" label. The name comes from a getter so it is always
+ * current (activeProfileId / profilesList are reassigned by sync and tests).
+ * With no active profile the chip hides — never "Editing: undefined".
+ */
+export function refreshAdminScopeChip() {
+  const name = appCallbacks.getActiveProfileName ? appCallbacks.getActiveProfileName() : null;
+  document.querySelectorAll('[data-admin-child-name]').forEach(el => {
+    el.textContent = name ? ` (${name})` : '';
+  });
+  const chip = document.getElementById('admin-scope-chip');
+  if (!chip) return;
+  if (name) {
+    chip.textContent = `Editing: ${name}`;
+    chip.title = `"This child" sections change ${name}'s settings only`;
+    chip.classList.remove('hidden');
+  } else {
+    chip.textContent = '';
+    chip.removeAttribute('title');
+    chip.classList.add('hidden');
+  }
+}
+
+/**
+ * Opens the panel on Today (D6: no remembered section), refreshes the chip,
+ * and renders the dynamic lists.
+ */
+function openAdminPanel() {
+  if (!adminModal) return;
+  showAdminSection(ADMIN_LANDING_SECTION);
+  refreshAdminScopeChip();
+  adminModal.classList.remove('hidden');
+  renderAdminTasksList();
+  renderClaimedRewardsHistory();
+  appCallbacks.renderAdminProfilesList();
+  const activeTab = adminModal.querySelector('.admin-nav-btn[aria-selected="true"]');
+  if (activeTab && typeof activeTab.scrollIntoView === 'function') {
+    activeTab.scrollIntoView({ inline: 'nearest', block: 'nearest' });
   }
 }
 

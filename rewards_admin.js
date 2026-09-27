@@ -144,6 +144,24 @@ export function bindRewardsEditorEvents() {
       }
     });
   }
+
+  // Admin > Rewards pane launcher (D5): same stacked editor, for the active child.
+  const adminCustomizeRewardsBtn = document.getElementById('admin-customize-rewards-btn');
+  if (adminCustomizeRewardsBtn) {
+    adminCustomizeRewardsBtn.addEventListener('click', () => {
+      const activeId = getActiveProfileId();
+      const profile = activeId ? getProfilesList().find(p => p.id === activeId) : null;
+      if (!profile) {
+        showCustomNotification(
+          "No Child Selected 👥",
+          "Sign in and pick a child profile first, then customize their rewards here.",
+          null, false, null, '', 'Got it', 'greyed-out'
+        );
+        return;
+      }
+      openEditRewardsModal(profile.id, profile.name);
+    });
+  }
 }
 
 function escapeHtml(str) {
