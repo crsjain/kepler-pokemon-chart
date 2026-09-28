@@ -4556,6 +4556,7 @@ async function runSuite() {
         await sleep(100);
 
         // Test Validation Error: Add empty task and click Save Activities
+        const tasksBeforeDraft = JSON.stringify(state.tasks);
         addTaskBtn.click();
         const taskList = document.getElementById('admin-tasks-list');
         const items = taskList.querySelectorAll('.admin-task-item');
@@ -4578,14 +4579,15 @@ async function runSuite() {
         errModal.remove();
         await sleep(100);
 
-        // Clean up: delete the temporary empty task item
-        const initialTasksCount = state.tasks.length;
-        state.tasks.pop(); // Remove temporary task
-        window.__test_helpers__.renderState(false);
+        // Phase 0a: the unsaved empty row is a DOM-only draft. The failed save must
+        // not have written it to state.tasks, and Close discards it. (The old
+        // `state.tasks.pop()` cleanup would now delete a real task.)
+        assert(JSON.stringify(state.tasks) === tasksBeforeDraft, "Failed save must not leak the draft row into state.tasks");
 
         closeAdminBtn.click();
         await sleep(100);
         assert(adminModal.classList.contains('hidden'), "Admin Modal should close");
+        assert(!taskList.querySelector('.admin-task-item[data-new="1"]'), "Close should discard the unsaved draft row");
 
         window.alert = origAlert;
       }
@@ -8350,6 +8352,197 @@ async function runSuite() {
         document.getElementById('close-shop-modal-btn').click();
         await sleep(30);
 
+        helpers.resetState();
+        await sleep(50);
+      }
+
+      // 96. Test Case 96: Admin draft-leak hotfix (Phase 0a) — nothing unsaved reaches state or the kid chart
+      console.log("Running Test Case 96: Admin draft-leak hotfix (unsaved add/remove, reward rename cancel, snapshot merge)...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(50);
+        const live = window.__app_state__;
+        const kidId = 'tc96_kepler';
+        live.weeklyRewardOptions = [{ value: 'Park Trip', text: 'Park Trip' }, { value: 'Movie Night', text: 'Movie Night' }];
+        live.megaRewardOptions = [{ value: 'Zoo Day', text: 'Zoo Day' }];
+        live.reward = 'Movie Night';
+        live.megaReward = 'Zoo Day';
+        helpers.setProfilesList([{ id: kidId, name: 'Kepler', avatarId: '25', state: JSON.parse(JSON.stringify(live)) }]);
+        helpers.setActiveProfileId(kidId);
+        helpers.renderState(true);
+        await sleep(50);
+
+        const adminModal = document.getElementById('admin-modal');
+        const taskList = document.getElementById('admin-tasks-list');
+        const openAdmin = async () => {
+          document.getElementById('admin-btn').click();
+          await sleep(100);
+          document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+          document.getElementById('password-submit-btn').click();
+          await sleep(100);
+          document.querySelector('.admin-nav-btn[data-admin-section="tasks"]').click();
+        };
+        const closeAdmin = async () => {
+          document.getElementById('close-admin-modal-btn').click();
+          await sleep(50);
+        };
+        const gridTaskNames = () => [...document.querySelectorAll('#grid-tbody .task-row .task-name')].map(el => el.textContent.trim());
+        const dismissNotifs = () => document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+        const confirmYes = async () => {
+          const cm = document.getElementById('confirm-modal');
+          assert(cm && !cm.classList.contains('hidden'), "Remove Activity confirm should open");
+          document.getElementById('confirm-yes-btn').click();
+          await sleep(50);
+        };
+
+        // (a) Unsaved Add Activity + Close → state.tasks and the kid chart are unaffected.
+        const tasksSnapshotA = JSON.stringify(live.tasks);
+        const gridBeforeA = gridTaskNames();
+        await openAdmin();
+        const rowsBefore = taskList.querySelectorAll('.admin-task-item').length;
+        document.getElementById('admin-add-task-btn').click();
+        const draftRow = taskList.querySelector('.admin-task-item[data-new="1"]');
+        assert(draftRow !== null, "Add Activity should append a data-new draft row");
+        assert(taskList.querySelectorAll('.admin-task-item').length === rowsBefore + 1, "Draft row should be visible in the Activities list");
+        assert(JSON.stringify(live.tasks) === tasksSnapshotA, "Add Activity must not mutate state.tasks before Save");
+        await closeAdmin();
+        assert(adminModal.classList.contains('hidden'), "Admin should close");
+        assert(!taskList.querySelector('.admin-task-item[data-new="1"]'), "Close must discard the draft row");
+        helpers.renderState(true);
+        await sleep(50);
+        assert(JSON.stringify(live.tasks) === tasksSnapshotA, "state.tasks must be unchanged after Close without saving");
+        assert(!gridTaskNames().includes('New Activity'), "Unsaved 'New Activity' must never reach the kid chart");
+        assert(JSON.stringify(gridTaskNames()) === JSON.stringify(gridBeforeA), "Kid chart rows (and so star math) must be unchanged");
+
+        // (a2) Unsaved Remove Activity + Close → the task stays active.
+        const victim = live.tasks.find(t => t.active !== false);
+        assert(victim, "Need at least one active task");
+        await openAdmin();
+        const victimRow = taskList.querySelector(`.admin-task-item[data-task-id="${victim.id}"]`);
+        victimRow.querySelector('.remove-task-btn').click();
+        await sleep(50);
+        await confirmYes();
+        assert(victimRow.dataset.removed === '1' && victimRow.classList.contains('hidden'), "Remove should hide the row as a draft (data-removed)");
+        assert(victim.active !== false && !victim.deletedAt, "Remove must not soft-delete in state before Save");
+        await closeAdmin();
+        assert(live.tasks.find(t => t.id === victim.id).active !== false, "Task must still be active after Close without saving");
+        await openAdmin();
+        const reRow = taskList.querySelector(`.admin-task-item[data-task-id="${victim.id}"]`);
+        assert(reRow && !reRow.classList.contains('hidden') && reRow.dataset.removed !== '1', "Reopening Admin must show the un-removed task again");
+        await closeAdmin();
+
+        // (b) Reward inline rename + Cancel → state.reward unchanged, no orphan value.
+        await openAdmin();
+        document.querySelector('.admin-nav-btn[data-admin-section="rewards"]').click();
+        document.getElementById('admin-customize-rewards-btn').click();
+        await sleep(50);
+        const editorModal = document.getElementById('edit-rewards-modal');
+        assert(!editorModal.classList.contains('hidden'), "Rewards editor should open");
+        const weeklyRows = [...document.querySelectorAll('#weekly-rewards-list .reward-list-item')];
+        const selIdx = weeklyRows.findIndex(r => r.textContent.includes('Movie Night'));
+        assert(selIdx >= 0, "Selected reward should be listed");
+        weeklyRows[selIdx].querySelector('.edit-reward-btn').click();
+        await sleep(30);
+        document.querySelector('#weekly-rewards-list .reward-edit-input').value = 'Renamed In Draft';
+        document.querySelector('#weekly-rewards-list .save-reward-edit-btn').click();
+        await sleep(30);
+        assert(live.reward === 'Movie Night', `Inline rename must not write state.reward before Save (got '${live.reward}')`);
+        document.getElementById('edit-rewards-cancel-btn').click();
+        await sleep(30);
+        assert(live.reward === 'Movie Night', `Cancel must leave state.reward unchanged (got '${live.reward}')`);
+        assert(live.weeklyRewardOptions.some(o => o.value === live.reward), "state.reward must still be one of the saved options");
+        // Reopen: the discarded rename is gone.
+        document.getElementById('admin-customize-rewards-btn').click();
+        await sleep(50);
+        const reopenedTexts = [...document.querySelectorAll('#weekly-rewards-list .reward-item-text')].map(el => el.textContent);
+        assert(!reopenedTexts.includes('Renamed In Draft') && reopenedTexts.includes('Movie Night'), "Reopened editor must not show the cancelled rename");
+        document.getElementById('edit-rewards-cancel-btn').click();
+        await sleep(30);
+        await closeAdmin();
+
+        // (c) Add + Remove, then a Firestore snapshot lands mid-edit, then Save → merged by id, nothing dropped.
+        const actives = live.tasks.filter(t => t.active !== false);
+        const keepEdit = actives[0];
+        const toRemove = actives[1];
+        assert(keepEdit && toRemove, "Need at least two active tasks");
+        await openAdmin();
+        document.getElementById('admin-add-task-btn').click();
+        const newRow = taskList.querySelector('.admin-task-item[data-new="1"]');
+        newRow.querySelector('.task-name-input').value = 'TC96 Draft Chore';
+        newRow.querySelector('.task-emoji-select').value = '🧹';
+        taskList.querySelector(`.admin-task-item[data-task-id="${keepEdit.id}"] .task-name-input`).value = 'TC96 Edited Name';
+        taskList.querySelector(`.admin-task-item[data-task-id="${toRemove.id}"] .remove-task-btn`).click();
+        await sleep(50);
+        await confirmYes();
+
+        const snapshot = JSON.parse(JSON.stringify(live));
+        snapshot.tasks.push({ id: 'tc96-remote', name: 'TC96 Remote Chore', emoji: '🎨', concept: 'x', instructions: '', active: true, createdAt: '2026-01-01', deletedAt: null });
+        snapshot.tasks.push({ id: 'tc96-retired', name: 'TC96 Retired', emoji: '📚', concept: 'x', instructions: '', active: false, createdAt: '2026-01-01', deletedAt: '2026-01-05' });
+        StateModule.replaceState(snapshot);
+        helpers.renderState(true);
+        await sleep(30);
+        assert(live.tasks.some(t => t.id === 'tc96-remote'), "Snapshot should have replaced state.tasks");
+        assert(taskList.querySelector('.admin-task-item[data-new="1"]') === newRow, "Snapshot must not wipe the open draft");
+
+        dismissNotifs();
+        document.getElementById('admin-save-tasks-btn').click();
+        await sleep(100);
+        const savedNotif = [...document.querySelectorAll('.notif-modal')].pop();
+        assert(savedNotif && savedNotif.textContent.includes('Activities saved successfully'), "Save should succeed after a benign snapshot");
+        dismissNotifs();
+        const saved = live.tasks.find(t => t.name === 'TC96 Draft Chore');
+        assert(saved && saved.active === true && saved.emoji === '🧹' && saved.id === 'tc96-draft-chore', `New draft row must be saved with a slug id (got ${JSON.stringify(saved)})`);
+        assert(live.tasks.find(t => t.id === keepEdit.id).name === 'TC96 Edited Name', "Edited row must merge onto the current task by id");
+        const removedNow = live.tasks.find(t => t.id === toRemove.id);
+        assert(removedNow && removedNow.active === false && !!removedNow.deletedAt, "Draft-removed row must be soft-deleted on Save (history kept)");
+        assert(live.tasks.some(t => t.id === 'tc96-remote' && t.active === true), "Task added by the snapshot must be preserved by the merge");
+        assert(live.tasks.some(t => t.id === 'tc96-retired' && t.active === false), "Soft-deleted tasks must be preserved by the merge");
+        assert(gridTaskNames().includes('TC96 Draft Chore'), "Saved draft row should appear on the chart");
+
+        // (c2) Reactivation: a new row named like a soft-deleted task revives it instead of duplicating.
+        document.getElementById('admin-add-task-btn').click();
+        taskList.querySelector('.admin-task-item[data-new="1"] .task-name-input').value = 'tc96 retired';
+        document.getElementById('admin-save-tasks-btn').click();
+        await sleep(100);
+        dismissNotifs();
+        const revived = live.tasks.filter(t => (t.name || '').toLowerCase() === 'tc96 retired');
+        assert(revived.length === 1 && revived[0].id === 'tc96-retired' && revived[0].active === true && revived[0].deletedAt === null,
+          "Adding a soft-deleted name must reactivate the original task (no duplicate)");
+
+        // (c3) Conflict: the snapshot deletes a task the draft still edits → error, draft kept, nothing written.
+        taskList.querySelector('.admin-task-item[data-task-id="tc96-remote"] .task-name-input').value = 'TC96 Local Edit';
+        document.getElementById('admin-add-task-btn').click();
+        taskList.querySelector('.admin-task-item[data-new="1"] .task-name-input').value = 'TC96 Pending New';
+        const snap2 = JSON.parse(JSON.stringify(live));
+        snap2.tasks = snap2.tasks.filter(t => t.id !== 'tc96-remote');
+        StateModule.replaceState(snap2);
+        const tasksBeforeConflictSave = JSON.stringify(live.tasks);
+        dismissNotifs();
+        document.getElementById('admin-save-tasks-btn').click();
+        await sleep(100);
+        const errNotif = [...document.querySelectorAll('.notif-modal')].pop();
+        assert(errNotif && errNotif.textContent.includes('changed on another device'), "Conflict must show an error notification, never a silent drop");
+        assert(!errNotif.textContent.includes('Activities saved successfully'), "Conflict must not claim success");
+        dismissNotifs();
+        const conflictRow = taskList.querySelector('.admin-task-item[data-task-id="tc96-remote"]');
+        assert(conflictRow && conflictRow.querySelector('.admin-task-conflict'), "Conflicting row must carry the inline error");
+        assert(conflictRow.querySelector('.task-name-input').value === 'TC96 Local Edit', "Draft edits must be kept after a conflict");
+        assert(taskList.querySelector('.admin-task-item[data-new="1"] .task-name-input').value === 'TC96 Pending New', "Pending new row must be kept after a conflict");
+        assert(JSON.stringify(live.tasks) === tasksBeforeConflictSave, "A conflicting Save must write nothing");
+        // Resolve by removing the conflicting row, then Save succeeds and keeps the pending new row.
+        conflictRow.querySelector('.remove-task-btn').click();
+        await sleep(50);
+        await confirmYes();
+        document.getElementById('admin-save-tasks-btn').click();
+        await sleep(100);
+        const okNotif = [...document.querySelectorAll('.notif-modal')].pop();
+        assert(okNotif && okNotif.textContent.includes('Activities saved successfully'), "Save should succeed once the conflict is resolved");
+        dismissNotifs();
+        assert(live.tasks.some(t => t.name === 'TC96 Pending New' && t.active === true), "Pending new row must survive the conflict and be saved");
+        assert(!live.tasks.some(t => t.id === 'tc96-remote'), "Remotely deleted task must not be resurrected");
+
+        await closeAdmin();
         helpers.resetState();
         await sleep(50);
       }

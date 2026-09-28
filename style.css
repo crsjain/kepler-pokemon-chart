@@ -2080,6 +2080,15 @@ input:checked + .slider:before {
   white-space: nowrap;
 }
 
+/* Phase 0a: Save Activities found this row's task deleted/removed elsewhere. */
+.admin-task-conflict {
+  width: 100%;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #b91c1c;
+}
+
 .admin-task-instructions input[type="text"].task-instructions-input {
   flex: 1;
   height: 32px;

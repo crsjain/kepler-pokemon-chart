@@ -134,28 +134,24 @@ export function initAdmin(callbacks) {
   }
 
   if (closeAdminModalBtn) {
-    closeAdminModalBtn.addEventListener('click', () => {
-      adminModal.classList.add('hidden');
-    });
+    closeAdminModalBtn.addEventListener('click', closeAdminPanel);
   }
 
   if (closeAdminHeaderBtn) {
-    closeAdminHeaderBtn.addEventListener('click', () => {
-      adminModal.classList.add('hidden');
-    });
+    closeAdminHeaderBtn.addEventListener('click', closeAdminPanel);
   }
 
   if (adminModal) {
     adminModal.addEventListener('click', (e) => {
       if (e.target === adminModal) {
-        adminModal.classList.add('hidden');
+        closeAdminPanel();
       }
     });
   }
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && adminModal && !adminModal.classList.contains('hidden')) {
-      adminModal.classList.add('hidden');
+      closeAdminPanel();
     }
   });
 
@@ -353,33 +349,37 @@ function openAdminPanel() {
   }
 }
 
-function renderAdminTasksList() {
-  const container = document.getElementById('admin-tasks-list');
-  if (!container) return;
-  
-  container.innerHTML = '';
-  const tasks = state.tasks || [];
-  const activeTasks = tasks.filter(t => t.active !== false);
-  
-  activeTasks.forEach((task) => {
-    const item = document.createElement('div');
-    item.className = 'admin-task-item';
-    item.dataset.taskId = task.id;
-    
-    item.innerHTML = `
+/**
+ * Hides the panel and discards any unsaved Activities draft (Phase 0a).
+ * The draft lives only in #admin-tasks-list, so rebuilding it from `state`
+ * is the whole discard. Implicit until the Phase 2 dirty guard exists.
+ */
+function closeAdminPanel() {
+  if (!adminModal) return;
+  adminModal.classList.add('hidden');
+  renderAdminTasksList();
+}
+
+const TASK_EMOJI_CHOICES = ['🎹', '🧮', '📚', '✏️', '💮', '🧪', '🎨', '🏃', '🧹', '🥦', '📝'];
+
+/**
+ * Builds one Activities row. `isNew` marks a draft-only row (data-new="1")
+ * that does not exist in state.tasks until Save Activities.
+ */
+function buildAdminTaskItem(task, isNew) {
+  const item = document.createElement('div');
+  item.className = 'admin-task-item';
+  item.dataset.taskId = task.id;
+  if (isNew) item.dataset.new = '1';
+
+  const emojiOptions = TASK_EMOJI_CHOICES
+    .map(e => `<option value="${e}" ${task.emoji === e ? 'selected' : ''}>${e}</option>`)
+    .join('\n          ');
+
+  item.innerHTML = `
       <div class="admin-task-row">
         <select class="task-emoji-select">
-          <option value="🎹" ${task.emoji === '🎹' ? 'selected' : ''}>🎹</option>
-          <option value="🧮" ${task.emoji === '🧮' ? 'selected' : ''}>🧮</option>
-          <option value="📚" ${task.emoji === '📚' ? 'selected' : ''}>📚</option>
-          <option value="✏️" ${task.emoji === '✏️' ? 'selected' : ''}>✏️</option>
-          <option value="💮" ${task.emoji === '💮' ? 'selected' : ''}>💮</option>
-          <option value="🧪" ${task.emoji === '🧪' ? 'selected' : ''}>🧪</option>
-          <option value="🎨" ${task.emoji === '🎨' ? 'selected' : ''}>🎨</option>
-          <option value="🏃" ${task.emoji === '🏃' ? 'selected' : ''}>🏃</option>
-          <option value="🧹" ${task.emoji === '🧹' ? 'selected' : ''}>🧹</option>
-          <option value="🥦" ${task.emoji === '🥦' ? 'selected' : ''}>🥦</option>
-          <option value="📝" ${task.emoji === '📝' ? 'selected' : ''}>📝</option>
+          ${emojiOptions}
         </select>
         <input type="text" class="task-name-input" value="${task.name}">
         <button class="pixel-btn danger remove-task-btn" data-task-id="${task.id}">
@@ -393,25 +393,38 @@ function renderAdminTasksList() {
         <input type="text" class="task-instructions-input" value="${task.instructions || ''}" placeholder="What ${state.childName || 'Trainer'} needs to do (e.g. Play pieces 3x)">
       </div>
     `;
-    container.appendChild(item);
-  });
-  
-  container.querySelectorAll('.remove-task-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const taskId = e.currentTarget.dataset.taskId;
-      removeTask(taskId);
-    });
-  });
+
+  item.querySelector('.remove-task-btn').addEventListener('click', () => removeTask(item));
+  return item;
 }
 
-function removeTask(taskId) {
-  if (!state.tasks) return;
-  const taskToRemove = state.tasks.find(t => t.id === taskId);
-  if (!taskToRemove) return;
-  
-  const taskName = taskToRemove.name || 'Activity';
-  const taskEmoji = taskToRemove.emoji || '📝';
-  
+function renderAdminTasksList() {
+  const container = document.getElementById('admin-tasks-list');
+  if (!container) return;
+
+  container.innerHTML = '';
+  const tasks = state.tasks || [];
+  tasks
+    .filter(t => t.active !== false)
+    .forEach(task => container.appendChild(buildAdminTaskItem(task, false)));
+}
+
+/**
+ * Draft-only remove (Phase 0a): hides the row with data-removed="1".
+ * state.tasks is untouched until Save Activities applies the soft-delete.
+ * An unsaved new row has no history to preserve, so it is dropped without
+ * the confirm.
+ */
+function removeTask(item) {
+  if (!item) return;
+  if (item.dataset.new === '1') {
+    item.remove();
+    return;
+  }
+
+  const taskName = item.querySelector('.task-name-input').value.trim() || 'Activity';
+  const taskEmoji = item.querySelector('.task-emoji-select').value || '📝';
+
   const removeTaskHtml = `
     <div class="confirm-detail">
       <div class="schedule-hero-card">
@@ -425,14 +438,13 @@ function removeTask(taskId) {
       </div>
     </div>
   `;
-  
+
   showCustomConfirm(
     "Remove Activity? 🗑️",
     removeTaskHtml,
     () => {
-      taskToRemove.active = false;
-      taskToRemove.deletedAt = formatLocalDate(new Date());
-      renderAdminTasksList();
+      item.dataset.removed = '1';
+      item.classList.add('hidden');
     },
     null,
     "Remove Activity",
@@ -442,20 +454,20 @@ function removeTask(taskId) {
   );
 }
 
+let newTaskSeq = 0;
+
+/** Draft-only add (Phase 0a): appends a data-new row; state.tasks is untouched. */
 function addNewTask() {
-  if (!state.tasks) state.tasks = [];
-  const newId = `task_${Date.now()}`;
-  state.tasks.push({
-    id: newId,
+  const container = document.getElementById('admin-tasks-list');
+  if (!container) return;
+  newTaskSeq += 1;
+  const item = buildAdminTaskItem({
+    id: `task_${Date.now()}_${newTaskSeq}`,
     name: 'New Activity',
     emoji: '📝',
-    concept: 'Keep practicing!',
-    instructions: '',
-    active: true,
-    createdAt: formatLocalDate(new Date()),
-    deletedAt: null
-  });
-  renderAdminTasksList();
+    instructions: ''
+  }, true);
+  container.appendChild(item);
 }
 
 function generateSlug(text) {
@@ -466,71 +478,110 @@ function generateSlug(text) {
     .replace(/^-+|-+$/g, '');     // Trim leading/trailing hyphens
 }
 
+const TASK_CONFLICT_MESSAGE = 'This activity was changed on another device.';
+
+/**
+ * Save Activities (Phase 0a): reads the DOM draft and merges it BY ID onto the
+ * *current* state.tasks (which a Firestore snapshot may have replaced while
+ * Admin was open). Validates everything first, then applies atomically:
+ *   - edited rows update their task in place;
+ *   - removed rows soft-delete (active:false + deletedAt), history kept;
+ *   - new rows reactivate a same-name soft-deleted task, else get a unique slug id;
+ *   - tasks not shown in the list (inactive, or added elsewhere) are kept.
+ * A row whose task no longer exists / was removed elsewhere is a conflict:
+ * the draft is kept, the row is flagged inline, nothing is written.
+ */
 function saveAdminTasks() {
   const container = document.getElementById('admin-tasks-list');
   if (!container) return;
-  
-  const items = container.querySelectorAll('.admin-task-item');
-  let hasError = false;
-  
-  const tasksToDelete = new Set();
-  
-  items.forEach(item => {
-    const taskId = item.dataset.taskId;
-    const emoji = item.querySelector('.task-emoji-select').value;
-    const name = item.querySelector('.task-name-input').value.trim();
-    const instructions = item.querySelector('.task-instructions-input').value.trim();
-    
-    if (!name) {
-      showCustomNotification("Activity Error ❌", "Activity name cannot be empty!");
-      hasError = true;
-      return;
-    }
-    
-    const isNew = taskId.startsWith('task_');
-    let targetTask = state.tasks.find(t => t.id === taskId);
-    
-    if (isNew) {
-      // Check if there is a soft-deleted task with the same name to reactivate
-      const deletedMatch = state.tasks.find(t => t.active === false && t.name.toLowerCase() === name.toLowerCase());
-      if (deletedMatch) {
-        deletedMatch.active = true;
-        deletedMatch.deletedAt = null;
-        deletedMatch.emoji = emoji;
-        deletedMatch.instructions = instructions;
-        tasksToDelete.add(taskId);
-        return;
-      } else {
-        // Generate slug ID
-        let slugId = generateSlug(name);
-        if (!slugId) slugId = 'activity';
-        
-        let finalId = slugId;
-        let counter = 2;
-        while (state.tasks.some(t => t.id === finalId)) {
-          finalId = `${slugId}-${counter}`;
-          counter++;
-        }
-        
-        if (targetTask) {
-          targetTask.id = finalId;
-        }
-      }
-    }
-    
-    if (targetTask) {
-      targetTask.emoji = emoji;
-      targetTask.name = name;
-      targetTask.instructions = instructions;
+
+  const rows = Array.from(container.querySelectorAll('.admin-task-item')).map(item => ({
+    item,
+    id: item.dataset.taskId,
+    isNew: item.dataset.new === '1',
+    removed: item.dataset.removed === '1',
+    emoji: item.querySelector('.task-emoji-select').value,
+    name: item.querySelector('.task-name-input').value.trim(),
+    instructions: item.querySelector('.task-instructions-input').value.trim()
+  }));
+  const liveRows = rows.filter(r => !r.removed);
+
+  if (liveRows.some(r => !r.name)) {
+    showCustomNotification("Activity Error ❌", "Activity name cannot be empty!");
+    return;
+  }
+
+  if (!state.tasks) state.tasks = [];
+  const tasks = state.tasks;
+  const findTask = id => tasks.find(t => t.id === id);
+
+  container.querySelectorAll('.admin-task-conflict').forEach(el => el.remove());
+  const conflicts = liveRows.filter(r => {
+    if (r.isNew) return false;
+    const t = findTask(r.id);
+    return !t || t.active === false;
+  });
+  if (conflicts.length > 0) {
+    conflicts.forEach(r => {
+      const msg = document.createElement('div');
+      msg.className = 'admin-task-conflict';
+      msg.setAttribute('role', 'alert');
+      msg.textContent = TASK_CONFLICT_MESSAGE;
+      r.item.appendChild(msg);
+    });
+    showCustomNotification(
+      "Couldn't Save ⚠️",
+      `${TASK_CONFLICT_MESSAGE} Your changes are still here — remove that activity or close Admin to reload the list, then try again.`,
+      null, false, null, '', 'Got it', 'greyed-out'
+    );
+    return;
+  }
+
+  const today = formatLocalDate(new Date());
+
+  rows.filter(r => r.removed && !r.isNew).forEach(r => {
+    const t = findTask(r.id);
+    if (t && t.active !== false) {
+      t.active = false;
+      t.deletedAt = today;
     }
   });
-  
-  if (hasError) return;
-  
-  if (tasksToDelete.size > 0) {
-    state.tasks = state.tasks.filter(t => !tasksToDelete.has(t.id));
-  }
-  
+
+  liveRows.filter(r => !r.isNew).forEach(r => {
+    const t = findTask(r.id);
+    t.emoji = r.emoji;
+    t.name = r.name;
+    t.instructions = r.instructions;
+  });
+
+  liveRows.filter(r => r.isNew).forEach(r => {
+    const deletedMatch = tasks.find(t => t.active === false && (t.name || '').toLowerCase() === r.name.toLowerCase());
+    if (deletedMatch) {
+      deletedMatch.active = true;
+      deletedMatch.deletedAt = null;
+      deletedMatch.emoji = r.emoji;
+      deletedMatch.instructions = r.instructions;
+      return;
+    }
+    const slugId = generateSlug(r.name) || 'activity';
+    let finalId = slugId;
+    let counter = 2;
+    while (tasks.some(t => t.id === finalId)) {
+      finalId = `${slugId}-${counter}`;
+      counter++;
+    }
+    tasks.push({
+      id: finalId,
+      name: r.name,
+      emoji: r.emoji,
+      concept: 'Keep practicing!',
+      instructions: r.instructions,
+      active: true,
+      createdAt: today,
+      deletedAt: null
+    });
+  });
+
   saveState();
   renderState(true);
   renderAdminTasksList();

@@ -50,6 +50,14 @@ const editRewardsSaveBtn = document.getElementById('edit-rewards-save-btn');
 let editingProfileId = null;
 let tempWeeklyRewards = [];
 let tempMegaRewards = [];
+// Draft selection (Phase 0a): an inline rename of the selected reward updates
+// these, never state.reward / state.megaReward. Only Save Rewards commits them.
+// Only tracked when editing the active child (a non-active child's selection
+// is not in `state`).
+let editingActiveChild = false;
+let tempSelectedReward = null;
+let tempSelectedMega = null;
+let selectionAtOpen = { reward: null, mega: null };
 let editingRewardState = { type: null, index: -1 };
 let draggedRewardInfo = null;
 
@@ -83,9 +91,7 @@ export function bindRewardsEditorEvents() {
     editRewardsCancelBtn.addEventListener('click', () => {
       editRewardsModal.classList.add('hidden');
       document.querySelector('.layout-container').classList.remove('blurred');
-      editingProfileId = null;
-      editingRewardState = { type: null, index: -1 };
-      draggedRewardInfo = null;
+      discardRewardsDraft();
     });
   }
 
@@ -110,6 +116,17 @@ export function bindRewardsEditorEvents() {
         if (editingProfileId === getActiveProfileId()) {
           state.weeklyRewardOptions = [...tempWeeklyRewards];
           state.megaRewardOptions = [...tempMegaRewards];
+
+          // Commit the draft selection (renames of the selected reward), unless
+          // a snapshot changed the live selection while the editor was open.
+          if (editingActiveChild) {
+            if (tempSelectedReward !== selectionAtOpen.reward && state.reward === selectionAtOpen.reward) {
+              state.reward = tempSelectedReward;
+            }
+            if (tempSelectedMega !== selectionAtOpen.mega && state.megaReward === selectionAtOpen.mega) {
+              state.megaReward = tempSelectedMega;
+            }
+          }
 
           // Verify current active selections
           if (state.reward) {
@@ -138,9 +155,7 @@ export function bindRewardsEditorEvents() {
       } finally {
         editRewardsSaveBtn.disabled = false;
         editRewardsSaveBtn.textContent = 'Save Rewards';
-        editingProfileId = null;
-        editingRewardState = { type: null, index: -1 };
-        draggedRewardInfo = null;
+        discardRewardsDraft();
       }
     });
   }
@@ -162,6 +177,19 @@ export function bindRewardsEditorEvents() {
       openEditRewardsModal(profile.id, profile.name);
     });
   }
+}
+
+/** Drops every editor temp: lists, draft selection, inline-edit and drag state. */
+function discardRewardsDraft() {
+  editingProfileId = null;
+  editingRewardState = { type: null, index: -1 };
+  draggedRewardInfo = null;
+  tempWeeklyRewards = [];
+  tempMegaRewards = [];
+  editingActiveChild = false;
+  tempSelectedReward = null;
+  tempSelectedMega = null;
+  selectionAtOpen = { reward: null, mega: null };
 }
 
 function escapeHtml(str) {
@@ -187,6 +215,11 @@ export function openEditRewardsModal(profileId, profileName) {
   tempMegaRewards = (pState.megaRewardOptions && pState.megaRewardOptions.length > 0)
     ? pState.megaRewardOptions.map(r => ({ ...r }))
     : DEFAULT_MEGA_REWARDS.map(r => ({ ...r }));
+
+  editingActiveChild = profileId === getActiveProfileId();
+  tempSelectedReward = editingActiveChild ? state.reward : null;
+  tempSelectedMega = editingActiveChild ? state.megaReward : null;
+  selectionAtOpen = { reward: tempSelectedReward, mega: tempSelectedMega };
   
   editRewardsTitle.textContent = `Customize Rewards for ${profileName}`;
   renderEditRewardsLists();
@@ -244,12 +277,10 @@ function renderRewardList(container, list, type) {
         if (val) {
           const oldVal = list[idx].value;
           list[idx] = { value: val, text: val };
-          if (editingProfileId === getActiveProfileId()) {
-            if (type === 'weekly' && state.reward === oldVal) {
-              state.reward = val;
-            } else if (type === 'mega' && state.megaReward === oldVal) {
-              state.megaReward = val;
-            }
+          if (editingActiveChild && type === 'weekly' && tempSelectedReward === oldVal) {
+            tempSelectedReward = val;
+          } else if (editingActiveChild && type === 'mega' && tempSelectedMega === oldVal) {
+            tempSelectedMega = val;
           }
         }
         editingRewardState = { type: null, index: -1 };
