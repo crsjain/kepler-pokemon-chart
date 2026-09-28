@@ -30,9 +30,12 @@ Work through the steps in order. Stop and ask if a **gate** fails.
 have been bumped. If either was missed, fix it now before testing.
 
 1. `CACHE_NAME` in `service-worker.js` (`poke-chart-cache-vNNN`).
-2. The `?v=` query strings in `index.html` (`style.css?v=`, `app.js?v=`).
+2. The `?v=` query strings in `index.html` (`style.css?v=`, and `app.js?v=` +
+   all entries in `<script type="importmap">` whenever any ES module changed —
+   guarded by TC90).
 3. If a **new** module file was added, confirm it is also listed in
-   `ASSETS_TO_CACHE` in `service-worker.js`.
+   `ASSETS_TO_CACHE` in `service-worker.js` and `<script type="importmap">` in
+   `index.html`.
 
 ## 3. Audit test numbering
 

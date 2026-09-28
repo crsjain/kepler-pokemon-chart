@@ -4030,11 +4030,11 @@ if ('serviceWorker' in navigator && !location.search.includes('headless=true')) 
       .then(reg => {
         console.log('Service Worker registered successfully.', reg.scope);
         
-        // Auto reload on updates
+        // Auto reload on updates once the new worker has activated and claimed clients
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           newWorker.addEventListener('statechange', () => {
-            if ((newWorker.state === 'installed' || newWorker.state === 'activated') && navigator.serviceWorker.controller) {
+            if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
               if (!refreshing) {
                 refreshing = true;
                 console.log('New app version detected. Reloading to apply update...');

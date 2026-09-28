@@ -288,17 +288,19 @@ worker:
 
 1. Bump `CACHE_NAME` in [`service-worker.js`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/service-worker.js#L1)
    (`poke-chart-cache-vNNN`).
-2. Bump the `?v=` query string in `index.html` for **each** asset you changed
-   (`style.css?v=`, `app.js?v=`, `particles.js?v=`).
+2. Bump the `?v=` query string in `index.html` (`style.css?v=`, `particles.js?v=`,
+   and `app.js?v=` **plus** all entries in `<script type="importmap">` whenever
+   any ES module changes — TC90 enforces that every ES module in `ASSETS_TO_CACHE`
+   is mapped in the `importmap` with the exact same `?v=` version as `app.js`).
 
 Versions change every session, so this file deliberately does **not** record
 them — hardcoded values here went stale within days. Read the live values first:
 
 ```bash
-node -e "const f=require('fs');console.log(f.readFileSync('service-worker.js','utf8').match(/poke-chart-cache-v\d+/)[0]);console.log(f.readFileSync('index.html','utf8').match(/\w+\.(css|js)\?v=[\d.]+/g).join('  '))"
+node -e "const f=require('fs');console.log(f.readFileSync('service-worker.js','utf8').match(/poke-chart-cache-v\d+/)[0]);console.log([...new Set(f.readFileSync('index.html','utf8').match(/\w+\.(css|js)\?v=[\d.]+/g))].join('  '))"
 ```
 
-If you add a new module file, also add it to `ASSETS_TO_CACHE` in the service worker.
+If you add a new module file, also add it to `ASSETS_TO_CACHE` in the service worker and `<script type="importmap">` in `index.html`.
 
 ### 6.2 No native dialogs in app code
 

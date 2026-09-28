@@ -7750,10 +7750,10 @@ async function runSuite() {
           assert(sb.log.fetched.length === 1 && sb.log.fetched[0].cache === 'no-cache',
             "Local module fetches must use cache:'no-cache' so the 10-minute HTTP max-age can't serve stale code");
         }
-        // (B) Every cached local module is network-first, not just state.js.
+        // (B) Every cached local module (and any newly added same-origin .js module) is network-first.
         {
           const sb = makeSandbox({ online: true });
-          for (const f of ['admin.js', 'migrations.js', 'date_utils.js', 'app.js?v=1', 'style.css?v=1']) {
+          for (const f of ['admin.js', 'rewards_admin.js', 'pokemon_data.js', 'migrations.js', 'date_utils.js', 'future_new_module.js', 'app.js?v=1', 'style.css?v=1']) {
             const body = await sb.dispatch(new Request(origin + '/kepler-pokemon-chart/' + f));
             assert(body === 'FRESH', `${f} must be served network-first, got ${body}`);
           }
@@ -7782,13 +7782,73 @@ async function runSuite() {
           assert(await sb.dispatch(new Request('https://firestore.googleapis.com/v1/x')) === null,
             "Firestore requests must not be intercepted");
         }
-        // (F) index.html self-heal recognises the stale-module error and never reloads in headless.
+        // (F) index.html importmap versions every ES module in ASSETS_TO_CACHE with the same ?v= tag as app.js,
+        // so even a pre-Checkpoint-63 cache-first Service Worker or HTTP disk cache never serves a stale sub-module.
+        {
+          const indexHtml = await (await fetch('index.html?t=' + Date.now(), { cache: 'no-store' })).text();
+          const importMapIdx = indexHtml.indexOf('<script type="importmap">');
+          const moduleScriptIdx = indexHtml.indexOf('<script type="module"');
+          assert(importMapIdx !== -1 && importMapIdx < moduleScriptIdx,
+            "index.html must declare <script type=\"importmap\"> before any <script type=\"module\">");
+
+          const appVerMatch = indexHtml.match(/<script\s+type="module"\s+src="app\.js\?v=([\d.]+)"/);
+          assert(appVerMatch && appVerMatch[1], "index.html must load app.js with a ?v= version tag");
+          const appVer = appVerMatch[1];
+
+          const importMapEl = document.querySelector('script[type="importmap"]');
+          assert(importMapEl !== null, "Live DOM must contain <script type=\"importmap\">");
+          const importMap = JSON.parse(importMapEl.textContent);
+          assert(importMap && typeof importMap.imports === 'object', "importmap must define an 'imports' map");
+
+          const swAssetsMatch = swSource.match(/const ASSETS_TO_CACHE\s*=\s*\[([\s\S]*?)\];/);
+          assert(swAssetsMatch !== null, "service-worker.js must declare ASSETS_TO_CACHE");
+          const esModules = [...swAssetsMatch[1].matchAll(/'(\.\/[\w]+\.js)'/g)]
+            .map(m => m[1])
+            .filter(m => m !== './particles.js');
+          assert(esModules.includes('./pokemon_data.js') && esModules.includes('./state.js') && esModules.includes('./rewards_admin.js'),
+            "ES module list from ASSETS_TO_CACHE must include pokemon_data.js, state.js, and rewards_admin.js");
+
+          for (const mod of esModules) {
+            const expected = `${mod}?v=${appVer}`;
+            assert(importMap.imports[mod] === expected,
+              `importmap entry for ${mod} must be '${expected}' to match app.js?v=${appVer}, got '${importMap.imports[mod]}'`);
+          }
+
+          // Verify live browser resource fetches actually used the versioned URL from the importmap
+          const resourceUrls = performance.getEntriesByType('resource').map(r => r.name);
+          for (const mod of ['pokemon_data.js', 'state.js', 'migrations.js', 'admin.js', 'rewards_admin.js', 'shop.js']) {
+            assert(resourceUrls.some(u => u.endsWith(`/${mod}?v=${appVer}`)),
+              `Browser must fetch ${mod} with ?v=${appVer} via importmap, saw: ${resourceUrls.filter(u => u.includes(mod)).join(', ')}`);
+          }
+        }
+        // (G) index.html self-heal recognises stale-module errors, unregisters SWs + deletes caches, and never reloads in headless.
         assert(typeof window.__isStaleModuleError === 'function', "index.html must define __isStaleModuleError");
         assert(window.__isStaleModuleError("Uncaught SyntaxError: The requested module './state.js' does not provide an export named 'buildWipedChildState'"),
-          "Chrome's missing-export error must be recognised as a stale module");
+          "Chrome's missing-export error for state.js must be recognised as a stale module");
+        assert(window.__isStaleModuleError("Uncaught SyntaxError: The requested module './pokemon_data.js' does not provide an export named 'getStageIndexForLevel'"),
+          "Chrome's missing-export error for pokemon_data.js must be recognised as a stale module");
         assert(window.__isStaleModuleError("TypeError: Importing a module script failed."), "Safari's module error must be recognised");
         assert(!window.__isStaleModuleError("TypeError: Cannot read properties of undefined"), "Ordinary errors must not trigger a reload");
         assert(window.__tryStaleModuleReload() === false, "Self-heal must never reload the page in headless mode");
+        {
+          assert(typeof window.__clearStaleModuleCaches === 'function', "index.html must define __clearStaleModuleCaches");
+          const unregistered = [];
+          const deletedCaches = [];
+          const fakeSW = {
+            getRegistrations: async () => [
+              { unregister: async () => { unregistered.push('reg1'); return true; } },
+              { unregister: async () => { unregistered.push('reg2'); return true; } }
+            ]
+          };
+          const fakeCS = {
+            keys: async () => ['poke-chart-cache-v165', 'poke-chart-cache-v174'],
+            delete: async (k) => { deletedCaches.push(k); return true; }
+          };
+          await window.__clearStaleModuleCaches(fakeSW, fakeCS);
+          assert(unregistered.length === 2, `__clearStaleModuleCaches must unregister all SW registrations before reload, got ${unregistered.length}`);
+          assert(deletedCaches.join(',') === 'poke-chart-cache-v165,poke-chart-cache-v174',
+            `__clearStaleModuleCaches must delete all CacheStorage caches before reload, got ${deletedCaches.join(',')}`);
+        }
       }
 
       // 91. Test Case 91: Badge Case Shop-style Type filter & Date / Dex # / A–Z / Type sorting

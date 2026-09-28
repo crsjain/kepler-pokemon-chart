@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poke-chart-cache-v178';
+const CACHE_NAME = 'poke-chart-cache-v179';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -52,12 +52,9 @@ self.addEventListener('activate', event => {
 // Fetch Event
 //
 // Local app code (HTML, JS modules, CSS, manifest) is NETWORK-FIRST, with the
-// cache used only as an offline fallback. Only the entry `app.js` carries a
-// `?v=` tag; every other module is imported by bare path (`./state.js`). When
-// these were served cache-first, the first open after a deploy got a fresh
-// `app.js` linked against the *previous* deploy's cached `state.js`, and the
-// whole module graph failed with "does not provide an export named …"
-// (Checkpoint 63). Network-first keeps every module from the same deploy.
+// cache used only as an offline fallback. Every ES module is also versioned via
+// <script type="importmap"> in index.html so even a pre-Checkpoint-63 cache-first
+// Service Worker treats imported modules as cache-busted URLs.
 //
 // `cache: 'no-cache'` makes the browser revalidate with GitHub Pages' ETag
 // instead of trusting its 10-minute `max-age`, so an unchanged file is a cheap
@@ -71,12 +68,16 @@ self.addEventListener('fetch', event => {
   // Handle PokeAPI sprite requests (external GitHub raw URLs)
   const isPokeapiSprite = url.hostname === 'raw.githubusercontent.com' && (url.pathname.includes('/sprites/pokemon/') || url.pathname.includes('/sprites/items/'));
   const isNavigation = event.request.mode === 'navigate';
-  const isLocalAsset = url.origin === self.location.origin && (isNavigation || ASSETS_TO_CACHE.some(asset => {
-    if (asset === './') {
-      return url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
-    }
-    return url.pathname.endsWith(asset.replace('./', ''));
-  }));
+  const isLocalAsset = url.origin === self.location.origin && (
+    isNavigation ||
+    /\.(?:js|css|html|json)$/i.test(url.pathname) ||
+    ASSETS_TO_CACHE.some(asset => {
+      if (asset === './') {
+        return url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
+      }
+      return url.pathname.endsWith(asset.replace('./', ''));
+    })
+  );
 
   if (isLocalAsset) {
     // Navigations are cached under './index.html' so the offline fallback finds them.
