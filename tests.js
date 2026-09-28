@@ -2588,15 +2588,15 @@ async function runSuite() {
         // Verify right-alignment of all 3 admin dropdowns
         const weekSelect = document.getElementById('admin-week-start-select');
         const tzSelect = document.getElementById('admin-timezone-select');
-        // They live in the Schedule pane; hidden panes measure as zero rects and
-        // would make the alignment asserts below pass vacuously.
-        document.querySelector('.admin-nav-btn[data-admin-section="schedule"]').click();
+        // They live in the Grid Settings pane (section "today"); hidden panes measure
+        // as zero rects and would make the alignment asserts below pass vacuously.
+        document.querySelector('.admin-nav-btn[data-admin-section="today"]').click();
         await sleep(50);
         if (weekSelect && tzSelect && select) {
           const rWeek = weekSelect.getBoundingClientRect();
           const rTz = tzSelect.getBoundingClientRect();
           const rIdle = select.getBoundingClientRect();
-          assert(rWeek.width > 0, `Schedule pane must be visible so the alignment check is real (Week Start width ${rWeek.width})`);
+          assert(rWeek.width > 0, `Grid Settings pane must be visible so the alignment check is real (Week Start width ${rWeek.width})`);
           assert(Math.abs(rWeek.right - rTz.right) < 2, `Week Start (${rWeek.right}) and Timezone (${rTz.right}) should be right-aligned`);
           assert(Math.abs(rTz.right - rIdle.right) < 2, `Timezone (${rTz.right}) and Screensaver (${rIdle.right}) should be right-aligned`);
           assert(Math.abs(rWeek.width - rIdle.width) < 2, "All admin dropdowns should have uniform width");
@@ -7993,7 +7993,7 @@ async function runSuite() {
         helpers.setProfilesList([{ id: kidId, name: 'Nova', avatarId: '25', state: JSON.parse(JSON.stringify(live)) }]);
         helpers.setActiveProfileId(kidId);
 
-        const SECTIONS = ['today', 'schedule', 'tasks', 'rewards', 'children', 'passcode', 'data'];
+        const SECTIONS = ['today', 'tasks', 'rewards', 'children', 'passcode', 'data'];
         const adminModal = document.getElementById('admin-modal');
         const panes = () => SECTIONS.map(s => document.getElementById(`admin-pane-${s}`));
         const navBtns = () => [...document.querySelectorAll('#admin-nav .admin-nav-btn')];
@@ -8006,11 +8006,12 @@ async function runSuite() {
           await sleep(100);
         };
 
-        // 1. Opens on Today; the other six panes are hidden; exactly one tab selected.
+        // 1. Opens on Grid Settings (section "today"); the other five panes are hidden; exactly one tab selected.
         await openAdmin();
         assert(!adminModal.classList.contains('hidden'), "Admin modal should open");
-        assert(panes().every(p => p !== null), "All 7 admin panes should exist");
-        assert(navBtns().length === 7, `Nav should have 7 tabs, got ${navBtns().length}`);
+        assert(panes().every(p => p !== null), "All 6 admin panes should exist");
+        assert(!document.getElementById('admin-pane-schedule') && !document.getElementById('admin-tab-schedule'), "Schedule was merged into Grid Settings; its pane and tab must be gone");
+        assert(navBtns().length === 6, `Nav should have 6 tabs, got ${navBtns().length}`);
         assert(visiblePanes().length === 1 && visiblePanes()[0].id === 'admin-pane-today', "Admin must open on the Today pane only");
         const selected = navBtns().filter(b => b.getAttribute('aria-selected') === 'true');
         assert(selected.length === 1 && selected[0].dataset.adminSection === 'today', "Exactly one tab (Today) should be aria-selected");
@@ -8027,8 +8028,8 @@ async function runSuite() {
 
         // 3. Home map: each existing control lives in its PRD §3.1 section; shell IDs sit outside every pane.
         const HOME = {
-          today: ['exceptions-btn', 'admin-parent-grace-select', 'admin-lock-past-days-toggle'],
-          schedule: ['admin-week-start-select', 'admin-week-start-status', 'admin-timezone-select', 'admin-idle-timeout-select'],
+          today: ['exceptions-btn', 'admin-parent-grace-select', 'admin-lock-past-days-toggle',
+                  'admin-week-start-select', 'admin-week-start-status', 'admin-timezone-select', 'admin-idle-timeout-select'],
           tasks: ['admin-tasks-list', 'admin-add-task-btn', 'admin-save-tasks-btn', 'admin-chart-style-placeholder'],
           rewards: ['admin-customize-rewards-btn', 'claimed-rewards-history-list'],
           children: ['admin-profiles-list'],

@@ -2596,6 +2596,20 @@ input:checked + .slider:before {
   max-width: 560px;
 }
 
+/* Grid Settings: Check-in + Week & Clock cards side by side when both fit
+   (≥320px each — label + 140px select), otherwise stacked. Rule 4 / Rule 12. */
+.admin-pane-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-pane-grid > .admin-action-group {
+  max-width: none;
+  min-width: 0;
+}
+
 /* Lists inside panes: the pane scrolls, so drop inner caps and the margins that mixed with gap */
 .admin-pane .admin-tasks-list,
 .admin-pane .admin-tasks-actions,
@@ -6481,6 +6495,17 @@ body.has-banner .mini-hud.visible {
   font-size: 0.9rem;
   color: #475569;
   white-space: nowrap;
+}
+
+/* 360px phones: wrap "Ask for passcode" rather than overflow the card edge */
+@media (max-width: 420px) {
+  .admin-option-row .admin-toggle-label {
+    min-width: 0;
+  }
+
+  .admin-toggle-text {
+    white-space: normal;
+  }
 }
 
 .admin-option-hint {

@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.65">
+  <link rel="stylesheet" href="style.css?v=10.66">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script>
     // Stale-module self-heal (Checkpoint 63). If a fresh app.js gets linked
@@ -723,8 +723,7 @@
 
         <nav id="admin-nav" class="admin-nav" role="tablist" aria-orientation="vertical" aria-label="Admin sections">
           <span class="admin-nav-group-label">This child</span>
-          <button type="button" id="admin-tab-today" class="admin-nav-btn" role="tab" data-admin-section="today" aria-controls="admin-pane-today" aria-selected="true">🌙 Today</button>
-          <button type="button" id="admin-tab-schedule" class="admin-nav-btn" role="tab" data-admin-section="schedule" aria-controls="admin-pane-schedule" aria-selected="false">🗓️ Schedule</button>
+          <button type="button" id="admin-tab-today" class="admin-nav-btn" role="tab" data-admin-section="today" aria-controls="admin-pane-today" aria-selected="true">🗓️ Grid Settings</button>
           <button type="button" id="admin-tab-tasks" class="admin-nav-btn" role="tab" data-admin-section="tasks" aria-controls="admin-pane-tasks" aria-selected="false">✅ Tasks</button>
           <button type="button" id="admin-tab-rewards" class="admin-nav-btn" role="tab" data-admin-section="rewards" aria-controls="admin-pane-rewards" aria-selected="false">🎁 Rewards</button>
           <span class="admin-nav-divider" aria-hidden="true"></span>
@@ -734,69 +733,66 @@
           <button type="button" id="admin-tab-data" class="admin-nav-btn" role="tab" data-admin-section="data" aria-controls="admin-pane-data" aria-selected="false">💾 Data</button>
         </nav>
 
-        <!-- This child: Today (landing) -->
+        <!-- This child: Grid Settings (landing) -->
         <section id="admin-pane-today" class="admin-pane" role="tabpanel" data-admin-section="today" aria-labelledby="admin-tab-today">
-          <h3 class="admin-pane-title">🌙 Today</h3>
-          <div class="admin-action-group">
-            <h4>Tonight's Check-in</h4>
-            <button id="exceptions-btn" class="pixel-btn info">Set Exceptions</button>
-            <div class="admin-option-row">
-              <span>Parent Edit Window:</span>
-              <select id="admin-parent-grace-select" class="pixel-select" title="How long past-day editing stays unlocked after entering the passcode.">
-                <option value="1">1 min</option>
-                <option value="2">2 min</option>
-                <option value="5">5 min</option>
-              </select>
+          <h3 class="admin-pane-title">🗓️ Grid Settings</h3>
+          <div class="admin-pane-grid">
+            <div class="admin-action-group">
+              <h4>Tonight's Check-in</h4>
+              <button id="exceptions-btn" class="pixel-btn info">Set Exceptions</button>
+              <div class="admin-option-row">
+                <span>Parent Edit Window:</span>
+                <select id="admin-parent-grace-select" class="pixel-select" title="How long past-day editing stays unlocked after entering the passcode.">
+                  <option value="1">1 min</option>
+                  <option value="2">2 min</option>
+                  <option value="5">5 min</option>
+                </select>
+              </div>
+              <div class="admin-option-row">
+                <span>🔒 Approve Past Days:</span>
+                <label class="admin-toggle-label" for="admin-lock-past-days-toggle">
+                  <input type="checkbox" id="admin-lock-past-days-toggle">
+                  <span class="admin-toggle-text">Ask for passcode</span>
+                </label>
+              </div>
+              <div class="admin-option-hint">Requires the parent passcode before this child can edit previous days. Recommended for younger children.</div>
             </div>
-            <div class="admin-option-row">
-              <span>🔒 Approve Past Days:</span>
-              <label class="admin-toggle-label" for="admin-lock-past-days-toggle">
-                <input type="checkbox" id="admin-lock-past-days-toggle">
-                <span class="admin-toggle-text">Ask for passcode</span>
-              </label>
-            </div>
-            <div class="admin-option-hint">Requires the parent passcode before this child can edit previous days. Recommended for younger children.</div>
-          </div>
-        </section>
-
-        <!-- This child: Schedule -->
-        <section id="admin-pane-schedule" class="admin-pane hidden" role="tabpanel" data-admin-section="schedule" aria-labelledby="admin-tab-schedule">
-          <h3 class="admin-pane-title">🗓️ Schedule</h3>
-          <div class="admin-action-group">
-            <h4>Week &amp; Clock</h4>
-            <div class="admin-option-row">
-              <span>Week Start:</span>
-              <select id="admin-week-start-select" class="pixel-select">
-                <option value="0">Sunday</option>
-                <option value="1">Monday</option>
-                <option value="2">Tuesday</option>
-                <option value="3">Wednesday</option>
-                <option value="4">Thursday</option>
-                <option value="5">Friday</option>
-                <option value="6">Saturday</option>
-              </select>
-            </div>
-            <div id="admin-week-start-status" class="admin-status-badge hidden"></div>
-            <div class="admin-option-row">
-              <span>App Timezone:</span>
-              <select id="admin-timezone-select" class="pixel-select">
-                <option value="default">Automatic (Use Device Time)</option>
-                <option value="America/Los_Angeles">Pacific Time (US &amp; Canada)</option>
-                <option value="America/Denver">Mountain Time (US &amp; Canada)</option>
-                <option value="America/Chicago">Central Time (US &amp; Canada)</option>
-                <option value="America/New_York">Eastern Time (US &amp; Canada)</option>
-              </select>
-            </div>
-            <div class="admin-option-row">
-              <span>Screensaver:</span>
-              <select id="admin-idle-timeout-select" class="pixel-select">
-                <option value="1">1 min</option>
-                <option value="5">5 min</option>
-                <option value="10">10 min</option>
-                <option value="15">15 min</option>
-                <option value="30">30 min</option>
-                <option value="0">Never</option>
-              </select>
+            <div class="admin-action-group">
+              <h4>Week &amp; Clock</h4>
+              <div class="admin-option-row">
+                <span>Week Start:</span>
+                <select id="admin-week-start-select" class="pixel-select">
+                  <option value="0">Sunday</option>
+                  <option value="1">Monday</option>
+                  <option value="2">Tuesday</option>
+                  <option value="3">Wednesday</option>
+                  <option value="4">Thursday</option>
+                  <option value="5">Friday</option>
+                  <option value="6">Saturday</option>
+                </select>
+              </div>
+              <div id="admin-week-start-status" class="admin-status-badge hidden"></div>
+              <div class="admin-option-row">
+                <span>App Timezone:</span>
+                <select id="admin-timezone-select" class="pixel-select">
+                  <option value="default">Automatic (Use Device Time)</option>
+                  <option value="America/Los_Angeles">Pacific Time (US &amp; Canada)</option>
+                  <option value="America/Denver">Mountain Time (US &amp; Canada)</option>
+                  <option value="America/Chicago">Central Time (US &amp; Canada)</option>
+                  <option value="America/New_York">Eastern Time (US &amp; Canada)</option>
+                </select>
+              </div>
+              <div class="admin-option-row">
+                <span>Screensaver:</span>
+                <select id="admin-idle-timeout-select" class="pixel-select">
+                  <option value="1">1 min</option>
+                  <option value="5">5 min</option>
+                  <option value="10">10 min</option>
+                  <option value="15">15 min</option>
+                  <option value="30">30 min</option>
+                  <option value="0">Never</option>
+                </select>
+              </div>
             </div>
           </div>
         </section>
