@@ -1,11 +1,11 @@
 # PRD: Parent Admin Panel Redesign (Left Navigation)
 
 **Document**: `docs/prd_admin_panel_redesign.md`  
-**Version**: 1.1.1  
-**Status**: Decisions Locked — Ready for Implementation (not yet started)  
+**Version**: 1.2.0  
+**Status**: Implemented (Checkpoint 66)  
 **Authors**: crsjain & Jetski  
-**Requested By**: crsjain (2026-09-20, seed) · specced 2026-09-24 (Checkpoint 61) · amended 2026-09-25 (Checkpoint 62: D7, D8)  
-**Target Systems**: `index.html`, `style.css`, `admin.js`, `app.js`, `tests.js`, `service-worker.js` (+ optional new `rewards_admin.js`, §7)  
+**Requested By**: crsjain (2026-09-20, seed) · specced 2026-09-24 (Checkpoint 61) · amended 2026-09-25 (Checkpoint 62: D7, D8) · implemented 2026-09-28 (Checkpoint 66)  
+**Target Systems**: `index.html`, `style.css`, `admin.js`, `app.js`, `rewards_admin.js`, `tests.js`, `service-worker.js`  
 **Schema Impact**: **None** — no new persisted field (current schema is V19 as of Checkpoint 64).  
 **Companion Standards**: [`_agents/rules/ux-guidelines.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/_agents/rules/ux-guidelines.md) (Rules 2, 4, 5, 6, 8, 10, 11, 12, 13B, 17), [`docs/prd_parent_past_day_approval.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/docs/prd_parent_past_day_approval.md), [`docs/refactoring_assessment_2026_09_12.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/docs/refactoring_assessment_2026_09_12.md) §6.4
 

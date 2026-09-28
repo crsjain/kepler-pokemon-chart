@@ -37,14 +37,15 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
 - 📲 **PWA Offline Support & Boot Skeleton**: Fully compatible as a Progressive Web App. Local code modules load network-first (with cached offline fallback and automatic one-shot reload on stale module errors), while PokeAPI sprites stay cache-first. On launch, an in-place boot skeleton (`Finding your partner…` with a wobbling Pokéball and a 10s retry watchdog) hides placeholder data until the child's real profile renders.
 - 💾 **Local Progress Saving**: Progress is saved automatically in the browser's local storage.
 - 📖 **Pokémon Training Guide**: Tap the "📖 Guide" button in the grid column header to view task-specific rules (e.g., Piano: "Play all pieces 3x...") describing exactly what needs to be done to earn a pokeball.
-- 🔒 **Parent Admin Panel**: Password-protected (`zxcv`) options dashboard in the footer:
-  - **Dynamic Task Manager**: Add, edit, or delete activities, customize goal days (1-7), edit task instructions, and save changes instantly.
-  - **Claimed Rewards History**: View a list of earned rewards with dates and partner context.
+- 🔒 **Parent Admin Panel**: Password-protected (`zxcv`) left-navigation dashboard in the footer:
+  - **Left-Nav Shell & Per-Child Scope Chip**: Organized into 6 sections across **This child** (`🗓️ Settings`, `✅ Activities`, `🎁 Rewards`) and **Family** (`👥 Children`, `🔑 Passcode`, `💾 Data`), with a live `Editing: <child>` header chip and a horizontal tab strip on phones (`< 768px`). Always opens on `🗓️ Settings`, placing *Tonight's Check-in* (`Set Exceptions`, `Parent Edit Window`, `Approve Past Days`) and *Week & Clock* (`Week Start`, `App Timezone`, `Screensaver`) side by side on wide screens while keeping `Set Exceptions` one tap past the passcode.
+  - **Dynamic Activity Manager**: Add, edit, or delete activities, customize goal days (1-7), edit task instructions, and save changes instantly; unsaved edits survive tab switches.
+  - **Rewards & Claimed History**: Launch the per-child Weekly/Mega reward editor directly from the `🎁 Rewards` pane (`Customize Rewards`) or from any row in `👥 Children`, and view claimed rewards history with dates and partner context.
   - **Backup & Restore (Child & Family)**: Backup or restore individual child progress (`Backup Child` / `Restore Child`) or backup/restore the entire family database containing all child profiles (`Backup Family` / `Restore Family`).
-  - **Profile Management**: Manage profiles directly from the list, including deleting profiles or opening a dedicated **Spacious Dashboard Modal** to customize lists of available weekly/mega rewards per-child.
+  - **Profile Management**: Manage profiles directly from `👥 Children` with 42×42px touch-target action buttons (`🎁` rewards editor and `🗑️` delete with a red danger confirmation card).
   - **Parent Approval & Timed Grace Window for Past Days**: Protects against accidental past-day clicks (especially for younger children like 5yo Lyra). Parents can toggle `🔒 Approve Past Days` per profile in Admin Settings and choose a configurable edit window (`1 min`, `2 min`, `5 min`). Once unlocked via the parent passcode (`zxcv`), a floating bottom dock (`🗝️ Parent Edit Active [Lock Now 🔒]`) displays a digital countdown, allowing frictionless review and correction of past tasks. Editing auto-relocks immediately upon timer expiration, tapping "Lock Now", tapping "Back to Today", or switching profiles, safely returning the active column to Today.
-  - **Per-Child Progress Reset**: `Reset This Child's Progress` (formerly *Wipe All Progress*) in the Admin Danger Zone resets **only the active child** — partners, XP, levels, badges, stars, and chart history return to the start, while that child's activities, rewards, and settings are kept. Other children are never affected. The confirm names the child (`Reset Kepler`).
-  - **Chart Style (Coming Soon)**: A greyed-out `🧸 Chart Style` control (`Big Buttons (under 5)` / `Standard (5+)`) in Admin Activity Settings marks a planned big-button chart for younger children with only one or two activities. It is a placeholder and cannot be changed yet.
+  - **Per-Child Progress Reset**: `Reset This Child's Progress` (formerly *Wipe All Progress*) in the Admin Danger Zone resets **only the active child** — partners, XP, levels, badges, stars, and chart history return to the start, while that child's activities, rewards, and settings are kept. Other children are never affected. The red danger confirm card names the child (`Reset Kepler`).
+  - **Chart Style (Coming Soon)**: A greyed-out `🧸 Chart Style` control (`Big Buttons (under 5)` / `Standard (5+)`) at the top of `✅ Activities` marks a planned big-button chart for younger children with only one or two activities. It is a placeholder and cannot be changed yet.
   - **Screensaver Inactivity Timeout**: Adjust the inactivity timer (10m, 5m, or off) before the idle screensaver kicks in to pause animations and conserve battery.
   - **Diagnostics & Healing**: Click "Run Diagnostics" to auto-detect and heal any state schema inconsistency, safely quarantining corrupted partner records and refunding stars.
   - **Developer Debug Mode**: Toggle the right-aligned Debug Sidebar to test milestones, level up instantly, or force devolution for testing (includes a convenient direct close button on the panel).
@@ -103,7 +104,7 @@ To access the app on Kepler's tablet or your phone, the files need to be hosted 
 1. Create a public repository on GitHub.
 2. Push the **entire project folder** to the repository. The app imports a dozen
    ES6 modules at runtime (`state.js`, `migrations.js`, `pokemon_data.js`,
-   `date_utils.js`, `admin.js`, `vault.js`, `shop.js`, `badges.js`, `guide.js`,
+   `date_utils.js`, `admin.js`, `rewards_admin.js`, `vault.js`, `shop.js`, `badges.js`, `guide.js`,
    `audio.js`, `firebase.js`), plus `service-worker.js`, `manifest.json`, and
    `icon.png` — cherry-picking only a few files will deploy a broken site.
 3. Go to **Settings** -> **Pages** in your repository.

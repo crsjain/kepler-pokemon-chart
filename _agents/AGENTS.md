@@ -120,7 +120,7 @@ decisions that are expensive to rediscover.
 | `prd_legendary_evolutions.md` | Mega and branching evolutions (Eevee, Onix→Steelix) |
 | `prd_alternating_activity_pairs.md` | Alternating activity pairs & dynamic schedule swapping |
 | `prd_kindness_quests.md` | Kindness Quests & partner berry feeding |
-| `prd_admin_panel_redesign.md` | **v1.0, specced & panel-reviewed, not yet implemented** — parent admin left-nav shell, per-child scope chip, Rule 8 debt, reward-editor extraction plan |
+| `prd_admin_panel_redesign.md` | Parent admin left-nav shell (6 sections), per-child scope chip, Rule 8 debt, and `rewards_admin.js` extraction (v1.2.0, Checkpoint 66) |
 | `refactoring_assessment_2026_09_12.md` | Why the codebase is deliberately *not* being refactored |
 
 Manual/verification guides: `test_plan_pokemon_shop_evolutions.md`,
@@ -162,6 +162,7 @@ graph TD
     IDX --> PART["particles.js<br/>canvas celebrations"]
     APP --> STATE["state.js<br/>state object, save/load, XP consts"]
     APP --> ADMIN["admin.js — parent panel"]
+    APP --> RADMIN["rewards_admin.js — reward editor"]
     APP --> VAULT["vault.js — Star Vault"]
     APP --> SHOP["shop.js — Partner Shop"]
     APP --> BADGES["badges.js — badge case"]
