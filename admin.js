@@ -34,6 +34,28 @@ function showCustomNotification(...args) {
   appCallbacks.showCustomNotification(...args);
 }
 
+/** Flags a #confirm-modal call as an Admin surface (admin button dialect). */
+const ADMIN_SURFACE = { surface: 'admin' };
+
+/**
+ * Rule 11: Admin errors and warnings get a neutral "Got it" CTA in the admin
+ * secondary style (never "Awesome!", never the disabled-looking .greyed-out).
+ * Each notification is a fresh body-level node, so the class can't leak.
+ */
+export function adminNotice(title, message) {
+  appCallbacks.showCustomNotification(title, message, null, false, null, 'adm-surface', 'Got it', 'adm-secondary');
+}
+
+/** A higher layer is open above Admin: Escape must not close Admin under it (X16). */
+function isLayerAboveAdminOpen() {
+  const open = id => {
+    const el = document.getElementById(id);
+    return !!el && !el.classList.contains('hidden');
+  };
+  return open('confirm-modal') || open('edit-rewards-modal') || open('password-modal') ||
+    open('add-profile-modal') || !!document.querySelector('.notif-modal:not(.hidden)');
+}
+
 // DOM elements cache
 let adminBtn = null;
 let adminModal = null;
@@ -55,7 +77,7 @@ let adminAddTaskBtn = null;
 let adminSaveTasksBtn = null;
 let passwordSuccessCallback = null;
 
-export function promptParentPassword(onSuccess, customDescription = 'Enter Parent Password to open Admin Panel:') {
+export function promptParentPassword(onSuccess, customDescription = 'Enter the parent passcode to open Admin.') {
   passwordSuccessCallback = onSuccess;
   if (passwordInput) passwordInput.value = '';
   if (passwordError) passwordError.classList.add('hidden');
@@ -149,10 +171,14 @@ export function initAdmin(callbacks) {
     });
   }
 
+  // Registered on document (not window): app.js's window-level Escape handler
+  // (showcase modal / Exception Mode) keeps its own precedence. Minimal layer
+  // stack: a confirm, notification, rewards editor or passcode prompt open above
+  // Admin owns Escape, so Admin never closes underneath it (X16).
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && adminModal && !adminModal.classList.contains('hidden')) {
-      closeAdminPanel();
-    }
+    if (e.key !== 'Escape' || !adminModal || adminModal.classList.contains('hidden')) return;
+    if (isLayerAboveAdminOpen()) return;
+    closeAdminPanel();
   });
 
   if (adminDiagnosticsBtn) {
@@ -218,14 +244,15 @@ export function initAdmin(callbacks) {
             }
             appCallbacks.reload();
           } catch (err) {
-            showCustomNotification("Wipe Failed ❌", err.message);
+            adminNotice("Wipe Failed ❌", err.message);
           }
         },
         null,
         `Reset ${childName}`,
         "Cancel",
         "pixel-btn danger",
-        "pixel-btn greyed-out"
+        "pixel-btn greyed-out",
+        ADMIN_SURFACE
       );
     });
   }
@@ -245,11 +272,11 @@ export function initAdmin(callbacks) {
     changePasscodeBtn.addEventListener('click', () => {
       const newPasscode = newPasscodeInput.value.trim();
       if (!newPasscode) {
-        appCallbacks.showCustomNotification("Passcode Error ❌", "Passcode cannot be empty!");
+        adminNotice("Passcode Error ❌", "Passcode cannot be empty!");
         return;
       }
       if (newPasscode.length < 4) {
-        appCallbacks.showCustomNotification("Passcode Error ❌", "Passcode must be at least 4 characters!");
+        adminNotice("Passcode Error ❌", "Passcode must be at least 4 characters!");
         return;
       }
       
@@ -266,7 +293,7 @@ export function initAdmin(callbacks) {
           })
           .catch(err => {
             console.error("Cloud passcode update failed:", err);
-            appCallbacks.showCustomNotification("Passcode Warning ⚠️", "Passcode saved locally, but failed to sync to database: " + err.message);
+            adminNotice("Passcode Warning ⚠️", "Passcode saved locally, but failed to sync to database: " + err.message);
           });
       } else {
         appCallbacks.showCustomNotification("Passcode Updated 🔑", "Parent Admin passcode updated successfully!");
@@ -287,7 +314,11 @@ function handlePasswordSubmit() {
       openAdminPanel();
     }
   } else {
+    // Calm, inline, silent (approval PRD Stage 1): no shake, no sound, no modal.
+    // Clear and refocus so the next try is easy.
     passwordError.classList.remove('hidden');
+    passwordInput.value = '';
+    passwordInput.focus();
   }
 }
 
@@ -382,8 +413,8 @@ function buildAdminTaskItem(task, isNew) {
           ${emojiOptions}
         </select>
         <input type="text" class="task-name-input" value="${task.name}">
-        <button class="pixel-btn danger remove-task-btn" data-task-id="${task.id}">
-          <svg class="delete-icon" viewBox="0 0 448 512" fill="white" xmlns="http://www.w3.org/2000/svg">
+        <button class="pixel-btn adm-icon-btn adm-quiet-danger remove-task-btn" data-task-id="${task.id}" aria-label="Remove activity" title="Remove activity">
+          <svg class="delete-icon" viewBox="0 0 448 512" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
             <path d="M135.2 17.7C140.6 6.8 151.7 0 163.8 0H284.2C296.3 0 307.4 6.8 312.8 17.7L320 32H384C401.7 32 416 46.3 416 64C416 81.7 401.7 96 384 96H64C46.3 96 32 81.7 32 64C32 46.3 46.3 32 64 32H128L135.2 17.7zM32 128H416V448C416 483.3 387.3 512 352 512H96C60.7 512 32 483.3 32 448V128zM96 176C96 162.7 85.3 152 72 152C58.7 152 48 162.7 48 176V408C48 421.3 58.7 432 72 432C85.3 432 96 421.3 96 408V176z"/>
           </svg>
         </button>
@@ -450,7 +481,8 @@ function removeTask(item) {
     "Remove Activity",
     "Keep Activity",
     "pixel-btn danger",
-    "pixel-btn greyed-out"
+    "pixel-btn greyed-out",
+    ADMIN_SURFACE
   );
 }
 
@@ -507,7 +539,7 @@ function saveAdminTasks() {
   const liveRows = rows.filter(r => !r.removed);
 
   if (liveRows.some(r => !r.name)) {
-    showCustomNotification("Activity Error ❌", "Activity name cannot be empty!");
+    adminNotice("Activity Error ❌", "Activity name cannot be empty!");
     return;
   }
 
@@ -529,10 +561,9 @@ function saveAdminTasks() {
       msg.textContent = TASK_CONFLICT_MESSAGE;
       r.item.appendChild(msg);
     });
-    showCustomNotification(
+    adminNotice(
       "Couldn't Save ⚠️",
-      `${TASK_CONFLICT_MESSAGE} Your changes are still here — remove that activity or close Admin to reload the list, then try again.`,
-      null, false, null, '', 'Got it', 'greyed-out'
+      `${TASK_CONFLICT_MESSAGE} Your changes are still here — remove that activity or close Admin to reload the list, then try again.`
     );
     return;
   }
@@ -615,17 +646,19 @@ function importState() {
             showCustomNotification("RESTORE SUCCESS", "Trainer progress restored successfully!");
             const adminModal = document.getElementById('admin-modal');
             if (adminModal) adminModal.classList.add('hidden');
-          }
+          },
+          null, undefined, undefined, undefined, undefined,
+          ADMIN_SURFACE
         );
       } else {
-        showCustomNotification("IMPORT ERROR", "Invalid backup code! Make sure you copied the entire code.");
+        adminNotice("IMPORT ERROR", "Invalid backup code! Make sure you copied the entire code.");
       }
     } else {
-      showCustomNotification("IMPORT ERROR", "Invalid backup code format!");
+      adminNotice("IMPORT ERROR", "Invalid backup code format!");
     }
   } catch (e) {
     console.error("Error importing state:", e);
-    showCustomNotification("IMPORT ERROR", "Failed to parse the backup code. Make sure it is copied correctly.");
+    adminNotice("IMPORT ERROR", "Failed to parse the backup code. Make sure it is copied correctly.");
   }
 }
 
@@ -633,7 +666,7 @@ async function exportCloudState() {
   try {
     const data = await appCallbacks.exportCloudData();
     if (!data) {
-      showCustomNotification("EXPORT FAILED ❌", "No cloud data found. Ensure you are logged in and have profiles.");
+      adminNotice("EXPORT FAILED ❌", "No cloud data found. Ensure you are logged in and have profiles.");
       return;
     }
     const dataStr = JSON.stringify(data);
@@ -644,7 +677,7 @@ async function exportCloudState() {
     });
   } catch (err) {
     console.error("Cloud export failed:", err);
-    showCustomNotification("EXPORT ERROR ❌", "Failed to export cloud data: " + err.message);
+    adminNotice("EXPORT ERROR ❌", "Failed to export cloud data: " + err.message);
   }
 }
 
@@ -666,20 +699,21 @@ async function importCloudState() {
             if (adminModal) adminModal.classList.add('hidden');
           } catch (err) {
             console.error("Cloud restore failed:", err);
-            showCustomNotification("RESTORE ERROR ❌", "Failed to restore cloud data: " + err.message);
+            adminNotice("RESTORE ERROR ❌", "Failed to restore cloud data: " + err.message);
           }
         },
         null,
         "Restore Everything",
         "Cancel",
         "pixel-btn danger",
-        "pixel-btn greyed-out"
+        "pixel-btn greyed-out",
+        ADMIN_SURFACE
       );
     } else {
-      showCustomNotification("INVALID CODE ❌", "The provided code is not a valid full family backup.");
+      adminNotice("INVALID CODE ❌", "The provided code is not a valid full family backup.");
     }
   } catch (e) {
-    showCustomNotification("PARSE ERROR ❌", "Failed to parse backup code: " + e.message);
+    adminNotice("PARSE ERROR ❌", "Failed to parse backup code: " + e.message);
   }
 }
 
@@ -757,7 +791,8 @@ function forceAppUpdate() {
     "Update App",
     "Cancel",
     "pixel-btn warning",
-    "pixel-btn"
+    "pixel-btn",
+    ADMIN_SURFACE
   );
 }
 

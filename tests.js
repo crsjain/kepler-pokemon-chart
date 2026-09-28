@@ -8547,6 +8547,200 @@ async function runSuite() {
         await sleep(50);
       }
 
+      console.log("Running Test Case 97: Admin surface isolation, Escape layering & passcode restyle...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const live = window.__app_state__;
+        const kidId = 'tc97_lyra';
+        helpers.setProfilesList([{ id: kidId, name: 'Lyra', avatarId: '471', state: JSON.parse(JSON.stringify(live)) }]);
+        helpers.setActiveProfileId(kidId);
+        helpers.setWipeDataMock(async () => {});
+        helpers.setReloadMock(() => {});
+
+        const adminModal = document.getElementById('admin-modal');
+        const passwordModal = document.getElementById('password-modal');
+        const passwordInput = document.getElementById('password-input');
+        const passwordError = document.getElementById('password-error');
+        const submitBtn = document.getElementById('password-submit-btn');
+        const cancelBtn = document.getElementById('password-cancel-btn');
+        const confirmModal = document.getElementById('confirm-modal');
+        const rgb = el => getComputedStyle(el).backgroundColor;
+        const isOpen = el => !el.classList.contains('hidden');
+        // admin.js listens on document; window-dispatched Escape (TC73) never reaches it.
+        const escOnDocument = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        const dismissNotifs = () => document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+        const assertPasscodeRestyle = (path) => {
+          assert(document.getElementById('password-title').textContent === 'Parent passcode 🔑', `${path}: title should be 'Parent passcode 🔑'`);
+          assert(submitBtn.textContent === 'Unlock' && submitBtn.classList.contains('adm-primary'), `${path}: primary should be the blue 'Unlock'`);
+          assert(cancelBtn.textContent === 'Cancel' && cancelBtn.classList.contains('adm-tertiary') && !cancelBtn.classList.contains('greyed-out'), `${path}: Cancel should be tertiary, never .greyed-out`);
+          assert(rgb(submitBtn) === 'rgb(42, 113, 208)', `${path}: Unlock should be Poké Blue, got ${rgb(submitBtn)}`);
+          assert(rgb(cancelBtn) === 'rgb(255, 255, 255)', `${path}: Cancel should be white, got ${rgb(cancelBtn)}`);
+          assert(cancelBtn.offsetHeight >= 44, `${path}: Cancel must be a >=44px target`);
+          assert(document.activeElement === passwordInput, `${path}: passcode input must be autofocused`);
+        };
+
+        // 1. Admin-entry passcode: restyle, Rule 8 z-index, calm inline error, Enter still submits.
+        document.getElementById('admin-btn').click();
+        await sleep(80);
+        assert(isOpen(passwordModal), "⚙️ should open the passcode prompt");
+        assert(!passwordModal.hasAttribute('style'), "#password-modal must carry no inline style (Rule 8)");
+        assert(getComputedStyle(passwordModal).zIndex === '170000', `#password-modal z-index must stay 170000, got ${getComputedStyle(passwordModal).zIndex}`);
+        for (let i = 0; i < 20 && document.activeElement !== passwordInput; i++) await sleep(25); // focus() is deferred 50ms
+        assertPasscodeRestyle('Admin entry');
+        passwordInput.value = 'nope';
+        submitBtn.click();
+        await sleep(30);
+        assert(isOpen(passwordModal) && isOpen(passwordError), "Wrong code keeps the prompt open with the inline error");
+        assert(passwordInput.value === '' && document.activeElement === passwordInput, "Wrong code clears and refocuses the field");
+        assert(getComputedStyle(passwordError).animationName === 'none', "Wrong-code line must not animate");
+        assert(getComputedStyle(passwordError).color === 'rgb(30, 41, 59)', `Wrong-code line must be calm ink, not red; got ${getComputedStyle(passwordError).color}`);
+        passwordInput.value = helpers.ADMIN_PASSWORD;
+        passwordInput.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter', bubbles: true }));
+        await sleep(60);
+        assert(!isOpen(passwordModal) && isOpen(adminModal), "Enter must still submit the passcode and open Admin");
+
+        // 2. Dialog semantics + the explicit button mapping (every admin button has a variant).
+        assert(adminModal.getAttribute('role') === 'dialog' && adminModal.getAttribute('aria-modal') === 'true', "#admin-modal needs role=dialog + aria-modal=true");
+        const VARIANTS = ['adm-primary', 'adm-secondary', 'adm-tertiary', 'adm-danger', 'adm-quiet-danger'];
+        const unmapped = [...adminModal.querySelectorAll('.pixel-btn')].filter(b => !VARIANTS.some(v => b.classList.contains(v)));
+        assert(unmapped.length === 0, `Every admin .pixel-btn needs an admin variant; unmapped: ${unmapped.map(b => b.id || b.className).join(', ')}`);
+        assert(adminModal.querySelectorAll('.pixel-btn.info, .pixel-btn.success, .pixel-btn.warning, .pixel-btn.greyed-out').length === 0, "No legacy rainbow / greyed-out buttons inside Admin");
+        const settingsPrimaries = [...document.querySelectorAll('#admin-pane-today .adm-primary')];
+        assert(settingsPrimaries.length === 1 && settingsPrimaries[0].id === 'exceptions-btn', "Set Exceptions must be the sole primary on Settings");
+        assert(document.querySelector('#admin-pane-today button, #admin-pane-today select, #admin-pane-today input').id === 'exceptions-btn', "Set Exceptions must stay first in the Settings tab order");
+        assert(adminModal.querySelectorAll('.adm-danger').length === 1 && document.getElementById('admin-wipe-btn').closest('.danger-zone-section'), "Red appears only in the danger card");
+        const lockToggle = document.getElementById('admin-lock-past-days-toggle');
+        assert(lockToggle.type === 'checkbox' && lockToggle.closest('label.switch'), "Past-day control is the same checkbox inside a .switch");
+        assert(getComputedStyle(document.querySelector('#admin-pane-tasks .admin-tasks-actions')).position === 'sticky', "Activities Save bar must be sticky");
+        const closeXBtn = document.getElementById('close-admin-header-btn');
+        assert(closeXBtn.offsetWidth >= 44 && closeXBtn.offsetHeight >= 44, "Header ✕ must be a 44px target");
+
+        // 3. Admin confirm is flagged; Escape on document does NOT close Admin under it (X16).
+        document.querySelector('.admin-nav-btn[data-admin-section="data"]').click();
+        document.getElementById('admin-wipe-btn').click();
+        await sleep(30);
+        assert(isOpen(confirmModal) && confirmModal.getAttribute('data-surface') === 'admin', "Admin confirm must carry data-surface=admin");
+        assert(rgb(document.getElementById('confirm-yes-btn')) === 'rgb(220, 38, 38)', "Admin destructive confirm uses --adm-danger");
+        assert(rgb(document.getElementById('confirm-no-btn')) === 'rgb(255, 255, 255)', "Admin confirm Cancel is tertiary white, not disabled-grey");
+        escOnDocument();
+        await sleep(20);
+        assert(isOpen(adminModal) && isOpen(confirmModal), "Escape must not close Admin underneath an open confirm");
+        confirmModal.click(); // backdrop dismiss (skips the yes/no handlers)
+        await sleep(20);
+        assert(!isOpen(confirmModal) && isOpen(adminModal), "Backdrop closes only the confirm");
+
+        // 4. Escape with nothing above Admin still closes it.
+        escOnDocument();
+        await sleep(20);
+        assert(!isOpen(adminModal), "Escape closes Admin when no higher layer is open");
+
+        // 5. Same guard under the stacked rewards editor.
+        document.getElementById('admin-btn').click();
+        await sleep(60);
+        passwordInput.value = helpers.ADMIN_PASSWORD;
+        submitBtn.click();
+        await sleep(60);
+        document.querySelector('.admin-nav-btn[data-admin-section="rewards"]').click();
+        document.getElementById('admin-customize-rewards-btn').click();
+        await sleep(30);
+        const editRewardsModal = document.getElementById('edit-rewards-modal');
+        assert(isOpen(editRewardsModal), "Rewards editor should open");
+        escOnDocument();
+        await sleep(20);
+        assert(isOpen(adminModal), "Escape must not close Admin underneath the rewards editor");
+        document.getElementById('edit-rewards-cancel-btn').click();
+        await sleep(20);
+
+        // 6. Rule 11: an admin error gets a neutral "Got it" in the admin secondary style.
+        document.querySelector('.admin-nav-btn[data-admin-section="passcode"]').click();
+        document.getElementById('admin-new-passcode-input').value = '';
+        dismissNotifs();
+        document.getElementById('admin-change-passcode-btn').click();
+        await sleep(30);
+        const errNotif = [...document.querySelectorAll('.notif-modal')].pop();
+        const errBtn = errNotif && errNotif.querySelector('.notif-close-btn');
+        assert(errNotif && errNotif.classList.contains('adm-surface'), "Admin error notification must carry .adm-surface");
+        assert(errBtn.textContent === 'Got it' && errBtn.classList.contains('adm-secondary') && !errBtn.classList.contains('greyed-out'), "Admin error CTA: 'Got it', admin secondary, never .greyed-out");
+        assert(rgb(errBtn) === 'rgb(255, 255, 255)', `'Got it' must be the white secondary, got ${rgb(errBtn)}`);
+        escOnDocument();
+        await sleep(20);
+        assert(isOpen(adminModal), "Escape must not close Admin underneath an open notification");
+        dismissNotifs();
+        document.getElementById('close-admin-modal-btn').click();
+        await sleep(30);
+
+        // Deterministic week: today is the LAST column, so column 0 is always a past day (as TC82).
+        const today = getLocalDate(live?.timezoneOffset);
+        const todayDow = today.getDay();
+        live.weekStartDay = (todayDow + 1) % 7;
+        live.weekStartDate = formatLocalDate(getWeekStart(today, live.weekStartDay));
+        live.activeDay = todayDow;
+        live.reward = 'Blanket Fort';
+        live.megaReward = 'Dessert Outing';
+        live.lockPastDays = false;
+        helpers.setViewingWeekStartDate(live.weekStartDate);
+        helpers.renderState(true);
+        await sleep(50);
+
+        // 7. Kid "Switch Day?" right after a backdrop-dismissed admin confirm: no surface leak.
+        document.querySelector('.day-header[data-day="0"]').click();
+        await sleep(40);
+        assert(isOpen(confirmModal), "Kid Switch Day? confirm should open");
+        assert(!confirmModal.hasAttribute('data-surface'), "Kid confirm must not inherit data-surface from the admin confirm");
+        const kidNo = document.getElementById('confirm-no-btn');
+        assert(kidNo.classList.contains('greyed-out'), "Kid confirm keeps the .greyed-out No button (tests.js:505 contract)");
+        assert(rgb(kidNo) === 'rgb(203, 213, 225)', `Kid No button must render exactly as before (#cbd5e1), got ${rgb(kidNo)}`);
+        assert(rgb(document.getElementById('confirm-yes-btn')) === 'rgb(66, 153, 225)', "Kid Yes button keeps the kid .info blue (#4299e1)");
+        confirmModal.click();
+        await sleep(20);
+        assert(live.activeDay === todayDow, "Backdrop on the kid confirm leaves the active day unchanged");
+
+        // 8. Kid notification (reward not chosen) keeps its default label and no admin class.
+        live.reward = '';
+        helpers.renderState(true);
+        await sleep(30);
+        dismissNotifs();
+        document.querySelector('input[data-day="6"][data-task="piano"]').click();
+        await sleep(40);
+        const kidNotif = [...document.querySelectorAll('.notif-modal')].pop();
+        assert(kidNotif && !kidNotif.classList.contains('adm-surface'), "Kid notification must not carry .adm-surface");
+        const kidBtn = kidNotif.querySelector('.notif-close-btn');
+        assert(kidBtn.textContent === 'Awesome!' && !kidBtn.classList.contains('adm-secondary'), "Kid notification keeps its default 'Awesome!' CTA");
+        assert(rgb(kidBtn) === 'rgb(255, 203, 5)', `Kid CTA keeps Pikachu yellow, got ${rgb(kidBtn)}`);
+        dismissNotifs();
+        live.reward = 'Blanket Fort';
+        helpers.renderState(true);
+        await sleep(30);
+
+        // 9. Kid-side grace prompt (withParentApproval) shares the same restyle; Cancel has no side effects.
+        live.lockPastDays = true;
+        const gridBefore = JSON.stringify(live.grid);
+        document.querySelector('input[data-day="0"][data-task="piano"]').click();
+        await sleep(80);
+        assert(isOpen(passwordModal), "Locked past day should prompt for the parent passcode");
+        assert(document.getElementById('password-prompt-desc').textContent.includes('previous days'), "Grace prompt keeps its parent-directed copy");
+        assert(isOpen(passwordModal) && !isOpen(passwordError), "Grace prompt opens without a stale error");
+        for (let i = 0; i < 20 && document.activeElement !== passwordInput; i++) await sleep(25); // focus() is deferred 50ms
+        assertPasscodeRestyle('Grace');
+        const notifCount = document.querySelectorAll('.notif-modal').length;
+        cancelBtn.click();
+        await sleep(30);
+        assert(!isOpen(passwordModal), "Cancel closes the grace prompt");
+        assert(live.activeDay === todayDow && JSON.stringify(live.grid) === gridBefore, "Cancel leaves the active day and grid untouched");
+        assert(document.querySelectorAll('.notif-modal').length === notifCount && !isOpen(confirmModal), "Cancel shows no toast or confirm");
+
+        // Clean up
+        dismissNotifs();
+        helpers.setProfilesList([]);
+        helpers.setActiveProfileId(null);
+        helpers.setWipeDataMock(null);
+        helpers.setReloadMock(null);
+        helpers.resetState();
+        await sleep(30);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

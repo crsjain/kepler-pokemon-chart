@@ -226,7 +226,7 @@ import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault, getStarsFromDates } from './vault.js';
 import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES, getStageIndexForLevel } from './pokemon_data.js';
 import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
-import { initAdmin, refreshAdminScopeChip } from './admin.js';
+import { initAdmin, refreshAdminScopeChip, adminNotice } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
 import { initShop, openPokemonShop, resetShopSession } from './shop.js';
 
@@ -640,7 +640,7 @@ function initFirebaseUI() {
         renderNewProfileIconPicker();
         checkLocalMigrationOption();
         if (newProfileNameInput) setTimeout(() => newProfileNameInput.focus(), 50);
-      }, 'Enter Parent Password to add a new child:');
+      }, 'Enter the parent passcode to add a child.');
     });
   }
 
@@ -811,13 +811,13 @@ function renderAdminProfilesList() {
         ${isActive ? '<span class="admin-profile-active-label">(Active)</span>' : ''}
       </div>
       <div class="admin-profile-actions">
-        <button class="pixel-btn info small admin-icon-btn edit-rewards-btn" data-id="${profile.id}" data-name="${profile.name}" title="Customize Rewards">
-          <svg class="admin-btn-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <button class="pixel-btn adm-secondary adm-icon-btn admin-icon-btn edit-rewards-btn" data-id="${profile.id}" data-name="${profile.name}" title="Customize Rewards" aria-label="Customize ${profile.name}'s rewards">
+          <svg class="admin-btn-icon" viewBox="0 0 24 24" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
             <path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h16v6z"/>
           </svg>
         </button>
-        <button class="pixel-btn danger small admin-icon-btn delete-profile-btn" data-id="${profile.id}" data-name="${profile.name}" title="Delete Profile">
-          <svg class="admin-btn-icon" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+        <button class="pixel-btn adm-quiet-danger adm-icon-btn admin-icon-btn delete-profile-btn" data-id="${profile.id}" data-name="${profile.name}" title="Delete Profile" aria-label="Delete ${profile.name}">
+          <svg class="admin-btn-icon" viewBox="0 0 448 512" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
             <path d="M135.2 17.7C140.6 6.8 151.7 0 163.8 0H284.2C296.3 0 307.4 6.8 312.8 17.7L320 32H384C401.7 32 416 46.3 416 64C416 81.7 401.7 96 384 96H64C46.3 96 32 81.7 32 64C32 46.3 46.3 32 64 32H128L135.2 17.7zM32 128H416V448C416 483.3 387.3 512 352 512H96C60.7 512 32 483.3 32 448V128zM96 176C96 162.7 85.3 152 72 152C58.7 152 48 162.7 48 176V408C48 421.3 58.7 432 72 432C85.3 432 96 421.3 96 408V176z"/>
           </svg>
         </button>
@@ -879,13 +879,15 @@ function renderAdminProfilesList() {
             deleteBtn.disabled = false;
             deleteBtn.textContent = "Delete";
             console.error("Failed to delete profile:", err);
-            showCustomNotification("Error ❌", `Failed to delete profile: ${err.message}`);
+            adminNotice("Error ❌", `Failed to delete profile: ${err.message}`);
           }
         },
         () => {}, // No callback
         "Delete 🗑️",
         "Cancel",
-        "pixel-btn danger"
+        "pixel-btn danger",
+        undefined,
+        { surface: 'admin' }
       );
     });
     
@@ -1092,6 +1094,16 @@ export function showCustomConfirm(title, message, onYesCallback, onNoCallback, y
   }
   
   confirmTitle.textContent = title;
+
+  // #confirm-modal is a singleton shared with kid dialogs. Set OR clear the
+  // surface flag on every open (not in close handlers: backdrop, tests and
+  // direct .hidden toggles can skip those), so Admin styling never leaks
+  // into the next kid confirm.
+  if (options && options.surface) {
+    confirmModal.setAttribute('data-surface', options.surface);
+  } else {
+    confirmModal.removeAttribute('data-surface');
+  }
   
   if (message.trim().startsWith('<')) {
     confirmMessage.innerHTML = message;
@@ -1756,7 +1768,7 @@ function renderGridTable() {
 function startExceptionMode() {
   const isPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
   if (isPastWeek) {
-    showCustomNotification("Read-Only 🔒", "Cannot edit exceptions for past weeks.");
+    adminNotice("Read-Only 🔒", "Cannot edit exceptions for past weeks.");
     return;
   }
   isExceptionMode = true;
@@ -2926,7 +2938,8 @@ function bindWeekStartDayEvents() {
           "Apply Change",
           "Cancel",
           "pixel-btn info",
-          "pixel-btn greyed-out"
+          "pixel-btn greyed-out",
+          { surface: 'admin' }
         );
         return;
       }
@@ -3007,7 +3020,8 @@ function bindWeekStartDayEvents() {
         "Apply Change",
         "Cancel",
         "pixel-btn info",
-        "pixel-btn greyed-out"
+        "pixel-btn greyed-out",
+        { surface: 'admin' }
       );
     });
   }

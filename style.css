@@ -1590,8 +1590,10 @@ input:checked + .slider:before {
 }
 
 .admin-option-row select.pixel-select {
-  width: 140px;
-  flex: 0 0 140px;
+  width: 220px;
+  flex: 0 1 220px;
+  min-width: 0;
+  min-height: 44px;
   padding: 8px 28px 8px 10px;
   background-position: right 10px center;
   box-sizing: border-box;
@@ -1916,7 +1918,7 @@ input:checked + .slider:before {
 
 .admin-profile-active-label {
   font-size: 0.75rem;
-  color: #10b981;
+  color: #047857;
   font-family: 'Quicksand', sans-serif;
   font-weight: 700;
   flex-shrink: 0;
@@ -2391,7 +2393,7 @@ input:checked + .slider:before {
   grid-row: 1;
   padding: 12px 16px;
   background: white;
-  border-bottom: 2px dashed var(--poke-blue);
+  border-bottom: 2px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2433,35 +2435,34 @@ input:checked + .slider:before {
   cursor: default;
 }
 
+/* Neutral 44px close (Phase 0b): red implied "destructive" (X11); 36px was under target (X13) */
 .admin-header-close-btn {
-  background: #fee2e2;
-  border: 2px solid #ef4444;
-  color: #b91c1c;
-  border-radius: 6px;
-  width: 36px;
-  height: 36px;
-  font-size: 1.4rem;
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+  color: #1e293b;
+  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  font-size: 1.5rem;
   font-family: 'Fredoka One', cursive;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
-  transition: all 0.15s ease;
-  box-shadow: 0 2px 0 #dc2626;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  box-shadow: none;
   padding: 0;
   flex-shrink: 0;
 }
 
 .admin-header-close-btn:hover {
-  background: #ef4444;
-  color: white;
-  transform: translateY(-1px);
+  background: #f1f5f9;
+  border-color: #94a3b8;
 }
 
 .admin-header-close-btn:active {
   transform: translateY(2px);
-  box-shadow: none;
 }
 
 /* Nav: horizontal sandboxed tab strip on mobile (Rule 13C pattern) */
@@ -2579,10 +2580,8 @@ input:checked + .slider:before {
 .admin-pane-title {
   margin: 0;
   font-family: 'Fredoka One', cursive;
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   color: var(--poke-dark-blue);
-  border-bottom: 2px dashed var(--poke-blue);
-  padding-bottom: 6px;
 }
 
 .admin-pane-subtitle {
@@ -2605,11 +2604,13 @@ input:checked + .slider:before {
   max-width: 560px;
 }
 
-/* Grid Settings: Check-in + Week & Clock cards side by side when both fit
-   (≥320px each — label + 140px select), otherwise stacked. Rule 4 / Rule 12. */
+/* Settings: Check-in card first, then Week & Clock, stacked in one 600px column
+   (the same cap as every other admin card). Phase 0b's 220px selects no longer
+   leave room for two cards side by side in the 750px pane. Rule 4 / Rule 12. */
 .admin-pane-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 600px;
   gap: 12px;
   min-width: 0;
 }
@@ -2655,12 +2656,12 @@ input:checked + .slider:before {
   justify-content: flex-end;
   padding: 10px 16px;
   background: white;
-  border-top: 2px dashed #e2e8f0;
+  border-top: 2px solid #e2e8f0;
 }
 
 .admin-modal-footer .pixel-btn {
   margin: 0;
-  min-height: 42px;
+  min-height: 44px;
   min-width: 120px;
 }
 
@@ -6482,39 +6483,22 @@ body.has-banner .mini-hud.visible {
   }
 }
 
-/* Admin: past-day approval toggle row */
-.admin-toggle-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+/* Admin: past-day approval switch row (Phase 0b: 20px checkbox → .switch).
+   The text label is `for` the same #admin-lock-past-days-toggle input, so the
+   label and the switch are both tap targets. */
+.admin-switch-row {
+  min-height: 44px;
+}
+
+.admin-option-row .admin-switch-label {
+  flex: 1 1 auto;
+  min-width: 0;
   cursor: pointer;
   user-select: none;
 }
 
-.admin-toggle-label input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  margin: 0;
-  cursor: pointer;
-  accent-color: #2a71d0;
+.admin-switch-row .switch {
   flex-shrink: 0;
-}
-
-.admin-toggle-text {
-  font-size: 0.9rem;
-  color: #475569;
-  white-space: nowrap;
-}
-
-/* 360px phones: wrap "Ask for passcode" rather than overflow the card edge */
-@media (max-width: 420px) {
-  .admin-option-row .admin-toggle-label {
-    min-width: 0;
-  }
-
-  .admin-toggle-text {
-    white-space: normal;
-  }
 }
 
 .admin-option-hint {
@@ -6743,5 +6727,380 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 @media (prefers-reduced-motion: reduce) {
   body.app-booting .pokemon-sprite-wrapper::before {
     animation: none;
+  }
+}
+
+/* ==========================================================================
+   Parent Admin — design tokens & button dialect (Phase 0b)
+   Spec: admin UX revamp proposal §4 + feature-review-panel mitigations.
+   SCOPE: only #admin-modal, #edit-rewards-modal, #password-modal (both passcode
+   prompts, owner Q8), #confirm-modal[data-surface="admin"] (set/cleared by
+   showCustomConfirm on every open) and .notif-modal.adm-surface (adminNotice).
+   The global .pixel-btn / .greyed-out rules are NOT touched, so kid dialogs
+   (Switch Day?, Reset Week, badges, notifications) render exactly as before.
+   Kept at the end of the file so the short-landscape / tablet-portrait queries
+   below come after the @media (min-width: 768px) admin + rewards blocks.
+   ========================================================================== */
+
+#admin-modal,
+#edit-rewards-modal,
+#password-modal,
+#confirm-modal[data-surface="admin"],
+.notif-modal.adm-surface {
+  --adm-ink: #1e293b;          /* 14.6:1 */
+  --adm-ink-2: #475569;        /* 7.6:1 helper text */
+  --adm-line: #e2e8f0;
+  --adm-line-strong: #cbd5e1;
+  --adm-surface: #ffffff;
+  --adm-canvas: #f8fafc;
+  --adm-frame: #2d3748;        /* pixel border + shadow (--border-color) */
+  --adm-primary: #2a71d0;      /* Poké Blue, admin only (Q13); white text 4.80:1 (AA) */
+  --adm-primary-hover: #245fb0;
+  --adm-primary-pressed: #1d4f90; /* 8.2:1 */
+  --adm-danger: #dc2626;       /* white text 4.83:1 */
+  --adm-danger-hover: #b91c1c;
+  --adm-danger-tint: #fef2f2;
+  --adm-danger-ink: #991b1b;
+  --adm-success: #047857;
+  --adm-focus: #1d4f90;
+}
+
+/* Parent passcode prompt: z-index moved out of index.html (Rule 8).
+   Above #profile-select-modal (150000, Add-child re-prompt), below
+   #add-profile-modal (180000) and #family-login-modal (200000). */
+#password-modal {
+  z-index: 170000;
+}
+
+/* ---- Button variants (≤1 primary per card; red only in danger) ---------- */
+.pixel-btn.adm-primary,
+.pixel-btn.adm-secondary,
+.pixel-btn.adm-tertiary,
+.pixel-btn.adm-danger,
+#confirm-modal[data-surface="admin"] #confirm-yes-btn,
+#confirm-modal[data-surface="admin"] #confirm-no-btn,
+#edit-rewards-modal #edit-rewards-save-btn,
+#edit-rewards-modal #edit-rewards-cancel-btn,
+#edit-rewards-modal .reward-add-row .pixel-btn {
+  min-height: 44px;
+  border-radius: 10px;
+  font-family: 'Fredoka One', cursive;
+  transition: transform 0.1s, box-shadow 0.1s, background-color 0.15s;
+}
+
+/* Primary: blue fill, white text, 3px charcoal frame, 4px pixel shadow */
+.pixel-btn.adm-primary,
+#confirm-modal[data-surface="admin"] #confirm-yes-btn,
+#edit-rewards-modal #edit-rewards-save-btn {
+  background: var(--adm-primary);
+  color: #ffffff;
+  border: 3px solid var(--adm-frame);
+  box-shadow: 0 4px 0 var(--adm-frame);
+}
+
+.pixel-btn.adm-primary:hover,
+#confirm-modal[data-surface="admin"] #confirm-yes-btn:hover,
+#edit-rewards-modal #edit-rewards-save-btn:hover {
+  background: var(--adm-primary-hover);
+}
+
+/* Secondary: white fill, charcoal text, 2px frame, 2px shadow (routine actions) */
+.pixel-btn.adm-secondary,
+#edit-rewards-modal .reward-add-row .pixel-btn {
+  background: var(--adm-surface);
+  color: var(--adm-ink);
+  border: 2px solid var(--adm-frame);
+  box-shadow: 0 2px 0 var(--adm-frame);
+}
+
+.pixel-btn.adm-secondary:hover,
+#edit-rewards-modal .reward-add-row .pixel-btn:hover {
+  background: var(--adm-canvas);
+}
+
+/* Tertiary: white, 2px slate border, no shadow — Cancel / Close. A real
+   (not disabled-looking) exit; replaces .greyed-out on admin surfaces (X3). */
+.pixel-btn.adm-tertiary,
+#admin-modal .pixel-btn.greyed-out,
+#confirm-modal[data-surface="admin"] #confirm-no-btn,
+#edit-rewards-modal #edit-rewards-cancel-btn {
+  background: var(--adm-surface);
+  color: var(--adm-ink);
+  border: 2px solid var(--adm-line-strong);
+  box-shadow: none;
+}
+
+.pixel-btn.adm-tertiary:hover,
+#admin-modal .pixel-btn.greyed-out:hover,
+#confirm-modal[data-surface="admin"] #confirm-no-btn:hover,
+#edit-rewards-modal #edit-rewards-cancel-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+/* Destructive: only in danger cards and destructive confirms */
+.pixel-btn.adm-danger,
+#confirm-modal[data-surface="admin"] #confirm-yes-btn.danger {
+  background: var(--adm-danger);
+  color: #ffffff;
+  border: 3px solid var(--adm-frame);
+  box-shadow: 0 4px 0 var(--adm-frame);
+}
+
+.pixel-btn.adm-danger:hover,
+#confirm-modal[data-surface="admin"] #confirm-yes-btn.danger:hover {
+  background: var(--adm-danger-hover);
+}
+
+/* All variants press 2px (not the kid 4px) */
+.pixel-btn.adm-primary:active,
+.pixel-btn.adm-secondary:active,
+.pixel-btn.adm-tertiary:active,
+.pixel-btn.adm-danger:active,
+.pixel-btn.adm-icon-btn:active,
+#admin-modal .pixel-btn.greyed-out:active,
+#confirm-modal[data-surface="admin"] #confirm-yes-btn:active,
+#confirm-modal[data-surface="admin"] #confirm-no-btn:active,
+#edit-rewards-modal #edit-rewards-save-btn:active,
+#edit-rewards-modal #edit-rewards-cancel-btn:active,
+#edit-rewards-modal .reward-add-row .pixel-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.pixel-btn.adm-primary:active,
+#confirm-modal[data-surface="admin"] #confirm-yes-btn:not(.danger):active,
+#edit-rewards-modal #edit-rewards-save-btn:active {
+  background: var(--adm-primary-pressed);
+}
+
+/* 44×44 icon buttons (Activities 🗑, profile 🎁 / 🗑). X13 targets. */
+#admin-modal .pixel-btn.adm-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+#admin-modal .pixel-btn.adm-icon-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* Quiet delete: slate icon, red only on hover/focus (A4: six loud red icons) */
+#admin-modal .pixel-btn.adm-quiet-danger {
+  background: var(--adm-surface);
+  color: var(--adm-ink-2);
+  border: 2px solid var(--adm-line-strong);
+  box-shadow: none;
+}
+
+#admin-modal .pixel-btn.adm-quiet-danger:hover,
+#admin-modal .pixel-btn.adm-quiet-danger:focus-visible {
+  color: var(--adm-danger);
+  border-color: var(--adm-danger);
+  background: var(--adm-danger-tint);
+}
+
+/* ---- Focus: 2px #1d4f90 outline (8.2:1). Beats the global
+   .pixel-btn / .pixel-select { outline: none } by specificity, not !important,
+   so the button:disabled !important block stays authoritative. ------------ */
+:is(#admin-modal, #edit-rewards-modal, #password-modal, #confirm-modal[data-surface="admin"], .notif-modal.adm-surface) :is(button, select, input, textarea, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--adm-focus);
+  outline-offset: 2px;
+}
+
+#admin-modal .switch input:focus-visible + .slider {
+  outline: 2px solid var(--adm-focus);
+  outline-offset: 2px;
+}
+
+/* ---- Admin typography & contrast (part of X9) --------------------------- */
+#admin-modal .admin-option-row {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--adm-ink);
+}
+
+#admin-modal .admin-option-row > span,
+#admin-modal .admin-option-row .admin-switch-label {
+  font-size: 15px;
+}
+
+#admin-modal .admin-option-row select.pixel-select {
+  font-size: 15px;
+}
+
+#admin-modal .admin-option-hint {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--adm-ink-2);
+}
+
+#admin-modal .admin-action-group h4,
+#admin-modal .admin-nav-group-label {
+  color: var(--adm-ink-2);
+}
+
+/* 44px targets for full-width card buttons and paired row buttons */
+#admin-modal .admin-action-group > .pixel-btn,
+#admin-modal .admin-action-row-buttons .pixel-btn,
+#admin-modal .danger-zone-section .pixel-btn,
+#admin-modal .admin-tasks-actions .pixel-btn {
+  min-height: 44px;
+}
+
+/* Activities: the 44px quiet delete sits on the name row */
+#admin-modal .admin-task-row {
+  align-items: center;
+}
+
+/* ---- Sticky Activities Save (panel Stage 3): Save stays visible while the
+   list scrolls, so 0a's discard-on-close is never compounded by an off-screen
+   Save. The pane is the scroll container; the bar is its last child. ------- */
+#admin-modal #admin-pane-tasks {
+  padding-bottom: 0; /* sticky bottom:0 is inset by the scrollport padding; the bar owns it instead */
+}
+
+#admin-modal .admin-pane .admin-tasks-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding: 10px 0 12px;
+  background: var(--adm-surface);
+  border-top: 2px solid var(--adm-line);
+  box-shadow: 0 -6px 8px -6px rgba(15, 23, 42, 0.18);
+}
+
+/* ---- Parent passcode prompt (both paths; Child-Psych constraints) --------
+   Poké Blue + white only; the wrong-code line is calm ink text, no red, no
+   animation. */
+#password-modal .password-prompt-input {
+  border: 2px solid var(--adm-line-strong);
+  border-radius: 10px;
+  min-height: 48px;
+  color: var(--adm-ink);
+}
+
+#password-modal .password-prompt-input:focus {
+  border-color: var(--adm-primary);
+}
+
+#password-modal #password-prompt-desc {
+  color: var(--adm-ink);
+}
+
+#password-modal .error-message {
+  color: var(--adm-ink);
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+/* ---- Admin notifications (adminNotice): neutral "Got it" ----------------- */
+.notif-modal.adm-surface .notif-close-btn {
+  min-width: 120px;
+}
+
+/* ---- Short landscape (phone landscape, laptop windows < 500px tall) and
+   tablet portrait 768–899px (810/820/834px iPads): drop the 200px rail and
+   reuse the mobile top-tab layout. Must follow @media (min-width: 768px). -- */
+@media (min-width: 768px) and (max-height: 500px),
+       (min-width: 768px) and (max-width: 899px) and (orientation: portrait) {
+  #admin-modal .admin-modal-content {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto; /* header / tabs / pane / footer */
+  }
+
+  #admin-modal .admin-nav {
+    grid-column: 1;
+    grid-row: 2;
+    flex-direction: row;
+    align-items: center;
+    padding: 8px 12px;
+    border-right: none;
+    border-bottom: 2px solid #e2e8f0;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  #admin-modal .admin-nav-group-label {
+    display: none;
+  }
+
+  #admin-modal .admin-nav-divider {
+    display: block;
+  }
+
+  #admin-modal .admin-pane {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  #admin-modal .admin-modal-footer {
+    grid-row: 4;
+  }
+}
+
+/* Tablet portrait: a 94% × 90dvh sheet (proposal §7 "medium" row) */
+@media (min-width: 768px) and (max-width: 899px) and (orientation: portrait) {
+  #admin-modal .admin-modal-content {
+    width: 94%;
+    max-width: none;
+    height: 90dvh;
+  }
+}
+
+/* Short landscape: full-height sheet, compact chrome. The footer Close is
+   hidden here — the neutral 44px ✕ in the header is the close control — so
+   the pane gets the height back (R1: the rail left a 166px pane). */
+@media (min-width: 768px) and (max-height: 500px) {
+  #admin-modal .admin-modal-content {
+    width: 100%;
+    max-width: none;
+    height: calc(100dvh - 16px);
+  }
+
+  #admin-modal .admin-modal-header {
+    padding: 6px 16px;
+  }
+
+  #admin-modal .admin-modal-header h2 {
+    font-size: 1.15rem;
+  }
+
+  #admin-modal .admin-nav {
+    padding: 4px 12px;
+  }
+
+  #admin-modal .admin-pane {
+    padding: 12px 16px;
+  }
+
+  #admin-modal .admin-modal-footer {
+    display: none;
+  }
+
+  /* Rewards editor: let the dialog scroll instead of clipping both lists */
+  #edit-rewards-modal .admin-modal-content {
+    height: auto;
+    max-height: calc(100dvh - 16px);
+    overflow-y: auto;
+  }
+
+  #edit-rewards-modal .reward-modal-grid {
+    grid-template-rows: auto;
+    flex-grow: 0;
+    overflow: visible;
+  }
+
+  #edit-rewards-modal .reward-modal-grid .admin-section {
+    height: auto;
   }
 }

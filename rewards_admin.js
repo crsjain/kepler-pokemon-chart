@@ -35,6 +35,10 @@ const getActiveProfileId = () => deps.getActiveProfileId();
 const saveProfileRewardsToCloudFn = (...args) => deps.saveRewards(...args);
 const renderRewardDropdowns = (...args) => deps.renderRewardDropdowns(...args);
 const showCustomNotification = (...args) => deps.showCustomNotification(...args);
+// Rule 11 (same contract as admin.js adminNotice): neutral "Got it" in the admin
+// secondary style for errors/warnings; success copy is untouched.
+const adminNotice = (title, message) =>
+  deps.showCustomNotification(title, message, null, false, null, 'adm-surface', 'Got it', 'adm-secondary');
 
 const editRewardsModal = document.getElementById('edit-rewards-modal');
 const editRewardsTitle = document.getElementById('edit-rewards-title');
@@ -151,7 +155,7 @@ export function bindRewardsEditorEvents() {
         document.querySelector('.layout-container').classList.remove('blurred');
       } catch (err) {
         console.error("Failed to save rewards:", err);
-        showCustomNotification("Error ❌", "Failed to save customized rewards.");
+        adminNotice("Error ❌", "Failed to save customized rewards.");
       } finally {
         editRewardsSaveBtn.disabled = false;
         editRewardsSaveBtn.textContent = 'Save Rewards';
@@ -167,10 +171,9 @@ export function bindRewardsEditorEvents() {
       const activeId = getActiveProfileId();
       const profile = activeId ? getProfilesList().find(p => p.id === activeId) : null;
       if (!profile) {
-        showCustomNotification(
+        adminNotice(
           "No Child Selected 👥",
-          "Sign in and pick a child profile first, then customize their rewards here.",
-          null, false, null, '', 'Got it', 'greyed-out'
+          "Sign in and pick a child profile first, then customize their rewards here."
         );
         return;
       }

@@ -8,24 +8,24 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.67">
+  <link rel="stylesheet" href="style.css?v=10.68">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script type="importmap">
   {
     "imports": {
-      "./app.js": "./app.js?v=10.58",
-      "./state.js": "./state.js?v=10.58",
-      "./firebase.js": "./firebase.js?v=10.58",
-      "./migrations.js": "./migrations.js?v=10.58",
-      "./vault.js": "./vault.js?v=10.58",
-      "./badges.js": "./badges.js?v=10.58",
-      "./shop.js": "./shop.js?v=10.58",
-      "./guide.js": "./guide.js?v=10.58",
-      "./pokemon_data.js": "./pokemon_data.js?v=10.58",
-      "./date_utils.js": "./date_utils.js?v=10.58",
-      "./admin.js": "./admin.js?v=10.58",
-      "./rewards_admin.js": "./rewards_admin.js?v=10.58",
-      "./audio.js": "./audio.js?v=10.58"
+      "./app.js": "./app.js?v=10.59",
+      "./state.js": "./state.js?v=10.59",
+      "./firebase.js": "./firebase.js?v=10.59",
+      "./migrations.js": "./migrations.js?v=10.59",
+      "./vault.js": "./vault.js?v=10.59",
+      "./badges.js": "./badges.js?v=10.59",
+      "./shop.js": "./shop.js?v=10.59",
+      "./guide.js": "./guide.js?v=10.59",
+      "./pokemon_data.js": "./pokemon_data.js?v=10.59",
+      "./date_utils.js": "./date_utils.js?v=10.59",
+      "./admin.js": "./admin.js?v=10.59",
+      "./rewards_admin.js": "./rewards_admin.js?v=10.59",
+      "./audio.js": "./audio.js?v=10.59"
     }
   }
   </script>
@@ -456,18 +456,20 @@
       </div>
     </div>
 
-    <!-- Custom Password Prompt Modal -->
-    <div id="password-modal" class="modal hidden" style="z-index: 170000;">
+    <!-- Parent passcode prompt. Shared by the Admin entry and the kid-side past-day
+         grace unlock (promptParentPassword); both are restyled by ID in style.css
+         (owner Q8). Blue + white only, calm inline error, no sound or shake. -->
+    <div id="password-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="password-title" aria-describedby="password-prompt-desc">
       <div class="modal-content password-prompt-content">
-        <h2>Parent Verification</h2>
+        <h2 id="password-title">Parent passcode 🔑</h2>
         <div class="password-prompt-body">
-          <p id="password-prompt-desc">Enter Parent Password to open Admin Panel:</p>
-          <input type="password" id="password-input" class="password-prompt-input" placeholder="Password">
-          <p id="password-error" class="error-message hidden">Wrong Code! Try again, Parent!</p>
+          <p id="password-prompt-desc">Enter the parent passcode to open Admin.</p>
+          <input type="password" id="password-input" class="password-prompt-input" placeholder="Passcode" autocomplete="off" aria-label="Parent passcode">
+          <p id="password-error" class="error-message hidden" role="status" aria-live="polite">That's not the code — try again.</p>
         </div>
         <div class="password-prompt-actions">
-          <button id="password-cancel-btn" class="pixel-btn greyed-out">Cancel</button>
-          <button id="password-submit-btn" class="pixel-btn info">Submit</button>
+          <button id="password-cancel-btn" class="pixel-btn adm-tertiary">Cancel</button>
+          <button id="password-submit-btn" class="pixel-btn adm-primary">Unlock</button>
         </div>
       </div>
     </div>
@@ -759,11 +761,11 @@
 
     <!-- Admin Modal: left-nav shell (docs/prd_admin_panel_redesign.md). Pane switching toggles
          .hidden + aria-selected only (admin.js); it never re-renders pane contents. -->
-    <div id="admin-modal" class="modal hidden">
+    <div id="admin-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="admin-modal-title">
       <div class="modal-content admin-modal-content">
         <div class="admin-modal-header">
           <div class="admin-modal-title">
-            <h2>Parent Admin Panel ⚙️</h2>
+            <h2 id="admin-modal-title">Parent Admin Panel ⚙️</h2>
             <span id="admin-scope-chip" class="admin-scope-chip hidden"></span>
           </div>
           <button id="close-admin-header-btn" class="admin-header-close-btn" aria-label="Close Admin Panel" title="Close">&times;</button>
@@ -787,7 +789,7 @@
           <div class="admin-pane-grid">
             <div class="admin-action-group">
               <h4>Tonight's Check-in</h4>
-              <button id="exceptions-btn" class="pixel-btn info">Set Exceptions</button>
+              <button id="exceptions-btn" class="pixel-btn adm-primary">Set Exceptions</button>
               <div class="admin-option-row">
                 <span>Parent Edit Window:</span>
                 <select id="admin-parent-grace-select" class="pixel-select" title="How long past-day editing stays unlocked after entering the passcode.">
@@ -796,14 +798,14 @@
                   <option value="5">5 min</option>
                 </select>
               </div>
-              <div class="admin-option-row">
-                <span>🔒 Approve Past Days:</span>
-                <label class="admin-toggle-label" for="admin-lock-past-days-toggle">
-                  <input type="checkbox" id="admin-lock-past-days-toggle">
-                  <span class="admin-toggle-text">Ask for passcode</span>
+              <div class="admin-option-row admin-switch-row">
+                <label class="admin-switch-label" for="admin-lock-past-days-toggle">🔒 Approve Past Days</label>
+                <label class="switch">
+                  <input type="checkbox" id="admin-lock-past-days-toggle" aria-label="Approve past days: ask for the parent passcode" aria-describedby="admin-lock-past-days-hint">
+                  <span class="slider"></span>
                 </label>
               </div>
-              <div class="admin-option-hint">Requires the parent passcode before this child can edit previous days. Recommended for younger children.</div>
+              <div id="admin-lock-past-days-hint" class="admin-option-hint">Requires the parent passcode before this child can edit previous days. Recommended for younger children.</div>
             </div>
             <div class="admin-action-group">
               <h4>Week &amp; Clock</h4>
@@ -872,8 +874,8 @@
             <!-- Populated dynamically via JS -->
           </div>
           <div class="admin-tasks-actions">
-            <button id="admin-add-task-btn" class="pixel-btn info">Add Activity</button>
-            <button id="admin-save-tasks-btn" class="pixel-btn success">Save Activities</button>
+            <button id="admin-add-task-btn" class="pixel-btn adm-secondary">Add Activity</button>
+            <button id="admin-save-tasks-btn" class="pixel-btn adm-primary">Save Activities</button>
           </div>
         </section>
 
@@ -882,7 +884,7 @@
           <h3 class="admin-pane-title">🎁 Rewards</h3>
           <div class="admin-action-group">
             <h4>Reward Choices</h4>
-            <button id="admin-customize-rewards-btn" class="pixel-btn info">Customize Rewards</button>
+            <button id="admin-customize-rewards-btn" class="pixel-btn adm-secondary">Customize Rewards</button>
             <div class="admin-option-hint">Edit the weekly and mega milestone rewards this child can pick from.</div>
           </div>
           <h4 class="admin-pane-subtitle">🏆 Claimed Rewards History</h4>
@@ -908,7 +910,7 @@
             <div class="admin-option-row">
               <input type="password" id="admin-new-passcode-input" class="pixel-input" placeholder="New passcode" minlength="4">
             </div>
-            <button id="admin-change-passcode-btn" class="pixel-btn warning">Update Passcode</button>
+            <button id="admin-change-passcode-btn" class="pixel-btn adm-primary">Update Passcode</button>
           </div>
         </section>
 
@@ -918,21 +920,21 @@
           <div class="admin-action-group">
             <h4>This child<span class="admin-child-name" data-admin-child-name></span></h4>
             <div class="admin-action-row-buttons">
-              <button id="admin-export-btn" class="pixel-btn info" title="Export current child's progress code to clipboard">Export Child</button>
-              <button id="admin-import-btn" class="pixel-btn info" title="Import current child's progress from clipboard code">Import Child</button>
+              <button id="admin-export-btn" class="pixel-btn adm-secondary" title="Export current child's progress code to clipboard">Export Child</button>
+              <button id="admin-import-btn" class="pixel-btn adm-secondary" title="Import current child's progress from clipboard code">Import Child</button>
             </div>
           </div>
           <div class="admin-action-group">
             <h4>Whole family</h4>
             <div class="admin-action-row-buttons">
-              <button id="admin-cloud-export-btn" class="pixel-btn success" title="Export all family profiles and settings code to clipboard">Export Family</button>
-              <button id="admin-cloud-import-btn" class="pixel-btn success" title="Import all family profiles and settings from clipboard code">Import Family</button>
+              <button id="admin-cloud-export-btn" class="pixel-btn adm-secondary" title="Export all family profiles and settings code to clipboard">Export Family</button>
+              <button id="admin-cloud-import-btn" class="pixel-btn adm-secondary" title="Import all family profiles and settings from clipboard code">Import Family</button>
             </div>
           </div>
           <div class="admin-action-group">
             <h4>System</h4>
-            <button id="admin-diagnostics-btn" class="pixel-btn">Run Diagnostics</button>
-            <button id="admin-force-update-btn" class="pixel-btn warning">Force App Update</button>
+            <button id="admin-diagnostics-btn" class="pixel-btn adm-secondary">Run Diagnostics</button>
+            <button id="admin-force-update-btn" class="pixel-btn adm-secondary">Force App Update</button>
             <div class="admin-option-row">
               <span>Debug Sidebar:</span>
               <label class="switch">
@@ -944,13 +946,13 @@
           <hr class="admin-danger-divider">
           <div class="danger-zone-section">
             <h4>⚠️ Danger Zone</h4>
-            <button id="admin-wipe-btn" class="pixel-btn danger">Reset This Child's Progress</button>
+            <button id="admin-wipe-btn" class="pixel-btn adm-danger">Reset This Child's Progress</button>
             <div class="admin-option-hint danger-zone-hint">Activities, rewards, and settings are kept. Other children are not affected.</div>
           </div>
         </section>
 
         <div class="admin-modal-footer">
-          <button id="close-admin-modal-btn" class="pixel-btn greyed-out">Close</button>
+          <button id="close-admin-modal-btn" class="pixel-btn adm-tertiary">Close</button>
         </div>
       </div>
     </div>
@@ -1079,7 +1081,7 @@
   </div>
 
   <script src="particles.js?v=10.4"></script>
-  <script type="module" src="app.js?v=10.58" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.59" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 
