@@ -2,6 +2,7 @@ import { state, saveState } from './state.js';
 import { POKEMON_MAP, EVOLUTIONS, getPokemonName, getPokemonShortName, EVOLVED_POKEMON_IDS, POKEMON_TYPES, LEGENDARY_POKEMON_IDS, RARE_POKEMON_IDS, getPokemonCost, isBuyablePokemonId } from './pokemon_data.js';
 
 import { playSound } from './audio.js';
+import { bindBackdropDismiss } from './modal_backdrop.js';
 
 // DOM elements
 let shopModal;
@@ -91,6 +92,8 @@ export function initShop(callbacks = {}) {
   if (closeShopBtn) {
     closeShopBtn.addEventListener('click', closeShop);
   }
+  // Read-only browse sheet: a backdrop click closes it (cancels any hold).
+  bindBackdropDismiss(shopModal, closeShop);
   if (backToBrowseBtn) {
     backToBrowseBtn.addEventListener('click', showBrowse);
   }

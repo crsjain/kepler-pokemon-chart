@@ -229,6 +229,7 @@ import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './b
 import { initAdmin, refreshAdminScopeChip, adminNotice, showAdminToast, setReadBackupCodeMock, requestCloseAdmin, openAdminRewardsTab, holdToConfirm, resolveHoldMs, setHoldDurationMock } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
 import { initShop, openPokemonShop, resetShopSession } from './shop.js';
+import { isBackdropClick, bindBackdropDismiss } from './modal_backdrop.js';
 
 // DOM Elements
 const pokemonSprite = document.getElementById('pokemon-sprite');
@@ -751,6 +752,28 @@ function initFirebaseUI() {
     });
   }
 
+  // Backdrop: an empty form just closes; a typed name is never dropped
+  // silently — ask first, with Keep editing as the default and the backdrop.
+  bindBackdropDismiss(addProfileModal, () => {
+    if (!addProfileCancelBtn || (addProfileSubmitBtn && addProfileSubmitBtn.disabled)) return;
+    const typedName = newProfileNameInput ? newProfileNameInput.value.trim() : '';
+    if (!typedName) {
+      addProfileCancelBtn.click();
+      return;
+    }
+    showCustomConfirm(
+      'Discard New Child? ✏️',
+      "This child hasn't been added yet. Discard what you've typed?",
+      () => addProfileCancelBtn.click(),
+      null,
+      'Discard',
+      'Keep editing',
+      'pixel-btn danger',
+      'pixel-btn',
+      addProfileFromAdmin ? { surface: 'admin' } : {}
+    );
+  });
+
   // Logout Family Action
   if (logoutFamilyBtn) {
     logoutFamilyBtn.addEventListener('click', () => {
@@ -1265,7 +1288,7 @@ export function showCustomConfirm(title, message, onYesCallback, onNoCallback, y
   }
   
   confirmModal.onclick = (e) => {
-    if (e.target === confirmModal) {
+    if (isBackdropClick(e, confirmModal)) {
       confirmModal.classList.add('hidden');
       cleanUpConfirm();
       if (options && options.backdrop === 'cancel') {
@@ -2484,7 +2507,7 @@ function bindProfileSwitchEvents() {
   // Click outside profile select modal to close (if a profile is active)
   if (profileSelectModal) {
     profileSelectModal.addEventListener('click', (e) => {
-      if (e.target === profileSelectModal && activeProfileId) {
+      if (isBackdropClick(e, profileSelectModal) && activeProfileId) {
         profileSelectModal.classList.add('hidden');
         const appContainer = document.querySelector('.app-container');
         if (appContainer) {
@@ -2657,6 +2680,8 @@ function bindPartnerModalEvents() {
       partnerModal.classList.add('hidden');
     });
   }
+  // Browsing partners changes nothing until one is picked: backdrop closes.
+  bindBackdropDismiss(partnerModal, () => partnerModal.classList.add('hidden'));
 }
 
 /**
@@ -2690,7 +2715,7 @@ function bindPartnerShowcaseEvents() {
 
   if (partnerShowcaseModal) {
     partnerShowcaseModal.addEventListener('click', (e) => {
-      if (e.target === partnerShowcaseModal) {
+      if (isBackdropClick(e, partnerShowcaseModal)) {
         closePartnerShowcaseModal();
       }
     });
@@ -4347,7 +4372,7 @@ function showLevelUpModal(newLevel) {
   };
   
   const handleBackdropClick = (e) => {
-    if (e.target === modal) {
+    if (isBackdropClick(e, modal)) {
       const elapsed = Date.now() - spawnTime;
       if (elapsed >= 1500) { // Stage 3 (1500ms): Enable backdrop click
         cleanup();

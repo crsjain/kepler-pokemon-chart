@@ -1,6 +1,7 @@
 import { state, saveState } from './state.js';
 import { formatLocalDate, getDateOfColumn } from './date_utils.js';
 import { openPokemonShop } from './shop.js';
+import { isBackdropClick } from './modal_backdrop.js';
 
 // DOM elements cache
 let vaultModal = null;
@@ -80,7 +81,7 @@ export function initVault() {
   
   if (vaultModal) {
     vaultModal.addEventListener('click', (e) => {
-      if (e.target === vaultModal) {
+      if (isBackdropClick(e, vaultModal)) {
         closeVault();
       }
     });

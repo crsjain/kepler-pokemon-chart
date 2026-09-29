@@ -9,6 +9,7 @@ import {
   getStageInfo
 } from './state.js';
 import { formatLocalDate } from './date_utils.js';
+import { isBackdropClick, bindBackdropDismiss } from './modal_backdrop.js';
 import { showInlineRewards, isInlineRewardsDirty, saveInlineRewards, discardInlineRewards } from './rewards_admin.js';
 
 let appCallbacks = {
@@ -224,7 +225,7 @@ function bindBackupDialog() {
   els.submit.addEventListener('click', submitBackupDialog);
   els.cancel.addEventListener('click', () => closeBackupDialog(null));
   els.dialog.addEventListener('click', (e) => {
-    if (e.target === els.dialog) closeBackupDialog(null);
+    if (isBackdropClick(e, els.dialog)) closeBackupDialog(null);
   });
 }
 
@@ -492,6 +493,8 @@ export function initAdmin(callbacks) {
       passwordModal.classList.add('hidden');
     });
   }
+  // Nothing to lose in a passcode prompt: the backdrop is Cancel.
+  bindBackdropDismiss(passwordModal, () => passwordCancelBtn && passwordCancelBtn.click());
 
   if (closeAdminModalBtn) {
     closeAdminModalBtn.addEventListener('click', () => requestCloseAdmin());
@@ -503,7 +506,7 @@ export function initAdmin(callbacks) {
 
   if (adminModal) {
     adminModal.addEventListener('click', (e) => {
-      if (e.target === adminModal) {
+      if (isBackdropClick(e, adminModal)) {
         requestCloseAdmin();
       }
     });

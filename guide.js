@@ -1,4 +1,5 @@
 import { state } from './state.js';
+import { isBackdropClick } from './modal_backdrop.js';
 
 let guideModal = null;
 let closeGuideBtn = null;
@@ -28,7 +29,7 @@ export function initGuide() {
   // Close modal on clicking background
   if (guideModal) {
     guideModal.addEventListener('click', (e) => {
-      if (e.target === guideModal) {
+      if (isBackdropClick(e, guideModal)) {
         closeGuide();
       }
     });

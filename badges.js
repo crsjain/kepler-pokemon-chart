@@ -1,5 +1,6 @@
 import { state, saveState, rollNewWeeklyBadge } from './state.js';
 import { getPokemonName, POKEMON_TYPES } from './pokemon_data.js';
+import { isBackdropClick } from './modal_backdrop.js';
 
 let badgeSortMethod = 'date'; // 'date' | 'dex' | 'name' | 'type'
 let badgeFilterType = 'all';
@@ -40,7 +41,7 @@ export function initBadgeCase() {
   // Close on outside click of the modal content
   if (modal) {
     modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
+      if (isBackdropClick(e, modal)) {
         modal.classList.add('hidden');
       }
     });

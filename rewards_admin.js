@@ -17,6 +17,7 @@
  */
 import { state, saveState } from './state.js';
 import { DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS } from './migrations.js';
+import { bindBackdropDismiss } from './modal_backdrop.js';
 
 const notInjected = (name, fallback) => (...args) => {
   console.error(`rewards_admin: ${name} not injected`);
@@ -136,6 +137,28 @@ export function bindRewardsEditorEvents() {
       });
     });
   }
+
+  // Backdrop on the stacked sheet: a clean sheet closes; unsaved edits are
+  // never discarded silently — Save / Discard / Keep editing (the default,
+  // and what a second backdrop click on the guard means).
+  bindBackdropDismiss(editRewardsModal, () => {
+    if (editorMode !== 'sheet' || saving) return;
+    if (draftBaseline === null || draftSnapshot() === draftBaseline) {
+      closeRewardsSheet();
+      return;
+    }
+    deps.showCustomConfirm(
+      'Unsaved Rewards ✏️',
+      "These reward changes aren't saved yet.",
+      () => { commitRewardsDraft(); },
+      null,
+      'Save',
+      'Keep editing',
+      'pixel-btn',
+      'pixel-btn',
+      { surface: 'admin', third: { label: 'Discard', className: 'pixel-btn', onClick: closeRewardsSheet } }
+    );
+  });
 
   // Enter in an add field adds the reward (keyboard parity with the button).
   [[newWeeklyRewardInput, addWeeklyRewardBtn], [newMegaRewardInput, addMegaRewardBtn]].forEach(([input, btn]) => {

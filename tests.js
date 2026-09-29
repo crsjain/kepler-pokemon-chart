@@ -9671,6 +9671,176 @@ async function runSuite() {
         await sleep(30);
       }
 
+      console.log("Running Test Case 103: Backdrop dismiss policy — clean modals close, drafts are guarded, drags never dismiss...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const live = window.__app_state__;
+        const keplerId = 'tc103_kepler';
+        const lyraId = 'tc103_lyra';
+        helpers.setProfilesList([
+          { id: keplerId, name: 'Kepler', avatarId: '25', state: JSON.parse(JSON.stringify(live)) },
+          { id: lyraId, name: 'Lyra', avatarId: '471', state: { weeklyRewardOptions: [{ value: 'Lyra Treat', text: 'Lyra Treat' }], megaRewardOptions: [{ value: 'Lyra Mega', text: 'Lyra Mega' }] } }
+        ]);
+        helpers.setActiveProfileId(keplerId);
+        const saveCalls = [];
+        helpers.setSaveProfileRewardsMock((id, weekly, mega) => {
+          saveCalls.push({ id, weekly, mega });
+          return Promise.resolve();
+        });
+
+        const $ = id => document.getElementById(id);
+        const isOpen = el => !el.classList.contains('hidden');
+        const dismissNotifs = () => document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+        // A real backdrop click: pointer goes down AND up on the overlay itself.
+        const backdropClick = (modal) => {
+          modal.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 }));
+          modal.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
+        };
+        // A drag: pointer goes down inside the card, click lands on the overlay.
+        const dragOut = (modal) => {
+          const inner = modal.querySelector('.modal-content') || modal.firstElementChild;
+          inner.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 }));
+          modal.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
+        };
+        const adminModal = $('admin-modal');
+        const confirmModal = $('confirm-modal');
+        const openAdmin = async () => {
+          $('admin-btn').click();
+          await sleep(60);
+          $('password-input').value = helpers.ADMIN_PASSWORD;
+          $('password-submit-btn').click();
+          await sleep(60);
+          assert(isOpen(adminModal), "Admin should open");
+        };
+        dismissNotifs();
+
+        // 1. Read-only modals: a drag out of the card never closes; a backdrop click does.
+        for (const id of ['guide-modal', 'vault-modal', 'badges-modal', 'partner-modal']) {
+          const m = $(id);
+          m.classList.remove('hidden');
+          dragOut(m);
+          await sleep(10);
+          assert(isOpen(m), `#${id}: releasing a drag outside the card must not close it`);
+          backdropClick(m);
+          await sleep(10);
+          assert(!isOpen(m), `#${id}: a backdrop click closes it`);
+        }
+        helpers.openPokemonShop();
+        await sleep(30);
+        const shop = $('pokemon-shop-modal');
+        assert(isOpen(shop), "Shop opens");
+        backdropClick(shop);
+        await sleep(10);
+        assert(!isOpen(shop), "Shop (new): a backdrop click closes it");
+
+        // 2. The Eevee choice stays button-only (Level Up keeps its own staged 1.5s backdrop dwell).
+        for (const id of ['eevee-modal']) {
+          const m = $(id);
+          m.classList.remove('hidden');
+          backdropClick(m);
+          await sleep(10);
+          assert(isOpen(m), `#${id} must not close on a backdrop click`);
+          m.classList.add('hidden');
+        }
+
+        // 3. Passcode prompt: the backdrop is Cancel.
+        $('admin-btn').click();
+        await sleep(60);
+        const passwordModal = $('password-modal');
+        assert(isOpen(passwordModal), "Passcode prompt opens");
+        backdropClick(passwordModal);
+        await sleep(10);
+        assert(!isOpen(passwordModal) && !isOpen(adminModal), "Passcode backdrop cancels without opening Admin");
+
+        // 4. Clean Admin closes on a backdrop click; a drag from a field does not.
+        await openAdmin();
+        dragOut(adminModal);
+        await sleep(20);
+        assert(isOpen(adminModal) && !isOpen(confirmModal), "Drag out of Admin must not close it");
+        backdropClick(adminModal);
+        await sleep(30);
+        assert(!isOpen(adminModal), "Clean Admin closes on a backdrop click");
+
+        // 5. Add child: empty closes; a typed name asks first (backdrop = Keep editing).
+        await openAdmin();
+        $('admin-tab-children').click();
+        await sleep(20);
+        const addProfileModal = $('add-profile-modal');
+        $('admin-add-child-btn').click();
+        await sleep(80);
+        backdropClick(addProfileModal);
+        await sleep(20);
+        assert(!isOpen(addProfileModal) && !isOpen(confirmModal) && isOpen(adminModal), "Empty add-child sheet closes on a backdrop click, Admin stays");
+        $('admin-add-child-btn').click();
+        await sleep(80);
+        $('new-profile-name').value = 'Alden';
+        backdropClick(addProfileModal);
+        await sleep(20);
+        assert(isOpen(addProfileModal) && isOpen(confirmModal), "Typed name: backdrop asks before discarding");
+        assert($('confirm-no-btn').textContent === 'Keep editing' && $('confirm-yes-btn').textContent === 'Discard', "Guard offers Discard / Keep editing");
+        backdropClick(confirmModal);
+        await sleep(20);
+        assert(isOpen(addProfileModal) && !isOpen(confirmModal) && $('new-profile-name').value === 'Alden', "Guard backdrop = Keep editing; the name survives");
+        backdropClick(addProfileModal);
+        await sleep(20);
+        $('confirm-yes-btn').click();
+        await sleep(20);
+        assert(!isOpen(addProfileModal) && isOpen(adminModal), "Discard closes the sheet and returns to Admin");
+        assert(helpers.getProfilesList().length === 2, "No child was created");
+
+        // 6. Rewards sheet (non-active child): clean closes; dirty shows Save / Discard / Keep editing.
+        const sheet = $('edit-rewards-modal');
+        const rowBtn = id => document.querySelector(`.edit-rewards-btn[data-id="${id}"]`);
+        rowBtn(lyraId).click();
+        await sleep(30);
+        assert(isOpen(sheet), "Sheet opens for Lyra");
+        backdropClick(sheet);
+        await sleep(20);
+        assert(!isOpen(sheet) && !isOpen(confirmModal) && isOpen(adminModal), "Clean sheet closes on a backdrop click");
+        rowBtn(lyraId).click();
+        await sleep(30);
+        $('new-weekly-reward-input').value = 'Ice Cream';
+        $('add-weekly-reward-btn').click();
+        await sleep(20);
+        backdropClick(sheet);
+        await sleep(20);
+        assert(isOpen(sheet) && isOpen(confirmModal), "Dirty sheet: backdrop opens the unsaved guard");
+        assert($('confirm-yes-btn').textContent === 'Save' && $('confirm-no-btn').textContent === 'Keep editing' && $('confirm-third-btn').textContent === 'Discard', "Guard offers Save / Keep editing / Discard");
+        backdropClick(confirmModal);
+        await sleep(20);
+        assert(isOpen(sheet) && !isOpen(confirmModal), "Guard backdrop = Keep editing");
+        backdropClick(sheet);
+        await sleep(20);
+        $('confirm-third-btn').click();
+        await sleep(20);
+        assert(!isOpen(sheet) && saveCalls.length === 0, "Discard closes the sheet without saving");
+        rowBtn(lyraId).click();
+        await sleep(30);
+        $('new-weekly-reward-input').value = 'Ice Cream';
+        $('add-weekly-reward-btn').click();
+        await sleep(20);
+        backdropClick(sheet);
+        await sleep(20);
+        $('confirm-yes-btn').click();
+        await sleep(60);
+        assert(!isOpen(sheet) && saveCalls.length === 1 && saveCalls[0].id === lyraId &&
+          saveCalls[0].weekly.some(r => r.text === 'Ice Cream'), "Save in the guard saves and closes the sheet");
+        dismissNotifs();
+        $('close-admin-modal-btn').click();
+        await sleep(30);
+        assert(!isOpen(adminModal), "Admin closes");
+
+        // Clean up
+        dismissNotifs();
+        helpers.setSaveProfileRewardsMock(null);
+        helpers.setProfilesList([]);
+        helpers.setActiveProfileId(null);
+        helpers.resetState();
+        await sleep(30);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
