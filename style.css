@@ -2197,6 +2197,64 @@ input:checked + .slider:before {
   padding: 0;
 }
 
+/* Labelled row actions ("Edit Rewards", "Delete") — owner asked for text so the
+   purpose is obvious at a glance (2026-09-29). Icon + label, 44px tall. */
+#admin-modal .admin-profile-actions {
+  gap: 8px;
+}
+
+#admin-modal .admin-profile-actions .pixel-btn.adm-text-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 14px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+#admin-modal .admin-profile-actions .pixel-btn.adm-text-btn .admin-btn-icon {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+#admin-modal .admin-profile-item {
+  padding: 10px 12px;
+}
+
+#admin-modal .admin-profile-name {
+  font-size: 1rem;
+  flex: 0 1 auto;
+}
+
+/* Active marker: small neutral-green pill instead of "(Active)" text */
+#admin-modal .admin-profile-active-label {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #d1fae5;
+  color: #065f46; /* 7.4:1 on the pill */
+  font-size: 12px;
+}
+
+/* Phones: actions drop under the name and share the row, so labels never truncate */
+@media (max-width: 520px) {
+  #admin-modal .admin-profile-item {
+    flex-wrap: wrap;
+  }
+
+  #admin-modal .admin-profile-actions {
+    flex: 1 1 100%;
+  }
+
+  #admin-modal .admin-profile-actions .pixel-btn.adm-text-btn {
+    flex: 1 1 0;
+  }
+}
+
 /* Partner Modal Specific Styles (Bigger Dialog) */
 #partner-modal .modal-content {
   max-width: 650px;
