@@ -8,24 +8,24 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.74">
+  <link rel="stylesheet" href="style.css?v=10.77">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script type="importmap">
   {
     "imports": {
-      "./app.js": "./app.js?v=10.64",
-      "./state.js": "./state.js?v=10.64",
-      "./firebase.js": "./firebase.js?v=10.64",
-      "./migrations.js": "./migrations.js?v=10.64",
-      "./vault.js": "./vault.js?v=10.64",
-      "./badges.js": "./badges.js?v=10.64",
-      "./shop.js": "./shop.js?v=10.64",
-      "./guide.js": "./guide.js?v=10.64",
-      "./pokemon_data.js": "./pokemon_data.js?v=10.64",
-      "./date_utils.js": "./date_utils.js?v=10.64",
-      "./admin.js": "./admin.js?v=10.64",
-      "./rewards_admin.js": "./rewards_admin.js?v=10.64",
-      "./audio.js": "./audio.js?v=10.64"
+      "./app.js": "./app.js?v=10.67",
+      "./state.js": "./state.js?v=10.67",
+      "./firebase.js": "./firebase.js?v=10.67",
+      "./migrations.js": "./migrations.js?v=10.67",
+      "./vault.js": "./vault.js?v=10.67",
+      "./badges.js": "./badges.js?v=10.67",
+      "./shop.js": "./shop.js?v=10.67",
+      "./guide.js": "./guide.js?v=10.67",
+      "./pokemon_data.js": "./pokemon_data.js?v=10.67",
+      "./date_utils.js": "./date_utils.js?v=10.67",
+      "./admin.js": "./admin.js?v=10.67",
+      "./rewards_admin.js": "./rewards_admin.js?v=10.67",
+      "./audio.js": "./audio.js?v=10.67"
     }
   }
   </script>
@@ -897,12 +897,16 @@
         <!-- This child: Rewards -->
         <section id="admin-pane-rewards" class="admin-pane hidden" role="tabpanel" data-admin-section="rewards" aria-labelledby="admin-tab-rewards">
           <h3 class="admin-pane-title">🎁 Rewards</h3>
-          <div class="admin-action-group adm-card">
+          <div class="admin-action-group adm-card adm-rewards-head">
             <span class="adm-eyebrow" data-admin-scope-eyebrow="child">This child</span>
             <h4>Reward Choices</h4>
-            <button id="admin-customize-rewards-btn" class="pixel-btn adm-secondary">Customize Rewards</button>
-            <div class="admin-option-hint">Edit the weekly and mega milestone rewards this child can pick from.</div>
+            <div class="admin-option-hint">The weekly and mega milestone rewards this child can pick from. Changes apply when you press Save.</div>
+            <p id="admin-rewards-empty" class="admin-option-hint hidden">Sign in and pick a child profile first, then customize their rewards here.</p>
           </div>
+          <!-- The one rewards editor (#rewards-editor) is re-parented here for the
+               active child, and back into #edit-rewards-modal for another child
+               (PRD v2.0 §11.5 Phase 4, Q3). IDs stay unique. -->
+          <div id="admin-rewards-editor-host" class="admin-rewards-editor-host"></div>
           <h4 class="admin-pane-subtitle">🏆 Claimed Rewards History</h4>
           <div id="claimed-rewards-history-list" class="claimed-rewards-history-list">
             <p class="no-rewards">No rewards claimed yet.</p>
@@ -1092,7 +1096,8 @@
     <div id="edit-rewards-modal" class="modal hidden">
       <div class="modal-content admin-modal-content">
         <h2 id="edit-rewards-title">Customize Rewards</h2>
-        
+
+        <div id="rewards-editor" class="rewards-editor">
         <div class="reward-modal-grid">
           <!-- Weekly Rewards Section -->
           <div class="admin-section">
@@ -1102,7 +1107,7 @@
             </div>
             <div class="reward-add-row">
               <input type="text" id="new-weekly-reward-input" class="pixel-input" placeholder="Add new weekly reward...">
-              <button id="add-weekly-reward-btn" class="pixel-btn info small">Add</button>
+              <button id="add-weekly-reward-btn" class="pixel-btn adm-secondary">Add</button>
             </div>
           </div>
           
@@ -1114,14 +1119,17 @@
             </div>
             <div class="reward-add-row">
               <input type="text" id="new-mega-reward-input" class="pixel-input" placeholder="Add new mega reward...">
-              <button id="add-mega-reward-btn" class="pixel-btn info small">Add</button>
+              <button id="add-mega-reward-btn" class="pixel-btn adm-secondary">Add</button>
             </div>
           </div>
         </div>
         
-        <div class="password-prompt-actions">
+        <p id="rewards-editor-error" class="adm-inline-error rewards-editor-error hidden" role="alert"></p>
+        <div id="rewards-editor-actions" class="password-prompt-actions">
+          <span id="rewards-editor-status" class="adm-savebar-status rewards-editor-status" role="status" aria-live="polite"></span>
           <button id="edit-rewards-cancel-btn" class="pixel-btn greyed-out">Cancel</button>
           <button id="edit-rewards-save-btn" class="pixel-btn success">Save Rewards</button>
+        </div>
         </div>
       </div>
     </div>
@@ -1140,7 +1148,7 @@
   </div>
 
   <script src="particles.js?v=10.4"></script>
-  <script type="module" src="app.js?v=10.64" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.67" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 

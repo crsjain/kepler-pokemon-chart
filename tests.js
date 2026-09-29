@@ -2687,9 +2687,11 @@ async function runSuite() {
         editRewardsBtn.click();
         await sleep(100);
 
-        // Verify modal opens
+        // Active child: the editor opens inline in Admin > Rewards (Phase 4), not the sheet
         const modal = document.getElementById('edit-rewards-modal');
-        assert(modal && !modal.classList.contains('hidden'), "Edit Rewards Modal should open");
+        assert(modal && modal.classList.contains('hidden'), "Active child's Edit Rewards must not open the stacked sheet");
+        assert(document.getElementById('rewards-editor').closest('#admin-pane-rewards') !== null, "Editor should be re-parented into the Rewards pane");
+        assert(!document.getElementById('admin-pane-rewards').classList.contains('hidden'), "Rewards tab should be shown");
 
         // Verify lists are populated in modal
         const weeklyList = document.getElementById('weekly-rewards-list');
@@ -4406,14 +4408,21 @@ async function runSuite() {
         const megaRewardSelect = document.getElementById('mega-reward-select');
         assert(rewardSelect.value === "Reward Beta", "Initial reward select should be Reward Beta");
 
-        // 1. Open Customize Rewards Modal
+        // 1. Open Admin, then the active child's rewards (inline in the Rewards tab, Phase 4)
+        document.getElementById('admin-btn').click();
+        await sleep(50);
+        document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+        document.getElementById('password-submit-btn').click();
+        await sleep(50);
         const editRewardsBtn = document.querySelector(`.edit-rewards-btn[data-id="${mockProfileId}"]`);
         assert(editRewardsBtn !== null, "Customize rewards button should exist for profile");
         editRewardsBtn.click();
         await sleep(50);
 
         const modal = document.getElementById('edit-rewards-modal');
-        assert(!modal.classList.contains('hidden'), "Customize rewards modal should be open");
+        const rewardsPane57 = document.getElementById('admin-pane-rewards');
+        assert(modal.classList.contains('hidden'), "Active child's rewards must not open the stacked sheet");
+        assert(!rewardsPane57.classList.contains('hidden') && rewardsPane57.contains(document.getElementById('weekly-rewards-list')), "Rewards editor should be inline in the Rewards pane");
 
         const weeklyList = document.getElementById('weekly-rewards-list');
         const weeklyItems = weeklyList.querySelectorAll('.reward-list-item');
@@ -4496,7 +4505,9 @@ async function runSuite() {
         saveModalBtn.click();
         await sleep(100);
 
-        assert(modal.classList.contains('hidden'), "Modal should close after saving");
+        assert(modal.classList.contains('hidden'), "Sheet stays closed on the inline path");
+        assert(rewardsPane57.contains(document.getElementById('weekly-rewards-list')), "Inline editor stays open after saving");
+        assert(document.getElementById('rewards-editor-actions').classList.contains('hidden'), "Save bar hides once the saved draft is clean");
         assert(savedProfileId === mockProfileId, "Save should be called with active profileId");
         assert(savedWeekly[0].text === "Reward Gamma", "Saved list should have Reward Gamma as first option");
         assert(savedWeekly[1].text === "Reward Alpha Super", "Saved list should have Reward Alpha Super as second option");
@@ -4510,6 +4521,9 @@ async function runSuite() {
 
         assert(state.reward === "Reward Beta Renamed", "Active reward state should automatically update to renamed text");
         assert(rewardSelect.value === "Reward Beta Renamed", "Dropdown selected value should be synced to renamed reward");
+        document.getElementById('close-admin-modal-btn').click();
+        await sleep(50);
+        assert(document.getElementById('admin-modal').classList.contains('hidden'), "Clean inline rewards close Admin with no guard");
       }
 
       // ----------------------------------------------------
@@ -8107,7 +8121,7 @@ async function runSuite() {
           today: ['exceptions-btn', 'admin-parent-grace-select', 'admin-lock-past-days-toggle',
                   'admin-week-start-select', 'admin-week-start-status', 'admin-timezone-select', 'admin-idle-timeout-select'],
           tasks: ['admin-tasks-list', 'admin-add-task-btn', 'admin-save-tasks-btn', 'admin-chart-style-placeholder'],
-          rewards: ['admin-customize-rewards-btn', 'claimed-rewards-history-list'],
+          rewards: ['admin-rewards-editor-host', 'claimed-rewards-history-list'],
           children: ['admin-profiles-list', 'admin-add-child-btn', 'admin-new-passcode-input', 'admin-new-passcode-confirm', 'admin-change-passcode-btn'],
           data: ['admin-export-btn', 'admin-import-btn', 'admin-cloud-export-btn', 'admin-cloud-import-btn',
                  'admin-diagnostics-btn', 'admin-force-update-btn', 'toggle-debug-sidebar', 'admin-wipe-btn']
@@ -8185,24 +8199,26 @@ async function runSuite() {
         document.getElementById('confirm-no-btn').click();
         await sleep(30);
 
-        // 8. Rewards pane launcher opens the stacked editor for the active child.
+        // 8. Rewards tab edits the active child's rewards inline (Phase 4; was a stacked launcher).
         const editRewardsModal = document.getElementById('edit-rewards-modal');
+        const rewardsPane = document.getElementById('admin-pane-rewards');
         document.querySelector('.admin-nav-btn[data-admin-section="rewards"]').click();
-        document.getElementById('admin-customize-rewards-btn').click();
         await sleep(50);
-        assert(!editRewardsModal.classList.contains('hidden'), "#admin-customize-rewards-btn should open #edit-rewards-modal");
-        assert(document.getElementById('edit-rewards-title').textContent.includes('Nova'), "Rewards editor should be titled for the active child");
+        assert(editRewardsModal.classList.contains('hidden'), "The Rewards tab must not open the stacked sheet");
+        assert(rewardsPane.contains(document.getElementById('rewards-editor')), "Editor should be re-parented into the Rewards pane");
+        assert(document.querySelectorAll('#rewards-editor').length === 1 && document.querySelectorAll('#weekly-rewards-list').length === 1, "Re-parenting keeps editor IDs unique");
+        assert(rewardsPane.querySelector('[data-admin-scope-eyebrow="child"]').textContent.includes('Nova'), "Rewards card should name the active child");
         assert(document.querySelectorAll('#weekly-rewards-list .reward-list-item').length > 0, "Populated editor should list rewards");
-        assert(editRewardsModal.querySelectorAll('[style]').length === 0, "Populated rewards editor must have zero inline styles");
+        assert(rewardsPane.querySelectorAll('[style]').length === 0, "Populated inline rewards editor must have zero inline styles");
         let guard = 50;
         while (guard-- > 0 && document.querySelector('#weekly-rewards-list .delete-reward-btn')) {
           document.querySelector('#weekly-rewards-list .delete-reward-btn').click();
         }
         assert(document.querySelector('#weekly-rewards-list .no-items') !== null, "Empty editor should show the .no-items line");
-        assert(editRewardsModal.querySelectorAll('[style]').length === 0, "Empty rewards editor must have zero inline styles");
+        assert(rewardsPane.querySelectorAll('[style]').length === 0, "Empty inline rewards editor must have zero inline styles");
         document.getElementById('edit-rewards-cancel-btn').click();
         await sleep(30);
-        assert(editRewardsModal.classList.contains('hidden'), "Cancel should close the rewards editor");
+        assert(document.querySelectorAll('#weekly-rewards-list .reward-list-item').length > 0, "Discard should restore the saved rewards inline");
 
         // 9. Chart Style placeholder: bottom of the Activities pane (PRD v2.0 Q5; was D8 top).
         const tasksPane = document.getElementById('admin-pane-tasks');
@@ -8459,10 +8475,8 @@ async function runSuite() {
         // (b) Reward inline rename + Cancel → state.reward unchanged, no orphan value.
         await openAdmin();
         document.querySelector('.admin-nav-btn[data-admin-section="rewards"]').click();
-        document.getElementById('admin-customize-rewards-btn').click();
         await sleep(50);
-        const editorModal = document.getElementById('edit-rewards-modal');
-        assert(!editorModal.classList.contains('hidden'), "Rewards editor should open");
+        assert(document.getElementById('admin-pane-rewards').contains(document.getElementById('weekly-rewards-list')), "Rewards editor should open inline");
         const weeklyRows = [...document.querySelectorAll('#weekly-rewards-list .reward-list-item')];
         const selIdx = weeklyRows.findIndex(r => r.textContent.includes('Movie Night'));
         assert(selIdx >= 0, "Selected reward should be listed");
@@ -8476,13 +8490,12 @@ async function runSuite() {
         await sleep(30);
         assert(live.reward === 'Movie Night', `Cancel must leave state.reward unchanged (got '${live.reward}')`);
         assert(live.weeklyRewardOptions.some(o => o.value === live.reward), "state.reward must still be one of the saved options");
-        // Reopen: the discarded rename is gone.
-        document.getElementById('admin-customize-rewards-btn').click();
+        // Leave and come back: the discarded rename is gone.
+        document.querySelector('.admin-nav-btn[data-admin-section="tasks"]').click();
+        document.querySelector('.admin-nav-btn[data-admin-section="rewards"]').click();
         await sleep(50);
         const reopenedTexts = [...document.querySelectorAll('#weekly-rewards-list .reward-item-text')].map(el => el.textContent);
         assert(!reopenedTexts.includes('Renamed In Draft') && reopenedTexts.includes('Movie Night'), "Reopened editor must not show the cancelled rename");
-        document.getElementById('edit-rewards-cancel-btn').click();
-        await sleep(30);
         await closeAdmin();
 
         // (c) Add + Remove, then a Firestore snapshot lands mid-edit, then Save → merged by id, nothing dropped.
@@ -8660,22 +8673,26 @@ async function runSuite() {
         await sleep(20);
         assert(!isOpen(adminModal), "Escape closes Admin when no higher layer is open");
 
-        // 5. Same guard under the stacked rewards editor.
+        // 5. An inline reward rename owns Escape (stopPropagation): it cancels the
+        //    rename and Admin stays open (Phase 4; the sheet's Esc is in TC101).
         document.getElementById('admin-btn').click();
         await sleep(60);
         passwordInput.value = helpers.ADMIN_PASSWORD;
         submitBtn.click();
         await sleep(60);
         document.querySelector('.admin-nav-btn[data-admin-section="rewards"]').click();
-        document.getElementById('admin-customize-rewards-btn').click();
         await sleep(30);
-        const editRewardsModal = document.getElementById('edit-rewards-modal');
-        assert(isOpen(editRewardsModal), "Rewards editor should open");
-        escOnDocument();
+        const firstEdit = document.querySelector('#weekly-rewards-list .edit-reward-btn');
+        assert(firstEdit, "Active child's rewards should be listed inline");
+        firstEdit.click();
+        await sleep(30);
+        const renameInput = document.querySelector('#weekly-rewards-list .reward-edit-input');
+        assert(renameInput, "Inline rename input should open");
+        renameInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
         await sleep(20);
-        assert(isOpen(adminModal), "Escape must not close Admin underneath the rewards editor");
-        document.getElementById('edit-rewards-cancel-btn').click();
-        await sleep(20);
+        assert(isOpen(adminModal), "Escape in an inline reward rename must not close Admin");
+        assert(!document.querySelector('#weekly-rewards-list .reward-edit-input'), "Escape should cancel the rename");
+        assert(document.activeElement && document.activeElement.classList.contains('edit-reward-btn'), "Focus returns to the row's Edit button after the rename closes");
 
         // 6. Rule 11: an admin error gets a neutral "Got it" in the admin secondary style.
         // (Passcode errors are inline since Phase 3, so an empty activity name raises it.)
@@ -9245,6 +9262,208 @@ async function runSuite() {
         dismissNotifs();
         document.getElementById('close-admin-modal-btn').click();
         await sleep(30);
+        helpers.setProfilesList([]);
+        helpers.setActiveProfileId(null);
+        helpers.resetState();
+        await sleep(30);
+      }
+
+      console.log("Running Test Case 101: Admin Phase 4 — inline rewards editor (active child) + sheet for another child...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const live = window.__app_state__;
+        const keplerId = 'tc101_kepler';
+        const lyraId = 'tc101_lyra';
+        live.weeklyRewardOptions = [{ value: 'Park Trip', text: 'Park Trip' }, { value: 'Movie Night', text: 'Movie Night' }];
+        live.megaRewardOptions = [{ value: 'Zoo Day', text: 'Zoo Day' }];
+        live.reward = 'Movie Night';
+        live.megaReward = 'Zoo Day';
+        helpers.saveState();
+        helpers.setProfilesList([
+          { id: keplerId, name: 'Kepler', avatarId: '25', state: JSON.parse(JSON.stringify(live)) },
+          { id: lyraId, name: 'Lyra', avatarId: '471', state: { weeklyRewardOptions: [{ value: 'Lyra Treat', text: 'Lyra Treat' }], megaRewardOptions: [{ value: 'Lyra Mega', text: 'Lyra Mega' }] } }
+        ]);
+        helpers.setActiveProfileId(keplerId);
+        const saveCalls = [];
+        let failNext = false;
+        helpers.setSaveProfileRewardsMock((id, weekly, mega) => {
+          saveCalls.push({ id, weekly, mega });
+          if (failNext) {
+            failNext = false;
+            return Promise.reject(new Error('offline'));
+          }
+          const p = helpers.getProfilesList().find(x => x.id === id);
+          if (p) {
+            p.state.weeklyRewardOptions = weekly;
+            p.state.megaRewardOptions = mega;
+          }
+          return Promise.resolve();
+        });
+
+        const adminModal = document.getElementById('admin-modal');
+        const sheet = document.getElementById('edit-rewards-modal');
+        const editor = document.getElementById('rewards-editor');
+        const pane = document.getElementById('admin-pane-rewards');
+        const tab = document.getElementById('admin-tab-rewards');
+        const bar = document.getElementById('rewards-editor-actions');
+        const saveBtn = document.getElementById('edit-rewards-save-btn');
+        const cancelBtn = document.getElementById('edit-rewards-cancel-btn');
+        const errorEl = document.getElementById('rewards-editor-error');
+        const confirmModal = document.getElementById('confirm-modal');
+        const addInput = document.getElementById('new-weekly-reward-input');
+        const isOpen = el => !el.classList.contains('hidden');
+        const escOnDocument = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        const dismissNotifs = () => document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+        const weeklyTexts = () => [...document.querySelectorAll('#weekly-rewards-list .reward-item-text')].map(el => el.textContent);
+        const rowBtn = id => document.querySelector(`.edit-rewards-btn[data-id="${id}"]`);
+        const openAdmin = async () => {
+          document.getElementById('admin-btn').click();
+          await sleep(60);
+          document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+          document.getElementById('password-submit-btn').click();
+          await sleep(60);
+          assert(isOpen(adminModal), "Admin should open");
+        };
+        dismissNotifs();
+        await openAdmin();
+
+        // 1. The Rewards tab IS the editor for the active child (no launcher, no sheet).
+        assert(!document.getElementById('admin-customize-rewards-btn'), "The Customize Rewards launcher is retired");
+        tab.click();
+        await sleep(30);
+        assert(pane.contains(editor) && !isOpen(sheet), "Rewards tab mounts the editor inline");
+        assert(document.querySelectorAll('#rewards-editor, #weekly-rewards-list, #edit-rewards-save-btn').length === 3, "One editor subtree: IDs stay unique");
+        assert(weeklyTexts().join('|') === 'Park Trip|Movie Night', `Inline editor lists the active child's rewards, got ${weeklyTexts().join('|')}`);
+        assert(!isOpen(bar) && !tab.hasAttribute('data-dirty'), "Clean draft: no save bar, no dirty dot");
+        assert(saveBtn.classList.contains('adm-primary') && saveBtn.textContent === 'Save' && cancelBtn.textContent === 'Discard', "Inline bar: primary Save + Discard");
+        assert(pane.querySelectorAll('[style]').length === 0, "Inline rewards pane has zero inline styles");
+
+        // 2. Adding (Enter in the field) makes the draft dirty: bar, status, tab dot.
+        addInput.value = 'Ice Cream';
+        addInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+        await sleep(20);
+        assert(weeklyTexts().includes('Ice Cream'), "Enter in the add field adds the reward");
+        assert(isOpen(bar) && tab.dataset.dirty === 'true', "Dirty draft shows the save bar and the Rewards dot");
+        assert(document.getElementById('rewards-editor-status').textContent.includes('Unsaved'), "Status line announces unsaved changes");
+        assert(!live.weeklyRewardOptions.some(r => r.text === 'Ice Cream'), "Nothing is written before Save (Q2)");
+
+        // 3. A tab switch keeps the draft.
+        document.getElementById('admin-tab-tasks').click();
+        tab.click();
+        await sleep(20);
+        assert(weeklyTexts().includes('Ice Cream'), "The rewards draft survives a tab switch");
+
+        // 4. Close → the guard names Rewards; Keep editing keeps everything.
+        document.getElementById('close-admin-modal-btn').click();
+        await sleep(30);
+        assert(isOpen(confirmModal) && confirmModal.textContent.includes('unsaved changes in Rewards'), "Closing with a rewards draft opens the guard naming Rewards");
+        document.getElementById('confirm-no-btn').click();
+        await sleep(20);
+        assert(isOpen(adminModal) && weeklyTexts().includes('Ice Cream'), "Keep editing keeps Admin and the draft");
+
+        // 5. A rejected save keeps the draft and shows an inline error (no modal).
+        failNext = true;
+        saveBtn.click();
+        await sleep(60);
+        assert(isOpen(errorEl) && errorEl.textContent.length > 0, "Failed save shows the inline error");
+        assert(document.querySelectorAll('.notif-modal:not(.toast)').length === 0, "Failed save does not raise a blocking modal");
+        assert(weeklyTexts().includes('Ice Cream') && isOpen(bar), "Failed save keeps the draft dirty");
+        assert(!live.weeklyRewardOptions.some(r => r.text === 'Ice Cream'), "Failed save writes nothing");
+        assert(saveBtn.textContent === 'Save' && !saveBtn.disabled, "Save button recovers after a failure");
+
+        // 6. Guard Save & close commits the rewards draft, then closes.
+        document.getElementById('close-admin-modal-btn').click();
+        await sleep(30);
+        document.getElementById('confirm-yes-btn').click();
+        await sleep(100);
+        assert(!isOpen(adminModal), "Save & close closes Admin once rewards are saved");
+        assert(live.weeklyRewardOptions.some(r => r.text === 'Ice Cream') && saveCalls[saveCalls.length - 1].id === keplerId, "Save & close committed the active child's rewards");
+        assert(live.reward === 'Movie Night', "The selected reward is kept");
+        assert(!tab.hasAttribute('data-dirty') && !isOpen(errorEl), "Dot and error clear after the save");
+        dismissNotifs();
+
+        // 7. Esc with a dirty rewards draft → guard → Discard drops it.
+        await openAdmin();
+        tab.click();
+        await sleep(20);
+        document.querySelector('#weekly-rewards-list .delete-reward-btn').click();
+        await sleep(10);
+        escOnDocument();
+        await sleep(30);
+        assert(isOpen(confirmModal) && isOpen(adminModal), "Esc with a dirty rewards draft opens the guard");
+        document.getElementById('confirm-third-btn').click();
+        await sleep(30);
+        assert(!isOpen(adminModal) && live.weeklyRewardOptions.some(r => r.text === 'Park Trip'), "Discard closes Admin and drops the rewards draft");
+
+        // 8. A non-active child (Family row) gets the stacked sheet with the same, re-parented editor (Q3a).
+        await openAdmin();
+        document.getElementById('admin-tab-children').click();
+        await sleep(20);
+        rowBtn(lyraId).click();
+        await sleep(30);
+        assert(isOpen(sheet) && sheet.contains(editor) && !pane.contains(editor), "Non-active child opens the sheet holding the editor");
+        assert(document.querySelectorAll('#weekly-rewards-list').length === 1, "Sheet path keeps IDs unique");
+        assert(document.getElementById('edit-rewards-title').textContent.includes('Lyra'), "Sheet is titled for that child");
+        assert(weeklyTexts().join('|') === 'Lyra Treat', "Sheet lists that child's rewards");
+        assert(cancelBtn.textContent === 'Cancel' && saveBtn.textContent === 'Save Rewards' && !cancelBtn.classList.contains('adm-tertiary'), "Sheet keeps Cancel / Save Rewards");
+        escOnDocument();
+        await sleep(20);
+        assert(isOpen(adminModal) && isOpen(sheet), "Escape must not close Admin under the sheet");
+        addInput.value = 'Lyra Bonus';
+        document.getElementById('add-weekly-reward-btn').click();
+        saveBtn.click();
+        await sleep(60);
+        assert(!isOpen(sheet), "Sheet closes after Save Rewards");
+        assert(saveCalls[saveCalls.length - 1].id === lyraId, "Sheet saves the non-active child");
+        assert(!live.weeklyRewardOptions.some(r => r.text === 'Lyra Bonus'), "A non-active save never touches the active child's state");
+        dismissNotifs();
+
+        // 9. The active child's row opens the Rewards tab inline instead.
+        rowBtn(keplerId).click();
+        await sleep(30);
+        assert(!isOpen(sheet) && isOpen(pane) && pane.contains(editor), "Active row opens the Rewards tab inline");
+        assert(weeklyTexts().includes('Ice Cream'), "Inline editor is back on the active child's lists");
+
+        // 10. Dirty inline draft + another child's sheet → ask first, never drop it silently.
+        document.querySelector('#weekly-rewards-list .delete-reward-btn').click();
+        await sleep(10);
+        document.getElementById('admin-tab-children').click();
+        rowBtn(lyraId).click();
+        await sleep(30);
+        assert(isOpen(confirmModal) && !isOpen(sheet), "Opening another child with a dirty inline draft asks first");
+        document.getElementById('confirm-no-btn').click();
+        await sleep(20);
+        assert(!isOpen(sheet) && tab.dataset.dirty === 'true', "Keep editing keeps the inline draft");
+        rowBtn(lyraId).click();
+        await sleep(30);
+        document.getElementById('confirm-yes-btn').click();
+        await sleep(30);
+        assert(isOpen(sheet) && !tab.hasAttribute('data-dirty'), "Discard & continue drops the draft and opens the sheet");
+        cancelBtn.click();
+        await sleep(20);
+        assert(!isOpen(sheet) && isOpen(adminModal), "Cancel closes the sheet back to Admin");
+        tab.click();
+        await sleep(20);
+        assert(pane.contains(editor) && weeklyTexts().includes('Park Trip') && cancelBtn.textContent === 'Discard', "Rewards tab re-mounts inline, reloaded from saved data");
+
+        // 11. No active child: the pane shows the empty state instead of an editor.
+        document.getElementById('close-admin-modal-btn').click();
+        await sleep(30);
+        assert(!isOpen(adminModal), "Clean close needs no guard");
+        helpers.setActiveProfileId(null);
+        await openAdmin();
+        tab.click();
+        await sleep(20);
+        assert(isOpen(document.getElementById('admin-rewards-empty')) && !isOpen(document.getElementById('admin-rewards-editor-host')), "No child selected: empty state, no editor");
+        document.getElementById('close-admin-modal-btn').click();
+        await sleep(30);
+        assert(!isOpen(adminModal), "Admin closes from the empty state");
+
+        // Clean up
+        dismissNotifs();
+        helpers.setSaveProfileRewardsMock(null);
         helpers.setProfilesList([]);
         helpers.setActiveProfileId(null);
         helpers.resetState();

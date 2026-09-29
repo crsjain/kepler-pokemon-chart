@@ -6842,7 +6842,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 #confirm-modal[data-surface="admin"] #confirm-no-btn,
 #edit-rewards-modal #edit-rewards-save-btn,
 #edit-rewards-modal #edit-rewards-cancel-btn,
-#edit-rewards-modal .reward-add-row .pixel-btn {
+:is(#edit-rewards-modal, #admin-modal) .reward-add-row .pixel-btn {
   min-height: 44px;
   border-radius: 10px;
   font-family: 'Fredoka One', cursive;
@@ -6869,7 +6869,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
    dark-blue pixel shadow (routine actions). Owner chose this over white (option A,
    2026-09-29) because white buttons read as form fields. */
 .pixel-btn.adm-secondary,
-#edit-rewards-modal .reward-add-row .pixel-btn {
+:is(#edit-rewards-modal, #admin-modal) .reward-add-row .pixel-btn {
   background: var(--adm-secondary-fill);
   color: var(--adm-primary-pressed);
   border: 2px solid var(--adm-primary);
@@ -6877,7 +6877,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 }
 
 .pixel-btn.adm-secondary:hover,
-#edit-rewards-modal .reward-add-row .pixel-btn:hover {
+:is(#edit-rewards-modal, #admin-modal) .reward-add-row .pixel-btn:hover {
   background: var(--adm-secondary-hover);
 }
 
@@ -6888,7 +6888,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 #admin-modal .admin-task-item input[type="text"].task-name-input,
 #admin-modal .admin-task-instructions input[type="text"].task-instructions-input,
 #admin-modal .admin-task-item select.task-emoji-select,
-#edit-rewards-modal .reward-add-row .pixel-input,
+:is(#edit-rewards-modal, #admin-modal) .reward-add-row .pixel-input,
 #password-modal .password-prompt-input {
   border: 1.5px solid var(--adm-field-line);
   border-radius: 8px;
@@ -6903,7 +6903,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 #admin-modal .admin-task-item input[type="text"].task-name-input:focus,
 #admin-modal .admin-task-instructions input[type="text"].task-instructions-input:focus,
 #admin-modal .admin-task-item select.task-emoji-select:focus,
-#edit-rewards-modal .reward-add-row .pixel-input:focus,
+:is(#edit-rewards-modal, #admin-modal) .reward-add-row .pixel-input:focus,
 #password-modal .password-prompt-input:focus {
   border-color: var(--adm-primary);
 }
@@ -6975,7 +6975,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 #confirm-modal[data-surface="admin"] #confirm-no-btn:active,
 #edit-rewards-modal #edit-rewards-save-btn:active,
 #edit-rewards-modal #edit-rewards-cancel-btn:active,
-#edit-rewards-modal .reward-add-row .pixel-btn:active {
+:is(#edit-rewards-modal, #admin-modal) .reward-add-row .pixel-btn:active {
   transform: translateY(2px);
   box-shadow: none;
 }
@@ -6987,7 +6987,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 }
 
 /* 44×44 icon buttons (Activities 🗑, profile 🎁 / 🗑). X13 targets. */
-#admin-modal .pixel-btn.adm-icon-btn {
+:is(#admin-modal, #edit-rewards-modal) .pixel-btn.adm-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6999,22 +6999,22 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   flex-shrink: 0;
 }
 
-#admin-modal .pixel-btn.adm-icon-btn svg {
+:is(#admin-modal, #edit-rewards-modal) .pixel-btn.adm-icon-btn svg {
   width: 18px;
   height: 18px;
   fill: currentColor;
 }
 
 /* Quiet delete: slate icon, red only on hover/focus (A4: six loud red icons) */
-#admin-modal .pixel-btn.adm-quiet-danger {
+:is(#admin-modal, #edit-rewards-modal) .pixel-btn.adm-quiet-danger {
   background: var(--adm-surface);
   color: var(--adm-ink-2);
   border: 2px solid var(--adm-line-strong);
   box-shadow: none;
 }
 
-#admin-modal .pixel-btn.adm-quiet-danger:hover,
-#admin-modal .pixel-btn.adm-quiet-danger:focus-visible {
+:is(#admin-modal, #edit-rewards-modal) .pixel-btn.adm-quiet-danger:hover,
+:is(#admin-modal, #edit-rewards-modal) .pixel-btn.adm-quiet-danger:focus-visible {
   color: var(--adm-danger);
   border-color: var(--adm-danger);
   background: var(--adm-danger-tint);
@@ -7799,4 +7799,122 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   #admin-modal .admin-nav-sub {
     display: none;
   }
+}
+
+/* ==========================================================================
+   Admin revamp Phase 4 (PRD v2.0 §11.5, proposal §6.3): the rewards editor
+   inline in Admin > Rewards for the active child. The one #rewards-editor
+   subtree is re-parented between #admin-rewards-editor-host and
+   #edit-rewards-modal; in the pane it has no nested scrollers, two columns
+   when the pane is wide enough, and the Activities-style dark save bar.
+   ========================================================================== */
+#admin-modal .admin-rewards-editor-host {
+  container: admin-rewards / inline-size;
+  min-width: 0;
+}
+
+#admin-modal .rewards-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#admin-modal .rewards-editor .reward-modal-grid {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
+  flex-grow: 0;
+  overflow: visible;
+  padding: 0;
+  gap: 12px;
+}
+
+#admin-modal .rewards-editor .reward-modal-grid .admin-section {
+  height: auto;
+  margin: 0;
+  gap: 10px;
+}
+
+#admin-modal .rewards-editor .reward-modal-grid .admin-section h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--adm-ink);
+}
+
+#admin-modal .rewards-editor .admin-tasks-list {
+  max-height: none;
+  overflow: visible;
+  margin: 0;
+}
+
+#admin-modal .rewards-editor .reward-add-row .pixel-btn {
+  min-width: 72px;
+}
+
+@container admin-rewards (min-width: 640px) {
+  #admin-modal .rewards-editor .reward-modal-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* The dark bar sits flush under the editor; the status line is inline-only. */
+#admin-modal .rewards-editor .admin-tasks-actions.adm-savebar {
+  margin: 0 -8px;
+}
+
+#edit-rewards-modal .rewards-editor-status {
+  display: none;
+}
+
+#edit-rewards-modal .rewards-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex-grow: 1;
+}
+
+#edit-rewards-modal .rewards-editor-error {
+  margin: 8px 0 0;
+}
+
+/* Rows wrap to two lines instead of truncating (§6.3); rename field is flat. */
+#admin-modal .rewards-editor .reward-list-item {
+  margin-bottom: 0;
+}
+
+#admin-modal .rewards-editor .admin-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#admin-modal .rewards-editor .reward-item-text {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: 0.95rem;
+}
+
+:is(#admin-modal, #edit-rewards-modal) .reward-edit-input {
+  min-height: 44px;
+  border: 1.5px solid var(--adm-primary);
+  border-radius: 8px;
+  box-shadow: inset 0 2px 3px rgba(15, 23, 42, 0.08);
+  color: var(--adm-ink);
+}
+
+/* Inline, the two reward lists read as ordinary admin cards (no legacy
+   3px frame / dashed rule), matching every other pane. */
+#admin-modal .rewards-editor .reward-modal-grid .admin-section {
+  background: var(--adm-surface);
+  border: 2px solid var(--adm-line);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: none;
+}
+
+#admin-modal .rewards-editor .reward-modal-grid .admin-section h3 {
+  border-bottom: none;
+  padding-bottom: 0;
 }

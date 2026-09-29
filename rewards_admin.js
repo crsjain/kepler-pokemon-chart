@@ -1,6 +1,13 @@
 /**
- * Reward editor (#edit-rewards-modal) — extracted from app.js as a pure move.
- * See docs/prd_admin_panel_redesign.md §7.
+ * Reward editor — extracted from app.js as a pure move (PRD §7), then made
+ * inline for the active child (PRD v2.0 §11.5 Phase 4).
+ *
+ * There is ONE editor subtree (#rewards-editor). It is re-parented:
+ *  - into #admin-rewards-editor-host (Admin > Rewards) for the active child,
+ *    with a dark sticky Save/Discard bar and a dirty dot on the tab;
+ *  - back into #edit-rewards-modal for a non-active child opened from a
+ *    Family row (Q3a), with the stacked-sheet Cancel / Save Rewards.
+ * IDs therefore stay unique in both modes.
  *
  * app.js wires this module through initRewardsAdmin(). Bindings that app.js or
  * the test helpers REASSIGN (profilesList, activeProfileId, the
@@ -21,7 +28,8 @@ let deps = {
   getActiveProfileId: notInjected('getActiveProfileId', null),
   saveRewards: notInjected('saveRewards', Promise.resolve()),
   renderRewardDropdowns: notInjected('renderRewardDropdowns'),
-  showCustomNotification: notInjected('showCustomNotification')
+  showCustomNotification: notInjected('showCustomNotification'),
+  showCustomConfirm: notInjected('showCustomConfirm')
 };
 
 export function initRewardsAdmin(callbacks) {
@@ -52,6 +60,18 @@ const newMegaRewardInput = document.getElementById('new-mega-reward-input');
 const addMegaRewardBtn = document.getElementById('add-mega-reward-btn');
 const editRewardsCancelBtn = document.getElementById('edit-rewards-cancel-btn');
 const editRewardsSaveBtn = document.getElementById('edit-rewards-save-btn');
+const rewardsEditor = document.getElementById('rewards-editor');
+const rewardsEditorActions = document.getElementById('rewards-editor-actions');
+const rewardsEditorStatus = document.getElementById('rewards-editor-status');
+const rewardsEditorError = document.getElementById('rewards-editor-error');
+const sheetContent = editRewardsModal ? editRewardsModal.querySelector('.modal-content') : null;
+const inlineHost = document.getElementById('admin-rewards-editor-host');
+const inlineEmpty = document.getElementById('admin-rewards-empty');
+
+// 'inline' (Admin > Rewards, active child) | 'sheet' (#edit-rewards-modal) | null
+let editorMode = null;
+let draftBaseline = null;
+let saving = false;
 
 let editingProfileId = null;
 let tempWeeklyRewards = [];
@@ -95,19 +115,54 @@ export function bindRewardsEditorEvents() {
 
   if (editRewardsCancelBtn) {
     editRewardsCancelBtn.addEventListener('click', () => {
-      editRewardsModal.classList.add('hidden');
-      document.querySelector('.layout-container').classList.remove('blurred');
-      discardRewardsDraft();
+      if (editorMode === 'inline') {
+        // Discard: back to the saved lists; the editor stays open inline.
+        const hadFocus = rewardsEditorActions && rewardsEditorActions.contains(document.activeElement);
+        loadRewardsDraft(editingProfileId);
+        if (hadFocus && newWeeklyRewardInput) newWeeklyRewardInput.focus({ preventScroll: true });
+        return;
+      }
+      closeRewardsSheet();
     });
   }
 
   if (editRewardsSaveBtn) {
-    editRewardsSaveBtn.addEventListener('click', async () => {
-      if (!editingProfileId) return;
-      
-      try {
+    editRewardsSaveBtn.addEventListener('click', () => {
+      const hadFocus = rewardsEditorActions && rewardsEditorActions.contains(document.activeElement);
+      commitRewardsDraft().then(ok => {
+        if (ok && hadFocus && editorMode === 'inline' && newWeeklyRewardInput) {
+          newWeeklyRewardInput.focus({ preventScroll: true });
+        }
+      });
+    });
+  }
+
+  // Enter in an add field adds the reward (keyboard parity with the button).
+  [[newWeeklyRewardInput, addWeeklyRewardBtn], [newMegaRewardInput, addMegaRewardBtn]].forEach(([input, btn]) => {
+    if (!input || !btn) return;
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        btn.click();
+      }
+    });
+  });
+}
+
+/**
+ * Save for both modes. Resolves true on success. A reject keeps the draft and
+ * shows an inline error (§6.3 async states); the editor stays open.
+ */
+async function commitRewardsDraft() {
+  if (!editingProfileId || saving) return false;
+  const mode = editorMode;
+  const saveLabel = mode === 'inline' ? 'Save' : 'Save Rewards';
+  saving = true;
+  let ok = false;
+  try {
+        setRewardsError('');
         editRewardsSaveBtn.disabled = true;
-        editRewardsSaveBtn.textContent = 'Saving...';
+        editRewardsSaveBtn.textContent = 'Saving…';
         
         await saveProfileRewardsToCloudFn(editingProfileId, tempWeeklyRewards, tempMegaRewards);
         
@@ -153,35 +208,129 @@ export function bindRewardsEditorEvents() {
         }
         
         showToast("Saved ✨", "Rewards customized successfully!");
-        editRewardsModal.classList.add('hidden');
-        document.querySelector('.layout-container').classList.remove('blurred');
-      } catch (err) {
-        console.error("Failed to save rewards:", err);
-        adminNotice("Error ❌", "Failed to save customized rewards.");
-      } finally {
-        editRewardsSaveBtn.disabled = false;
-        editRewardsSaveBtn.textContent = 'Save Rewards';
-        discardRewardsDraft();
-      }
-    });
+        ok = true;
+  } catch (err) {
+    console.error("Failed to save rewards:", err);
+    setRewardsError("Couldn't save rewards. Your changes are still here — check the connection and try again.");
+  } finally {
+    saving = false;
+    editRewardsSaveBtn.disabled = false;
+    editRewardsSaveBtn.textContent = saveLabel;
   }
+  if (ok) {
+    if (mode === 'sheet') {
+      closeRewardsSheet();
+    } else if (mode === 'inline' && editorMode === 'inline') {
+      loadRewardsDraft(editingProfileId); // re-baseline on the saved lists
+    }
+  }
+  return ok;
+}
 
-  // Admin > Rewards pane launcher (D5): same stacked editor, for the active child.
-  const adminCustomizeRewardsBtn = document.getElementById('admin-customize-rewards-btn');
-  if (adminCustomizeRewardsBtn) {
-    adminCustomizeRewardsBtn.addEventListener('click', () => {
-      const activeId = getActiveProfileId();
-      const profile = activeId ? getProfilesList().find(p => p.id === activeId) : null;
-      if (!profile) {
-        adminNotice(
-          "No Child Selected 👥",
-          "Sign in and pick a child profile first, then customize their rewards here."
-        );
-        return;
-      }
-      openEditRewardsModal(profile.id, profile.name);
-    });
+function setRewardsError(message) {
+  if (!rewardsEditorError) return;
+  rewardsEditorError.textContent = message;
+  rewardsEditorError.classList.toggle('hidden', !message);
+}
+
+function closeRewardsSheet() {
+  editRewardsModal.classList.add('hidden');
+  document.querySelector('.layout-container').classList.remove('blurred');
+  discardRewardsDraft();
+  editorMode = null;
+  setRewardsError('');
+  refreshRewardsDirty();
+}
+
+function draftSnapshot() {
+  return JSON.stringify([tempWeeklyRewards, tempMegaRewards, tempSelectedReward, tempSelectedMega]);
+}
+
+/** True when the inline (active-child) draft differs from what was loaded. */
+export function isInlineRewardsDirty() {
+  return editorMode === 'inline' && !!editingProfileId && draftBaseline !== null &&
+    draftSnapshot() !== draftBaseline;
+}
+
+/** Guard "Save & close": saves the inline draft; resolves false on failure. */
+export function saveInlineRewards() {
+  if (!isInlineRewardsDirty()) return Promise.resolve(true);
+  return commitRewardsDraft();
+}
+
+/** Admin closed (or Discard in the guard): drop the inline draft. */
+export function discardInlineRewards() {
+  if (editorMode !== 'inline') return;
+  discardRewardsDraft();
+  editorMode = null;
+  setRewardsError('');
+  refreshRewardsDirty();
+}
+
+/** Save bar, status line and the Rewards tab's dirty dot follow the draft. */
+function refreshRewardsDirty() {
+  const dirty = isInlineRewardsDirty();
+  if (rewardsEditorActions && editorMode === 'inline') {
+    rewardsEditorActions.classList.toggle('hidden', !dirty && !saving);
   }
+  if (rewardsEditorStatus) rewardsEditorStatus.textContent = dirty ? '● Unsaved changes' : '';
+  const tab = document.getElementById('admin-tab-rewards');
+  if (tab) {
+    if (dirty) {
+      tab.dataset.dirty = 'true';
+      tab.title = 'Rewards has unsaved changes';
+    } else {
+      delete tab.dataset.dirty;
+      tab.removeAttribute('title');
+    }
+  }
+}
+
+/** Moves the one editor subtree and sets the per-mode chrome. */
+function mountEditor(mode) {
+  if (!rewardsEditor) return;
+  const target = mode === 'inline' ? inlineHost : sheetContent;
+  if (target && rewardsEditor.parentElement !== target) target.appendChild(rewardsEditor);
+  editorMode = mode;
+  if (mode === 'inline') {
+    rewardsEditorActions.className = 'admin-tasks-actions adm-savebar hidden';
+    editRewardsCancelBtn.className = 'pixel-btn adm-tertiary';
+    editRewardsCancelBtn.textContent = 'Discard';
+    editRewardsSaveBtn.className = 'pixel-btn adm-primary';
+    editRewardsSaveBtn.textContent = 'Save';
+  } else {
+    rewardsEditorActions.className = 'password-prompt-actions';
+    editRewardsCancelBtn.className = 'pixel-btn greyed-out';
+    editRewardsCancelBtn.textContent = 'Cancel';
+    editRewardsSaveBtn.className = 'pixel-btn success';
+    editRewardsSaveBtn.textContent = 'Save Rewards';
+  }
+}
+
+/**
+ * Admin > Rewards was shown. Mounts the editor inline for the active child.
+ * A dirty draft for the same child survives tab switches; otherwise the
+ * lists are (re)loaded so a reopen never shows stale data.
+ */
+export function showInlineRewards() {
+  if (!inlineHost || !rewardsEditor) return;
+  if (editorMode === 'sheet' && !editRewardsModal.classList.contains('hidden')) return;
+  const activeId = getActiveProfileId();
+  const profile = activeId ? getProfilesList().find(p => p.id === activeId) : null;
+  if (!profile) {
+    discardInlineRewards();
+    if (inlineEmpty) inlineEmpty.classList.remove('hidden');
+    inlineHost.classList.add('hidden');
+    return;
+  }
+  if (inlineEmpty) inlineEmpty.classList.add('hidden');
+  inlineHost.classList.remove('hidden');
+  if (editorMode === 'inline' && editingProfileId === profile.id &&
+      rewardsEditor.parentElement === inlineHost && isInlineRewardsDirty()) {
+    return;
+  }
+  mountEditor('inline');
+  loadRewardsDraft(profile.id);
 }
 
 /** Drops every editor temp: lists, draft selection, inline-edit and drag state. */
@@ -195,6 +344,7 @@ function discardRewardsDraft() {
   tempSelectedReward = null;
   tempSelectedMega = null;
   selectionAtOpen = { reward: null, mega: null };
+  draftBaseline = null;
 }
 
 function escapeHtml(str) {
@@ -207,7 +357,41 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+/**
+ * Family row "Edit Rewards" for a NON-active child (Q3a): the stacked sheet.
+ * An unsaved inline draft for the active child is never dropped silently.
+ */
 export function openEditRewardsModal(profileId, profileName) {
+  if (isInlineRewardsDirty()) {
+    const activeProfile = getProfilesList().find(p => p.id === editingProfileId);
+    const who = activeProfile && activeProfile.name ? `${activeProfile.name}'s` : 'The';
+    deps.showCustomConfirm(
+      'Unsaved Rewards ✏️',
+      `${escapeHtml(who)} reward changes in the Rewards tab aren't saved yet. Discard them and edit ${escapeHtml(profileName)}'s rewards?`,
+      () => {
+        discardInlineRewards();
+        openEditRewardsModal(profileId, profileName);
+      },
+      null,
+      'Discard & continue',
+      'Keep editing',
+      'pixel-btn danger',
+      'pixel-btn',
+      { surface: 'admin' }
+    );
+    return;
+  }
+  mountEditor('sheet');
+  setRewardsError('');
+  loadRewardsDraft(profileId);
+  editRewardsTitle.textContent = `Customize Rewards for ${profileName}`;
+  editRewardsModal.classList.remove('hidden');
+  document.querySelector('.layout-container').classList.add('blurred');
+  refreshRewardsDirty();
+}
+
+/** Loads the saved lists (and, for the active child, the selection) as the draft. */
+function loadRewardsDraft(profileId) {
   editingProfileId = profileId;
   editingRewardState = { type: null, index: -1 };
   draggedRewardInfo = null;
@@ -225,21 +409,27 @@ export function openEditRewardsModal(profileId, profileName) {
   tempSelectedReward = editingActiveChild ? state.reward : null;
   tempSelectedMega = editingActiveChild ? state.megaReward : null;
   selectionAtOpen = { reward: tempSelectedReward, mega: tempSelectedMega };
-  
-  editRewardsTitle.textContent = `Customize Rewards for ${profileName}`;
-  renderEditRewardsLists();
-  
+  draftBaseline = draftSnapshot();
+  setRewardsError('');
+
   // Clear inputs
   newWeeklyRewardInput.value = '';
   newMegaRewardInput.value = '';
-  
-  editRewardsModal.classList.remove('hidden');
-  document.querySelector('.layout-container').classList.add('blurred');
+
+  renderEditRewardsLists();
 }
 
 function renderEditRewardsLists() {
   renderRewardList(weeklyRewardsList, tempWeeklyRewards, 'weekly');
   renderRewardList(megaRewardsList, tempMegaRewards, 'mega');
+  refreshRewardsDirty();
+}
+
+/** After an inline rename closes, focus returns to that row's Edit button. */
+function focusRewardEditButton(type, idx) {
+  const container = type === 'weekly' ? weeklyRewardsList : megaRewardsList;
+  const btn = container && container.querySelector(`.edit-reward-btn[data-index="${idx}"]`);
+  if (btn) btn.focus({ preventScroll: true });
 }
 
 function renderRewardList(container, list, type) {
@@ -260,13 +450,13 @@ function renderRewardList(container, list, type) {
       row.innerHTML = `
         <input type="text" class="reward-edit-input" value="${escapeHtml(item.text)}" placeholder="Enter reward description...">
         <div class="reward-actions">
-          <button class="pixel-btn success small save-reward-edit-btn" data-type="${type}" data-index="${idx}" title="Save Changes">
-            <svg class="admin-btn-icon" viewBox="0 0 512 512" fill="white" xmlns="http://www.w3.org/2000/svg">
+          <button class="pixel-btn adm-primary adm-icon-btn save-reward-edit-btn" data-type="${type}" data-index="${idx}" title="Save Changes" aria-label="Save reward name">
+            <svg class="admin-btn-icon" viewBox="0 0 512 512" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
               <path d="M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.404c-9.998 9.997-26.208 9.997-36.204 0z"/>
             </svg>
           </button>
-          <button class="pixel-btn greyed-out small cancel-reward-edit-btn" data-type="${type}" data-index="${idx}" title="Cancel Edit">
-            <svg class="admin-btn-icon" viewBox="0 0 352 512" fill="white" xmlns="http://www.w3.org/2000/svg">
+          <button class="pixel-btn adm-tertiary adm-icon-btn cancel-reward-edit-btn" data-type="${type}" data-index="${idx}" title="Cancel Edit" aria-label="Cancel rename">
+            <svg class="admin-btn-icon" viewBox="0 0 352 512" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
               <path d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"/>
             </svg>
           </button>
@@ -290,11 +480,13 @@ function renderRewardList(container, list, type) {
         }
         editingRewardState = { type: null, index: -1 };
         renderEditRewardsLists();
+        focusRewardEditButton(type, idx);
       };
       
       const performCancel = () => {
         editingRewardState = { type: null, index: -1 };
         renderEditRewardsLists();
+        focusRewardEditButton(type, idx);
       };
       
       saveBtn.addEventListener('click', performSave);
@@ -305,7 +497,10 @@ function renderRewardList(container, list, type) {
           e.preventDefault();
           performSave();
         } else if (e.key === 'Escape') {
+          // The rename owns Escape: it must not also close Admin or the sheet
+          // (admin.js / app.js listen on document / window) (§11.6 #7).
           e.preventDefault();
+          e.stopPropagation();
           performCancel();
         }
       });
@@ -321,13 +516,13 @@ function renderRewardList(container, list, type) {
         <div class="reward-drag-handle" title="Drag to reorder" aria-label="Drag to reorder">⠿</div>
         <span class="reward-item-text" title="${escapeHtml(item.text)}">${escapeHtml(item.text)}</span>
         <div class="reward-actions">
-          <button class="pixel-btn info small edit-reward-btn" data-type="${type}" data-index="${idx}" title="Edit Reward">
-            <svg class="admin-btn-icon" viewBox="0 0 512 512" fill="white" xmlns="http://www.w3.org/2000/svg">
+          <button class="pixel-btn adm-secondary adm-icon-btn edit-reward-btn" data-type="${type}" data-index="${idx}" title="Edit Reward" aria-label="Rename ${escapeHtml(item.text)}">
+            <svg class="admin-btn-icon" viewBox="0 0 512 512" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
               <path d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.6 23.7 6.1l120.4-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-91.9 27 27-91.9 203.8-203.8 64.9 64.9L160 399.4zM494.6 119.5l-44.1-44.1c-23.4-23.4-61.4-23.4-84.9 0l-21.7 21.7 64.9 64.9 21.7-21.7c23.4-23.4 23.4-61.4 0-84.9z"/>
             </svg>
           </button>
-          <button class="pixel-btn danger small delete-reward-btn" data-type="${type}" data-index="${idx}" title="Delete Reward">
-            <svg class="admin-btn-icon" viewBox="0 0 448 512" fill="white" xmlns="http://www.w3.org/2000/svg">
+          <button class="pixel-btn adm-quiet-danger adm-icon-btn delete-reward-btn" data-type="${type}" data-index="${idx}" title="Delete Reward" aria-label="Delete ${escapeHtml(item.text)}">
+            <svg class="admin-btn-icon" viewBox="0 0 448 512" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
               <path d="M135.2 17.7C140.6 6.8 151.7 0 163.8 0H284.2C296.3 0 307.4 6.8 312.8 17.7L320 32H384C401.7 32 416 46.3 416 64C416 81.7 401.7 96 384 96H64C46.3 96 32 81.7 32 64C32 46.3 46.3 32 64 32H128L135.2 17.7zM32 128H416V448C416 483.3 387.3 512 352 512H96C60.7 512 32 483.3 32 448V128zM96 176C96 162.7 85.3 152 72 152C58.7 152 48 162.7 48 176V408C48 421.3 58.7 432 72 432C85.3 432 96 421.3 96 408V176z"/>
             </svg>
           </button>

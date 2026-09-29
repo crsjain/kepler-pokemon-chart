@@ -377,7 +377,7 @@ Each phase is its own local commit. Run `node run_headless_tests.js` after each 
 > v2.0 (§11) schedules four of these five. The phase that closes each is noted inline.
 
 - [ ] **Hold-to-unlock for Wipe All Progress** (Rule 6). It needs a TC27 update, so it's deferred to keep v1.0 zero-regression. → **v2.0 Phase 5** (plus Delete child).
-- [ ] **Inline the rewards editor into the Rewards pane** (D5's alternative) once the extraction exists. It retires the `#edit-rewards-modal` wrapper (2 test refs). → **v2.0 Phase 4**, for the active child only; the wrapper is *kept* for non-active children (Q3).
+- [x] **Inline the rewards editor into the Rewards pane** (D5's alternative) once the extraction exists. It retires the `#edit-rewards-modal` wrapper (2 test refs). → **v2.0 Phase 4**, for the active child only; the wrapper is *kept* for non-active children (Q3).
 - [ ] **In-panel child picker** (D3's rejected option), if parents find leaving Admin to switch children annoying in practice. It needs non-active profile read/write. → still deferred.
 - [x] **Arrow-key roving focus** in the tablist (WAI-ARIA tabs pattern). Tab and Enter work in v1.0. → **v2.0 Phase 3**.
 - [ ] **Rule 8 sweep of the login, add-profile, and profile-select modals** ([`index.html:768–830`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/index.html#L768-L830)). → **v2.0 Phase 5** (inline `z-index` on `#guide-modal`, `#family-login-modal`, `#profile-select-modal`, `#add-profile-modal`).
@@ -491,10 +491,10 @@ Source: the rev 2 revamp proposal and its 5-stage panel review (Batch 1 session,
 - [x] 4. **Passcode findability:** tab `title` + rail sub-label, card "Parent passcode 🔑", visible without scroll at TP/TL with 2 children. TC93 updated for 5 tabs. *(Phase 3: heading visible without scroll at TP, TL, desktop and phone even with 3 children; TC93 + TC100.)*
 - [ ] 5. **2s hold only on Delete child and Reset progress**, keyboard hold, ring from frame 1, `{hold:0}` test override.
 - [ ] 6. **"↩ Admin" is secondary**, re-prompts the passcode; Done ✅ stays primary.
-- [ ] 7. **Escape layering** handles inline edits (stopPropagation); Android back via `pushState`, tested. *(Android back + guard Esc done in Phase 2 / TC99; the inline reward-rename Esc lands with Phase 4.)*
+- [x] 7. **Escape layering** handles inline edits (stopPropagation); Android back via `pushState`, tested. *(Android back + guard Esc: Phase 2 / TC99. Inline reward-rename Esc stops propagation and returns focus to the row: Phase 4 / TC97 step 5.)*
 - [x] 8. **Reorder active tasks only**; inactive positions kept; a historical week's row order is unchanged after a reorder; TC58 cleanup removes by id. *(Phase 2, TC99: retired tasks keep their array index and a past week's row **set** is unchanged. Active tasks shown in a past week do follow the new order, because the grid renders in array order; fully frozen history order would need a persisted per-week order and a schema migration — not done. TC58 no longer pops: its draft is discarded through the guard.)*
 - [x] 9. **Phase 3 responsive ahead of Phase 4** — satisfied by the 0b portrait-tablet top-tab fix. `viewport-fit=cover` is **not** shipped without the kid-HUD safe-area padding and capture (deferred).
-- [ ] 10. **Phase 4 re-parenting** keeps IDs unique; the non-active-child sheet keeps its modal asserts; Add child never calls `selectProfile()` under Admin.
+- [x] 10. **Phase 4 re-parenting** keeps IDs unique; the non-active-child sheet keeps its modal asserts; Add child never calls `selectProfile()` under Admin. *(Phase 4: one `#rewards-editor` subtree moves between `#admin-rewards-editor-host` and `#edit-rewards-modal`; TC101 asserts unique IDs, the sheet for a non-active child, and Esc under the sheet. Add child: TC100.)*
 - [ ] 11. **Rule 8 sweep:** inline `z-index` removed from `#guide-modal`, `#family-login-modal`, `#profile-select-modal`, `#add-profile-modal`.
 - [x] 12. **Fold into this PRD** (v2.0, this section + revision row).
 

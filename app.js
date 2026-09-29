@@ -226,7 +226,7 @@ import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault, getStarsFromDates } from './vault.js';
 import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES, getStageIndexForLevel } from './pokemon_data.js';
 import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
-import { initAdmin, refreshAdminScopeChip, adminNotice, showAdminToast, setReadBackupCodeMock, requestCloseAdmin } from './admin.js';
+import { initAdmin, refreshAdminScopeChip, adminNotice, showAdminToast, setReadBackupCodeMock, requestCloseAdmin, openAdminRewardsTab } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
 import { initShop, openPokemonShop, resetShopSession } from './shop.js';
 
@@ -864,7 +864,12 @@ function renderAdminProfilesList() {
       e.stopPropagation();
       const id = editRewardsBtn.getAttribute('data-id');
       const name = editRewardsBtn.getAttribute('data-name');
-      openEditRewardsModal(id, name);
+      // Active child edits inline in the Rewards tab; others get the sheet (Q3a).
+      if (id === activeProfileId) {
+        openAdminRewardsTab();
+      } else {
+        openEditRewardsModal(id, name);
+      }
     });
 
     const deleteBtn = item.querySelector('.delete-profile-btn');
@@ -1073,7 +1078,8 @@ initRewardsAdmin({
   saveRewards: (...args) => saveProfileRewardsToCloudFn(...args),
   renderRewardDropdowns: () => renderRewardDropdowns(),
   showCustomNotification: (...args) => showCustomNotification(...args),
-  showToast: (title, message) => showAdminToast(title, message)
+  showToast: (title, message) => showAdminToast(title, message),
+  showCustomConfirm: (...args) => showCustomConfirm(...args)
 });
 initFirebaseUI();
 preloadImages();

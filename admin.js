@@ -9,6 +9,7 @@ import {
   getStageInfo
 } from './state.js';
 import { formatLocalDate } from './date_utils.js';
+import { showInlineRewards, isInlineRewardsDirty, saveInlineRewards, discardInlineRewards } from './rewards_admin.js';
 
 let appCallbacks = {
   renderState: () => {},
@@ -679,6 +680,18 @@ function showAdminSection(section) {
   modal.querySelectorAll('.admin-pane').forEach(pane => {
     pane.classList.toggle('hidden', pane.dataset.adminSection !== section);
   });
+  // Rewards edits inline for the active child (Phase 4). Re-parents the one
+  // editor subtree; a dirty draft for the same child is kept, never re-rendered.
+  if (section === 'rewards') showInlineRewards();
+}
+
+/** Family row "Edit Rewards" on the active child opens the Rewards tab (§6.4). */
+export function openAdminRewardsTab() {
+  showAdminSection('rewards');
+  const tab = document.getElementById('admin-tab-rewards');
+  if (tab && adminModal && !adminModal.classList.contains('hidden')) {
+    tab.focus({ preventScroll: true });
+  }
 }
 
 /**
@@ -745,6 +758,7 @@ function closeAdminPanel() {
   if (!adminModal) return;
   adminModal.classList.add('hidden');
   renderAdminTasksList();
+  discardInlineRewards();
   releaseAdminHistoryEntry();
   returnFocusFromAdmin();
 }
@@ -773,7 +787,7 @@ export function requestCloseAdmin(onClosed) {
     done();
     return;
   }
-  if (!isActivitiesDirty()) {
+  if (!isAdminDirty()) {
     closeAdminPanel();
     done();
     return;
@@ -782,20 +796,40 @@ export function requestCloseAdmin(onClosed) {
   openUnsavedGuard(done);
 }
 
-function openUnsavedGuard(done) {
+/** Any Admin draft (Activities, or the inline Rewards editor) is unsaved. */
+function isAdminDirty() {
+  return isActivitiesDirty() || isInlineRewardsDirty();
+}
+
+function unsavedGuardMessage() {
   const n = countActivityChanges();
+  const activities = `${n} unsaved change${n === 1 ? '' : 's'} in Activities`;
+  const rewards = isInlineRewardsDirty();
+  if (n > 0 && rewards) return `You have ${activities}, and unsaved changes in Rewards.`;
+  if (rewards) return 'You have unsaved changes in Rewards.';
+  return `You have ${activities}.`;
+}
+
+function openUnsavedGuard(done) {
   const keepEditing = () => { unsavedGuardOpen = false; };
   unsavedGuardOpen = true;
   showCustomConfirm(
     'Unsaved Changes ✏️',
-    `You have ${n} unsaved change${n === 1 ? '' : 's'} in Activities.`,
-    () => {
+    unsavedGuardMessage(),
+    async () => {
       unsavedGuardOpen = false;
-      // A failed save (empty name, conflict) keeps Admin open with the draft.
-      if (saveAdminTasks()) {
-        closeAdminPanel();
-        done();
+      // A failed save (empty name, conflict, rewards reject) keeps Admin open
+      // with every draft intact.
+      if (isActivitiesDirty() && !saveAdminTasks()) return;
+      if (isInlineRewardsDirty()) {
+        const ok = await saveInlineRewards();
+        if (!ok) {
+          showAdminSection('rewards');
+          return;
+        }
       }
+      closeAdminPanel();
+      done();
     },
     keepEditing,
     'Save & close',
@@ -860,7 +894,7 @@ function handleAdminPopState() {
     return;
   }
   if (!adminModal || adminModal.classList.contains('hidden')) return;
-  if (isActivitiesDirty()) {
+  if (isAdminDirty()) {
     pushAdminHistoryEntry(); // stay in Admin; the next Back asks again
     if (!isUnsavedGuardOpen()) openUnsavedGuard(() => {});
     return;
