@@ -8663,7 +8663,7 @@ async function runSuite() {
         const errBtn = errNotif && errNotif.querySelector('.notif-close-btn');
         assert(errNotif && errNotif.classList.contains('adm-surface'), "Admin error notification must carry .adm-surface");
         assert(errBtn.textContent === 'Got it' && errBtn.classList.contains('adm-secondary') && !errBtn.classList.contains('greyed-out'), "Admin error CTA: 'Got it', admin secondary, never .greyed-out");
-        assert(rgb(errBtn) === 'rgb(255, 255, 255)', `'Got it' must be the white secondary, got ${rgb(errBtn)}`);
+        assert(rgb(errBtn) === 'rgb(227, 237, 251)', `'Got it' must be the tonal-blue secondary, got ${rgb(errBtn)}`);
         escOnDocument();
         await sleep(20);
         assert(isOpen(adminModal), "Escape must not close Admin underneath an open notification");

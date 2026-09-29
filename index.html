@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.68">
+  <link rel="stylesheet" href="style.css?v=10.69">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script type="importmap">
   {
@@ -907,8 +907,9 @@
           <div class="admin-action-group">
             <h4>Parent Passcode</h4>
             <div class="admin-option-hint">One passcode for the whole family. It applies to every child.</div>
-            <div class="admin-option-row">
-              <input type="password" id="admin-new-passcode-input" class="pixel-input" placeholder="New passcode" minlength="4">
+            <div class="adm-field">
+              <label for="admin-new-passcode-input" class="adm-field-label">New passcode</label>
+              <input type="password" id="admin-new-passcode-input" class="pixel-input" placeholder="At least 4 characters" minlength="4">
             </div>
             <button id="admin-change-passcode-btn" class="pixel-btn adm-primary">Update Passcode</button>
           </div>
@@ -920,15 +921,15 @@
           <div class="admin-action-group">
             <h4>This child<span class="admin-child-name" data-admin-child-name></span></h4>
             <div class="admin-action-row-buttons">
-              <button id="admin-export-btn" class="pixel-btn adm-secondary" title="Export current child's progress code to clipboard">Export Child</button>
-              <button id="admin-import-btn" class="pixel-btn adm-secondary" title="Import current child's progress from clipboard code">Import Child</button>
+              <button id="admin-export-btn" class="pixel-btn adm-secondary" title="Export current child's progress code to clipboard">📤 Export Child</button>
+              <button id="admin-import-btn" class="pixel-btn adm-secondary" title="Import current child's progress from clipboard code">📥 Import Child</button>
             </div>
           </div>
           <div class="admin-action-group">
             <h4>Whole family</h4>
             <div class="admin-action-row-buttons">
-              <button id="admin-cloud-export-btn" class="pixel-btn adm-secondary" title="Export all family profiles and settings code to clipboard">Export Family</button>
-              <button id="admin-cloud-import-btn" class="pixel-btn adm-secondary" title="Import all family profiles and settings from clipboard code">Import Family</button>
+              <button id="admin-cloud-export-btn" class="pixel-btn adm-secondary" title="Export all family profiles and settings code to clipboard">📤 Export Family</button>
+              <button id="admin-cloud-import-btn" class="pixel-btn adm-secondary" title="Import all family profiles and settings from clipboard code">📥 Import Family</button>
             </div>
           </div>
           <div class="admin-action-group">

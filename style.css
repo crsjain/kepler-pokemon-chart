@@ -6757,6 +6757,9 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   --adm-primary: #2a71d0;      /* Poké Blue, admin only (Q13); white text 4.80:1 (AA) */
   --adm-primary-hover: #245fb0;
   --adm-primary-pressed: #1d4f90; /* 8.2:1 */
+  --adm-secondary-fill: #e3edfb;  /* tonal blue; #1d4f90 text on it 6.9:1 (6.2:1 on hover) */
+  --adm-secondary-hover: #d2e2f8;
+  --adm-field-line: #7d8ca3;      /* flat field border, 3.4:1 non-text contrast on white */
   --adm-danger: #dc2626;       /* white text 4.83:1 */
   --adm-danger-hover: #b91c1c;
   --adm-danger-tint: #fef2f2;
@@ -6804,19 +6807,70 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   background: var(--adm-primary-hover);
 }
 
-/* Secondary: white fill, charcoal text, 2px frame, 2px shadow (routine actions) */
+/* Secondary: tonal blue — light-blue fill, dark-blue text (7.5:1), blue frame +
+   dark-blue pixel shadow (routine actions). Owner chose this over white (option A,
+   2026-09-29) because white buttons read as form fields. */
 .pixel-btn.adm-secondary,
 #edit-rewards-modal .reward-add-row .pixel-btn {
-  background: var(--adm-surface);
-  color: var(--adm-ink);
-  border: 2px solid var(--adm-frame);
-  box-shadow: 0 2px 0 var(--adm-frame);
+  background: var(--adm-secondary-fill);
+  color: var(--adm-primary-pressed);
+  border: 2px solid var(--adm-primary);
+  box-shadow: 0 3px 0 var(--adm-primary-pressed);
 }
 
 .pixel-btn.adm-secondary:hover,
 #edit-rewards-modal .reward-add-row .pixel-btn:hover {
-  background: var(--adm-canvas);
+  background: var(--adm-secondary-hover);
 }
+
+/* ---- Form fields: flat, thin slate border, slight inset, left-aligned — the
+   opposite of the framed + shadowed button dialect, so the two never look alike. */
+#admin-modal .pixel-input,
+#admin-modal .admin-option-row select.pixel-select,
+#admin-modal .admin-task-item input[type="text"].task-name-input,
+#admin-modal .admin-task-instructions input[type="text"].task-instructions-input,
+#admin-modal .admin-task-item select.task-emoji-select,
+#edit-rewards-modal .reward-add-row .pixel-input,
+#password-modal .password-prompt-input {
+  border: 1.5px solid var(--adm-field-line);
+  border-radius: 8px;
+  background-color: var(--adm-surface);
+  box-shadow: inset 0 2px 3px rgba(15, 23, 42, 0.08);
+  color: var(--adm-ink);
+  text-align: left;
+}
+
+#admin-modal .pixel-input:focus,
+#admin-modal .admin-option-row select.pixel-select:focus,
+#admin-modal .admin-task-item input[type="text"].task-name-input:focus,
+#admin-modal .admin-task-instructions input[type="text"].task-instructions-input:focus,
+#admin-modal .admin-task-item select.task-emoji-select:focus,
+#edit-rewards-modal .reward-add-row .pixel-input:focus,
+#password-modal .password-prompt-input:focus {
+  border-color: var(--adm-primary);
+}
+
+#admin-modal .pixel-input,
+#password-modal .password-prompt-input {
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+/* Visible label above a field (replaces placeholder-as-label) */
+#admin-modal .adm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 560px;
+}
+
+#admin-modal .adm-field-label {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--adm-ink);
+}
+
 
 /* Tertiary: white, 2px slate border, no shadow — Cancel / Close. A real
    (not disabled-looking) exit; replaces .greyed-out on admin surfaces (X3). */
@@ -6983,14 +7037,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
    Poké Blue + white only; the wrong-code line is calm ink text, no red, no
    animation. */
 #password-modal .password-prompt-input {
-  border: 2px solid var(--adm-line-strong);
-  border-radius: 10px;
-  min-height: 48px;
-  color: var(--adm-ink);
-}
-
-#password-modal .password-prompt-input:focus {
-  border-color: var(--adm-primary);
+  min-height: 48px; /* border / fill come from the shared admin field style above */
 }
 
 #password-modal #password-prompt-desc {
