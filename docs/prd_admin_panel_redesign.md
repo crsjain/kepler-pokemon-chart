@@ -1,10 +1,10 @@
 # PRD: Parent Admin Panel Redesign (Left Navigation)
 
 **Document**: `docs/prd_admin_panel_redesign.md`  
-**Version**: 1.2.0  
-**Status**: Implemented (Checkpoint 66)  
+**Version**: 2.0.0  
+**Status**: v1.2 implemented (Checkpoint 66) · **v2.0 UX revamp in progress** — Batch 1 (Phases 0a/0b) shipped in Checkpoint 68, Batch 2 (Phases 1–5) being implemented. See **§11** for the v2.0 spec; it supersedes v1.x where they conflict.  
 **Authors**: crsjain & Jetski  
-**Requested By**: crsjain (2026-09-20, seed) · specced 2026-09-24 (Checkpoint 61) · amended 2026-09-25 (Checkpoint 62: D7, D8) · implemented 2026-09-28 (Checkpoint 66)  
+**Requested By**: crsjain (2026-09-20, seed) · specced 2026-09-24 (Checkpoint 61) · amended 2026-09-25 (Checkpoint 62: D7, D8) · implemented 2026-09-28 (Checkpoint 66) · revamp decisions locked 2026-09-28/29 (§11.2)  
 **Target Systems**: `index.html`, `style.css`, `admin.js`, `app.js`, `rewards_admin.js`, `tests.js`, `service-worker.js`  
 **Schema Impact**: **None** — no new persisted field (current schema is V19 as of Checkpoint 64).  
 **Companion Standards**: [`_agents/rules/ux-guidelines.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/_agents/rules/ux-guidelines.md) (Rules 2, 4, 5, 6, 8, 10, 11, 12, 13B, 17), [`docs/prd_parent_past_day_approval.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/docs/prd_parent_past_day_approval.md), [`docs/refactoring_assessment_2026_09_12.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/docs/refactoring_assessment_2026_09_12.md) §6.4
@@ -59,6 +59,9 @@ All six were answered directly by crsjain in the Checkpoint 61 session. They res
 
 > [!NOTE]
 > D3's answer named the child group "Schedule & Rules, Tasks, Rewards". D6 then moved the two *rules* controls (Edit Window, Approve Past Days) into **Today**, so the remaining section is just **Schedule**.
+
+> [!WARNING]
+> **Superseded in v2.0 (owner-signed, §11.3):** D1's single 768px breakpoint (Q1), D5's stacked rewards modal for the *active* child (Q3 — the modal survives only for non-active children), D8's placement at the *top* of Activities (Q5 — now the bottom), the 6-tab map in §3.1 (Q11 — Passcode folds into Family, 5 tabs), and §4.2's "no nav badges" (Q2 — a CSS dirty dot). D2, D3, D4, D6 and D7 stand unchanged.
 
 ---
 
@@ -370,11 +373,14 @@ Each phase is its own local commit. Run `node run_headless_tests.js` after each 
 
 ## 9. Open Follow-Ups (not in v1.0)
 
-- [ ] **Hold-to-unlock for Wipe All Progress** (Rule 6). It needs a TC27 update, so it's deferred to keep v1.0 zero-regression.
-- [ ] **Inline the rewards editor into the Rewards pane** (D5's alternative) once the extraction exists. It retires the `#edit-rewards-modal` wrapper (2 test refs).
-- [ ] **In-panel child picker** (D3's rejected option), if parents find leaving Admin to switch children annoying in practice. It needs non-active profile read/write.
-- [ ] **Arrow-key roving focus** in the tablist (WAI-ARIA tabs pattern). Tab and Enter work in v1.0.
-- [ ] **Rule 8 sweep of the login, add-profile, and profile-select modals** ([`index.html:768–830`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/index.html#L768-L830)).
+> [!NOTE]
+> v2.0 (§11) schedules four of these five. The phase that closes each is noted inline.
+
+- [ ] **Hold-to-unlock for Wipe All Progress** (Rule 6). It needs a TC27 update, so it's deferred to keep v1.0 zero-regression. → **v2.0 Phase 5** (plus Delete child).
+- [ ] **Inline the rewards editor into the Rewards pane** (D5's alternative) once the extraction exists. It retires the `#edit-rewards-modal` wrapper (2 test refs). → **v2.0 Phase 4**, for the active child only; the wrapper is *kept* for non-active children (Q3).
+- [ ] **In-panel child picker** (D3's rejected option), if parents find leaving Admin to switch children annoying in practice. It needs non-active profile read/write. → still deferred.
+- [ ] **Arrow-key roving focus** in the tablist (WAI-ARIA tabs pattern). Tab and Enter work in v1.0. → **v2.0 Phase 3**.
+- [ ] **Rule 8 sweep of the login, add-profile, and profile-select modals** ([`index.html:768–830`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/index.html#L768-L830)). → **v2.0 Phase 5** (inline `z-index` on `#guide-modal`, `#family-login-modal`, `#profile-select-modal`, `#add-profile-modal`).
 
 ---
 
@@ -383,7 +389,117 @@ Each phase is its own local commit. Run `node run_headless_tests.js` after each 
 | Version | Date | Change |
 |---|---|---|
 | 0.1.0 | 2026-09-20 | Seed: problem statement, candidate sections, open questions. |
+| 2.0.0 | 2026-09-29 | **UX revamp folded in (§11)** from the Batch 1 proposal (rev 2) and its feature-review panel (APPROVED WITH MITIGATIONS). Records: the owner-signed §8.0 reversals **Q1** (4-row form-factor strategy replaces D1's single 768 breakpoint), **Q2** (draft + sticky save bar; CSS dirty dot reverses §4.2), **Q5** (Chart Style placeholder to the bottom of Activities, reversing D8's placement), **Q11** (Passcode folded into Family, 6 → 5 tabs), and D5 via **Q3** (inline rewards editor for the active child; `#edit-rewards-modal` kept for non-active children). Records the **Q8 kid-visible change** (the past-day grace passcode prompt is restyled to match the Admin-entry prompt, under Stage 1 constraints: calm inline error, no animation/sound, autofocus + Enter kept, no red, no new fields) and the **AA-not-AAA** decision for admin Poké Blue (`#2a71d0` + white = 4.80:1; pressed `#1d4f90` = 8.2:1). Batch 1 (0a/0b + two owner follow-ons) shipped in Checkpoint 68; Batch 2 checklist in §11.6. |
 | 1.2.0 | 2026-09-28 | Post-implementation amendment (crsjain): **Today + Schedule merged into one landing tab, 🗓️ Settings**, and **✅ Tasks** renamed to **✅ Activities** (6 tabs). The two sparse 3-control panes become two cards (*Tonight's Check-in*, *Week & Clock*) in `.admin-pane-grid`, which sits side by side when each card has ≥320px and stacks otherwise. Pane/tab IDs keep `today` so D6 (always open on the landing tab) is unchanged; `#admin-pane-schedule` / `#admin-tab-schedule` are removed. Set Exceptions stays the first control. TC30 now activates `today`; TC93 expects 6 panes and asserts the Schedule IDs are gone. |
 | 1.1.1 | 2026-09-27 | Checkpoint 65. Wipe button renamed to "Reset This Child's Progress" and its hint reworded; TC89 pins the label. Schema line updated to V19. |
 | 1.1.0 | 2026-09-25 | Checkpoint 62. D7: Wipe resets only the active child (shipped). D8: greyed-out Chart Style (under 5 / 5+) placeholder (shipped, inert). The redesign's new test is renumbered TC89 → TC90. |
 | 1.0.0 | 2026-09-24 | Specced (Checkpoint 61). D1–D6 locked by crsjain. Per-child scope finding. Wipe blast-radius finding. Full ID and test audit. Rule 8 debt R8-1..4. 5-stage panel (Parent/UX weighted), APPROVED WITH MITIGATIONS. Reward-editor boundary corrected and extraction recommended as an optional separate commit. |
+
+---
+
+## 11. v2.0 — Parent Admin UX Revamp
+
+Source: the rev 2 revamp proposal and its 5-stage panel review (Batch 1 session, `conv 242849bf`). This section is now the canonical spec; the proposal artifacts are historical. Where §1–§9 conflict with this section, **this section wins**.
+
+### 11.1 Goals
+
+1. Nothing unsaved in Admin can reach the kid chart, the stars or Firestore (done in 0a).
+2. One visual dialect for Admin: rationed colour, one primary per card, red only in danger — while staying Pokémon (charcoal frame, pixel shadows, yellow selected tab).
+3. Tablet-first layout that never collapses the pane (Q1).
+4. The nightly path — passcode → *Set Exceptions* → toggle → Done → chart — never gets longer.
+
+### 11.2 Owner decisions (locked 2026-09-28/29, crsjain)
+
+| # | Decision |
+|---|---|
+| Q1 | Form-factor priority: **tablet (portrait + landscape) → desktop → phone**. Phone landscape keeps the 0b CSS fix. |
+| Q2 | **Draft + sticky Save bar.** No auto-save. |
+| Q3 | Rewards for a non-active child: **keep the pop-up `#edit-rewards-modal`**, restyled. The active child edits inline in the Rewards tab. |
+| Q4 | **Reorder activities with ▲▼** (active tasks only). |
+| Q5 | Chart Style placeholder moves to the **bottom of Activities**. |
+| Q6 | Multi-device: merge by id + error on conflict. No co-editing UI. |
+| Q7 | **Keep "Set Exceptions" and "EDIT MODE".** |
+| Q8 | **Restyle BOTH passcode prompts** (Admin entry *and* the kid-side grace prompt). Shipped in Batch 1. |
+| Q9 | Add child from Admin **does not switch profiles**: toast and stay. |
+| Q10 | No file backups for now. Clipboard codes stay; an **in-app restore dialog** replaces `prompt()`. |
+| Q11 | **Fold Passcode into Family** (6 → 5 tabs). |
+| Q12 | **2-second hold** on Delete child and Reset progress, with a keyboard equivalent. |
+| Q13 | **Poké Blue `#2a71d0`** is the primary colour, **Admin surfaces only**. |
+| Q14 | Ship in **two batches**: Batch 1 = 0a + 0b (deployed, Checkpoint 68); Batch 2 = Phases 1–5. |
+
+**Batch 1 owner follow-ons (binding for Batch 2):**
+- Secondary buttons are **tonal blue** (`#e3edfb` fill, `#1d4f90` text, `#2a71d0` border + pixel shadow). Admin form fields are **flat** (1.5px `#7d8ca3` border, inset shadow, left-aligned, visible label). Never white buttons that read as fields (`1edba3a`).
+- Children/Family rows keep **labelled "Edit Rewards" and "Delete"** text+icon buttons and the green **"Active"** pill (`fac4c0e`).
+
+### 11.3 Reversals of v1.x (owner-signed)
+
+| v1.x decision | v2.0 | Signed by |
+|---|---|---|
+| D1 single 768px breakpoint | Portrait tablets ≤834px get top tabs (0b); short landscape gets the single-column grid; Rule 4's 1000px/80vh applies at wide sizes only | Q1 |
+| §4.2 no nav badges | 8px CSS `::after` dirty dot on the tab (label text unchanged) | Q2 |
+| D5 stacked rewards modal | Inline editor for the active child; modal kept for non-active children | Q3 |
+| D8 placeholder at top of Activities | Bottom of Activities (markup and ID unchanged) | Q5 |
+| Stage 3 "Passcode is its own tab" | "Parent passcode 🔑" card inside Family, with findability cues (§11.6 #4) | Q11 |
+
+**Kid-visible change (Q8):** the past-day grace passcode prompt is restyled to match Admin entry. Stage 1 constraints: title "Parent passcode 🔑", **Unlock** (blue) / **Cancel** (tertiary ≥44px), no red, a calm inline wrong-code line (no animation or sound; field cleared and refocused), autofocus and Enter-to-submit kept, no new fields. Every other kid dialog (Switch Day?, Reset Week, badges, level-up, shop) is unchanged and each phase's capture pass proves it.
+
+**Contrast decision:** admin Poké Blue with white text is **4.80:1 — WCAG AA, not AAA**. Accepted for Admin (a parent surface). Pressed/focus `#1d4f90` is 8.2:1 (AAA). The yellow selected tab (charcoal on `#ffcb05`) stays AAA.
+
+### 11.4 Design system
+
+- **Tokens** on `#admin-modal, [data-surface="admin"], #password-modal`: `--adm-ink #1e293b`, `--adm-ink-2 #475569`, `--adm-line #e2e8f0`, `--adm-primary #2a71d0` / pressed `#1d4f90`, `--adm-danger #dc2626`, `--adm-dock rgba(30,41,59,.96)`, focus `2px solid #1d4f90` offset 2 (`:focus-visible`, by specificity, never `!important`). Spacing 4·8·12·16·24 via `gap` only (Rule 12). Targets ≥44px.
+- **Buttons:** `.adm-primary` (≤1 per card), `.adm-secondary` (tonal blue), `.adm-tertiary` (Cancel/Close/Discard, bordered, 44px), `.adm-danger` (danger cards and destructive confirms only). Yellow is never a button in Admin.
+- **Components (Phase 1):**
+  - `.adm-card` (+ `--danger`, `--muted`): white, 2px `--adm-line`, radius 12, padding 16, gap 12, with a **scope eyebrow** (`[data-admin-scope-eyebrow]`: "This child · Kepler", "Whole family", "This device"). Aliases kept: `.admin-action-group`, `.danger-zone-section`.
+  - `.adm-row`: label + helper left, control right (220px, TC30), stacks on narrow panes.
+  - `.adm-list-row`: ≥56px, leading control, left-aligned 2-line text, ≤1 labelled action + delete.
+  - Pane content column max 720px.
+- **Icons:** the SVG sprite is **deferred** (not in Batch 2); existing inline SVGs stay.
+
+### 11.5 Behaviour spec
+
+**IA (Phase 3):** `🗓️ Settings · ✅ Activities · 🎁 Rewards` | `👥 Family · 💾 Data`. Section ids stay `today`, `tasks`, `rewards`, `children`, `data`. `#admin-tab-passcode` / `#admin-pane-passcode` are removed; `#admin-new-passcode-input` and `#admin-change-passcode-btn` move into Family, plus the new `#admin-new-passcode-confirm`. Family has `title="Children & parent passcode"` and a rail sub-label. Tabs use roving arrow-key focus (←/→/↑/↓, Home/End).
+
+**Save model:**
+
+| Surface | Model |
+|---|---|
+| Settings | Auto-save on change with an inline "Saved ✓" (`aria-live=polite`). Confirm-gated controls show "Saved ✓" only after the confirm resolves. |
+| Activities (Phase 2) | DOM draft. **Dirty = differs from `state`** (not "touched"). Dark sticky save bar `#admin-activities-savebar` ("● N unsaved changes", Discard, Save). Tab gets `data-dirty` → CSS dot. |
+| Rewards (Phase 4) | Temp arrays + temp selection; Save/Cancel inline for the active child. |
+| Passcode | Explicit submit; inline errors; success toast. |
+
+**Unsaved-changes guard:** every Admin close goes through one `requestCloseAdmin()` chokepoint — ✕, footer Close, Esc, backdrop, *Set Exceptions*, Android back. When clean it is a no-op (the nightly path is unchanged). When dirty: **Save & close** (primary) / **Keep editing** (default focus; also what Esc and backdrop do) / **Discard** (tertiary). A failed save keeps Admin open with the draft. Tab switches never trigger it.
+
+**Toast:** `.notif-modal.toast`, body-level, keeps the `h2` / `.notif-body-text` / `.notif-close-btn` contract, `role=status`, 4s auto-dismiss (paused on hover/focus), replaces any previous toast, no backdrop, never blocks Esc. **Routine success only** (Activities saved, Rewards saved, Passcode updated, code copied). Errors stay modal with "Got it".
+
+**Dialogs:** `role=dialog`, `aria-modal`, `aria-labelledby`. On open, focus the first field (or the least destructive button in confirms). Tab is trapped in the top admin layer. Focus returns to the opener on close. Escape goes to the top layer only; Esc inside an inline edit cancels that edit and stops propagation.
+
+**Data (Phase 1):** "Restore from code…" opens `#admin-restore-dialog` (textarea, inline JSON validation, Restore primary / Cancel), then the existing single destructive confirm. Exports that can't reach the clipboard show the same dialog read-only. `#admin-force-update-btn` becomes **"Reload latest version"** with a confirm and an offline guard (disabled with "You're offline"). Family backup helper: "Includes the parent passcode. Store it privately." Debug toggle moves under "Advanced ▸".
+
+**Family (Phase 3):** "+ Add child" (`#admin-add-child-btn`) opens `#add-profile-modal` over Admin with **no second passcode prompt**; on create, a toast ("Lyra added. Switch from the profile picker.") and the active profile does **not** change — `selectProfile()` is never called under an open Admin.
+
+**Rewards (Phase 4):** the editor subtree is re-parented (one DOM node, IDs stay unique) into `#admin-pane-rewards` for the active child, and back into the restyled `#edit-rewards-modal` for a non-active child launched from a Family row.
+
+**Safety (Phase 5):** `holdToConfirm` (2s, visible ring from frame 1, Space/Enter hold, `aria-describedby` "Press and hold for 2 seconds") on **Delete child and Reset This Child's Progress only**. Test seam overrides the duration. Exceptions dock gains an optional secondary **"↩ Admin"** that re-prompts for the passcode; Done ✅ stays primary and lands on the chart.
+
+### 11.6 Batch 2 required mitigations (from the panel review)
+
+- [ ] 1. **Nightly-path proof:** open Admin → visit Activities without editing → *Set Exceptions* → no guard, dock shows.
+- [ ] 2. **One `requestCloseAdmin()` chokepoint** incl. `startExceptionMode`; Keep editing on Esc/backdrop via `{backdrop:'cancel'}`; other `showCustomConfirm` callers unaffected.
+- [ ] 3. **Save bar never covers the last row** (pane `padding-bottom` ≥ bar height) and never steals focus. Toasts for routine success only.
+- [ ] 4. **Passcode findability:** tab `title` + rail sub-label, card "Parent passcode 🔑", visible without scroll at TP/TL with 2 children. TC93 updated for 5 tabs.
+- [ ] 5. **2s hold only on Delete child and Reset progress**, keyboard hold, ring from frame 1, `{hold:0}` test override.
+- [ ] 6. **"↩ Admin" is secondary**, re-prompts the passcode; Done ✅ stays primary.
+- [ ] 7. **Escape layering** handles inline edits (stopPropagation); Android back via `pushState`, tested.
+- [ ] 8. **Reorder active tasks only**; inactive positions kept; a historical week's row order is unchanged after a reorder; TC58 cleanup removes by id.
+- [ ] 9. **Phase 3 responsive ahead of Phase 4** — satisfied by the 0b portrait-tablet top-tab fix. `viewport-fit=cover` is **not** shipped without the kid-HUD safe-area padding and capture (deferred).
+- [ ] 10. **Phase 4 re-parenting** keeps IDs unique; the non-active-child sheet keeps its modal asserts; Add child never calls `selectProfile()` under Admin.
+- [ ] 11. **Rule 8 sweep:** inline `z-index` removed from `#guide-modal`, `#family-login-modal`, `#profile-select-modal`, `#add-profile-modal`.
+- [x] 12. **Fold into this PRD** (v2.0, this section + revision row).
+
+### 11.7 Test impact
+
+- **New:** TC98 (Phase 1: restore dialog, toast, reload guard, focus), TC99 (Phase 2: guard + nightly path + dirty dot + reorder), TC100 (Phase 3: 5 tabs, Family passcode, add child without switch, roving focus), TC101 (Phase 4: inline rewards + sheet), TC102 (Phase 5: hold + ↩ Admin + Rule 8). Numbers are assigned as each lands; run the §0 audit.
+- **Changed:** TC16/TC24 (`window.prompt` → `setReadBackupCodeMock`), TC1/TC58 (toast contract; guard on dirty close; cleanup by id), TC93 (5 tabs, placeholder below the list, guard at step 5), TC96/TC97 (close helpers and customize-button path), TC50 (confirm field), TC57/TC31/TC46 (inline editor for the active child), TC23/TC27/TC89 (hold override).
+- **Schema:** none. **Cache:** every phase bumps `CACHE_NAME`, `style.css?v=`, `app.js?v=` and all importmap entries (TC90).

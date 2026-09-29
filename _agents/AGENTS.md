@@ -120,7 +120,7 @@ decisions that are expensive to rediscover.
 | `prd_legendary_evolutions.md` | Mega and branching evolutions (Eevee, Onix→Steelix) |
 | `prd_alternating_activity_pairs.md` | Alternating activity pairs & dynamic schedule swapping |
 | `prd_kindness_quests.md` | Kindness Quests & partner berry feeding |
-| `prd_admin_panel_redesign.md` | Parent admin left-nav shell (6 sections), per-child scope chip, Rule 8 debt, and `rewards_admin.js` extraction (v1.2.0, Checkpoint 66) |
+| `prd_admin_panel_redesign.md` | Parent admin shell and the v2.0 UX revamp (§11: admin design system, 5-tab IA, draft/save bar + unsaved guard, hold-to-confirm, owner decisions Q1–Q14) |
 | `refactoring_assessment_2026_09_12.md` | Why the codebase is deliberately *not* being refactored |
 
 Manual/verification guides: `test_plan_pokemon_shop_evolutions.md`,
