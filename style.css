@@ -7383,13 +7383,6 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   overflow: hidden;
 }
 
-#admin-modal .adm-legend {
-  font-family: 'Quicksand', sans-serif;
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--adm-ink-2);
-  margin-top: -4px;
-}
 
 /* Data: paired buttons wrap on narrow panes (Rule 7) */
 #admin-modal .adm-card .admin-action-row-buttons {
@@ -8211,5 +8204,91 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   #admin-modal #admin-pane-tasks .adm-task-actions {
     flex: 1 1 100%;
     justify-content: flex-end;
+  }
+}
+
+/* ---- Admin Settings: list rows (UX review Option A, TC105) ----------------
+   Each setting is a two-line label (name + helper) on the left and a compact
+   control on the right, separated by hairline dividers — the same rhythm as
+   Family > Children and Activities. Scoped to the Settings pane so the Data
+   tab's .adm-advanced .adm-row is untouched. */
+#admin-modal #admin-pane-today .adm-card {
+  gap: 0;
+}
+
+#admin-modal #admin-pane-today .adm-card > h4 {
+  margin: 12px 0 4px;
+}
+
+#admin-modal #admin-pane-today .adm-setting-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 24px;
+  row-gap: 8px;
+  padding: 12px 0;
+  margin: 0;
+  max-width: none;
+  min-height: 44px;
+  border-top: 1px solid var(--adm-line);
+}
+
+#admin-modal #admin-pane-today .adm-card > h4 + .adm-setting-row {
+  border-top: none;
+}
+
+#admin-modal #admin-pane-today .adm-setting-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  text-align: left;
+}
+
+#admin-modal #admin-pane-today .adm-setting-name,
+#admin-modal #admin-pane-today .admin-option-row .adm-setting-name {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--adm-ink);
+  white-space: normal;
+}
+
+#admin-modal #admin-pane-today .adm-setting-help {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: var(--adm-ink-2);
+  white-space: normal;
+}
+
+#admin-modal #admin-pane-today .adm-setting-row select.pixel-select {
+  width: 220px;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+#admin-modal #admin-pane-today .adm-setting-action #exceptions-btn {
+  width: auto;
+  min-width: 200px;
+  margin: 0;
+}
+
+#admin-modal #admin-pane-today #admin-week-start-status {
+  margin: 0 0 12px;
+}
+
+@media (max-width: 520px) {
+  #admin-modal #admin-pane-today .adm-setting-row:not(.admin-switch-row) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #admin-modal #admin-pane-today .adm-setting-row:not(.admin-switch-row) select.pixel-select,
+  #admin-modal #admin-pane-today .adm-setting-action #exceptions-btn {
+    width: 100%;
+    min-width: 0;
   }
 }

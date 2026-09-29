@@ -8,25 +8,25 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.84">
+  <link rel="stylesheet" href="style.css?v=10.86">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script type="importmap">
   {
     "imports": {
-      "./app.js": "./app.js?v=10.74",
-      "./state.js": "./state.js?v=10.74",
-      "./firebase.js": "./firebase.js?v=10.74",
-      "./migrations.js": "./migrations.js?v=10.74",
-      "./vault.js": "./vault.js?v=10.74",
-      "./badges.js": "./badges.js?v=10.74",
-      "./shop.js": "./shop.js?v=10.74",
-      "./guide.js": "./guide.js?v=10.74",
-      "./pokemon_data.js": "./pokemon_data.js?v=10.74",
-      "./date_utils.js": "./date_utils.js?v=10.74",
-      "./admin.js": "./admin.js?v=10.74",
-      "./rewards_admin.js": "./rewards_admin.js?v=10.74",
-      "./audio.js": "./audio.js?v=10.74",
-      "./modal_backdrop.js": "./modal_backdrop.js?v=10.74"
+      "./app.js": "./app.js?v=10.76",
+      "./state.js": "./state.js?v=10.76",
+      "./firebase.js": "./firebase.js?v=10.76",
+      "./migrations.js": "./migrations.js?v=10.76",
+      "./vault.js": "./vault.js?v=10.76",
+      "./badges.js": "./badges.js?v=10.76",
+      "./shop.js": "./shop.js?v=10.76",
+      "./guide.js": "./guide.js?v=10.76",
+      "./pokemon_data.js": "./pokemon_data.js?v=10.76",
+      "./date_utils.js": "./date_utils.js?v=10.76",
+      "./admin.js": "./admin.js?v=10.76",
+      "./rewards_admin.js": "./rewards_admin.js?v=10.76",
+      "./audio.js": "./audio.js?v=10.76",
+      "./modal_backdrop.js": "./modal_backdrop.js?v=10.76"
     }
   }
   </script>
@@ -802,24 +802,34 @@
                 <span class="adm-saved-status" data-admin-saved-status role="status" aria-live="polite"></span>
               </div>
               <h4>Tonight's Check-in</h4>
-              <button id="exceptions-btn" class="pixel-btn adm-primary">Set Exceptions</button>
-              <div class="adm-legend" aria-hidden="true">💤 Rest day · ✨ Bonus</div>
-              <div class="admin-option-row adm-row">
-                <span>Parent Edit Window:</span>
-                <select id="admin-parent-grace-select" class="pixel-select" title="How long past-day editing stays unlocked after entering the passcode.">
+              <div class="admin-option-row adm-row adm-setting-row adm-setting-action">
+                <span class="adm-setting-label">
+                  <span class="adm-setting-name">Tonight's exceptions</span>
+                  <span id="admin-exceptions-help" class="adm-setting-help">Mark 💤 rest days or ✨ bonus tasks on the chart.</span>
+                </span>
+                <button id="exceptions-btn" class="pixel-btn adm-primary" aria-describedby="admin-exceptions-help">Set Exceptions</button>
+              </div>
+              <div class="admin-option-row adm-row adm-setting-row">
+                <span class="adm-setting-label">
+                  <label class="adm-setting-name" for="admin-parent-grace-select">Parent edit window</label>
+                  <span id="admin-parent-grace-help" class="adm-setting-help">How long past days stay unlocked after you enter the passcode.</span>
+                </span>
+                <select id="admin-parent-grace-select" class="pixel-select" aria-describedby="admin-parent-grace-help">
                   <option value="1">1 min</option>
                   <option value="2">2 min</option>
                   <option value="5">5 min</option>
                 </select>
               </div>
-              <div class="admin-option-row adm-row admin-switch-row">
-                <label class="admin-switch-label" for="admin-lock-past-days-toggle">🔒 Approve Past Days</label>
+              <div class="admin-option-row adm-row adm-setting-row admin-switch-row">
+                <span class="adm-setting-label">
+                  <label class="admin-switch-label adm-setting-name" for="admin-lock-past-days-toggle">🔒 Approve past days</label>
+                  <span id="admin-lock-past-days-hint" class="adm-setting-help">Requires the parent passcode before this child can edit previous days. Recommended for younger children.</span>
+                </span>
                 <label class="switch">
                   <input type="checkbox" id="admin-lock-past-days-toggle" aria-label="Approve past days: ask for the parent passcode" aria-describedby="admin-lock-past-days-hint">
                   <span class="slider"></span>
                 </label>
               </div>
-              <div id="admin-lock-past-days-hint" class="admin-option-hint">Requires the parent passcode before this child can edit previous days. Recommended for younger children.</div>
             </div>
             <div class="admin-action-group adm-card">
               <div class="adm-card-head">
@@ -827,9 +837,12 @@
                 <span class="adm-saved-status" data-admin-saved-status role="status" aria-live="polite"></span>
               </div>
               <h4>Week &amp; Clock</h4>
-              <div class="admin-option-row adm-row">
-                <span>Week Start:</span>
-                <select id="admin-week-start-select" class="pixel-select">
+              <div class="admin-option-row adm-row adm-setting-row">
+                <span class="adm-setting-label">
+                  <label class="adm-setting-name" for="admin-week-start-select">Week starts on</label>
+                  <span id="admin-week-start-help" class="adm-setting-help">The first day shown on the chart.</span>
+                </span>
+                <select id="admin-week-start-select" class="pixel-select" aria-describedby="admin-week-start-help">
                   <option value="0">Sunday</option>
                   <option value="1">Monday</option>
                   <option value="2">Tuesday</option>
@@ -840,19 +853,25 @@
                 </select>
               </div>
               <div id="admin-week-start-status" class="admin-status-badge hidden"></div>
-              <div class="admin-option-row adm-row">
-                <span>App Timezone:</span>
-                <select id="admin-timezone-select" class="pixel-select">
-                  <option value="default">Automatic (Use Device Time)</option>
-                  <option value="America/Los_Angeles">Pacific Time (US &amp; Canada)</option>
-                  <option value="America/Denver">Mountain Time (US &amp; Canada)</option>
-                  <option value="America/Chicago">Central Time (US &amp; Canada)</option>
-                  <option value="America/New_York">Eastern Time (US &amp; Canada)</option>
+              <div class="admin-option-row adm-row adm-setting-row">
+                <span class="adm-setting-label">
+                  <label class="adm-setting-name" for="admin-timezone-select">Time zone</label>
+                  <span id="admin-timezone-help" class="adm-setting-help">Decides when “today” rolls over at midnight.</span>
+                </span>
+                <select id="admin-timezone-select" class="pixel-select" aria-describedby="admin-timezone-help">
+                  <option value="default">Automatic (device)</option>
+                  <option value="America/Los_Angeles">Pacific (US &amp; Canada)</option>
+                  <option value="America/Denver">Mountain (US &amp; Canada)</option>
+                  <option value="America/Chicago">Central (US &amp; Canada)</option>
+                  <option value="America/New_York">Eastern (US &amp; Canada)</option>
                 </select>
               </div>
-              <div class="admin-option-row adm-row">
-                <span>Screensaver:</span>
-                <select id="admin-idle-timeout-select" class="pixel-select">
+              <div class="admin-option-row adm-row adm-setting-row">
+                <span class="adm-setting-label">
+                  <label class="adm-setting-name" for="admin-idle-timeout-select">Screensaver</label>
+                  <span id="admin-idle-timeout-help" class="adm-setting-help">Shows the screensaver after this long without a tap.</span>
+                </span>
+                <select id="admin-idle-timeout-select" class="pixel-select" aria-describedby="admin-idle-timeout-help">
                   <option value="1">1 min</option>
                   <option value="5">5 min</option>
                   <option value="10">10 min</option>
@@ -1160,7 +1179,7 @@
   </div>
 
   <script src="particles.js?v=10.4"></script>
-  <script type="module" src="app.js?v=10.74" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.76" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 

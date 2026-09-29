@@ -516,3 +516,17 @@ A Staff UX review found the Activities tab hard to read: every row was always a 
 - ▲▼ are borderless tertiary icons and keep their 44px targets.
 - On phones (≤520px) the actions wrap to their own line.
 - Covered by TC104. Only ✏️ enters edit mode; tapping the row does not. This avoids opening a row by mistake near ▲▼.
+
+### 11.8 Post-Batch 2 refinement — Settings list rows (2026-09-29)
+
+A Staff UX review found the Settings tab spread out horizontally. A short colon label sat far from a control that was pushed to the opposite edge of the 720px card, and a full-width Set Exceptions button sat on top. It chose **Option A**: settings list rows.
+
+- Each row shows a **bold sentence-case name**, with a **grey helper line** under it and a compact control on the right. Rows are split by 1px hairlines, matching the rhythm of Children and Activities.
+- Every helper line has an id, and its control points to it with `aria-describedby`. Selects use a real `<label for>`.
+- **Set Exceptions** is now the first row ("Tonight's exceptions"). It is content-width (min 200px) and stays the only primary button on the tab. The old "💤 Rest day · ✨ Bonus" legend is folded into the helper line.
+- Copy changes:
+  - The Parent Edit Window tooltip is now visible helper text.
+  - "App Timezone" → "Time zone".
+  - Time zone options are shortened to fit the 220px select, e.g. "Automatic (device)" and "Pacific (US & Canada)".
+- On phones (≤520px), select rows and the exceptions row stack, with full-width controls. The switch stays inline.
+- The styles are scoped to `#admin-pane-today`, so the Data tab's `.adm-advanced` rows are unchanged. Covered by TC105.

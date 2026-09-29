@@ -9928,6 +9928,60 @@ async function runSuite() {
         await sleep(30);
       }
 
+      console.log("Running Test Case 105: Settings list rows — name + helper, aria-describedby, compact controls...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const $ = id => document.getElementById(id);
+        document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+        $('admin-btn').click();
+        await sleep(60);
+        $('password-input').value = helpers.ADMIN_PASSWORD;
+        $('password-submit-btn').click();
+        await sleep(60);
+        $('admin-tab-today').click();
+        await sleep(30);
+
+        const controls = ['exceptions-btn', 'admin-parent-grace-select', 'admin-lock-past-days-toggle',
+          'admin-week-start-select', 'admin-timezone-select', 'admin-idle-timeout-select'];
+        for (const id of controls) {
+          const el = $(id);
+          const row = el.closest('.adm-setting-row');
+          assert(row, `${id} sits in a settings list row`);
+          const name = row.querySelector('.adm-setting-name');
+          const help = row.querySelector('.adm-setting-help');
+          assert(name && name.textContent.trim().length > 0 && !name.textContent.trim().endsWith(':'), `${id} has a sentence-case name with no colon`);
+          assert(help && help.id && help.textContent.trim().length > 0, `${id} has helper text with an id`);
+          assert((el.getAttribute('aria-describedby') || '').split(' ').includes(help.id), `${id} is described by its helper`);
+          if (el.tagName === 'SELECT') {
+            assert(document.querySelector(`label[for="${id}"]`) === name, `${id} name is a real <label for>`);
+          }
+        }
+        assert(!document.querySelector('#admin-pane-today .adm-legend'), "The old legend line is gone (folded into the helper)");
+        assert($('admin-timezone-select').options[0].textContent === 'Automatic (device)', "Shortened automatic time-zone label");
+        assert(document.querySelector('#admin-pane-today .adm-setting-row').contains($('exceptions-btn')), "Set Exceptions is the first settings row");
+
+        const card = document.querySelector('#admin-pane-today .adm-card');
+        const btn = $('exceptions-btn').getBoundingClientRect();
+        const cardW = card.getBoundingClientRect().width;
+        if (window.innerWidth > 520) {
+          assert(btn.width < cardW * 0.6, `Set Exceptions is content-width (${Math.round(btn.width)} of ${Math.round(cardW)})`);
+          for (const id of controls) {
+            const row = $(id).closest('.adm-setting-row');
+            const l = row.querySelector('.adm-setting-label').getBoundingClientRect();
+            const c = $(id).getBoundingClientRect();
+            assert(c.left >= l.right - 1, `${id} sits to the right of its label on one line`);
+            assert(c.right <= card.getBoundingClientRect().right, `${id} stays inside the card`);
+          }
+        }
+
+        $('close-admin-modal-btn').click();
+        await sleep(30);
+        helpers.resetState();
+        await sleep(30);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
