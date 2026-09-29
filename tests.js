@@ -78,6 +78,12 @@ async function runSuite() {
       throw new Error("Test helpers not available");
     }
 
+    // {hold:0} test override (PRD v2.0 §11.6 #5): Delete child / Reset progress
+    // confirm on click everywhere except TC102, which drives the real hold.
+    if (window.__test_helpers__.setHoldDurationMock) {
+      window.__test_helpers__.setHoldDurationMock(0);
+    }
+
     let state = window.__app_state__;
     console.log("DEBUG: state before assert:", JSON.stringify(state));
     assert(state.version === 19, "State version should be 19 (actual: " + state.version + ")");
@@ -9464,6 +9470,201 @@ async function runSuite() {
         // Clean up
         dismissNotifs();
         helpers.setSaveProfileRewardsMock(null);
+        helpers.setProfilesList([]);
+        helpers.setActiveProfileId(null);
+        helpers.resetState();
+        await sleep(30);
+      }
+
+      console.log("Running Test Case 102: Admin Phase 5 — hold-to-confirm, ↩ Admin on the dock, Rule 8 z-index sweep...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const live = window.__app_state__;
+        const keplerId = 'tc102_kepler';
+        const lyraId = 'tc102_lyra';
+        helpers.setProfilesList([
+          { id: keplerId, name: 'Kepler', avatarId: '25', state: JSON.parse(JSON.stringify(live)) },
+          { id: lyraId, name: 'Lyra', avatarId: '471', state: JSON.parse(JSON.stringify(live)) }
+        ]);
+        helpers.setActiveProfileId(keplerId);
+        let wipes = 0;
+        let reloads = 0;
+        const deleted = [];
+        helpers.setWipeDataMock(async () => { wipes++; });
+        helpers.setReloadMock(() => { reloads++; });
+        helpers.setDeleteChildProfileMock(async (id) => {
+          deleted.push(id);
+          helpers.setProfilesList(helpers.getProfilesList().filter(p => p.id !== id));
+        });
+        // Real (unscaled) waits: the hold timer is a real setTimeout.
+        const realSleep = ms => new Promise(r => setTimeout(r, ms));
+        const HOLD = 150;
+        helpers.setHoldDurationMock(HOLD);
+
+        const adminModal = document.getElementById('admin-modal');
+        const confirmModal = document.getElementById('confirm-modal');
+        const yesBtn = document.getElementById('confirm-yes-btn');
+        const hint = document.getElementById('confirm-hold-hint');
+        const isOpen = el => !el.classList.contains('hidden');
+        const dismissNotifs = () => document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+        const pointer = (type) => yesBtn.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, button: 0, pointerType: 'touch' }));
+        const key = (type, k, repeat = false) => yesBtn.dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true, cancelable: true, repeat }));
+        const openAdmin = async () => {
+          document.getElementById('admin-btn').click();
+          await sleep(60);
+          document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+          document.getElementById('password-submit-btn').click();
+          await sleep(60);
+          assert(isOpen(adminModal), "Admin should open");
+        };
+        dismissNotifs();
+        await openAdmin();
+
+        // 1. Reset This Child's Progress arms a 2s hold (hint + aria-describedby).
+        document.getElementById('admin-tab-data').click();
+        document.getElementById('admin-wipe-btn').click();
+        await sleep(30);
+        assert(isOpen(confirmModal) && yesBtn.classList.contains('adm-hold-btn'), "Reset confirm arms hold-to-confirm");
+        assert(yesBtn.classList.contains('danger'), "Reset stays the danger button");
+        assert(isOpen(hint) && hint.textContent === 'Press and hold for 2 seconds', `Hold hint reads 'Press and hold for 2 seconds', got '${hint.textContent}'`);
+        assert(yesBtn.getAttribute('aria-describedby') === 'confirm-hold-hint', "Yes button is described by the hold hint");
+        assert(document.activeElement === document.getElementById('confirm-no-btn'), "Focus still starts on Cancel");
+
+        // A plain click never confirms; it nudges.
+        yesBtn.click();
+        await realSleep(20);
+        assert(isOpen(confirmModal) && wipes === 0, "A tap must not reset progress");
+        assert(hint.classList.contains('is-nudged') && hint.textContent.includes('Keep holding'), "A tap nudges the hint");
+
+        // The fill is visible from the first frame of the press.
+        pointer('pointerdown');
+        assert(yesBtn.classList.contains('is-holding'), "Pressing starts the hold at once");
+        assert(getComputedStyle(yesBtn, '::before').animationName === 'adm-hold-fill', "The fill animation runs from frame 1");
+        await realSleep(HOLD / 3);
+        pointer('pointerup');
+        assert(!yesBtn.classList.contains('is-holding'), "Releasing early snaps the fill back");
+        await realSleep(HOLD + 40);
+        assert(isOpen(confirmModal) && wipes === 0, "An early release never confirms");
+
+        // Leaving the button cancels too.
+        pointer('pointerdown');
+        await realSleep(HOLD / 3);
+        pointer('pointerleave');
+        await realSleep(HOLD + 40);
+        assert(isOpen(confirmModal) && wipes === 0, "Sliding off the button cancels the hold");
+
+        // A full hold confirms.
+        pointer('pointerdown');
+        await realSleep(HOLD + 60);
+        pointer('pointerup');
+        await sleep(30);
+        assert(!isOpen(confirmModal) && wipes === 1 && reloads === 1, "A full hold resets (wipe + reload)");
+        assert(!yesBtn.classList.contains('adm-hold-btn') && !yesBtn.hasAttribute('aria-describedby') && !isOpen(hint), "The hold is detached after it fires");
+
+        // 2. Keyboard hold: Space / Enter held, early keyup cancels, auto-repeat ignored.
+        document.getElementById('admin-wipe-btn').click();
+        await sleep(30);
+        yesBtn.focus();
+        key('keydown', ' ');
+        assert(yesBtn.classList.contains('is-holding'), "Holding Space starts the fill");
+        await realSleep(HOLD / 3);
+        key('keyup', ' ');
+        await realSleep(HOLD + 40);
+        assert(isOpen(confirmModal) && wipes === 1, "Releasing Space early cancels");
+        key('keydown', 'Enter');
+        await realSleep(HOLD / 2);
+        key('keydown', 'Enter', true);
+        await realSleep(HOLD / 2 + 60);
+        assert(!isOpen(confirmModal) && wipes === 2, "Holding Enter confirms (auto-repeat does not restart the timer)");
+
+        // 3. The hold never leaks into other confirms (Reload latest version is click-to-confirm).
+        document.getElementById('admin-force-update-btn').click();
+        await sleep(30);
+        assert(isOpen(confirmModal) && !yesBtn.classList.contains('adm-hold-btn') && !isOpen(hint) && !yesBtn.hasAttribute('aria-describedby'), "A non-destructive confirm has no hold");
+        yesBtn.click();
+        for (let i = 0; i < 40 && reloads < 3; i++) await realSleep(25); // reload clears caches first (async)
+        assert(!isOpen(confirmModal) && reloads === 3, `A normal confirm still confirms on click (reloads=${reloads})`);
+        dismissNotifs();
+
+        // 4. Delete child: hold too; Cancel after arming leaves nothing armed.
+        document.getElementById('admin-tab-children').click();
+        await sleep(20);
+        document.querySelector(`.delete-profile-btn[data-id="${lyraId}"]`).click();
+        await sleep(30);
+        assert(isOpen(confirmModal) && yesBtn.classList.contains('adm-hold-btn') && isOpen(hint), "Delete child arms the hold");
+        yesBtn.click();
+        await sleep(30);
+        assert(deleted.length === 0, "A tap must not delete a child");
+        document.getElementById('confirm-no-btn').click();
+        await sleep(20);
+        assert(!yesBtn.classList.contains('adm-hold-btn') && !isOpen(hint), "Cancel detaches the hold");
+        document.querySelector(`.delete-profile-btn[data-id="${lyraId}"]`).click();
+        await sleep(30);
+        pointer('pointerdown');
+        await realSleep(HOLD + 60);
+        pointer('pointerup');
+        await sleep(60);
+        assert(deleted.length === 1 && deleted[0] === lyraId, "A full hold deletes the child");
+        dismissNotifs();
+
+        // 5. {hold:0}: the suite-wide override turns the hold back into a click.
+        helpers.setHoldDurationMock(0);
+        document.getElementById('admin-tab-data').click();
+        document.getElementById('admin-wipe-btn').click();
+        await sleep(30);
+        assert(!yesBtn.classList.contains('adm-hold-btn') && !isOpen(hint), "{hold:0} disarms the hold");
+        document.getElementById('confirm-no-btn').click();
+        await sleep(20);
+        helpers.setHoldDurationMock(HOLD);
+
+        // 6. "↩ Admin" on the Exceptions dock: secondary, re-prompts, Done ✅ stays primary.
+        document.getElementById('exceptions-btn').click();
+        await sleep(60);
+        const banner = document.getElementById('exceptions-banner');
+        const backBtn = document.getElementById('exceptions-admin-btn');
+        const doneBtn = document.getElementById('exceptions-done-btn');
+        assert(isOpen(banner) && !isOpen(adminModal), "Set Exceptions opens the dock");
+        assert(backBtn && banner.contains(backBtn), "↩ Admin sits on the dock");
+        assert(backBtn.compareDocumentPosition(doneBtn) & Node.DOCUMENT_POSITION_FOLLOWING, "Done ✅ stays last (the primary end of the dock)");
+        assert(!backBtn.classList.contains('success') && getComputedStyle(backBtn).backgroundColor === 'rgba(0, 0, 0, 0)', "↩ Admin is a quiet outline, not a filled CTA");
+        assert(backBtn.offsetHeight >= 38, "↩ Admin is a real touch target");
+        backBtn.click();
+        await sleep(60);
+        const passwordModal = document.getElementById('password-modal');
+        assert(!isOpen(banner) && isOpen(passwordModal) && !isOpen(adminModal), "↩ Admin leaves Exception Mode and asks for the passcode (no session)");
+        document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+        document.getElementById('password-submit-btn').click();
+        await sleep(60);
+        assert(isOpen(adminModal) && document.getElementById('admin-tab-today').getAttribute('aria-selected') === 'true', "The passcode reopens Admin on Settings");
+        document.getElementById('close-admin-modal-btn').click();
+        await sleep(30);
+        document.getElementById('exceptions-btn').click();
+        await sleep(60);
+        doneBtn.click();
+        await sleep(30);
+        assert(!isOpen(banner) && !isOpen(passwordModal) && !isOpen(adminModal), "Done ✅ still lands on the chart");
+
+        // 7. Rule 8: stacking lives in style.css, values unchanged.
+        const Z = { 'guide-modal': '100000', 'profile-select-modal': '150000', 'add-profile-modal': '180000', 'family-login-modal': '200000' };
+        for (const [id, z] of Object.entries(Z)) {
+          const el = document.getElementById(id);
+          assert(!el.hasAttribute('style'), `#${id} must have no inline style`);
+          assert(getComputedStyle(el).zIndex === z, `#${id} z-index must stay ${z}, got ${getComputedStyle(el).zIndex}`);
+        }
+        const cbox = document.getElementById('confirm-checkbox-container');
+        assert(cbox.querySelectorAll('[style]').length === 0 && !cbox.hasAttribute('style'), "Confirm checkbox row has no inline styles");
+        cbox.classList.remove('hidden');
+        assert(getComputedStyle(cbox).marginTop === '15px' && getComputedStyle(cbox).textAlign === 'left', "Checkbox row keeps its spacing and alignment");
+        assert(getComputedStyle(cbox.querySelector('label')).display === 'flex' && getComputedStyle(cbox.querySelector('label')).fontSize === '14px', "Checkbox label keeps its layout");
+        assert(getComputedStyle(document.getElementById('confirm-checkbox')).width === '18px', "Checkbox keeps its 18px size");
+        cbox.classList.add('hidden');
+
+        // Clean up
+        dismissNotifs();
+        helpers.setHoldDurationMock(0);
+        helpers.setDeleteChildProfileMock(null);
         helpers.setProfilesList([]);
         helpers.setActiveProfileId(null);
         helpers.resetState();

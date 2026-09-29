@@ -8,24 +8,24 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.77">
+  <link rel="stylesheet" href="style.css?v=10.79">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script type="importmap">
   {
     "imports": {
-      "./app.js": "./app.js?v=10.67",
-      "./state.js": "./state.js?v=10.67",
-      "./firebase.js": "./firebase.js?v=10.67",
-      "./migrations.js": "./migrations.js?v=10.67",
-      "./vault.js": "./vault.js?v=10.67",
-      "./badges.js": "./badges.js?v=10.67",
-      "./shop.js": "./shop.js?v=10.67",
-      "./guide.js": "./guide.js?v=10.67",
-      "./pokemon_data.js": "./pokemon_data.js?v=10.67",
-      "./date_utils.js": "./date_utils.js?v=10.67",
-      "./admin.js": "./admin.js?v=10.67",
-      "./rewards_admin.js": "./rewards_admin.js?v=10.67",
-      "./audio.js": "./audio.js?v=10.67"
+      "./app.js": "./app.js?v=10.69",
+      "./state.js": "./state.js?v=10.69",
+      "./firebase.js": "./firebase.js?v=10.69",
+      "./migrations.js": "./migrations.js?v=10.69",
+      "./vault.js": "./vault.js?v=10.69",
+      "./badges.js": "./badges.js?v=10.69",
+      "./shop.js": "./shop.js?v=10.69",
+      "./guide.js": "./guide.js?v=10.69",
+      "./pokemon_data.js": "./pokemon_data.js?v=10.69",
+      "./date_utils.js": "./date_utils.js?v=10.69",
+      "./admin.js": "./admin.js?v=10.69",
+      "./rewards_admin.js": "./rewards_admin.js?v=10.69",
+      "./audio.js": "./audio.js?v=10.69"
     }
   }
   </script>
@@ -181,7 +181,12 @@
             <span class="legend-item"><span class="legend-dot">💤</span> Rest</span>
           </div>
         </div>
-        <button id="exceptions-done-btn" class="pixel-btn success small exceptions-done-btn">Done ✅</button>
+        <div class="exceptions-actions">
+          <!-- Optional way back to Admin (secondary; re-prompts the passcode).
+               Done ✅ stays the primary and lands on the chart (PRD v2.0 §11.6 #6). -->
+          <button id="exceptions-admin-btn" type="button" class="pixel-btn exceptions-admin-btn" title="Finish editing and reopen Admin (asks for the passcode)">↩ Admin</button>
+          <button id="exceptions-done-btn" class="pixel-btn success small exceptions-done-btn">Done ✅</button>
+        </div>
       </div>
     </div>
 
@@ -442,13 +447,16 @@
         <h2 id="confirm-title">New Week!</h2>
         <div class="confirm-body">
           <p id="confirm-message">Ready to start the next week and continue progress towards a Mega Milestone?</p>
-          <div id="confirm-checkbox-container" class="hidden" style="margin-top: 15px; text-align: left; font-family: 'Fredoka One', cursive;">
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px;">
-              <input type="checkbox" id="confirm-checkbox" style="width: 18px; height: 18px; cursor: pointer;">
+          <div id="confirm-checkbox-container" class="hidden">
+            <label>
+              <input type="checkbox" id="confirm-checkbox">
               <span id="confirm-checkbox-text">Carry over exceptions</span>
             </label>
           </div>
         </div>
+        <!-- Hold-to-confirm hint (Delete child / Reset progress only, PRD v2.0 Q12);
+             the yes button points at it with aria-describedby while a hold is armed. -->
+        <p id="confirm-hold-hint" class="adm-hold-hint hidden" role="status" aria-live="polite"></p>
         <div class="confirm-actions">
           <button id="confirm-third-btn" type="button" class="pixel-btn hidden"></button>
           <button id="confirm-no-btn" class="pixel-btn greyed-out">Not Yet</button>
@@ -747,7 +755,7 @@
     </div>
 
     <!-- Task Guide / Rules Modal -->
-    <div id="guide-modal" class="modal hidden" style="z-index: 100000;">
+    <div id="guide-modal" class="modal hidden">
       <div class="modal-content guide-modal-content pixel-card">
         <h2>Pokémon Training Guide 📖</h2>
         <p class="guide-subtitle">Here is what <span class="trainer-name-label"></span> needs to do to earn a pokeball for each task!</p>
@@ -1021,7 +1029,7 @@
     </div>
 
     <!-- Family Login Modal -->
-    <div id="family-login-modal" class="modal hidden" style="z-index: 200000;">
+    <div id="family-login-modal" class="modal hidden">
       <div class="modal-content login-modal-content pixel-card">
         <h2>Parent Family Login 👨‍👩‍👧‍👦</h2>
         <p class="login-subtitle">Connect your family's Poke-Charts to sync data across all devices.</p>
@@ -1041,7 +1049,7 @@
     </div>
 
     <!-- Profile Selection Modal -->
-    <div id="profile-select-modal" class="modal hidden" style="z-index: 150000;">
+    <div id="profile-select-modal" class="modal hidden">
       <div class="modal-content profile-select-content pixel-card">
         <h2>Who is training today? 🎮</h2>
         <div id="profiles-grid" class="profiles-grid">
@@ -1055,7 +1063,7 @@
     </div>
 
     <!-- Add Profile Modal (Sub-panel) -->
-    <div id="add-profile-modal" class="modal hidden" style="z-index: 180000;">
+    <div id="add-profile-modal" class="modal hidden">
       <div class="modal-content add-profile-content password-prompt-content pixel-card">
         <h2>Add Child Profile</h2>
         <div class="add-profile-body">
@@ -1148,7 +1156,7 @@
   </div>
 
   <script src="particles.js?v=10.4"></script>
-  <script type="module" src="app.js?v=10.67" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.69" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 

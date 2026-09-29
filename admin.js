@@ -234,6 +234,86 @@ function bindBackupDialog() {
  * ------------------------------------------------------------------------- */
 const FOCUSABLE = 'button, [href], input, select, textarea, summary, [tabindex]:not([tabindex="-1"])';
 
+/* ---------------------------------------------------------------------------
+ * Hold-to-confirm (Rule 6, PRD v2.0 Q12) — Delete child and Reset progress
+ * ONLY. Pointer (mouse / touch / pen) or keyboard (Space / Enter held) arms a
+ * CSS fill that is visible from the first frame; releasing, leaving or
+ * blurring early cancels. A plain click never confirms; it calls onHint.
+ * Tests set the duration with setHoldDurationMock(0), which makes the
+ * confirm a normal click (the {hold:0} override, §11.6 #5).
+ * ------------------------------------------------------------------------- */
+let holdDurationOverride = null;
+
+export function setHoldDurationMock(ms) {
+  holdDurationOverride = typeof ms === 'number' ? ms : null;
+}
+
+export function resolveHoldMs(ms) {
+  return holdDurationOverride !== null ? holdDurationOverride : ms;
+}
+
+const HOLD_HANDLERS = ['onpointerdown', 'onpointerup', 'onpointerleave', 'onpointercancel',
+  'oncontextmenu', 'onkeydown', 'onkeyup', 'onblur'];
+
+/** Arms `button` as a hold target. Returns a detach function. */
+export function holdToConfirm(button, ms, onDone, { onHint } = {}) {
+  let timer = 0;
+  let done = false;
+  const isHoldKey = e => e.key === ' ' || e.key === 'Enter';
+  const cancel = () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = 0;
+    }
+    button.classList.remove('is-holding');
+  };
+  const finish = () => {
+    timer = 0;
+    done = true;
+    button.classList.remove('is-holding');
+    button.classList.add('is-held');
+    onDone();
+  };
+  const begin = () => {
+    if (done || timer) return;
+    // Restart the CSS animation from frame 0 even after an early release.
+    button.classList.remove('is-holding');
+    void button.offsetWidth;
+    button.classList.add('is-holding');
+    timer = setTimeout(finish, ms);
+  };
+  button.classList.add('adm-hold-btn');
+  button.onpointerdown = (e) => {
+    if (typeof e.button === 'number' && e.button !== 0) return;
+    begin();
+  };
+  button.onpointerup = cancel;
+  button.onpointerleave = cancel;
+  button.onpointercancel = cancel;
+  button.oncontextmenu = (e) => e.preventDefault(); // long-press menu on tablets
+  button.onkeydown = (e) => {
+    if (!isHoldKey(e)) return;
+    e.preventDefault(); // no click activation from Enter / Space
+    if (!e.repeat) begin();
+  };
+  button.onkeyup = (e) => {
+    if (!isHoldKey(e)) return;
+    e.preventDefault();
+    cancel();
+  };
+  button.onblur = cancel;
+  button.onclick = (e) => {
+    e.preventDefault();
+    if (!done && typeof onHint === 'function') onHint();
+  };
+  return () => {
+    cancel();
+    HOLD_HANDLERS.forEach(k => { button[k] = null; });
+    button.onclick = null;
+    button.classList.remove('adm-hold-btn', 'is-held');
+  };
+}
+
 function isShown(id) {
   const el = document.getElementById(id);
   return !!el && !el.classList.contains('hidden');
@@ -544,7 +624,7 @@ export function initAdmin(callbacks) {
         "Cancel",
         "pixel-btn danger",
         "pixel-btn greyed-out",
-        ADMIN_SURFACE
+        { ...ADMIN_SURFACE, hold: 2000 }
       );
     });
   }

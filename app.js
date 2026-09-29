@@ -226,7 +226,7 @@ import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault, getStarsFromDates } from './vault.js';
 import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES, getStageIndexForLevel } from './pokemon_data.js';
 import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
-import { initAdmin, refreshAdminScopeChip, adminNotice, showAdminToast, setReadBackupCodeMock, requestCloseAdmin, openAdminRewardsTab } from './admin.js';
+import { initAdmin, refreshAdminScopeChip, adminNotice, showAdminToast, setReadBackupCodeMock, requestCloseAdmin, openAdminRewardsTab, holdToConfirm, resolveHoldMs, setHoldDurationMock } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
 import { initShop, openPokemonShop, resetShopSession } from './shop.js';
 
@@ -927,7 +927,7 @@ function renderAdminProfilesList() {
         "Cancel",
         "pixel-btn danger",
         undefined,
-        { surface: 'admin' }
+        { surface: 'admin', hold: 2000 }
       );
     });
     
@@ -1188,6 +1188,17 @@ export function showCustomConfirm(title, message, onYesCallback, onNoCallback, y
   const isAdminSurface = !!(options && options.surface === 'admin');
   const returnFocusEl = isAdminSurface ? document.activeElement : null;
 
+  // Hold-to-confirm (Delete child / Reset progress only): reset on every open.
+  const holdHint = document.getElementById('confirm-hold-hint');
+  const holdMs = options && options.hold ? resolveHoldMs(options.hold) : 0;
+  let detachHold = null;
+  confirmYesBtn.removeAttribute('aria-describedby');
+  if (holdHint) {
+    holdHint.textContent = '';
+    holdHint.classList.add('hidden');
+    holdHint.classList.remove('is-nudged');
+  }
+
   confirmModal.classList.remove('hidden');
   if (isAdminSurface) confirmNoBtn.focus({ preventScroll: true });
   
@@ -1202,6 +1213,12 @@ export function showCustomConfirm(title, message, onYesCallback, onNoCallback, y
     if (confirmCheckboxContainer) {
       confirmCheckboxContainer.classList.add('hidden');
     }
+    if (detachHold) {
+      detachHold();
+      detachHold = null;
+    }
+    confirmYesBtn.removeAttribute('aria-describedby');
+    if (holdHint) holdHint.classList.add('hidden');
     if (returnFocusEl && returnFocusEl.isConnected && returnFocusEl.getClientRects().length > 0) {
       returnFocusEl.focus({ preventScroll: true });
     }
@@ -1221,6 +1238,23 @@ export function showCustomConfirm(title, message, onYesCallback, onNoCallback, y
       onNoCallback();
     }
   };
+
+  if (holdMs > 0) {
+    const confirmNow = confirmYesBtn.onclick;
+    const seconds = Math.round(options.hold / 1000);
+    if (holdHint) {
+      holdHint.textContent = `Press and hold for ${seconds} seconds`;
+      holdHint.classList.remove('hidden');
+      confirmYesBtn.setAttribute('aria-describedby', 'confirm-hold-hint');
+    }
+    detachHold = holdToConfirm(confirmYesBtn, holdMs, () => confirmNow(), {
+      onHint: () => {
+        if (!holdHint) return;
+        holdHint.textContent = `Keep holding for ${seconds} seconds to confirm`;
+        holdHint.classList.add('is-nudged');
+      }
+    });
+  }
 
   if (third && confirmThirdBtn) {
     confirmThirdBtn.onclick = () => {
@@ -2551,6 +2585,15 @@ function bindExceptionModeEvents() {
   }
   if (exceptionsDoneBtn) {
     exceptionsDoneBtn.addEventListener('click', stopExceptionMode);
+  }
+  // "↩ Admin" (secondary): leave Exception Mode exactly like Done, then ask for
+  // the passcode like any other Admin entry. No remembered auth session.
+  const exceptionsAdminBtn = document.getElementById('exceptions-admin-btn');
+  if (exceptionsAdminBtn) {
+    exceptionsAdminBtn.addEventListener('click', () => {
+      stopExceptionMode();
+      promptParentPassword(null);
+    });
   }
   // Allow Escape key to cleanly dismiss Showcase Modal or exit Exception Mode
   window.addEventListener('keydown', (e) => {
@@ -4078,6 +4121,7 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     setImportCloudDataMock: (fn) => { importCloudDataFn = fn; },
     // Bypasses #admin-restore-dialog: fn() returns the pasted code (or null = cancel).
     setReadBackupCodeMock: (fn) => setReadBackupCodeMock(fn),
+    setHoldDurationMock: (ms) => setHoldDurationMock(ms),
     setWipeDataMock: (fn) => { wipeCloudDataFn = fn || wipeActiveChildProgress; },
     setReloadMock: (fn) => { reloadFn = fn || (() => location.reload()); },
     setActiveProfileId: (id) => { activeProfileId = id; },

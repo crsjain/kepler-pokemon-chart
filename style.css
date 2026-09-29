@@ -7918,3 +7918,160 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   border-bottom: none;
   padding-bottom: 0;
 }
+
+/* ==========================================================================
+   Admin revamp Phase 5 (PRD v2.0 §11.5): hold-to-confirm, "↩ Admin" on the
+   Exceptions dock, and the Rule 8 sweep of modal z-indexes.
+   ========================================================================== */
+
+/* Rule 8: stacking moved out of index.html. Values are unchanged:
+   guide 100000 < profile picker 150000 < passcode 170000 < add child 180000
+   < family login 200000. */
+#guide-modal {
+  z-index: 100000;
+}
+
+#profile-select-modal {
+  z-index: 150000;
+}
+
+#add-profile-modal {
+  z-index: 180000;
+}
+
+#family-login-modal {
+  z-index: 200000;
+}
+
+/* Rule 8: the confirm checkbox row (kid New Week dialog), same values as the
+   former inline styles. */
+#confirm-checkbox-container {
+  margin-top: 15px;
+  text-align: left;
+  font-family: 'Fredoka One', cursive;
+}
+
+#confirm-checkbox-container label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#confirm-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* Hold-to-confirm (Rule 6, Q12): a linear fill runs across the destructive
+   button from the first frame of the press; releasing early snaps it back.
+   The JS timer owns completion; the CSS fill is 2s to match. */
+#confirm-modal .adm-hold-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#confirm-modal .adm-hold-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(0, 0, 0, 0.28);
+  transform: scaleX(0);
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+#confirm-modal .adm-hold-btn.is-holding::before {
+  animation: adm-hold-fill 2s linear forwards;
+}
+
+#confirm-modal .adm-hold-btn.is-held::before {
+  transform: scaleX(1);
+}
+
+@keyframes adm-hold-fill {
+  from { transform: scaleX(0.04); }
+  to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #confirm-modal .adm-hold-btn.is-holding::before {
+    animation-timing-function: steps(4, end);
+  }
+}
+
+#confirm-modal .adm-hold-hint {
+  margin: 4px 0 0;
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--adm-ink-2, #475569);
+  text-align: center;
+}
+
+#confirm-modal .adm-hold-hint.is-nudged {
+  color: var(--adm-danger-ink, #991b1b);
+}
+
+/* "↩ Admin" on the Exceptions dock: quiet outline on the dark dock so the
+   green Done ✅ remains the one primary CTA (Rule 17.3). */
+.exceptions-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.exceptions-banner .exceptions-admin-btn {
+  flex-shrink: 0;
+  min-height: 42px;
+  margin: 0;
+  padding: 8px 12px;
+  background: transparent;
+  color: #e2e8f0;
+  border: 2px solid #64748b;
+  border-radius: 8px;
+  box-shadow: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.exceptions-banner .exceptions-admin-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #cbd5e1;
+}
+
+.exceptions-banner .exceptions-admin-btn:active {
+  transform: translateY(2px);
+}
+
+.exceptions-banner .exceptions-admin-btn:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .exceptions-actions {
+    gap: 6px;
+  }
+
+  /* With "↩ Admin" beside Done, the cycle legend wraps instead of clipping. */
+  .exceptions-legend {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+
+  .exceptions-banner .exceptions-admin-btn {
+    padding: 6px 10px;
+    min-height: 38px;
+    font-size: 0.8rem;
+  }
+}
