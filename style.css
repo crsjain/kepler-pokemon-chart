@@ -8075,3 +8075,32 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
     font-size: 0.8rem;
   }
 }
+
+/* ==========================================================================
+   Activities pane: same card + row treatment as Family > Children. The card
+   (.adm-card) is the container, so the list drops its grey well, and each
+   activity is a flat 2px-line row (radius 6, no drop shadow).
+   ========================================================================== */
+#admin-modal #admin-pane-tasks .adm-activities-card .admin-tasks-list {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  gap: 8px;
+}
+
+#admin-modal #admin-pane-tasks .admin-task-item {
+  border: 2px solid var(--adm-line);
+  border-radius: 6px;
+  box-shadow: none;
+  padding: 10px 12px;
+}
+
+@media (max-width: 480px) {
+  #admin-modal #admin-pane-tasks .adm-activities-card {
+    padding: 12px;
+  }
+
+  #admin-modal #admin-pane-tasks .admin-task-item {
+    padding: 8px 10px;
+  }
+}
