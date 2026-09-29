@@ -475,7 +475,7 @@ Source: the rev 2 revamp proposal and its 5-stage panel review (Batch 1 session,
 
 **Dialogs:** `role=dialog`, `aria-modal`, `aria-labelledby`. On open, focus the first field (or the least destructive button in confirms). Tab is trapped in the top admin layer. Focus returns to the opener on close. Escape goes to the top layer only; Esc inside an inline edit cancels that edit and stops propagation.
 
-**Data (Phase 1):** "Restore from code…" opens `#admin-restore-dialog` (textarea, inline JSON validation, Restore primary / Cancel), then the existing single destructive confirm. Exports that can't reach the clipboard show the same dialog read-only. `#admin-force-update-btn` becomes **"Reload latest version"** with a confirm and an offline guard (disabled with "You're offline"). Family backup helper: "Includes the parent passcode. Store it privately." Debug toggle moves under "Advanced ▸".
+**Data (Phase 1):** "Restore from code" (no ellipsis — it read as truncated) opens `#admin-restore-dialog` (textarea, inline JSON validation, Restore primary / Cancel), then the existing single destructive confirm. Exports that can't reach the clipboard show the same dialog read-only. `#admin-force-update-btn` becomes **"Reload latest version"** with a confirm and an offline guard (disabled with "You're offline"). Family backup helper: "Includes the parent passcode. Store it privately." Debug toggle moves under "Advanced ▸".
 
 **Family (Phase 3):** "+ Add child" (`#admin-add-child-btn`) opens `#add-profile-modal` over Admin with **no second passcode prompt**; on create, a toast ("Lyra added. Switch from the profile picker.") and the active profile does **not** change — `selectProfile()` is never called under an open Admin.
 
