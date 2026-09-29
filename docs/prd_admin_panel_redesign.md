@@ -379,7 +379,7 @@ Each phase is its own local commit. Run `node run_headless_tests.js` after each 
 - [ ] **Hold-to-unlock for Wipe All Progress** (Rule 6). It needs a TC27 update, so it's deferred to keep v1.0 zero-regression. → **v2.0 Phase 5** (plus Delete child).
 - [ ] **Inline the rewards editor into the Rewards pane** (D5's alternative) once the extraction exists. It retires the `#edit-rewards-modal` wrapper (2 test refs). → **v2.0 Phase 4**, for the active child only; the wrapper is *kept* for non-active children (Q3).
 - [ ] **In-panel child picker** (D3's rejected option), if parents find leaving Admin to switch children annoying in practice. It needs non-active profile read/write. → still deferred.
-- [ ] **Arrow-key roving focus** in the tablist (WAI-ARIA tabs pattern). Tab and Enter work in v1.0. → **v2.0 Phase 3**.
+- [x] **Arrow-key roving focus** in the tablist (WAI-ARIA tabs pattern). Tab and Enter work in v1.0. → **v2.0 Phase 3**.
 - [ ] **Rule 8 sweep of the login, add-profile, and profile-select modals** ([`index.html:768–830`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/index.html#L768-L830)). → **v2.0 Phase 5** (inline `z-index` on `#guide-modal`, `#family-login-modal`, `#profile-select-modal`, `#add-profile-modal`).
 
 ---
@@ -488,7 +488,7 @@ Source: the rev 2 revamp proposal and its 5-stage panel review (Batch 1 session,
 - [x] 1. **Nightly-path proof:** open Admin → visit Activities without editing → *Set Exceptions* → no guard, dock shows.
 - [x] 2. **One `requestCloseAdmin()` chokepoint** incl. `startExceptionMode`; Keep editing on Esc/backdrop via `{backdrop:'cancel'}`; other `showCustomConfirm` callers unaffected.
 - [x] 3. **Save bar never covers the last row** (pane `padding-bottom` ≥ bar height) and never steals focus. Toasts for routine success only. *(The bar is the pane's last in-flow sticky child, so at full scroll it sits below the last row.)*
-- [ ] 4. **Passcode findability:** tab `title` + rail sub-label, card "Parent passcode 🔑", visible without scroll at TP/TL with 2 children. TC93 updated for 5 tabs.
+- [x] 4. **Passcode findability:** tab `title` + rail sub-label, card "Parent passcode 🔑", visible without scroll at TP/TL with 2 children. TC93 updated for 5 tabs. *(Phase 3: heading visible without scroll at TP, TL, desktop and phone even with 3 children; TC93 + TC100.)*
 - [ ] 5. **2s hold only on Delete child and Reset progress**, keyboard hold, ring from frame 1, `{hold:0}` test override.
 - [ ] 6. **"↩ Admin" is secondary**, re-prompts the passcode; Done ✅ stays primary.
 - [ ] 7. **Escape layering** handles inline edits (stopPropagation); Android back via `pushState`, tested. *(Android back + guard Esc done in Phase 2 / TC99; the inline reward-rename Esc lands with Phase 4.)*

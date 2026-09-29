@@ -4005,7 +4005,8 @@ async function runSuite() {
         assert(updatePasscodeBtn !== null, "Update passcode button should exist in admin panel");
 
         newPasscodeInput.value = "abcd";
-        
+        document.getElementById('admin-new-passcode-confirm').value = "abcd";
+
         updatePasscodeBtn.click();
         await sleep(100);
 
@@ -8065,7 +8066,7 @@ async function runSuite() {
         helpers.setProfilesList([{ id: kidId, name: 'Nova', avatarId: '25', state: JSON.parse(JSON.stringify(live)) }]);
         helpers.setActiveProfileId(kidId);
 
-        const SECTIONS = ['today', 'tasks', 'rewards', 'children', 'passcode', 'data'];
+        const SECTIONS = ['today', 'tasks', 'rewards', 'children', 'data'];
         const adminModal = document.getElementById('admin-modal');
         const panes = () => SECTIONS.map(s => document.getElementById(`admin-pane-${s}`));
         const navBtns = () => [...document.querySelectorAll('#admin-nav .admin-nav-btn')];
@@ -8078,12 +8079,13 @@ async function runSuite() {
           await sleep(100);
         };
 
-        // 1. Opens on Settings (section "today"); the other five panes are hidden; exactly one tab selected.
+        // 1. Opens on Settings (section "today"); the other four panes are hidden; exactly one tab selected.
         await openAdmin();
         assert(!adminModal.classList.contains('hidden'), "Admin modal should open");
-        assert(panes().every(p => p !== null), "All 6 admin panes should exist");
+        assert(panes().every(p => p !== null), "All 5 admin panes should exist");
+        assert(!document.getElementById('admin-pane-passcode') && !document.getElementById('admin-tab-passcode'), "Passcode was folded into Family (Q11); its pane and tab must be gone");
         assert(!document.getElementById('admin-pane-schedule') && !document.getElementById('admin-tab-schedule'), "Schedule was merged into Settings; its pane and tab must be gone");
-        assert(navBtns().length === 6, `Nav should have 6 tabs, got ${navBtns().length}`);
+        assert(navBtns().length === 5, `Nav should have 5 tabs, got ${navBtns().length}`);
         assert(visiblePanes().length === 1 && visiblePanes()[0].id === 'admin-pane-today', "Admin must open on the Today pane only");
         const selected = navBtns().filter(b => b.getAttribute('aria-selected') === 'true');
         assert(selected.length === 1 && selected[0].dataset.adminSection === 'today', "Exactly one tab (Today) should be aria-selected");
@@ -8106,8 +8108,7 @@ async function runSuite() {
                   'admin-week-start-select', 'admin-week-start-status', 'admin-timezone-select', 'admin-idle-timeout-select'],
           tasks: ['admin-tasks-list', 'admin-add-task-btn', 'admin-save-tasks-btn', 'admin-chart-style-placeholder'],
           rewards: ['admin-customize-rewards-btn', 'claimed-rewards-history-list'],
-          children: ['admin-profiles-list'],
-          passcode: ['admin-new-passcode-input', 'admin-change-passcode-btn'],
+          children: ['admin-profiles-list', 'admin-add-child-btn', 'admin-new-passcode-input', 'admin-new-passcode-confirm', 'admin-change-passcode-btn'],
           data: ['admin-export-btn', 'admin-import-btn', 'admin-cloud-export-btn', 'admin-cloud-import-btn',
                  'admin-diagnostics-btn', 'admin-force-update-btn', 'toggle-debug-sidebar', 'admin-wipe-btn']
         };
@@ -8677,10 +8678,11 @@ async function runSuite() {
         await sleep(20);
 
         // 6. Rule 11: an admin error gets a neutral "Got it" in the admin secondary style.
-        document.querySelector('.admin-nav-btn[data-admin-section="passcode"]').click();
-        document.getElementById('admin-new-passcode-input').value = '';
+        // (Passcode errors are inline since Phase 3, so an empty activity name raises it.)
+        document.querySelector('.admin-nav-btn[data-admin-section="tasks"]').click();
+        document.querySelector('#admin-tasks-list .task-name-input').value = '';
         dismissNotifs();
-        document.getElementById('admin-change-passcode-btn').click();
+        document.getElementById('admin-save-tasks-btn').click();
         await sleep(30);
         const errNotif = [...document.querySelectorAll('.notif-modal')].pop();
         const errBtn = errNotif && errNotif.querySelector('.notif-close-btn');
@@ -8691,6 +8693,7 @@ async function runSuite() {
         await sleep(20);
         assert(isOpen(adminModal), "Escape must not close Admin underneath an open notification");
         dismissNotifs();
+        document.getElementById('admin-discard-tasks-btn').click();
         document.getElementById('close-admin-modal-btn').click();
         await sleep(30);
 
@@ -9120,6 +9123,130 @@ async function runSuite() {
         helpers.setProfilesList([]);
         helpers.setActiveProfileId(null);
         helpers.setReloadMock(null);
+        helpers.resetState();
+        await sleep(30);
+      }
+
+      console.log("Running Test Case 100: Admin Phase 3 — 5 tabs, Family passcode, add child without switching, roving focus...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const live = window.__app_state__;
+        const kidA = 'tc100_kepler';
+        const kidB = 'tc100_lyra';
+        helpers.setProfilesList([
+          { id: kidA, name: 'Kepler', avatarId: '25', state: JSON.parse(JSON.stringify(live)) },
+          { id: kidB, name: 'Lyra', avatarId: '133', state: JSON.parse(JSON.stringify(live)) }
+        ]);
+        helpers.setActiveProfileId(kidA);
+        const adminModal = document.getElementById('admin-modal');
+        const passwordModal = document.getElementById('password-modal');
+        const addProfileModal = document.getElementById('add-profile-modal');
+        const isOpen = el => !el.classList.contains('hidden');
+        const escOnDocument = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        const dismissNotifs = () => document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+        const navBtns = () => [...document.querySelectorAll('#admin-nav .admin-nav-btn')];
+        const selectedSection = () => navBtns().find(b => b.getAttribute('aria-selected') === 'true').dataset.adminSection;
+        const keyOn = (el, key) => el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+        const openAdmin = async () => {
+          document.getElementById('admin-btn').click();
+          await sleep(60);
+          document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+          document.getElementById('password-submit-btn').click();
+          await sleep(60);
+          assert(isOpen(adminModal), "Admin should open");
+        };
+        dismissNotifs();
+        await openAdmin();
+
+        // 1. IA: five tabs in two groups; Family carries the passcode findability cues (§11.6 #4).
+        assert(JSON.stringify(navBtns().map(b => b.dataset.adminSection)) === JSON.stringify(['today', 'tasks', 'rewards', 'children', 'data']), "Tabs: Settings · Activities · Rewards | Family · Data");
+        const familyTab = document.getElementById('admin-tab-children');
+        assert(familyTab.querySelector('.admin-nav-label').textContent.trim() === '👥 Family', "Family tab label");
+        assert(familyTab.title === 'Children & parent passcode', "Family tab title names the passcode");
+        assert(familyTab.querySelector('.admin-nav-sub').textContent.includes('Passcode'), "Rail sub-label mentions Passcode");
+        const passcodeCard = document.getElementById('admin-passcode-card');
+        assert(passcodeCard.closest('.admin-pane').id === 'admin-pane-children', "Passcode card lives in Family");
+        assert(passcodeCard.querySelector('h4').textContent.trim() === 'Parent passcode 🔑', "Card heading 'Parent passcode 🔑'");
+
+        // 2. Roving focus: one tab stop; arrows / Home / End move and activate.
+        assert(navBtns().filter(b => b.tabIndex === 0).length === 1 && document.getElementById('admin-tab-today').tabIndex === 0, "Only the selected tab is in the Tab order");
+        const todayTab = document.getElementById('admin-tab-today');
+        todayTab.focus();
+        keyOn(todayTab, 'ArrowRight');
+        assert(selectedSection() === 'tasks' && document.activeElement === document.getElementById('admin-tab-tasks'), "ArrowRight selects and focuses the next tab");
+        assert(document.getElementById('admin-tab-tasks').tabIndex === 0 && todayTab.tabIndex === -1, "tabindex follows the selection");
+        keyOn(document.activeElement, 'ArrowDown');
+        assert(selectedSection() === 'rewards', "ArrowDown also moves (vertical rail)");
+        keyOn(document.activeElement, 'End');
+        assert(selectedSection() === 'data', "End jumps to the last tab");
+        keyOn(document.activeElement, 'ArrowRight');
+        assert(selectedSection() === 'today', "ArrowRight wraps to the first tab");
+        keyOn(document.activeElement, 'ArrowLeft');
+        assert(selectedSection() === 'data', "ArrowLeft wraps to the last tab");
+        keyOn(document.activeElement, 'Home');
+        assert(selectedSection() === 'today' && document.activeElement === todayTab, "Home jumps to the first tab");
+
+        // 3. Passcode: explicit submit, inline errors (no blocking modal), toast on success.
+        familyTab.click();
+        const pcInput = document.getElementById('admin-new-passcode-input');
+        const pcConfirm = document.getElementById('admin-new-passcode-confirm');
+        const pcError = document.getElementById('admin-passcode-error');
+        const pcBtn = document.getElementById('admin-change-passcode-btn');
+        const blocking = () => document.querySelectorAll('.notif-modal:not(.toast)').length;
+        pcInput.value = ''; pcConfirm.value = '';
+        pcBtn.click();
+        assert(isOpen(pcError) && pcError.textContent.length > 0 && blocking() === 0, "Empty passcode shows an inline error, not a modal");
+        pcInput.value = 'abc'; pcConfirm.value = 'abc';
+        pcBtn.click();
+        assert(isOpen(pcError) && pcError.textContent.includes('4'), "Short passcode explains the 4-character minimum inline");
+        pcInput.value = 'wxyz'; pcConfirm.value = 'wxyq';
+        pcBtn.click();
+        assert(isOpen(pcError) && pcError.textContent.includes("match") && document.activeElement === pcConfirm, "Mismatch errors inline and focuses the confirm field");
+        assert(live.adminPassword !== 'wxyz', "A failed update writes nothing");
+        pcConfirm.value = 'wxyz';
+        pcConfirm.dispatchEvent(new Event('input', { bubbles: true }));
+        assert(!isOpen(pcError), "Typing clears the inline error");
+        pcBtn.click();
+        await sleep(60);
+        assert(live.adminPassword === 'wxyz' && pcInput.value === '' && pcConfirm.value === '', "Matching passcodes update state and clear the fields");
+        const pcToast = [...document.querySelectorAll('.notif-modal')].pop();
+        assert(pcToast && pcToast.classList.contains('toast') && pcToast.textContent.includes('Passcode Updated'), "Success is a toast");
+        dismissNotifs();
+        live.adminPassword = helpers.ADMIN_PASSWORD;
+        helpers.saveState();
+
+        // 4. + Add child: no second passcode, sheet above Admin, no profile switch, toast (Q9).
+        const addChildBtn = document.getElementById('admin-add-child-btn');
+        addChildBtn.click();
+        await sleep(80);
+        assert(isOpen(addProfileModal) && !isOpen(passwordModal), "+ Add child opens the sheet without re-prompting the passcode");
+        assert(isOpen(adminModal), "Admin stays open under the add-child sheet");
+        escOnDocument();
+        await sleep(20);
+        assert(isOpen(adminModal), "Escape must not close Admin under the add-child sheet");
+        document.getElementById('add-profile-cancel-btn').click();
+        await sleep(20);
+        assert(!isOpen(addProfileModal) && isOpen(adminModal) && document.activeElement === addChildBtn, "Cancel returns to Family with focus on + Add child");
+        addChildBtn.click();
+        await sleep(80);
+        document.getElementById('new-profile-name').value = 'Alden';
+        document.getElementById('add-profile-submit-btn').click();
+        await sleep(120);
+        assert(!isOpen(addProfileModal) && isOpen(adminModal), "Create closes the sheet and keeps Admin open");
+        assert(helpers.getActiveProfileId() === kidA, `The active child must not change (got ${helpers.getActiveProfileId()})`);
+        assert(document.getElementById('admin-scope-chip').textContent.includes('Kepler'), "Scope chip still names the active child");
+        assert([...document.querySelectorAll('#admin-profiles-list .admin-profile-name')].some(el => el.textContent === 'Alden'), "New child appears in the Family list");
+        const addToast = [...document.querySelectorAll('.notif-modal')].pop();
+        assert(addToast && addToast.classList.contains('toast') && addToast.textContent.includes('Alden added. Switch from the profile picker.'), "Create shows the Q9 toast");
+
+        // Clean up
+        dismissNotifs();
+        document.getElementById('close-admin-modal-btn').click();
+        await sleep(30);
+        helpers.setProfilesList([]);
+        helpers.setActiveProfileId(null);
         helpers.resetState();
         await sleep(30);
       }

@@ -628,19 +628,23 @@ function initFirebaseUI() {
     }
   }
 
+  openAddProfileSheetImpl = () => {
+    if (addProfileModal) addProfileModal.classList.remove('hidden');
+    if (newProfileNameInput) newProfileNameInput.value = '';
+    if (addProfileError) addProfileError.classList.add('hidden');
+    if (addProfileSubmitBtn) {
+      addProfileSubmitBtn.disabled = false;
+      addProfileSubmitBtn.textContent = 'Create';
+    }
+    renderNewProfileIconPicker();
+    checkLocalMigrationOption();
+    if (newProfileNameInput) setTimeout(() => newProfileNameInput.focus(), 50);
+  };
+
   if (addProfileOpenBtn) {
     addProfileOpenBtn.addEventListener('click', () => {
       promptParentPassword(() => {
-        if (addProfileModal) addProfileModal.classList.remove('hidden');
-        if (newProfileNameInput) newProfileNameInput.value = '';
-        if (addProfileError) addProfileError.classList.add('hidden');
-        if (addProfileSubmitBtn) {
-          addProfileSubmitBtn.disabled = false;
-          addProfileSubmitBtn.textContent = 'Create';
-        }
-        renderNewProfileIconPicker();
-        checkLocalMigrationOption();
-        if (newProfileNameInput) setTimeout(() => newProfileNameInput.focus(), 50);
+        openAddProfileSheet(false);
       }, 'Enter the parent passcode to add a child.');
     });
   }
@@ -707,7 +711,18 @@ function initFirebaseUI() {
         }
         
         if (addProfileModal) addProfileModal.classList.add('hidden');
-        selectProfile(newId);
+        if (addProfileFromAdmin) {
+          // PRD v2.0 Q9: adding from Admin never switches the active child
+          // (selectProfile is never called under an open Admin).
+          addProfileFromAdmin = false;
+          renderAdminProfilesList();
+          renderProfilesGrid();
+          showAdminToast(`${name} added ✨`, `${name} added. Switch from the profile picker.`);
+          const addChildBtn = document.getElementById('admin-add-child-btn');
+          if (addChildBtn) addChildBtn.focus({ preventScroll: true });
+        } else {
+          selectProfile(newId);
+        }
       } catch (err) {
         if (addProfileError) {
           addProfileError.textContent = err.message;
@@ -723,6 +738,11 @@ function initFirebaseUI() {
   if (addProfileCancelBtn) {
     addProfileCancelBtn.addEventListener('click', () => {
       if (addProfileModal) addProfileModal.classList.add('hidden');
+      if (addProfileFromAdmin) {
+        addProfileFromAdmin = false;
+        const addChildBtn = document.getElementById('admin-add-child-btn');
+        if (addChildBtn) addChildBtn.focus({ preventScroll: true });
+      }
       if (addProfileSubmitBtn) {
         addProfileSubmitBtn.disabled = false;
         addProfileSubmitBtn.textContent = 'Create';
@@ -757,6 +777,18 @@ function initFirebaseUI() {
       );
     });
   }
+}
+
+/**
+ * Opens the add-child sheet. `fromAdmin` (Admin → Family → "+ Add child") skips
+ * the passcode (Admin is already unlocked) and keeps the active profile on
+ * create (PRD v2.0 Q9).
+ */
+let addProfileFromAdmin = false;
+let openAddProfileSheetImpl = () => {};
+function openAddProfileSheet(fromAdmin) {
+  addProfileFromAdmin = !!fromAdmin;
+  openAddProfileSheetImpl();
 }
 
 function renderProfilesGrid() {
@@ -1032,7 +1064,8 @@ initAdmin({
   getActiveProfileName: () => {
     const profile = activeProfileId ? profilesList.find(p => p.id === activeProfileId) : null;
     return profile && profile.name ? profile.name : null;
-  }
+  },
+  openAddChild: () => openAddProfileSheet(true)
 });
 initRewardsAdmin({
   getProfilesList: () => profilesList,

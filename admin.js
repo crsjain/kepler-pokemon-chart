@@ -255,7 +255,7 @@ function trapAdminFocus(e) {
   const layer = topAdminLayer();
   if (!layer) return;
   const items = [...layer.querySelectorAll(FOCUSABLE)]
-    .filter(el => !el.disabled && el.getClientRects().length > 0);
+    .filter(el => !el.disabled && el.tabIndex !== -1 && el.getClientRects().length > 0);
   if (items.length === 0) return;
   const first = items[0];
   const last = items[items.length - 1];
@@ -363,6 +363,36 @@ export function initAdmin(callbacks) {
       if (typeof btn.scrollIntoView === 'function') {
         btn.scrollIntoView({ inline: 'nearest', block: 'nearest' });
       }
+    });
+    // Arrow keys move between tabs (both orientations, since the rail becomes
+    // top tabs on portrait tablets and phones); Home/End jump to the ends.
+    // Activation follows focus: switching panes never re-renders.
+    adminNav.addEventListener('keydown', (e) => {
+      const btn = e.target.closest('.admin-nav-btn');
+      if (!btn) return;
+      const tabs = [...adminNav.querySelectorAll('.admin-nav-btn')];
+      const i = tabs.indexOf(btn);
+      let next = null;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = tabs[(i + 1) % tabs.length];
+      else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = tabs[(i - 1 + tabs.length) % tabs.length];
+      else if (e.key === 'Home') next = tabs[0];
+      else if (e.key === 'End') next = tabs[tabs.length - 1];
+      if (!next) return;
+      e.preventDefault();
+      showAdminSection(next.dataset.adminSection);
+      next.focus();
+      if (typeof next.scrollIntoView === 'function') {
+        next.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+      }
+    });
+  }
+
+  // + Add child (Family): opens the add-child sheet over Admin with no second
+  // passcode prompt, and never switches the active profile (Q9).
+  const addChildBtn = document.getElementById('admin-add-child-btn');
+  if (addChildBtn) {
+    addChildBtn.addEventListener('click', () => {
+      if (appCallbacks.openAddChild) appCallbacks.openAddChild();
     });
   }
 
@@ -543,28 +573,59 @@ export function initAdmin(callbacks) {
     tasksList.addEventListener('change', refreshActivitiesDirty);
   }
 
-  // Passcode Update handler
+  // Parent passcode (Family card): explicit submit, inline errors, success toast.
   const changePasscodeBtn = document.getElementById('admin-change-passcode-btn');
   const newPasscodeInput = document.getElementById('admin-new-passcode-input');
-  
+  const confirmPasscodeInput = document.getElementById('admin-new-passcode-confirm');
+  const passcodeError = document.getElementById('admin-passcode-error');
+  const showPasscodeError = (message, field) => {
+    if (passcodeError) {
+      passcodeError.textContent = message;
+      passcodeError.classList.remove('hidden');
+    }
+    if (field) field.focus();
+  };
+  const clearPasscodeError = () => {
+    if (passcodeError) {
+      passcodeError.textContent = '';
+      passcodeError.classList.add('hidden');
+    }
+  };
+  [newPasscodeInput, confirmPasscodeInput].forEach(el => {
+    if (!el) return;
+    el.addEventListener('input', clearPasscodeError);
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && changePasscodeBtn) {
+        e.preventDefault();
+        changePasscodeBtn.click();
+      }
+    });
+  });
+
   if (changePasscodeBtn && newPasscodeInput) {
     changePasscodeBtn.addEventListener('click', () => {
       const newPasscode = newPasscodeInput.value.trim();
+      const confirmPasscode = confirmPasscodeInput ? confirmPasscodeInput.value.trim() : newPasscode;
       if (!newPasscode) {
-        adminNotice("Passcode Error ❌", "Passcode cannot be empty!");
+        showPasscodeError('Enter a new passcode.', newPasscodeInput);
         return;
       }
       if (newPasscode.length < 4) {
-        adminNotice("Passcode Error ❌", "Passcode must be at least 4 characters!");
+        showPasscodeError('Use at least 4 characters.', newPasscodeInput);
         return;
       }
-      
-      // Save local state
+      if (confirmPasscode !== newPasscode) {
+        showPasscodeError("The two passcodes don't match.", confirmPasscodeInput);
+        return;
+      }
+      clearPasscodeError();
+
       state.adminPassword = newPasscode;
       saveState();
-      
+
       newPasscodeInput.value = '';
-      
+      if (confirmPasscodeInput) confirmPasscodeInput.value = '';
+
       if (appCallbacks.saveAdminPassword) {
         appCallbacks.saveAdminPassword(newPasscode)
           .then(() => {
@@ -610,7 +671,10 @@ function showAdminSection(section) {
   const modal = adminModal || document.getElementById('admin-modal');
   if (!modal || !section) return;
   modal.querySelectorAll('.admin-nav-btn').forEach(btn => {
-    btn.setAttribute('aria-selected', btn.dataset.adminSection === section ? 'true' : 'false');
+    const selected = btn.dataset.adminSection === section;
+    btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+    // Roving tabindex (WAI-ARIA tabs): only the selected tab is in the Tab order.
+    btn.tabIndex = selected ? 0 : -1;
   });
   modal.querySelectorAll('.admin-pane').forEach(pane => {
     pane.classList.toggle('hidden', pane.dataset.adminSection !== section);

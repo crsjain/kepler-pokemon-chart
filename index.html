@@ -8,24 +8,24 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.72">
+  <link rel="stylesheet" href="style.css?v=10.74">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script type="importmap">
   {
     "imports": {
-      "./app.js": "./app.js?v=10.62",
-      "./state.js": "./state.js?v=10.62",
-      "./firebase.js": "./firebase.js?v=10.62",
-      "./migrations.js": "./migrations.js?v=10.62",
-      "./vault.js": "./vault.js?v=10.62",
-      "./badges.js": "./badges.js?v=10.62",
-      "./shop.js": "./shop.js?v=10.62",
-      "./guide.js": "./guide.js?v=10.62",
-      "./pokemon_data.js": "./pokemon_data.js?v=10.62",
-      "./date_utils.js": "./date_utils.js?v=10.62",
-      "./admin.js": "./admin.js?v=10.62",
-      "./rewards_admin.js": "./rewards_admin.js?v=10.62",
-      "./audio.js": "./audio.js?v=10.62"
+      "./app.js": "./app.js?v=10.64",
+      "./state.js": "./state.js?v=10.64",
+      "./firebase.js": "./firebase.js?v=10.64",
+      "./migrations.js": "./migrations.js?v=10.64",
+      "./vault.js": "./vault.js?v=10.64",
+      "./badges.js": "./badges.js?v=10.64",
+      "./shop.js": "./shop.js?v=10.64",
+      "./guide.js": "./guide.js?v=10.64",
+      "./pokemon_data.js": "./pokemon_data.js?v=10.64",
+      "./date_utils.js": "./date_utils.js?v=10.64",
+      "./admin.js": "./admin.js?v=10.64",
+      "./rewards_admin.js": "./rewards_admin.js?v=10.64",
+      "./audio.js": "./audio.js?v=10.64"
     }
   }
   </script>
@@ -774,14 +774,13 @@
 
         <nav id="admin-nav" class="admin-nav" role="tablist" aria-orientation="vertical" aria-label="Admin sections">
           <span class="admin-nav-group-label">This child</span>
-          <button type="button" id="admin-tab-today" class="admin-nav-btn" role="tab" data-admin-section="today" aria-controls="admin-pane-today" aria-selected="true">🗓️ Settings</button>
-          <button type="button" id="admin-tab-tasks" class="admin-nav-btn" role="tab" data-admin-section="tasks" aria-controls="admin-pane-tasks" aria-selected="false">✅ Activities</button>
-          <button type="button" id="admin-tab-rewards" class="admin-nav-btn" role="tab" data-admin-section="rewards" aria-controls="admin-pane-rewards" aria-selected="false">🎁 Rewards</button>
+          <button type="button" id="admin-tab-today" class="admin-nav-btn" role="tab" data-admin-section="today" aria-controls="admin-pane-today" aria-selected="true" tabindex="0">🗓️ Settings</button>
+          <button type="button" id="admin-tab-tasks" class="admin-nav-btn" role="tab" data-admin-section="tasks" aria-controls="admin-pane-tasks" aria-selected="false" tabindex="-1">✅ Activities</button>
+          <button type="button" id="admin-tab-rewards" class="admin-nav-btn" role="tab" data-admin-section="rewards" aria-controls="admin-pane-rewards" aria-selected="false" tabindex="-1">🎁 Rewards</button>
           <span class="admin-nav-divider" aria-hidden="true"></span>
-          <span class="admin-nav-group-label">Family</span>
-          <button type="button" id="admin-tab-children" class="admin-nav-btn" role="tab" data-admin-section="children" aria-controls="admin-pane-children" aria-selected="false">👥 Children</button>
-          <button type="button" id="admin-tab-passcode" class="admin-nav-btn" role="tab" data-admin-section="passcode" aria-controls="admin-pane-passcode" aria-selected="false">🔑 Passcode</button>
-          <button type="button" id="admin-tab-data" class="admin-nav-btn" role="tab" data-admin-section="data" aria-controls="admin-pane-data" aria-selected="false">💾 Data</button>
+          <span class="admin-nav-group-label">Whole family</span>
+          <button type="button" id="admin-tab-children" class="admin-nav-btn" role="tab" data-admin-section="children" aria-controls="admin-pane-children" aria-selected="false" title="Children &amp; parent passcode" tabindex="-1"><span class="admin-nav-label">👥 Family</span><span class="admin-nav-sub" aria-hidden="true">Children · Passcode</span></button>
+          <button type="button" id="admin-tab-data" class="admin-nav-btn" role="tab" data-admin-section="data" aria-controls="admin-pane-data" aria-selected="false" tabindex="-1">💾 Data</button>
         </nav>
 
         <!-- This child: Settings (landing) -->
@@ -912,24 +911,33 @@
 
         <!-- Family: Children -->
         <section id="admin-pane-children" class="admin-pane hidden" role="tabpanel" data-admin-section="children" aria-labelledby="admin-tab-children">
-          <h3 class="admin-pane-title">👥 Children</h3>
-          <div id="admin-profiles-list" class="admin-profiles-list">
-            <!-- Populated dynamically via JS -->
-          </div>
-        </section>
-
-        <!-- Family: Passcode -->
-        <section id="admin-pane-passcode" class="admin-pane hidden" role="tabpanel" data-admin-section="passcode" aria-labelledby="admin-tab-passcode">
-          <h3 class="admin-pane-title">🔑 Passcode</h3>
-          <div class="admin-action-group adm-card">
-            <span class="adm-eyebrow">Whole family</span>
-            <h4>Parent Passcode</h4>
-            <div class="admin-option-hint">One passcode for the whole family. It applies to every child.</div>
-            <div class="adm-field">
-              <label for="admin-new-passcode-input" class="adm-field-label">New passcode</label>
-              <input type="password" id="admin-new-passcode-input" class="pixel-input" placeholder="At least 4 characters" minlength="4">
+          <h3 class="admin-pane-title">👥 Family</h3>
+          <div class="adm-column">
+            <div class="admin-action-group adm-card">
+              <div class="adm-card-title-row">
+                <h4>Children</h4>
+                <button type="button" id="admin-add-child-btn" class="pixel-btn adm-secondary">+ Add child</button>
+              </div>
+              <div id="admin-profiles-list" class="admin-profiles-list">
+                <!-- Populated dynamically via JS -->
+              </div>
             </div>
-            <button id="admin-change-passcode-btn" class="pixel-btn adm-primary">Update Passcode</button>
+
+            <!-- Parent passcode (folded in from its own tab, PRD v2.0 Q11) -->
+            <div id="admin-passcode-card" class="admin-action-group adm-card">
+              <h4>Parent passcode 🔑</h4>
+              <div class="admin-option-hint">One passcode for the whole family. It opens Admin and unlocks past days for every child.</div>
+              <div class="adm-field">
+                <label for="admin-new-passcode-input" class="adm-field-label">New passcode</label>
+                <input type="password" id="admin-new-passcode-input" class="pixel-input" placeholder="At least 4 characters" minlength="4" autocomplete="new-password" aria-describedby="admin-passcode-error">
+              </div>
+              <div class="adm-field">
+                <label for="admin-new-passcode-confirm" class="adm-field-label">Confirm new passcode</label>
+                <input type="password" id="admin-new-passcode-confirm" class="pixel-input" minlength="4" autocomplete="new-password" aria-describedby="admin-passcode-error">
+              </div>
+              <p id="admin-passcode-error" class="adm-inline-error hidden" role="alert"></p>
+              <button type="button" id="admin-change-passcode-btn" class="pixel-btn adm-primary">Update Passcode</button>
+            </div>
           </div>
         </section>
 
@@ -1132,7 +1140,7 @@
   </div>
 
   <script src="particles.js?v=10.4"></script>
-  <script type="module" src="app.js?v=10.62" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.64" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 
