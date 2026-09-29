@@ -1008,19 +1008,34 @@ function buildAdminTaskItem(task, isNew) {
 
   item.innerHTML = `
       <div class="admin-task-row">
+        <span class="adm-task-emoji" aria-hidden="true"></span>
+        <div class="adm-task-summary">
+          <span class="adm-task-name"></span>
+          <span class="adm-task-instr"></span>
+        </div>
         <select class="task-emoji-select" aria-label="Activity icon">
           ${emojiOptions}
         </select>
         <input type="text" class="task-name-input" aria-label="Activity name">
+        <div class="adm-task-actions">
         <div class="adm-move-group" role="group" aria-label="Reorder">
           <button type="button" class="pixel-btn adm-icon-btn adm-tertiary move-task-btn" data-dir="up" aria-label="Move activity up" title="Move up">▲</button>
           <button type="button" class="pixel-btn adm-icon-btn adm-tertiary move-task-btn" data-dir="down" aria-label="Move activity down" title="Move down">▼</button>
         </div>
+        <button type="button" class="pixel-btn adm-icon-btn adm-secondary edit-task-btn" aria-expanded="false">
+          <svg class="admin-btn-icon adm-icon-edit" viewBox="0 0 512 512" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+            <path d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.6 23.7 6.1l120.4-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-91.9 27 27-91.9 203.8-203.8 64.9 64.9L160 399.4zM494.6 119.5l-44.1-44.1c-23.4-23.4-61.4-23.4-84.9 0l-21.7 21.7 64.9 64.9 21.7-21.7c23.4-23.4 23.4-61.4 0-84.9z"/>
+          </svg>
+          <svg class="admin-btn-icon adm-icon-done" viewBox="0 0 448 512" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+            <path d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/>
+          </svg>
+        </button>
         <button class="pixel-btn adm-icon-btn adm-quiet-danger remove-task-btn" data-task-id="${task.id}" aria-label="Remove activity" title="Remove activity">
           <svg class="delete-icon" viewBox="0 0 448 512" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
             <path d="M135.2 17.7C140.6 6.8 151.7 0 163.8 0H284.2C296.3 0 307.4 6.8 312.8 17.7L320 32H384C401.7 32 416 46.3 416 64C416 81.7 401.7 96 384 96H64C46.3 96 32 81.7 32 64C32 46.3 46.3 32 64 32H128L135.2 17.7zM32 128H416V448C416 483.3 387.3 512 352 512H96C60.7 512 32 483.3 32 448V128zM96 176C96 162.7 85.3 152 72 152C58.7 152 48 162.7 48 176V408C48 421.3 58.7 432 72 432C85.3 432 96 421.3 96 408V176z"/>
           </svg>
         </button>
+        </div>
       </div>
       <div class="admin-task-instructions">
         <span class="instructions-label">Instructions:</span>
@@ -1035,7 +1050,59 @@ function buildAdminTaskItem(task, isNew) {
   item.querySelectorAll('.move-task-btn').forEach(btn => {
     btn.addEventListener('click', () => moveTask(item, btn.dataset.dir === 'up' ? -1 : 1));
   });
+  item.querySelector('.edit-task-btn').addEventListener('click', () => {
+    setTaskRowEditing(item, !item.classList.contains('is-editing'), { focus: true });
+  });
+  ['.task-name-input', '.task-instructions-input', '.task-emoji-select'].forEach(sel => {
+    item.querySelector(sel).addEventListener(sel === '.task-emoji-select' ? 'change' : 'input', () => syncTaskSummary(item));
+  });
+  syncTaskSummary(item);
   return item;
+}
+
+/* ---------------------------------------------------------------------------
+ * Summary rows (UX review 2026-09-29, Option A): each activity reads as
+ * emoji · name · instructions; ✏️ opens that one row into its fields. The
+ * fields stay in the DOM either way, so the draft model is unchanged.
+ * ------------------------------------------------------------------------- */
+function syncTaskSummary(item) {
+  const name = item.querySelector('.task-name-input').value.trim();
+  const instr = item.querySelector('.task-instructions-input').value.trim();
+  item.querySelector('.adm-task-emoji').textContent = item.querySelector('.task-emoji-select').value || '📝';
+  const nameEl = item.querySelector('.adm-task-name');
+  nameEl.textContent = name || 'Untitled activity';
+  nameEl.classList.toggle('is-empty', !name);
+  const instrEl = item.querySelector('.adm-task-instr');
+  instrEl.textContent = instr || 'No instructions';
+  instrEl.classList.toggle('is-empty', !instr);
+  instrEl.title = instr;
+  const label = name || 'activity';
+  const edit = item.querySelector('.edit-task-btn');
+  const editing = item.classList.contains('is-editing');
+  edit.setAttribute('aria-label', editing ? `Done editing ${label}` : `Edit ${label}`);
+  edit.title = editing ? 'Done' : 'Edit activity';
+}
+
+/** One row open at a time; opening a row closes the others (edits stay in the draft). */
+function setTaskRowEditing(item, editing, { focus = false } = {}) {
+  if (!item) return;
+  if (editing) {
+    const container = item.parentElement;
+    if (container) {
+      container.querySelectorAll('.admin-task-item.is-editing').forEach(other => {
+        if (other !== item) setTaskRowEditing(other, false);
+      });
+    }
+  }
+  item.classList.toggle('is-editing', editing);
+  item.querySelector('.edit-task-btn').setAttribute('aria-expanded', String(editing));
+  syncTaskSummary(item);
+  if (!focus) return;
+  if (editing) {
+    item.querySelector('.task-name-input').focus({ preventScroll: true });
+  } else {
+    item.querySelector('.edit-task-btn').focus({ preventScroll: true });
+  }
 }
 
 function escapeHtml(text) {
@@ -1218,6 +1285,7 @@ function addNewTask() {
     instructions: ''
   }, true);
   container.appendChild(item);
+  setTaskRowEditing(item, true);
   refreshActivitiesDirty();
   const nameInput = item.querySelector('.task-name-input');
   if (nameInput) {
@@ -1256,6 +1324,7 @@ function saveAdminTasks() {
   const liveRows = rows.filter(r => !r.removed);
 
   if (liveRows.some(r => !r.name)) {
+    setTaskRowEditing(liveRows.find(r => !r.name).item, true);
     adminNotice("Activity Error ❌", "Activity name cannot be empty!");
     return false;
   }
@@ -1277,6 +1346,7 @@ function saveAdminTasks() {
       msg.setAttribute('role', 'alert');
       msg.textContent = TASK_CONFLICT_MESSAGE;
       r.item.appendChild(msg);
+      setTaskRowEditing(r.item, true);
     });
     adminNotice(
       "Couldn't Save ⚠️",

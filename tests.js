@@ -9841,6 +9841,93 @@ async function runSuite() {
         await sleep(30);
       }
 
+      console.log("Running Test Case 104: Activities summary rows — read mode, one row edits at a time, draft unchanged...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const live = window.__app_state__;
+        const $ = id => document.getElementById(id);
+        const isOpen = el => !el.classList.contains('hidden');
+        const shown = el => el.getClientRects().length > 0;
+        const dismissNotifs = () => document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+        dismissNotifs();
+        $('admin-btn').click();
+        await sleep(60);
+        $('password-input').value = helpers.ADMIN_PASSWORD;
+        $('password-submit-btn').click();
+        await sleep(60);
+        $('admin-tab-tasks').click();
+        await sleep(30);
+        const rows = () => [...document.querySelectorAll('#admin-tasks-list .admin-task-item')].filter(r => r.dataset.removed !== '1');
+        const first = rows()[0];
+        const second = rows()[1];
+        const task0 = live.tasks.filter(t => t.active !== false)[0];
+
+        // 1. Read mode: summary text, no fields, labelled ✏️.
+        assert(rows().every(r => !r.classList.contains('is-editing')), "All rows start in read mode");
+        assert(first.querySelector('.adm-task-name').textContent === task0.name, "Summary shows the activity name");
+        assert(first.querySelector('.adm-task-emoji').textContent === task0.emoji, "Summary shows the emoji tile");
+        assert(!shown(first.querySelector('.task-name-input')) && !shown(first.querySelector('.admin-task-instructions')), "Fields are hidden in read mode");
+        assert(shown(first.querySelector('.adm-task-summary')), "Summary is visible in read mode");
+        const edit0 = first.querySelector('.edit-task-btn');
+        assert(edit0.getAttribute('aria-expanded') === 'false' && edit0.getAttribute('aria-label') === `Edit ${task0.name}`, "✏️ is labelled per activity");
+        assert(edit0.offsetHeight >= 42, "✏️ is a real touch target");
+        assert(first.querySelector('.move-task-btn[data-dir="up"]').offsetHeight >= 42, "Borderless ▲ keeps a 42px+ target");
+
+        // 2. ✏️ opens one row, focuses the name; opening another closes the first.
+        edit0.click();
+        await sleep(20);
+        assert(first.classList.contains('is-editing') && shown(first.querySelector('.task-name-input')) && !shown(first.querySelector('.adm-task-summary')), "✏️ swaps the row into its fields");
+        assert(document.activeElement === first.querySelector('.task-name-input'), "Focus lands in the name field");
+        assert(edit0.getAttribute('aria-expanded') === 'true' && edit0.title === 'Done', "The button becomes Done");
+        const nameInput = first.querySelector('.task-name-input');
+        nameInput.value = 'Piano Stars';
+        nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+        second.querySelector('.edit-task-btn').click();
+        await sleep(20);
+        assert(!first.classList.contains('is-editing') && second.classList.contains('is-editing'), "Only one row edits at a time");
+        assert(first.querySelector('.adm-task-name').textContent === 'Piano Stars', "The closed row's summary shows the draft name");
+        assert(isOpen($('admin-activities-savebar')), "Closing a row keeps the edit in the draft (Save bar shown)");
+        second.querySelector('.edit-task-btn').click();
+        await sleep(20);
+        assert(!second.classList.contains('is-editing') && document.activeElement === second.querySelector('.edit-task-btn'), "Done closes the row and returns focus to ✏️");
+
+        // 3. Empty instructions read "No instructions".
+        const instr = second.querySelector('.task-instructions-input');
+        instr.value = '';
+        instr.dispatchEvent(new Event('input', { bubbles: true }));
+        assert(second.querySelector('.adm-task-instr').textContent === 'No instructions' && second.querySelector('.adm-task-instr').classList.contains('is-empty'), "Empty instructions show a quiet placeholder");
+
+        // 4. + Add Activity opens the new row in edit mode.
+        $('admin-add-task-btn').click();
+        await sleep(20);
+        const added = rows()[rows().length - 1];
+        assert(added.dataset.new === '1' && added.classList.contains('is-editing'), "A new activity opens in edit mode");
+        assert(rows().filter(r => r.classList.contains('is-editing')).length === 1, "Still only one open row");
+
+        // 5. Save with an empty name reopens that row.
+        added.querySelector('.task-name-input').value = '';
+        first.querySelector('.edit-task-btn').click();
+        await sleep(20);
+        $('admin-save-tasks-btn').click();
+        await sleep(30);
+        assert(added.classList.contains('is-editing') && !first.classList.contains('is-editing'), "Empty-name error reopens the offending row");
+        dismissNotifs();
+
+        // 6. Discard re-renders in read mode.
+        $('admin-discard-tasks-btn').click();
+        await sleep(30);
+        assert(rows().every(r => !r.classList.contains('is-editing')) && rows()[0].querySelector('.adm-task-name').textContent === task0.name, "Discard returns to saved rows, all in read mode");
+        $('close-admin-modal-btn').click();
+        await sleep(30);
+        assert(!isOpen($('admin-modal')), "Admin closes clean");
+
+        dismissNotifs();
+        helpers.resetState();
+        await sleep(30);
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

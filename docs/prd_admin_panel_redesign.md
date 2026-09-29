@@ -503,3 +503,16 @@ Source: the rev 2 revamp proposal and its 5-stage panel review (Batch 1 session,
 - **New:** TC98 (Phase 1: restore dialog, toast, reload guard, focus), TC99 (Phase 2: guard + nightly path + dirty dot + reorder), TC100 (Phase 3: 5 tabs, Family passcode, add child without switch, roving focus), TC101 (Phase 4: inline rewards + sheet), TC102 (Phase 5: hold + ↩ Admin + Rule 8). Numbers are assigned as each lands; run the §0 audit.
 - **Changed:** TC16/TC24 (`window.prompt` → `setReadBackupCodeMock`), TC1/TC58 (toast contract; guard on dirty close; cleanup by id), TC93 (5 tabs, placeholder below the list, guard at step 5), TC96/TC97 (close helpers and customize-button path), TC50 (confirm field), TC57/TC31/TC46 (inline editor for the active child), TC23/TC27/TC89 (hold override).
 - **Schema:** none. **Cache:** every phase bumps `CACHE_NAME`, `style.css?v=`, `app.js?v=` and all importmap entries (TC90).
+
+### 11.7 Post-Batch 2 refinement — Activities summary rows (2026-09-29)
+
+A Staff UX review found the Activities tab hard to read: every row was always a form, drawing about 40 outlined boxes for five activities. It chose **Option A**:
+
+- Each row reads as **emoji tile · bold name · grey one-line instructions**, then ▲▼, ✏️ and 🗑.
+- ✏️ opens **one row at a time** into the flat labelled fields. It becomes a ✓ Done button with `aria-expanded`.
+- The rows sit on the same pale well as the Rewards lists.
+- The fields stay in the DOM, so the draft model, Save bar, dirty dot and guard are unchanged.
+- A new activity, an empty-name error or a save conflict opens the row concerned.
+- ▲▼ are borderless tertiary icons and keep their 44px targets.
+- On phones (≤520px) the actions wrap to their own line.
+- Covered by TC104. Only ✏️ enters edit mode; tapping the row does not. This avoids opening a row by mistake near ▲▼.

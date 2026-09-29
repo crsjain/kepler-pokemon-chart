@@ -8077,30 +8077,139 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 }
 
 /* ==========================================================================
-   Activities pane: same card + row treatment as Family > Children. The card
-   (.adm-card) is the container, so the list drops its grey well, and each
-   activity is a flat 2px-line row (radius 6, no drop shadow).
+   Activities pane: summary rows + tap ✏️ to edit (UX review 2026-09-29,
+   Option A). Same card as Family > Children and the same pale well + outlined
+   rows as the Rewards lists. A row reads as emoji tile · name · instructions;
+   .is-editing swaps in the flat labelled fields (Batch 1) for that one row.
    ========================================================================== */
 #admin-modal #admin-pane-tasks .adm-activities-card .admin-tasks-list {
-  background: transparent;
-  border-radius: 0;
-  padding: 0;
+  background: var(--adm-canvas);
+  border-radius: 8px;
+  padding: 8px;
   gap: 8px;
 }
 
 #admin-modal #admin-pane-tasks .admin-task-item {
-  border: 2px solid var(--adm-line);
+  border: 2px solid var(--adm-line-strong);
   border-radius: 6px;
   box-shadow: none;
+  padding: 8px 10px;
+  gap: 10px;
+}
+
+#admin-modal #admin-pane-tasks .admin-task-item.is-editing {
+  border-color: var(--adm-primary);
+  box-shadow: 0 0 0 3px var(--adm-secondary-fill);
   padding: 10px 12px;
 }
 
-@media (max-width: 480px) {
+#admin-modal #admin-pane-tasks .admin-task-row {
+  gap: 12px;
+}
+
+/* Read mode: summary visible, fields hidden */
+#admin-modal #admin-pane-tasks .admin-task-item:not(.is-editing) .task-emoji-select,
+#admin-modal #admin-pane-tasks .admin-task-item:not(.is-editing) .task-name-input,
+#admin-modal #admin-pane-tasks .admin-task-item:not(.is-editing) .admin-task-instructions,
+#admin-modal #admin-pane-tasks .admin-task-item.is-editing .adm-task-emoji,
+#admin-modal #admin-pane-tasks .admin-task-item.is-editing .adm-task-summary {
+  display: none;
+}
+
+#admin-modal #admin-pane-tasks .adm-task-emoji {
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--adm-secondary-fill);
+  font-size: 22px;
+  line-height: 1;
+}
+
+#admin-modal #admin-pane-tasks .adm-task-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#admin-modal #admin-pane-tasks .adm-task-name {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1rem;
+  color: var(--adm-ink);
+  overflow-wrap: anywhere;
+}
+
+#admin-modal #admin-pane-tasks .adm-task-instr {
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--adm-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#admin-modal #admin-pane-tasks .adm-task-name.is-empty,
+#admin-modal #admin-pane-tasks .adm-task-instr.is-empty {
+  font-style: italic;
+  font-weight: 500;
+}
+
+#admin-modal #admin-pane-tasks .adm-task-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ▲▼ are tertiary: borderless icons so the row reads as text, 44px targets kept. */
+#admin-modal #admin-pane-tasks .adm-move-group .pixel-btn.adm-icon-btn {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* The global button:disabled rule is !important; an end-of-list arrow just fades. */
+#admin-modal #admin-pane-tasks .admin-task-item .adm-move-group .pixel-btn.adm-icon-btn:disabled {
+  border-color: transparent !important;
+  background-color: transparent !important;
+}
+
+#admin-modal #admin-pane-tasks .adm-move-group .pixel-btn.adm-icon-btn:not(:disabled):hover {
+  background: var(--adm-secondary-fill);
+}
+
+#admin-modal #admin-pane-tasks .edit-task-btn .adm-icon-done,
+#admin-modal #admin-pane-tasks .admin-task-item.is-editing .edit-task-btn .adm-icon-edit {
+  display: none;
+}
+
+#admin-modal #admin-pane-tasks .admin-task-item.is-editing .edit-task-btn .adm-icon-done {
+  display: block;
+}
+
+/* Phones: actions get their own line under the name, like the Family rows. */
+@media (max-width: 520px) {
   #admin-modal #admin-pane-tasks .adm-activities-card {
     padding: 12px;
   }
 
-  #admin-modal #admin-pane-tasks .admin-task-item {
-    padding: 8px 10px;
+  #admin-modal #admin-pane-tasks .admin-task-row {
+    flex-wrap: wrap;
+    gap: 8px 10px;
+  }
+
+  #admin-modal #admin-pane-tasks .adm-task-summary {
+    flex-basis: calc(100% - 50px);
+  }
+
+  #admin-modal #admin-pane-tasks .adm-task-actions {
+    flex: 1 1 100%;
+    justify-content: flex-end;
   }
 }
