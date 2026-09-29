@@ -226,7 +226,7 @@ import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault, getStarsFromDates } from './vault.js';
 import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES, getStageIndexForLevel } from './pokemon_data.js';
 import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
-import { initAdmin, refreshAdminScopeChip, adminNotice, showAdminToast, setReadBackupCodeMock } from './admin.js';
+import { initAdmin, refreshAdminScopeChip, adminNotice, showAdminToast, setReadBackupCodeMock, requestCloseAdmin } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
 import { initShop, openPokemonShop, resetShopSession } from './shop.js';
 
@@ -310,6 +310,7 @@ const confirmTitle = document.getElementById('confirm-title');
 const confirmMessage = document.getElementById('confirm-message');
 const confirmYesBtn = document.getElementById('confirm-yes-btn');
 const confirmNoBtn = document.getElementById('confirm-no-btn');
+const confirmThirdBtn = document.getElementById('confirm-third-btn');
 const confirmCheckboxContainer = document.getElementById('confirm-checkbox-container');
 const confirmCheckbox = document.getElementById('confirm-checkbox');
 const confirmCheckboxText = document.getElementById('confirm-checkbox-text');
@@ -1128,6 +1129,20 @@ export function showCustomConfirm(title, message, onYesCallback, onNoCallback, y
     confirmCheckboxContainer.classList.add('hidden');
   }
   
+  // Optional third button (Admin unsaved-changes guard only). Reset on every
+  // open so it can never leak into the next confirm.
+  const third = options && options.third;
+  if (confirmThirdBtn) {
+    confirmThirdBtn.onclick = null;
+    if (third) {
+      confirmThirdBtn.textContent = third.label;
+      confirmThirdBtn.className = third.className || 'pixel-btn';
+    } else {
+      confirmThirdBtn.textContent = '';
+      confirmThirdBtn.className = 'pixel-btn hidden';
+    }
+  }
+
   // Admin confirms: focus the least destructive button on open and hand focus
   // back to the invoking control on close (PRD v2.0 §11.5). Kid confirms are
   // unchanged.
@@ -1141,6 +1156,10 @@ export function showCustomConfirm(title, message, onYesCallback, onNoCallback, y
     confirmYesBtn.onclick = null;
     confirmNoBtn.onclick = null;
     confirmModal.onclick = null;
+    if (confirmThirdBtn) {
+      confirmThirdBtn.onclick = null;
+      confirmThirdBtn.classList.add('hidden');
+    }
     if (confirmCheckboxContainer) {
       confirmCheckboxContainer.classList.add('hidden');
     }
@@ -1163,11 +1182,23 @@ export function showCustomConfirm(title, message, onYesCallback, onNoCallback, y
       onNoCallback();
     }
   };
+
+  if (third && confirmThirdBtn) {
+    confirmThirdBtn.onclick = () => {
+      confirmModal.classList.add('hidden');
+      cleanUpConfirm();
+      if (typeof third.onClick === 'function') third.onClick();
+    };
+  }
   
   confirmModal.onclick = (e) => {
     if (e.target === confirmModal) {
       confirmModal.classList.add('hidden');
       cleanUpConfirm();
+      if (options && options.backdrop === 'cancel') {
+        if (typeof options.onCancel === 'function') options.onCancel();
+        return;
+      }
       if (onNoCallback && typeof onNoCallback === 'function') {
         onNoCallback();
       }
@@ -1775,9 +1806,12 @@ function renderGridTable() {
   renderProgress();
 }
 
+function isViewingPastWeek() {
+  return !!(state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate));
+}
+
 function startExceptionMode() {
-  const isPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
-  if (isPastWeek) {
+  if (isViewingPastWeek()) {
     adminNotice("Read-Only 🔒", "Cannot edit exceptions for past weeks.");
     return;
   }
@@ -2464,7 +2498,17 @@ function bindWeekResetEvents() {
  */
 function bindExceptionModeEvents() {
   if (exceptionsBtn) {
-    exceptionsBtn.addEventListener('click', startExceptionMode);
+    // Every Admin close goes through requestCloseAdmin (PRD v2.0 §11.5). When the
+    // Activities draft is clean it closes at once, so the nightly path
+    // (passcode → Set Exceptions → dock) is unchanged; when dirty the guard asks
+    // first. The past-week check runs before, so Admin stays open behind it.
+    exceptionsBtn.addEventListener('click', () => {
+      if (isViewingPastWeek()) {
+        startExceptionMode();
+        return;
+      }
+      requestCloseAdmin(startExceptionMode);
+    });
   }
   if (exceptionsDoneBtn) {
     exceptionsDoneBtn.addEventListener('click', stopExceptionMode);

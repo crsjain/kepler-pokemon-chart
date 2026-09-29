@@ -8,24 +8,24 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.71">
+  <link rel="stylesheet" href="style.css?v=10.72">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script type="importmap">
   {
     "imports": {
-      "./app.js": "./app.js?v=10.61",
-      "./state.js": "./state.js?v=10.61",
-      "./firebase.js": "./firebase.js?v=10.61",
-      "./migrations.js": "./migrations.js?v=10.61",
-      "./vault.js": "./vault.js?v=10.61",
-      "./badges.js": "./badges.js?v=10.61",
-      "./shop.js": "./shop.js?v=10.61",
-      "./guide.js": "./guide.js?v=10.61",
-      "./pokemon_data.js": "./pokemon_data.js?v=10.61",
-      "./date_utils.js": "./date_utils.js?v=10.61",
-      "./admin.js": "./admin.js?v=10.61",
-      "./rewards_admin.js": "./rewards_admin.js?v=10.61",
-      "./audio.js": "./audio.js?v=10.61"
+      "./app.js": "./app.js?v=10.62",
+      "./state.js": "./state.js?v=10.62",
+      "./firebase.js": "./firebase.js?v=10.62",
+      "./migrations.js": "./migrations.js?v=10.62",
+      "./vault.js": "./vault.js?v=10.62",
+      "./badges.js": "./badges.js?v=10.62",
+      "./shop.js": "./shop.js?v=10.62",
+      "./guide.js": "./guide.js?v=10.62",
+      "./pokemon_data.js": "./pokemon_data.js?v=10.62",
+      "./date_utils.js": "./date_utils.js?v=10.62",
+      "./admin.js": "./admin.js?v=10.62",
+      "./rewards_admin.js": "./rewards_admin.js?v=10.62",
+      "./audio.js": "./audio.js?v=10.62"
     }
   }
   </script>
@@ -450,6 +450,7 @@
           </div>
         </div>
         <div class="confirm-actions">
+          <button id="confirm-third-btn" type="button" class="pixel-btn hidden"></button>
           <button id="confirm-no-btn" class="pixel-btn greyed-out">Not Yet</button>
           <button id="confirm-yes-btn" class="pixel-btn info">Let's Go! 🚀</button>
         </div>
@@ -860,7 +861,14 @@
         <section id="admin-pane-tasks" class="admin-pane hidden" role="tabpanel" data-admin-section="tasks" aria-labelledby="admin-tab-tasks">
           <h3 class="admin-pane-title">✅ Activities</h3>
 
-          <!-- Placeholder only: not wired to state; see prd_admin_panel_redesign.md D8 -->
+          <div id="admin-tasks-list" class="admin-tasks-list">
+            <!-- Populated dynamically via JS -->
+          </div>
+          <div class="adm-activities-add">
+            <button id="admin-add-task-btn" type="button" class="pixel-btn adm-secondary">+ Add Activity</button>
+          </div>
+
+          <!-- Placeholder only: not wired to state. Bottom of Activities per PRD v2.0 Q5 (was D8 top). -->
           <div id="admin-chart-style-placeholder" class="admin-coming-soon" aria-disabled="true" title="Coming soon: a big-button chart for younger children.">
             <div class="admin-coming-soon-header">
               <span>🧸 Chart Style</span>
@@ -879,12 +887,11 @@
             <div class="admin-option-hint">Fewer, bigger buttons for younger children with just one or two activities.</div>
           </div>
 
-          <div id="admin-tasks-list" class="admin-tasks-list">
-            <!-- Populated dynamically via JS -->
-          </div>
-          <div class="admin-tasks-actions">
-            <button id="admin-add-task-btn" class="pixel-btn adm-secondary">Add Activity</button>
-            <button id="admin-save-tasks-btn" class="pixel-btn adm-primary">Save Activities</button>
+          <!-- Draft save bar (PRD v2.0 §11.5): shown only while the draft differs from saved state. -->
+          <div id="admin-activities-savebar" class="admin-tasks-actions adm-savebar hidden">
+            <span id="admin-activities-dirty-status" class="adm-savebar-status" role="status" aria-live="polite"></span>
+            <button id="admin-discard-tasks-btn" type="button" class="pixel-btn adm-tertiary">Discard</button>
+            <button id="admin-save-tasks-btn" type="button" class="pixel-btn adm-primary">Save</button>
           </div>
         </section>
 
@@ -1125,7 +1132,7 @@
   </div>
 
   <script src="particles.js?v=10.4"></script>
-  <script type="module" src="app.js?v=10.61" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.62" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 

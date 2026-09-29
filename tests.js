@@ -4583,14 +4583,21 @@ async function runSuite() {
         await sleep(100);
 
         // Phase 0a: the unsaved empty row is a DOM-only draft. The failed save must
-        // not have written it to state.tasks, and Close discards it. (The old
-        // `state.tasks.pop()` cleanup would now delete a real task.)
+        // not have written it to state.tasks. (The old `state.tasks.pop()` cleanup
+        // would now delete a real task.)
         assert(JSON.stringify(state.tasks) === tasksBeforeDraft, "Failed save must not leak the draft row into state.tasks");
 
+        // Phase 2: closing with a draft raises the unsaved-changes guard; Discard drops it.
         closeAdminBtn.click();
+        await sleep(50);
+        const guardModal = document.getElementById('confirm-modal');
+        assert(!guardModal.classList.contains('hidden') && document.getElementById('confirm-title').textContent.includes('Unsaved'), "Dirty close should raise the unsaved-changes guard");
+        assert(!adminModal.classList.contains('hidden'), "Admin stays open behind the guard");
+        document.getElementById('confirm-third-btn').click();
         await sleep(100);
-        assert(adminModal.classList.contains('hidden'), "Admin Modal should close");
-        assert(!taskList.querySelector('.admin-task-item[data-new="1"]'), "Close should discard the unsaved draft row");
+        assert(adminModal.classList.contains('hidden'), "Admin Modal should close after Discard");
+        assert(!taskList.querySelector('.admin-task-item[data-new="1"]'), "Discard should drop the unsaved draft row");
+        assert(JSON.stringify(state.tasks) === tasksBeforeDraft, "Discard must leave state.tasks unchanged");
 
         window.alert = origAlert;
       }
@@ -8127,10 +8134,15 @@ async function runSuite() {
         assert(document.querySelector('#admin-tasks-list .task-name-input') === nameInput, "Switching tabs must not re-render the task list");
         assert(nameInput.value === 'TC93 Unsaved Edit', "Unsaved task edit must survive a tab switch");
 
-        // 5. D6: close on Data, reopen, lands on Today again.
+        // 5. D6: close on Data, reopen, lands on Today again. Step 4 left an unsaved
+        // edit, so the close raises the Phase 2 guard first; Discard it.
         document.querySelector('.admin-nav-btn[data-admin-section="data"]').click();
         document.getElementById('close-admin-modal-btn').click();
         await sleep(50);
+        assert(!document.getElementById('confirm-modal').classList.contains('hidden'), "Closing with the step 4 edit should raise the unsaved-changes guard");
+        document.getElementById('confirm-third-btn').click();
+        await sleep(50);
+        assert(adminModal.classList.contains('hidden'), "Discard should close Admin");
         await openAdmin();
         assert(visiblePanes().length === 1 && visiblePanes()[0].id === 'admin-pane-today', "Reopening Admin must land on Today (D6)");
 
@@ -8191,12 +8203,14 @@ async function runSuite() {
         await sleep(30);
         assert(editRewardsModal.classList.contains('hidden'), "Cancel should close the rewards editor");
 
-        // 9. D8 placeholder moved to the top of the Tasks pane.
+        // 9. Chart Style placeholder: bottom of the Activities pane (PRD v2.0 Q5; was D8 top).
         const tasksPane = document.getElementById('admin-pane-tasks');
         const placeholder = document.getElementById('admin-chart-style-placeholder');
         assert(placeholder.closest('.admin-pane') === tasksPane, "Chart Style placeholder should live in the Tasks pane");
-        assert(placeholder.compareDocumentPosition(document.getElementById('admin-tasks-list')) & Node.DOCUMENT_POSITION_FOLLOWING,
-          "Chart Style placeholder should sit above the task list");
+        assert(placeholder.compareDocumentPosition(document.getElementById('admin-tasks-list')) & Node.DOCUMENT_POSITION_PRECEDING,
+          "Chart Style placeholder should sit below the task list");
+        assert(placeholder.compareDocumentPosition(document.getElementById('admin-add-task-btn')) & Node.DOCUMENT_POSITION_PRECEDING,
+          "Chart Style placeholder should sit below Add Activity");
 
         // Clean up
         document.getElementById('close-admin-modal-btn').click();
@@ -8386,9 +8400,15 @@ async function runSuite() {
           await sleep(100);
           document.querySelector('.admin-nav-btn[data-admin-section="tasks"]').click();
         };
-        const closeAdmin = async () => {
+        const closeAdmin = async (expectGuard = false) => {
           document.getElementById('close-admin-modal-btn').click();
           await sleep(50);
+          const guardShown = !document.getElementById('confirm-modal').classList.contains('hidden');
+          assert(guardShown === expectGuard, expectGuard ? "Closing with a draft should raise the unsaved-changes guard" : "Closing a clean draft must not raise the guard");
+          if (guardShown) {
+            document.getElementById('confirm-third-btn').click(); // Discard
+            await sleep(50);
+          }
         };
         const gridTaskNames = () => [...document.querySelectorAll('#grid-tbody .task-row .task-name')].map(el => el.textContent.trim());
         const dismissNotifs = () => document.querySelectorAll('.notif-modal').forEach(el => el.remove());
@@ -8409,7 +8429,7 @@ async function runSuite() {
         assert(draftRow !== null, "Add Activity should append a data-new draft row");
         assert(taskList.querySelectorAll('.admin-task-item').length === rowsBefore + 1, "Draft row should be visible in the Activities list");
         assert(JSON.stringify(live.tasks) === tasksSnapshotA, "Add Activity must not mutate state.tasks before Save");
-        await closeAdmin();
+        await closeAdmin(true);
         assert(adminModal.classList.contains('hidden'), "Admin should close");
         assert(!taskList.querySelector('.admin-task-item[data-new="1"]'), "Close must discard the draft row");
         helpers.renderState(true);
@@ -8428,7 +8448,7 @@ async function runSuite() {
         await confirmYes();
         assert(victimRow.dataset.removed === '1' && victimRow.classList.contains('hidden'), "Remove should hide the row as a draft (data-removed)");
         assert(victim.active !== false && !victim.deletedAt, "Remove must not soft-delete in state before Save");
-        await closeAdmin();
+        await closeAdmin(true);
         assert(live.tasks.find(t => t.id === victim.id).active !== false, "Task must still be active after Close without saving");
         await openAdmin();
         const reRow = taskList.querySelector(`.admin-task-item[data-task-id="${victim.id}"]`);
@@ -8902,6 +8922,200 @@ async function runSuite() {
         Object.defineProperty(navigator, 'clipboard', { value: originalClipboard, configurable: true });
         document.getElementById('close-admin-modal-btn').click();
         await sleep(20);
+        dismissNotifs();
+        helpers.setProfilesList([]);
+        helpers.setActiveProfileId(null);
+        helpers.setReloadMock(null);
+        helpers.resetState();
+        await sleep(30);
+      }
+
+      console.log("Running Test Case 99: Admin Phase 2 — nightly path, unsaved guard, save bar, dirty dot, reorder & Android back...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const live = window.__app_state__;
+        const kidId = 'tc99_nova';
+        // A retired task sits between active ones: reorder must never move it.
+        live.tasks.splice(1, 0, { id: 'tc99-retired', name: 'TC99 Retired', emoji: '📚', concept: 'x', instructions: '', active: false, createdAt: '2026-01-01', deletedAt: '2026-01-05' });
+        assert(live.tasks.filter(t => t.active !== false).length >= 3, "TC99 needs at least three active tasks");
+        helpers.setProfilesList([{ id: kidId, name: 'Nova', avatarId: '471', state: JSON.parse(JSON.stringify(live)) }]);
+        helpers.setActiveProfileId(kidId);
+        helpers.setReloadMock(() => {});
+        helpers.renderState(true);
+        await sleep(30);
+
+        const adminModal = document.getElementById('admin-modal');
+        const confirmModal = document.getElementById('confirm-modal');
+        const savebar = document.getElementById('admin-activities-savebar');
+        const dirtyStatus = document.getElementById('admin-activities-dirty-status');
+        const tasksTab = document.getElementById('admin-tab-tasks');
+        const taskList = document.getElementById('admin-tasks-list');
+        const thirdBtn = document.getElementById('confirm-third-btn');
+        const banner = document.getElementById('exceptions-banner');
+        const layout = document.querySelector('.layout-container');
+        const isOpen = el => !el.classList.contains('hidden');
+        const escOnDocument = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        const dismissNotifs = () => document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+        const guardOpen = () => isOpen(confirmModal) && document.getElementById('confirm-title').textContent.includes('Unsaved');
+        const rows = () => [...taskList.querySelectorAll('.admin-task-item:not([data-removed="1"])')];
+        const firstName = () => rows()[0].querySelector('.task-name-input');
+        const typeInto = (input, value) => { input.value = value; input.dispatchEvent(new Event('input', { bubbles: true })); };
+        const gridTaskNames = () => [...document.querySelectorAll('#grid-tbody .task-row .task-name')].map(el => el.textContent.trim());
+        const openAdmin = async (section) => {
+          document.getElementById('admin-btn').click();
+          await sleep(60);
+          document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+          document.getElementById('password-submit-btn').click();
+          await sleep(60);
+          assert(isOpen(adminModal), "Admin should open");
+          if (section) document.querySelector(`.admin-nav-btn[data-admin-section="${section}"]`).click();
+        };
+        dismissNotifs();
+
+        // 1. Nightly-path proof (§11.6 #1): visit Activities without editing → Set Exceptions → no guard, dock shows.
+        await openAdmin('tasks');
+        assert(history.state && typeof history.state.kpcAdmin === 'string', "Open Admin should own one history entry (Android back)");
+        assert(!isOpen(savebar) && !tasksTab.hasAttribute('data-dirty'), "A clean draft shows no save bar and no dirty dot");
+        document.querySelector('.admin-nav-btn[data-admin-section="today"]').click();
+        document.getElementById('exceptions-btn').click();
+        await sleep(30);
+        assert(!isOpen(confirmModal), "The clean Set Exceptions path must never raise the guard");
+        assert(!isOpen(adminModal) && isOpen(banner) && layout.classList.contains('exception-mode'), "Set Exceptions closes Admin and shows the dock");
+        document.getElementById('exceptions-done-btn').click();
+        await sleep(30);
+
+        // 2. Dirty = differs from state (not "touched"): bar, count, dot; typing back is clean; Discard resets.
+        await openAdmin('tasks');
+        const original = firstName().value;
+        typeInto(firstName(), 'TC99 Edit');
+        assert(isOpen(savebar) && tasksTab.dataset.dirty === 'true', "An edit shows the save bar and marks the tab dirty");
+        assert(dirtyStatus.textContent.includes('1 unsaved change') && dirtyStatus.getAttribute('aria-live') === 'polite', `Status should read '● 1 unsaved change', got '${dirtyStatus.textContent}'`);
+        assert(getComputedStyle(tasksTab, '::after').content !== 'none', "Dirty tab shows the CSS dot");
+        assert(tasksTab.textContent.trim() === '✅ Activities', "The tab label text never changes");
+        assert(!savebar.contains(document.activeElement), "The save bar must never steal focus");
+        assert(getComputedStyle(savebar).position === 'sticky', "Save bar is sticky");
+        typeInto(firstName(), original);
+        assert(!isOpen(savebar) && !tasksTab.hasAttribute('data-dirty'), "Typing the saved value back makes the draft clean");
+        typeInto(firstName(), 'TC99 Edit');
+        document.getElementById('admin-discard-tasks-btn').click();
+        assert(firstName().value === original && !isOpen(savebar), "Discard rebuilds the draft from state");
+
+        // 3. Guard on every close path (§11.6 #2). No input event here: the guard reads the DOM itself.
+        firstName().value = 'TC99 Guarded';
+        document.getElementById('exceptions-btn').click();
+        await sleep(30);
+        assert(guardOpen(), "Dirty Set Exceptions should raise the unsaved-changes guard");
+        assert(document.getElementById('confirm-yes-btn').textContent === 'Save & close' &&
+          document.getElementById('confirm-no-btn').textContent === 'Keep editing' &&
+          thirdBtn.textContent === 'Discard' && isOpen(thirdBtn), "Guard offers Save & close / Keep editing / Discard");
+        assert(confirmModal.getAttribute('data-surface') === 'admin', "Guard is an admin-surface confirm");
+        assert(document.activeElement === document.getElementById('confirm-no-btn'), "Keep editing has default focus");
+        assert(!layout.classList.contains('exception-mode'), "Exception Mode must wait for the guard");
+        escOnDocument();
+        await sleep(20);
+        assert(!isOpen(confirmModal) && isOpen(adminModal) && firstName().value === 'TC99 Guarded', "Esc on the guard = Keep editing");
+        document.getElementById('close-admin-header-btn').click();
+        await sleep(20);
+        assert(guardOpen(), "Header ✕ with a draft raises the guard");
+        confirmModal.click();
+        await sleep(20);
+        assert(!isOpen(confirmModal) && isOpen(adminModal) && firstName().value === 'TC99 Guarded', "Guard backdrop = Keep editing");
+        adminModal.click();
+        await sleep(20);
+        assert(guardOpen(), "Admin backdrop with a draft raises the guard");
+        document.getElementById('confirm-no-btn').click();
+        await sleep(20);
+        assert(isOpen(adminModal) && firstName().value === 'TC99 Guarded', "Keep editing keeps the draft");
+        const namesBefore = JSON.stringify(live.tasks.map(t => t.name));
+        document.getElementById('exceptions-btn').click();
+        await sleep(30);
+        thirdBtn.click();
+        await sleep(30);
+        assert(!isOpen(adminModal) && layout.classList.contains('exception-mode'), "Discard on the Set Exceptions guard closes Admin and starts Exception Mode");
+        assert(JSON.stringify(live.tasks.map(t => t.name)) === namesBefore, "Discard writes nothing");
+        document.getElementById('exceptions-done-btn').click();
+        await sleep(30);
+
+        // 4. Save & close succeeds via Esc; a failing save keeps Admin open with the draft.
+        await openAdmin('tasks');
+        firstName().value = 'TC99 Saved';
+        escOnDocument();
+        await sleep(20);
+        assert(guardOpen(), "Esc on Admin with a draft raises the guard");
+        document.getElementById('confirm-yes-btn').click();
+        await sleep(60);
+        assert(!isOpen(adminModal), "Save & close closes Admin");
+        assert(live.tasks.find(t => t.active !== false).name === 'TC99 Saved', "Save & close writes the draft");
+        assert(gridTaskNames().includes('TC99 Saved'), "Saved name reaches the chart");
+        dismissNotifs();
+        await openAdmin('tasks');
+        firstName().value = '';
+        document.getElementById('close-admin-modal-btn').click();
+        await sleep(20);
+        assert(guardOpen(), "Footer Close with a draft raises the guard");
+        document.getElementById('confirm-yes-btn').click();
+        await sleep(60);
+        const failNotice = [...document.querySelectorAll('.notif-modal:not(.toast)')].pop();
+        assert(failNotice && failNotice.textContent.includes('Activity name cannot be empty'), "A failed Save & close shows the error");
+        assert(isOpen(adminModal) && firstName().value === '', "A failed Save & close keeps Admin open with the draft");
+        dismissNotifs();
+        typeInto(firstName(), 'TC99 Saved');
+        assert(!isOpen(savebar), "Restoring the saved value leaves nothing to save");
+
+        // 5. The third button never leaks into other confirms.
+        document.querySelector('.admin-nav-btn[data-admin-section="data"]').click();
+        document.getElementById('admin-wipe-btn').click();
+        await sleep(20);
+        assert(isOpen(confirmModal) && !isOpen(thirdBtn), "Non-guard confirms keep the third button hidden");
+        document.getElementById('confirm-no-btn').click();
+        await sleep(20);
+
+        // 6. ▲▼ reorder (§11.6 #8): active rows only; retired slot kept; order reaches the chart.
+        document.querySelector('.admin-nav-btn[data-admin-section="tasks"]').click();
+        const idsBefore = rows().map(r => r.dataset.taskId);
+        assert(rows()[0].querySelector('.move-task-btn[data-dir="up"]').disabled, "First row's ▲ is disabled");
+        assert(rows()[rows().length - 1].querySelector('.move-task-btn[data-dir="down"]').disabled, "Last row's ▼ is disabled");
+        assert(!rows().some(r => r.dataset.taskId === 'tc99-retired'), "Retired tasks are not listed for reordering");
+        const mover = rows()[rows().length - 1];
+        const moverUp = mover.querySelector('.move-task-btn[data-dir="up"]');
+        moverUp.click();
+        moverUp.click();
+        const expected = [...idsBefore];
+        const movedId = expected.pop();
+        expected.splice(expected.length - 2, 0, movedId);
+        assert(JSON.stringify(rows().map(r => r.dataset.taskId)) === JSON.stringify(expected), `▲ twice should move the last row up two places: ${idsBefore.join(',')} → got ${rows().map(r => r.dataset.taskId).join(',')}`);
+        assert(document.activeElement === moverUp, "Focus stays on the moved row's ▲");
+        assert(dirtyStatus.textContent.includes('1 unsaved change'), `A reorder counts as one change, got '${dirtyStatus.textContent}'`);
+        const retiredIdx = live.tasks.findIndex(t => t.id === 'tc99-retired');
+        const inactiveSlots = JSON.stringify(live.tasks.map((t, i) => t.active === false ? `${i}:${t.id}` : null).filter(Boolean));
+        const idSetBefore = JSON.stringify(live.tasks.map(t => t.id).sort());
+        document.getElementById('admin-save-tasks-btn').click();
+        await sleep(60);
+        dismissNotifs();
+        assert(JSON.stringify(live.tasks.filter(t => t.active !== false).map(t => t.id)) === JSON.stringify(expected), "Saved active order follows the draft");
+        assert(live.tasks.findIndex(t => t.id === 'tc99-retired') === retiredIdx, "The retired task keeps its slot");
+        assert(JSON.stringify(live.tasks.map((t, i) => t.active === false ? `${i}:${t.id}` : null).filter(Boolean)) === inactiveSlots, "Every inactive task keeps its index");
+        assert(JSON.stringify(live.tasks.map(t => t.id).sort()) === idSetBefore, "Reorder adds or drops no task (row set unchanged)");
+        const expectedNames = expected.map(id => live.tasks.find(t => t.id === id).name);
+        const grid = gridTaskNames().filter(n => expectedNames.includes(n));
+        assert(JSON.stringify(grid) === JSON.stringify(expectedNames), `Chart rows follow the saved order, got ${grid.join(',')}`);
+        assert(!isOpen(savebar), "Saving clears the save bar");
+
+        // 7. Android back (§11.6 #7): Back with a draft raises the guard; Back when clean closes Admin.
+        typeInto(firstName(), 'TC99 Back');
+        window.dispatchEvent(new PopStateEvent('popstate', { state: null }));
+        await sleep(20);
+        assert(guardOpen() && isOpen(adminModal), "Back with a draft raises the guard and keeps Admin open");
+        document.getElementById('confirm-no-btn').click();
+        await sleep(20);
+        document.getElementById('admin-discard-tasks-btn').click();
+        window.dispatchEvent(new PopStateEvent('popstate', { state: null }));
+        await sleep(20);
+        assert(!isOpen(adminModal) && !isOpen(confirmModal), "Back with a clean draft closes Admin");
+
+        // Clean up
         dismissNotifs();
         helpers.setProfilesList([]);
         helpers.setActiveProfileId(null);

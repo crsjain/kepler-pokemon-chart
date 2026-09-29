@@ -7578,3 +7578,144 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   min-width: 64px;
   min-height: 44px;
 }
+
+/* ==========================================================================
+   Admin revamp Phase 2 (PRD v2.0 §11.5): Activities draft model — dark sticky
+   save bar, dirty dot on the tab, ▲▼ reorder, three-button unsaved guard.
+   ========================================================================== */
+
+/* Add Activity sits under the list; the Chart Style placeholder follows (Q5). */
+#admin-modal .adm-activities-add {
+  display: flex;
+  justify-content: flex-start;
+}
+
+#admin-modal .adm-activities-add .pixel-btn {
+  min-height: 44px;
+}
+
+/* With the bar hidden the pane gets its normal bottom padding back. When shown,
+   the bar is the last in-flow child, so at full scroll it sits below the last
+   row and never covers it (§11.6 #3). */
+#admin-modal #admin-pane-tasks:has(> .adm-savebar.hidden) {
+  padding-bottom: 16px;
+}
+
+/* Dark dock, same foundation as the Exceptions dock (Rule 17 palette). */
+#admin-modal .admin-pane .admin-tasks-actions.adm-savebar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 -8px;
+  padding: 10px 12px 12px;
+  background: rgba(30, 41, 59, 0.96);
+  border: 2px solid #0f172a;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -6px 12px -6px rgba(15, 23, 42, 0.35);
+}
+
+#admin-modal .adm-savebar-status {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: #ffffff;
+}
+
+#admin-modal .adm-savebar .pixel-btn {
+  margin: 0;
+  min-width: 96px;
+}
+
+/* Discard on the dark dock: inverted tertiary (white outline, no fill). */
+#admin-modal .adm-savebar .pixel-btn.adm-tertiary {
+  background: transparent;
+  color: #ffffff;
+  border-color: #cbd5e1;
+}
+
+#admin-modal .adm-savebar .pixel-btn.adm-tertiary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #ffffff;
+}
+
+#admin-modal .adm-savebar :is(button):focus-visible {
+  outline-color: #93c5fd;
+}
+
+/* Dirty dot: 8px CSS ::after on the tab; the label text never changes (Q2). */
+#admin-modal .admin-nav-btn[data-dirty="true"]::after {
+  content: '';
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--adm-primary);
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+/* ▲▼ reorder pair: 44px tertiary targets beside the quiet delete. */
+#admin-modal .adm-move-group {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+#admin-modal .adm-move-group .pixel-btn.adm-icon-btn {
+  font-size: 14px;
+  line-height: 1;
+}
+
+#admin-modal .adm-move-group .pixel-btn.adm-icon-btn:disabled {
+  opacity: 0.35;
+  box-shadow: none;
+  cursor: default;
+}
+
+#admin-modal .admin-task-item input[type="text"].task-name-input {
+  min-width: 0;
+}
+
+/* Narrow panes: name gets the first line, reorder + delete wrap to the right. */
+@media (max-width: 480px) {
+  #admin-modal .admin-task-row {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  #admin-modal .admin-task-item input[type="text"].task-name-input {
+    flex: 1 1 calc(100% - 72px);
+  }
+
+  #admin-modal .adm-savebar-status {
+    flex-basis: 100%;
+  }
+
+  #admin-modal .adm-savebar .pixel-btn {
+    flex: 1 1 0;
+  }
+}
+
+/* Unsaved-changes guard: the third confirm button is a tertiary exit. */
+#confirm-modal[data-surface="admin"] #confirm-third-btn {
+  min-height: 44px;
+  border-radius: 10px;
+  font-family: 'Fredoka One', cursive;
+  background: var(--adm-surface);
+  color: var(--adm-ink);
+  border: 2px solid var(--adm-line-strong);
+  box-shadow: none;
+}
+
+#confirm-modal[data-surface="admin"] #confirm-third-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+#confirm-modal[data-surface="admin"] #confirm-third-btn:active {
+  transform: translateY(2px);
+}

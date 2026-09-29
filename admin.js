@@ -383,17 +383,17 @@ export function initAdmin(callbacks) {
   }
 
   if (closeAdminModalBtn) {
-    closeAdminModalBtn.addEventListener('click', closeAdminPanel);
+    closeAdminModalBtn.addEventListener('click', () => requestCloseAdmin());
   }
 
   if (closeAdminHeaderBtn) {
-    closeAdminHeaderBtn.addEventListener('click', closeAdminPanel);
+    closeAdminHeaderBtn.addEventListener('click', () => requestCloseAdmin());
   }
 
   if (adminModal) {
     adminModal.addEventListener('click', (e) => {
       if (e.target === adminModal) {
-        closeAdminPanel();
+        requestCloseAdmin();
       }
     });
   }
@@ -407,14 +407,26 @@ export function initAdmin(callbacks) {
       closeBackupDialog(null);
       return;
     }
+    if (e.key === 'Escape' && isUnsavedGuardOpen()) {
+      // Guard-specific: Esc = Keep editing. Other admin confirms keep X16.
+      document.getElementById('confirm-no-btn').click();
+      return;
+    }
     if (e.key === 'Tab') {
       trapAdminFocus(e);
       return;
     }
     if (e.key !== 'Escape' || !adminModal || adminModal.classList.contains('hidden')) return;
     if (isLayerAboveAdminOpen()) return;
-    closeAdminPanel();
+    // Inline edits that own Escape (reward rename) stop propagation before
+    // this runs; anything else closes Admin, and the guard protects a draft.
+    requestCloseAdmin();
   });
+
+  // Android back / browser back (PRD v2.0 §11.6 #7): Admin owns one history
+  // entry while open, so Back closes Admin (through the guard) instead of
+  // leaving the installed PWA.
+  window.addEventListener('popstate', handleAdminPopState);
 
   bindBackupDialog();
 
@@ -510,7 +522,25 @@ export function initAdmin(callbacks) {
     adminAddTaskBtn.addEventListener('click', addNewTask);
   }
   if (adminSaveTasksBtn) {
-    adminSaveTasksBtn.addEventListener('click', saveAdminTasks);
+    adminSaveTasksBtn.addEventListener('click', () => {
+      const hadFocus = isFocusInSaveBar();
+      if (saveAdminTasks() && hadFocus) focusAfterSaveBar();
+    });
+  }
+  const discardTasksBtn = document.getElementById('admin-discard-tasks-btn');
+  if (discardTasksBtn) {
+    discardTasksBtn.addEventListener('click', () => {
+      const hadFocus = isFocusInSaveBar();
+      renderAdminTasksList();
+      if (hadFocus) focusAfterSaveBar();
+    });
+  }
+  const tasksList = document.getElementById('admin-tasks-list');
+  if (tasksList) {
+    // Dirty = draft differs from saved state, recomputed on every edit (typing
+    // a name back to its saved value makes the draft clean again).
+    tasksList.addEventListener('input', refreshActivitiesDirty);
+    tasksList.addEventListener('change', refreshActivitiesDirty);
   }
 
   // Passcode Update handler
@@ -627,6 +657,7 @@ function openAdminPanel() {
   renderAdminTasksList();
   renderClaimedRewardsHistory();
   appCallbacks.renderAdminProfilesList();
+  pushAdminHistoryEntry();
   const activeTab = adminModal.querySelector('.admin-nav-btn[aria-selected="true"]');
   if (activeTab && typeof activeTab.scrollIntoView === 'function') {
     activeTab.scrollIntoView({ inline: 'nearest', block: 'nearest' });
@@ -643,15 +674,134 @@ function returnFocusFromAdmin() {
 }
 
 /**
- * Hides the panel and discards any unsaved Activities draft (Phase 0a).
- * The draft lives only in #admin-tasks-list, so rebuilding it from `state`
- * is the whole discard. Implicit until the Phase 2 dirty guard exists.
+ * Hides the panel and drops any Activities draft by rebuilding the list from
+ * `state`. Callers that may hold a draft go through requestCloseAdmin().
  */
 function closeAdminPanel() {
   if (!adminModal) return;
   adminModal.classList.add('hidden');
   renderAdminTasksList();
+  releaseAdminHistoryEntry();
   returnFocusFromAdmin();
+}
+
+/* ---------------------------------------------------------------------------
+ * Unsaved-changes guard (PRD v2.0 §11.5). Every Admin close — ✕, footer Close,
+ * Esc, backdrop, Set Exceptions, Android back — calls requestCloseAdmin().
+ * Clean draft: closes at once (the nightly path never sees a dialog).
+ * Dirty draft: Save & close / Keep editing (default; Esc + backdrop) / Discard.
+ * ------------------------------------------------------------------------- */
+let unsavedGuardOpen = false;
+
+function isUnsavedGuardOpen() {
+  if (!unsavedGuardOpen) return false;
+  const cm = document.getElementById('confirm-modal');
+  if (!cm || cm.classList.contains('hidden')) {
+    unsavedGuardOpen = false;
+    return false;
+  }
+  return true;
+}
+
+export function requestCloseAdmin(onClosed) {
+  const done = () => { if (typeof onClosed === 'function') onClosed(); };
+  if (!adminModal || adminModal.classList.contains('hidden')) {
+    done();
+    return;
+  }
+  if (!isActivitiesDirty()) {
+    closeAdminPanel();
+    done();
+    return;
+  }
+  if (isUnsavedGuardOpen()) return;
+  openUnsavedGuard(done);
+}
+
+function openUnsavedGuard(done) {
+  const n = countActivityChanges();
+  const keepEditing = () => { unsavedGuardOpen = false; };
+  unsavedGuardOpen = true;
+  showCustomConfirm(
+    'Unsaved Changes ✏️',
+    `You have ${n} unsaved change${n === 1 ? '' : 's'} in Activities.`,
+    () => {
+      unsavedGuardOpen = false;
+      // A failed save (empty name, conflict) keeps Admin open with the draft.
+      if (saveAdminTasks()) {
+        closeAdminPanel();
+        done();
+      }
+    },
+    keepEditing,
+    'Save & close',
+    'Keep editing',
+    'pixel-btn',
+    'pixel-btn',
+    {
+      ...ADMIN_SURFACE,
+      backdrop: 'cancel',
+      onCancel: keepEditing,
+      third: {
+        label: 'Discard',
+        className: 'pixel-btn',
+        onClick: () => {
+          unsavedGuardOpen = false;
+          closeAdminPanel();
+          done();
+        }
+      }
+    }
+  );
+}
+
+/* Android back: one history entry while Admin is open. A non-back close pops
+   it again (ignoring the popstate that causes). Ownership is read from
+   history.state with a per-load token, never from a flag that direct hides or
+   reloads could leave stale — so Close never calls back() into another
+   document. */
+const ADMIN_HISTORY_TOKEN = `kpc-admin-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+let ignoreNextAdminPop = false;
+
+function ownsAdminHistoryEntry() {
+  try {
+    return !!(history.state && history.state.kpcAdmin === ADMIN_HISTORY_TOKEN);
+  } catch (err) {
+    return false;
+  }
+}
+
+function pushAdminHistoryEntry() {
+  if (ownsAdminHistoryEntry()) return;
+  try {
+    history.pushState({ kpcAdmin: ADMIN_HISTORY_TOKEN }, '');
+  } catch (err) {
+    /* history unavailable: Back simply behaves as before */
+  }
+}
+
+function releaseAdminHistoryEntry() {
+  if (!ownsAdminHistoryEntry()) return;
+  ignoreNextAdminPop = true;
+  try {
+    history.back();
+  } catch (err) {
+    ignoreNextAdminPop = false;
+  }
+}
+
+function handleAdminPopState() {
+  if (ignoreNextAdminPop) {
+    ignoreNextAdminPop = false;
+    return;
+  }
+  if (!adminModal || adminModal.classList.contains('hidden')) return;
+  if (isActivitiesDirty()) {
+    pushAdminHistoryEntry(); // stay in Admin; the next Back asks again
+    if (!isUnsavedGuardOpen()) openUnsavedGuard(() => {});
+    return;
+  }
+  closeAdminPanel();
 }
 
 const TASK_EMOJI_CHOICES = ['🎹', '🧮', '📚', '✏️', '💮', '🧪', '🎨', '🏃', '🧹', '🥦', '📝'];
@@ -666,16 +816,25 @@ function buildAdminTaskItem(task, isNew) {
   item.dataset.taskId = task.id;
   if (isNew) item.dataset.new = '1';
 
-  const emojiOptions = TASK_EMOJI_CHOICES
+  // Keep a task's own emoji selectable even if it isn't in the picker list, so
+  // the select never silently falls back to the first choice.
+  const choices = task.emoji && !TASK_EMOJI_CHOICES.includes(task.emoji)
+    ? [task.emoji, ...TASK_EMOJI_CHOICES]
+    : TASK_EMOJI_CHOICES;
+  const emojiOptions = choices
     .map(e => `<option value="${e}" ${task.emoji === e ? 'selected' : ''}>${e}</option>`)
     .join('\n          ');
 
   item.innerHTML = `
       <div class="admin-task-row">
-        <select class="task-emoji-select">
+        <select class="task-emoji-select" aria-label="Activity icon">
           ${emojiOptions}
         </select>
-        <input type="text" class="task-name-input" value="${task.name}">
+        <input type="text" class="task-name-input" aria-label="Activity name">
+        <div class="adm-move-group" role="group" aria-label="Reorder">
+          <button type="button" class="pixel-btn adm-icon-btn adm-tertiary move-task-btn" data-dir="up" aria-label="Move activity up" title="Move up">▲</button>
+          <button type="button" class="pixel-btn adm-icon-btn adm-tertiary move-task-btn" data-dir="down" aria-label="Move activity down" title="Move down">▼</button>
+        </div>
         <button class="pixel-btn adm-icon-btn adm-quiet-danger remove-task-btn" data-task-id="${task.id}" aria-label="Remove activity" title="Remove activity">
           <svg class="delete-icon" viewBox="0 0 448 512" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
             <path d="M135.2 17.7C140.6 6.8 151.7 0 163.8 0H284.2C296.3 0 307.4 6.8 312.8 17.7L320 32H384C401.7 32 416 46.3 416 64C416 81.7 401.7 96 384 96H64C46.3 96 32 81.7 32 64C32 46.3 46.3 32 64 32H128L135.2 17.7zM32 128H416V448C416 483.3 387.3 512 352 512H96C60.7 512 32 483.3 32 448V128zM96 176C96 162.7 85.3 152 72 152C58.7 152 48 162.7 48 176V408C48 421.3 58.7 432 72 432C85.3 432 96 421.3 96 408V176z"/>
@@ -684,12 +843,121 @@ function buildAdminTaskItem(task, isNew) {
       </div>
       <div class="admin-task-instructions">
         <span class="instructions-label">Instructions:</span>
-        <input type="text" class="task-instructions-input" value="${task.instructions || ''}" placeholder="What ${state.childName || 'Trainer'} needs to do (e.g. Play pieces 3x)">
+        <input type="text" class="task-instructions-input" placeholder="What ${escapeHtml(state.childName || 'Trainer')} needs to do (e.g. Play pieces 3x)">
       </div>
     `;
 
+  // Values are set as properties (never interpolated) so quotes in names are safe.
+  item.querySelector('.task-name-input').value = task.name || '';
+  item.querySelector('.task-instructions-input').value = task.instructions || '';
   item.querySelector('.remove-task-btn').addEventListener('click', () => removeTask(item));
+  item.querySelectorAll('.move-task-btn').forEach(btn => {
+    btn.addEventListener('click', () => moveTask(item, btn.dataset.dir === 'up' ? -1 : 1));
+  });
   return item;
+}
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+/* ---------------------------------------------------------------------------
+ * Activities draft model (PRD v2.0 §11.5). The draft is the DOM list. Dirty
+ * means "differs from what was rendered from state" — not "was touched" — so
+ * editing a name and typing it back leaves the draft clean.
+ * ------------------------------------------------------------------------- */
+let activitiesBaseline = [];
+
+function readActivityRows(includeRemoved = false) {
+  const container = document.getElementById('admin-tasks-list');
+  if (!container) return [];
+  return [...container.querySelectorAll('.admin-task-item')]
+    .filter(item => includeRemoved || item.dataset.removed !== '1')
+    .map(item => ({
+      item,
+      id: item.dataset.taskId,
+      isNew: item.dataset.new === '1',
+      removed: item.dataset.removed === '1',
+      emoji: item.querySelector('.task-emoji-select').value,
+      name: item.querySelector('.task-name-input').value.trim(),
+      instructions: item.querySelector('.task-instructions-input').value.trim()
+    }));
+}
+
+function countActivityChanges() {
+  const live = readActivityRows();
+  const base = activitiesBaseline;
+  const baseById = new Map(base.map(b => [b.id, b]));
+  const liveIds = new Set(live.map(r => r.id));
+  let changes = live.filter(r => r.isNew || !baseById.has(r.id)).length;
+  changes += base.filter(b => !liveIds.has(b.id)).length;
+  changes += live.filter(r => {
+    const b = baseById.get(r.id);
+    return b && !r.isNew && (b.emoji !== r.emoji || b.name !== r.name || b.instructions !== r.instructions);
+  }).length;
+  const kept = live.filter(r => !r.isNew && baseById.has(r.id)).map(r => r.id);
+  const baseOrder = base.filter(b => kept.includes(b.id)).map(b => b.id);
+  if (kept.join('\n') !== baseOrder.join('\n')) changes += 1;
+  return changes;
+}
+
+function isActivitiesDirty() {
+  return countActivityChanges() > 0;
+}
+
+/** Save bar, status line, tab dot and ▲▼ enablement all follow the draft. */
+function refreshActivitiesDirty() {
+  const n = countActivityChanges();
+  const bar = document.getElementById('admin-activities-savebar');
+  const status = document.getElementById('admin-activities-dirty-status');
+  const tab = document.getElementById('admin-tab-tasks');
+  if (bar) bar.classList.toggle('hidden', n === 0);
+  if (status) status.textContent = n === 0 ? '' : `● ${n} unsaved change${n === 1 ? '' : 's'}`;
+  if (tab) {
+    if (n > 0) {
+      tab.dataset.dirty = 'true';
+      tab.title = 'Activities has unsaved changes';
+    } else {
+      delete tab.dataset.dirty;
+      tab.removeAttribute('title');
+    }
+  }
+  const rows = readActivityRows();
+  rows.forEach((r, i) => {
+    const up = r.item.querySelector('.move-task-btn[data-dir="up"]');
+    const down = r.item.querySelector('.move-task-btn[data-dir="down"]');
+    if (up) up.disabled = i === 0;
+    if (down) down.disabled = i === rows.length - 1;
+  });
+}
+
+function isFocusInSaveBar() {
+  const bar = document.getElementById('admin-activities-savebar');
+  return !!bar && bar.contains(document.activeElement);
+}
+
+/** The bar hides after Save/Discard; hand focus to a stable control instead. */
+function focusAfterSaveBar() {
+  const addBtn = document.getElementById('admin-add-task-btn');
+  if (addBtn) addBtn.focus({ preventScroll: true });
+}
+
+/**
+ * ▲▼ reorder (Q4): moves the row past its nearest visible neighbour. Only
+ * active rows are listed, so retired tasks never move (§11.6 #8).
+ */
+function moveTask(item, dir) {
+  const rows = readActivityRows().map(r => r.item);
+  const idx = rows.indexOf(item);
+  const target = rows[idx + dir];
+  if (idx < 0 || !target) return;
+  if (dir < 0) target.before(item);
+  else target.after(item);
+  refreshActivitiesDirty();
+  const same = item.querySelector(`.move-task-btn[data-dir="${dir < 0 ? 'up' : 'down'}"]`);
+  const other = item.querySelector(`.move-task-btn[data-dir="${dir < 0 ? 'down' : 'up'}"]`);
+  (same && !same.disabled ? same : other).focus({ preventScroll: true });
+  if (typeof item.scrollIntoView === 'function') item.scrollIntoView({ block: 'nearest' });
 }
 
 function renderAdminTasksList() {
@@ -701,6 +969,10 @@ function renderAdminTasksList() {
   tasks
     .filter(t => t.active !== false)
     .forEach(task => container.appendChild(buildAdminTaskItem(task, false)));
+  // Baseline is read back from the DOM so select/trim normalisation can never
+  // make a freshly rendered list look dirty.
+  activitiesBaseline = readActivityRows().map(({ id, emoji, name, instructions }) => ({ id, emoji, name, instructions }));
+  refreshActivitiesDirty();
 }
 
 /**
@@ -713,11 +985,12 @@ function removeTask(item) {
   if (!item) return;
   if (item.dataset.new === '1') {
     item.remove();
+    refreshActivitiesDirty();
     return;
   }
 
-  const taskName = item.querySelector('.task-name-input').value.trim() || 'Activity';
-  const taskEmoji = item.querySelector('.task-emoji-select').value || '📝';
+  const taskName = escapeHtml(item.querySelector('.task-name-input').value.trim() || 'Activity');
+  const taskEmoji = escapeHtml(item.querySelector('.task-emoji-select').value || '📝');
 
   const removeTaskHtml = `
     <div class="confirm-detail">
@@ -739,6 +1012,7 @@ function removeTask(item) {
     () => {
       item.dataset.removed = '1';
       item.classList.add('hidden');
+      refreshActivitiesDirty();
     },
     null,
     "Remove Activity",
@@ -763,6 +1037,13 @@ function addNewTask() {
     instructions: ''
   }, true);
   container.appendChild(item);
+  refreshActivitiesDirty();
+  const nameInput = item.querySelector('.task-name-input');
+  if (nameInput) {
+    nameInput.focus({ preventScroll: true });
+    nameInput.select();
+  }
+  if (typeof item.scrollIntoView === 'function') item.scrollIntoView({ block: 'nearest' });
 }
 
 function generateSlug(text) {
@@ -788,22 +1069,14 @@ const TASK_CONFLICT_MESSAGE = 'This activity was changed on another device.';
  */
 function saveAdminTasks() {
   const container = document.getElementById('admin-tasks-list');
-  if (!container) return;
+  if (!container) return false;
 
-  const rows = Array.from(container.querySelectorAll('.admin-task-item')).map(item => ({
-    item,
-    id: item.dataset.taskId,
-    isNew: item.dataset.new === '1',
-    removed: item.dataset.removed === '1',
-    emoji: item.querySelector('.task-emoji-select').value,
-    name: item.querySelector('.task-name-input').value.trim(),
-    instructions: item.querySelector('.task-instructions-input').value.trim()
-  }));
+  const rows = readActivityRows(true);
   const liveRows = rows.filter(r => !r.removed);
 
   if (liveRows.some(r => !r.name)) {
     adminNotice("Activity Error ❌", "Activity name cannot be empty!");
-    return;
+    return false;
   }
 
   if (!state.tasks) state.tasks = [];
@@ -828,10 +1101,11 @@ function saveAdminTasks() {
       "Couldn't Save ⚠️",
       `${TASK_CONFLICT_MESSAGE} Your changes are still here — remove that activity or close Admin to reload the list, then try again.`
     );
-    return;
+    return false;
   }
 
   const today = formatLocalDate(new Date());
+  const rowTask = new Map();
 
   rows.filter(r => r.removed && !r.isNew).forEach(r => {
     const t = findTask(r.id);
@@ -846,6 +1120,7 @@ function saveAdminTasks() {
     t.emoji = r.emoji;
     t.name = r.name;
     t.instructions = r.instructions;
+    rowTask.set(r, t);
   });
 
   liveRows.filter(r => r.isNew).forEach(r => {
@@ -855,6 +1130,7 @@ function saveAdminTasks() {
       deletedMatch.deletedAt = null;
       deletedMatch.emoji = r.emoji;
       deletedMatch.instructions = r.instructions;
+      rowTask.set(r, deletedMatch);
       return;
     }
     const slugId = generateSlug(r.name) || 'activity';
@@ -864,7 +1140,7 @@ function saveAdminTasks() {
       finalId = `${slugId}-${counter}`;
       counter++;
     }
-    tasks.push({
+    const created = {
       id: finalId,
       name: r.name,
       emoji: r.emoji,
@@ -873,13 +1149,31 @@ function saveAdminTasks() {
       active: true,
       createdAt: today,
       deletedAt: null
-    });
+    };
+    tasks.push(created);
+    rowTask.set(r, created);
   });
+
+  applyDraftOrder(tasks, liveRows.map(r => rowTask.get(r)));
 
   saveState();
   renderState(true);
   renderAdminTasksList();
   showAdminToast("Activities Saved ✨", "Activities saved successfully!");
+  return true;
+}
+
+/**
+ * ▲▼ order (§11.6 #8): the listed tasks are written back into the array slots
+ * they already occupy, in draft order. Every other task — retired ones and any
+ * added on another device — keeps its exact index.
+ */
+function applyDraftOrder(tasks, draftOrdered) {
+  const ordered = [...new Set(draftOrdered.filter(Boolean))];
+  const members = new Set(ordered);
+  const slots = [];
+  tasks.forEach((t, i) => { if (members.has(t)) slots.push(i); });
+  slots.forEach((slot, k) => { tasks[slot] = ordered[k]; });
 }
 
 const COPY_FALLBACK = {

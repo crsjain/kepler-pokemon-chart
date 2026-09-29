@@ -485,15 +485,15 @@ Source: the rev 2 revamp proposal and its 5-stage panel review (Batch 1 session,
 
 ### 11.6 Batch 2 required mitigations (from the panel review)
 
-- [ ] 1. **Nightly-path proof:** open Admin → visit Activities without editing → *Set Exceptions* → no guard, dock shows.
-- [ ] 2. **One `requestCloseAdmin()` chokepoint** incl. `startExceptionMode`; Keep editing on Esc/backdrop via `{backdrop:'cancel'}`; other `showCustomConfirm` callers unaffected.
-- [ ] 3. **Save bar never covers the last row** (pane `padding-bottom` ≥ bar height) and never steals focus. Toasts for routine success only.
+- [x] 1. **Nightly-path proof:** open Admin → visit Activities without editing → *Set Exceptions* → no guard, dock shows.
+- [x] 2. **One `requestCloseAdmin()` chokepoint** incl. `startExceptionMode`; Keep editing on Esc/backdrop via `{backdrop:'cancel'}`; other `showCustomConfirm` callers unaffected.
+- [x] 3. **Save bar never covers the last row** (pane `padding-bottom` ≥ bar height) and never steals focus. Toasts for routine success only. *(The bar is the pane's last in-flow sticky child, so at full scroll it sits below the last row.)*
 - [ ] 4. **Passcode findability:** tab `title` + rail sub-label, card "Parent passcode 🔑", visible without scroll at TP/TL with 2 children. TC93 updated for 5 tabs.
 - [ ] 5. **2s hold only on Delete child and Reset progress**, keyboard hold, ring from frame 1, `{hold:0}` test override.
 - [ ] 6. **"↩ Admin" is secondary**, re-prompts the passcode; Done ✅ stays primary.
-- [ ] 7. **Escape layering** handles inline edits (stopPropagation); Android back via `pushState`, tested.
-- [ ] 8. **Reorder active tasks only**; inactive positions kept; a historical week's row order is unchanged after a reorder; TC58 cleanup removes by id.
-- [ ] 9. **Phase 3 responsive ahead of Phase 4** — satisfied by the 0b portrait-tablet top-tab fix. `viewport-fit=cover` is **not** shipped without the kid-HUD safe-area padding and capture (deferred).
+- [ ] 7. **Escape layering** handles inline edits (stopPropagation); Android back via `pushState`, tested. *(Android back + guard Esc done in Phase 2 / TC99; the inline reward-rename Esc lands with Phase 4.)*
+- [x] 8. **Reorder active tasks only**; inactive positions kept; a historical week's row order is unchanged after a reorder; TC58 cleanup removes by id. *(Phase 2, TC99: retired tasks keep their array index and a past week's row **set** is unchanged. Active tasks shown in a past week do follow the new order, because the grid renders in array order; fully frozen history order would need a persisted per-week order and a schema migration — not done. TC58 no longer pops: its draft is discarded through the guard.)*
+- [x] 9. **Phase 3 responsive ahead of Phase 4** — satisfied by the 0b portrait-tablet top-tab fix. `viewport-fit=cover` is **not** shipped without the kid-HUD safe-area padding and capture (deferred).
 - [ ] 10. **Phase 4 re-parenting** keeps IDs unique; the non-active-child sheet keeps its modal asserts; Add child never calls `selectProfile()` under Admin.
 - [ ] 11. **Rule 8 sweep:** inline `z-index` removed from `#guide-modal`, `#family-login-modal`, `#profile-select-modal`, `#add-profile-modal`.
 - [x] 12. **Fold into this PRD** (v2.0, this section + revision row).
