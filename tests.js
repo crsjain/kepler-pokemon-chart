@@ -64,6 +64,9 @@ async function runSuite() {
     window.confirm = originalConfirm;
     window.alert = originalAlert;
     window.prompt = originalPrompt;
+    if (window.__test_helpers__ && window.__test_helpers__.setReadBackupCodeMock) {
+      window.__test_helpers__.setReadBackupCodeMock(null);
+    }
     mocksActive = false;
   }
 
@@ -1210,7 +1213,7 @@ async function runSuite() {
         assert(adminModal && !adminModal.classList.contains('hidden'), "Admin Modal should be open");
 
         // 16.1 Test importing invalid JSON (fails parse)
-        window.prompt = () => "invalid-json-backup"; // Return invalid json
+        window.__test_helpers__.setReadBackupCodeMock(() => "invalid-json-backup"); // Return invalid json
         const adminImportBtn = document.getElementById('admin-import-btn');
         assert(adminImportBtn !== null, "Import button should exist in admin panel");
         adminImportBtn.click();
@@ -1231,7 +1234,7 @@ async function runSuite() {
         await sleep(400); // Wait for transition and removal
 
         // 16.2 Test importing valid JSON but invalid schema
-        window.prompt = () => JSON.stringify({ version: 9, invalidKey: "value" }); // Valid JSON, invalid backup schema
+        window.__test_helpers__.setReadBackupCodeMock(() => JSON.stringify({ version: 9, invalidKey: "value" })); // Valid JSON, invalid backup schema
         adminImportBtn.click();
         await sleep(100);
 
@@ -1258,7 +1261,7 @@ async function runSuite() {
             totalTraded: 0
           }
         };
-        window.prompt = () => JSON.stringify(validBackup);
+        window.__test_helpers__.setReadBackupCodeMock(() => JSON.stringify(validBackup));
         adminImportBtn.click();
         await sleep(100);
 
@@ -2142,8 +2145,8 @@ async function runSuite() {
           return Promise.resolve();
         });
         
-        // Mock prompt to return the export string
-        window.prompt = () => JSON.stringify(mockFamilyData);
+        // Mock the restore dialog to return the export string
+        helpers.setReadBackupCodeMock(() => JSON.stringify(mockFamilyData));
         
         // Sim click Cloud Export
         const cloudExportBtn = document.getElementById('admin-cloud-export-btn');
@@ -8736,6 +8739,172 @@ async function runSuite() {
         helpers.setProfilesList([]);
         helpers.setActiveProfileId(null);
         helpers.setWipeDataMock(null);
+        helpers.setReloadMock(null);
+        helpers.resetState();
+        await sleep(30);
+      }
+
+      console.log("Running Test Case 98: Admin Phase 1 — cards, restore dialog, toast, reload guard & focus...");
+      {
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const live = window.__app_state__;
+        const kidId = 'tc98_nova';
+        helpers.setProfilesList([{ id: kidId, name: 'Nova', avatarId: '471', state: JSON.parse(JSON.stringify(live)) }]);
+        helpers.setActiveProfileId(kidId);
+        helpers.setReloadMock(() => {});
+        const adminModal = document.getElementById('admin-modal');
+        const confirmModal = document.getElementById('confirm-modal');
+        const dialog = document.getElementById('admin-restore-dialog');
+        const dialogInput = document.getElementById('admin-restore-input');
+        const dialogError = document.getElementById('admin-restore-error');
+        const isOpen = el => !el.classList.contains('hidden');
+        const escOnDocument = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        const blockingNotifs = () => document.querySelectorAll('.notif-modal:not(.toast)').length;
+        const dismissNotifs = () => document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+        const waitFocus = async (el) => { for (let i = 0; i < 30 && document.activeElement !== el; i++) await sleep(20); };
+        const openAdmin = async () => {
+          document.getElementById('admin-btn').click();
+          await sleep(60);
+          document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+          document.getElementById('password-submit-btn').click();
+          await sleep(60);
+          assert(isOpen(adminModal), "Admin should open");
+        };
+        const originalClipboard = navigator.clipboard;
+        dismissNotifs();
+
+        // 1. Focus moves into Admin (selected tab); scope eyebrows name the child per card.
+        await openAdmin();
+        assert(document.activeElement === document.getElementById('admin-tab-today'), `Opening Admin must focus the selected tab, got ${document.activeElement && document.activeElement.id}`);
+        const childEyebrows = [...adminModal.querySelectorAll('[data-admin-scope-eyebrow="child"]')];
+        assert(childEyebrows.length >= 3 && childEyebrows.every(el => el.textContent === 'This child · Nova'), "Per-child cards carry a 'This child · Nova' eyebrow");
+        const eyebrowTexts = [...adminModal.querySelectorAll('#admin-pane-data .adm-eyebrow')].map(el => el.textContent);
+        assert(eyebrowTexts.includes('Whole family') && eyebrowTexts.includes('This device'), `Data cards label their scope; got ${eyebrowTexts.join(' | ')}`);
+        assert(document.querySelectorAll('#admin-pane-data .adm-card').length === 4 && document.getElementById('admin-wipe-btn').closest('.adm-card--danger'), "Data has 4 cards; Reset sits in the danger card");
+        assert(document.getElementById('admin-force-update-btn').textContent.includes('Reload latest version'), "Force App Update is relabelled 'Reload latest version'");
+        assert(document.getElementById('toggle-debug-sidebar').closest('details.adm-advanced'), "Debug sidebar lives under Advanced");
+        assert([...document.querySelectorAll('#admin-pane-data .admin-option-hint')].some(el => el.textContent.includes('Includes the parent passcode')), "Family backup warns that it includes the passcode");
+
+        // 2. Auto-saving Settings confirm inline ("Saved ✓"), not with a blocking modal.
+        const idleSelect = document.getElementById('admin-idle-timeout-select');
+        const before = blockingNotifs();
+        idleSelect.value = '15';
+        idleSelect.dispatchEvent(new Event('change'));
+        await sleep(20);
+        const idleStatus = idleSelect.closest('.adm-card').querySelector('[data-admin-saved-status]');
+        assert(idleStatus.textContent === 'Saved ✓' && idleStatus.classList.contains('is-visible') && idleStatus.getAttribute('aria-live') === 'polite', "Changing a setting flashes an aria-live 'Saved ✓'");
+        const tzSelect = document.getElementById('admin-timezone-select');
+        tzSelect.value = 'America/Chicago';
+        tzSelect.dispatchEvent(new Event('change'));
+        await sleep(20);
+        assert(blockingNotifs() === before, "Timezone / settings changes no longer open a blocking notification");
+        assert(live.idleTimeout === 15 && live.timezoneOffset === 'America/Chicago', "Settings still save immediately");
+        tzSelect.value = 'default';
+        tzSelect.dispatchEvent(new Event('change'));
+        await sleep(20);
+
+        // 3. Restore dialog (no mock): inline validation, Esc and backdrop cancel, then one danger confirm.
+        document.querySelector('.admin-nav-btn[data-admin-section="data"]').click();
+        const importBtn = document.getElementById('admin-import-btn');
+        importBtn.focus();
+        importBtn.click();
+        await sleep(20);
+        assert(isOpen(dialog) && dialog.getAttribute('role') === 'dialog', "Restore from code… opens the in-app dialog (no window.prompt)");
+        await waitFocus(dialogInput);
+        assert(document.activeElement === dialogInput, "Restore dialog focuses the code field");
+        dialogInput.value = 'not-a-backup';
+        document.getElementById('admin-restore-submit-btn').click();
+        await sleep(20);
+        assert(isOpen(dialog) && isOpen(dialogError) && dialogError.textContent.length > 0, "Invalid code shows an inline error and keeps the dialog open");
+        assert(blockingNotifs() === before, "Inline validation raises no notification");
+        escOnDocument();
+        await sleep(20);
+        assert(!isOpen(dialog) && isOpen(adminModal), "Escape closes only the restore dialog");
+        assert(document.activeElement === importBtn, "Focus returns to the Restore button");
+        importBtn.click();
+        await sleep(20);
+        assert(dialogInput.value === '' && !isOpen(dialogError), "Dialog reopens clean");
+        dialog.click();
+        await sleep(20);
+        assert(!isOpen(dialog) && isOpen(adminModal), "Backdrop closes only the restore dialog");
+        const gridBefore = JSON.stringify(live.grid);
+        importBtn.click();
+        await sleep(20);
+        dialogInput.value = JSON.stringify({ version: 10, partnersData: {}, grid: { tc98: true } });
+        document.getElementById('admin-restore-submit-btn').click();
+        await sleep(20);
+        assert(!isOpen(dialog), "A valid code closes the dialog");
+        assert(isOpen(confirmModal) && confirmModal.getAttribute('data-surface') === 'admin', "Then exactly one admin confirm (the single danger step)");
+        assert(document.getElementById('confirm-yes-btn').textContent === 'Restore', "Confirm CTA reads 'Restore'");
+        assert(document.activeElement === document.getElementById('confirm-no-btn'), "Admin confirm focuses the least destructive button");
+        document.getElementById('confirm-no-btn').click();
+        await sleep(20);
+        assert(JSON.stringify(live.grid) === gridBefore && isOpen(adminModal), "Cancelling the confirm restores nothing");
+
+        // 4. Clipboard failure → read-only copy dialog; success → toast (non-blocking, no backdrop).
+        Object.defineProperty(navigator, 'clipboard', { value: { writeText: () => Promise.reject(new Error('denied')) }, configurable: true });
+        document.getElementById('admin-export-btn').click();
+        await sleep(30);
+        assert(isOpen(dialog) && dialog.dataset.mode === 'copy' && dialogInput.readOnly && dialogInput.value.length > 20, "Copy failure shows the code read-only in the dialog");
+        assert(!isOpen(document.getElementById('admin-restore-cancel-btn')) && document.getElementById('admin-restore-submit-btn').textContent === 'Done', "Copy mode offers just 'Done'");
+        document.getElementById('admin-restore-submit-btn').click();
+        await sleep(20);
+        assert(!isOpen(dialog), "Done closes the copy dialog");
+        Object.defineProperty(navigator, 'clipboard', { value: { writeText: () => Promise.resolve() }, configurable: true });
+        document.getElementById('admin-export-btn').click();
+        await sleep(30);
+        document.getElementById('admin-export-btn').click();
+        await sleep(30);
+        const toasts = document.querySelectorAll('.notif-modal.toast');
+        assert(toasts.length === 1, `A new toast replaces the previous one (got ${toasts.length})`);
+        const toast = toasts[0];
+        assert(toast.getAttribute('role') === 'status' && toast.querySelector('h2') && toast.querySelector('.notif-body-text') && toast.querySelector('.notif-close-btn'), "Toast keeps the notification DOM contract with role=status");
+        assert(getComputedStyle(toast).backgroundColor === 'rgba(0, 0, 0, 0)', "Toast has no backdrop");
+        assert(blockingNotifs() === before, "Routine success is a toast, not a blocking modal");
+        escOnDocument();
+        await sleep(20);
+        assert(!isOpen(adminModal), "A toast never blocks Escape from closing Admin");
+        assert(document.activeElement === document.getElementById('admin-btn'), "Closing Admin returns focus to ⚙️");
+        dismissNotifs();
+
+        // 5. Reload latest version: offline guard + confirm copy.
+        await openAdmin();
+        const reloadBtn = document.getElementById('admin-force-update-btn');
+        Object.defineProperty(navigator, 'onLine', { get: () => false, configurable: true });
+        window.dispatchEvent(new Event('offline'));
+        assert(reloadBtn.disabled && document.getElementById('admin-force-update-hint').textContent.includes("You're offline"), "Offline disables Reload with a 'You're offline' hint");
+        delete navigator.onLine;
+        window.dispatchEvent(new Event('online'));
+        assert(!reloadBtn.disabled && navigator.onLine === true, "Back online re-enables Reload");
+        reloadBtn.click();
+        await sleep(20);
+        assert(isOpen(confirmModal) && document.getElementById('confirm-title').textContent.includes('Reload the latest version'), "Reload asks for confirmation first");
+        assert(document.getElementById('confirm-message').textContent.includes('Needs internet'), "Reload confirm says it needs internet");
+        document.getElementById('confirm-no-btn').click();
+        await sleep(20);
+
+        // 6. Focus trap: Tab from the last control wraps to the first; Activities Save is a toast.
+        const focusables = [...adminModal.querySelectorAll('button, [href], input, select, textarea, summary, [tabindex]:not([tabindex="-1"])')]
+          .filter(el => !el.disabled && el.getClientRects().length > 0);
+        focusables[focusables.length - 1].focus();
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+        assert(document.activeElement === focusables[0], `Tab wraps to the first control in Admin, got ${document.activeElement && document.activeElement.id}`);
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
+        assert(document.activeElement === focusables[focusables.length - 1], "Shift+Tab wraps back to the last control");
+        document.getElementById('admin-save-tasks-btn').click();
+        await sleep(30);
+        const saveToast = [...document.querySelectorAll('.notif-modal')].pop();
+        assert(saveToast && saveToast.classList.contains('toast') && saveToast.querySelector('h2').textContent.includes('Activities Saved'), "Activities Saved is a toast");
+
+        // Clean up
+        Object.defineProperty(navigator, 'clipboard', { value: originalClipboard, configurable: true });
+        document.getElementById('close-admin-modal-btn').click();
+        await sleep(20);
+        dismissNotifs();
+        helpers.setProfilesList([]);
+        helpers.setActiveProfileId(null);
         helpers.setReloadMock(null);
         helpers.resetState();
         await sleep(30);

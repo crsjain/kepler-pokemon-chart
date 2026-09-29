@@ -8,24 +8,24 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.70">
+  <link rel="stylesheet" href="style.css?v=10.71">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script type="importmap">
   {
     "imports": {
-      "./app.js": "./app.js?v=10.60",
-      "./state.js": "./state.js?v=10.60",
-      "./firebase.js": "./firebase.js?v=10.60",
-      "./migrations.js": "./migrations.js?v=10.60",
-      "./vault.js": "./vault.js?v=10.60",
-      "./badges.js": "./badges.js?v=10.60",
-      "./shop.js": "./shop.js?v=10.60",
-      "./guide.js": "./guide.js?v=10.60",
-      "./pokemon_data.js": "./pokemon_data.js?v=10.60",
-      "./date_utils.js": "./date_utils.js?v=10.60",
-      "./admin.js": "./admin.js?v=10.60",
-      "./rewards_admin.js": "./rewards_admin.js?v=10.60",
-      "./audio.js": "./audio.js?v=10.60"
+      "./app.js": "./app.js?v=10.61",
+      "./state.js": "./state.js?v=10.61",
+      "./firebase.js": "./firebase.js?v=10.61",
+      "./migrations.js": "./migrations.js?v=10.61",
+      "./vault.js": "./vault.js?v=10.61",
+      "./badges.js": "./badges.js?v=10.61",
+      "./shop.js": "./shop.js?v=10.61",
+      "./guide.js": "./guide.js?v=10.61",
+      "./pokemon_data.js": "./pokemon_data.js?v=10.61",
+      "./date_utils.js": "./date_utils.js?v=10.61",
+      "./admin.js": "./admin.js?v=10.61",
+      "./rewards_admin.js": "./rewards_admin.js?v=10.61",
+      "./audio.js": "./audio.js?v=10.61"
     }
   }
   </script>
@@ -437,7 +437,7 @@
     </div>
 
     <!-- Custom Confirm Modal -->
-    <div id="confirm-modal" class="modal hidden">
+    <div id="confirm-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
       <div class="modal-content confirm-content">
         <h2 id="confirm-title">New Week!</h2>
         <div class="confirm-body">
@@ -786,11 +786,16 @@
         <!-- This child: Settings (landing) -->
         <section id="admin-pane-today" class="admin-pane" role="tabpanel" data-admin-section="today" aria-labelledby="admin-tab-today">
           <h3 class="admin-pane-title">🗓️ Settings</h3>
-          <div class="admin-pane-grid">
-            <div class="admin-action-group">
+          <div class="admin-pane-grid adm-column">
+            <div class="admin-action-group adm-card">
+              <div class="adm-card-head">
+                <span class="adm-eyebrow" data-admin-scope-eyebrow="child">This child</span>
+                <span class="adm-saved-status" data-admin-saved-status role="status" aria-live="polite"></span>
+              </div>
               <h4>Tonight's Check-in</h4>
               <button id="exceptions-btn" class="pixel-btn adm-primary">Set Exceptions</button>
-              <div class="admin-option-row">
+              <div class="adm-legend" aria-hidden="true">💤 Rest day · ✨ Bonus</div>
+              <div class="admin-option-row adm-row">
                 <span>Parent Edit Window:</span>
                 <select id="admin-parent-grace-select" class="pixel-select" title="How long past-day editing stays unlocked after entering the passcode.">
                   <option value="1">1 min</option>
@@ -798,7 +803,7 @@
                   <option value="5">5 min</option>
                 </select>
               </div>
-              <div class="admin-option-row admin-switch-row">
+              <div class="admin-option-row adm-row admin-switch-row">
                 <label class="admin-switch-label" for="admin-lock-past-days-toggle">🔒 Approve Past Days</label>
                 <label class="switch">
                   <input type="checkbox" id="admin-lock-past-days-toggle" aria-label="Approve past days: ask for the parent passcode" aria-describedby="admin-lock-past-days-hint">
@@ -807,9 +812,13 @@
               </div>
               <div id="admin-lock-past-days-hint" class="admin-option-hint">Requires the parent passcode before this child can edit previous days. Recommended for younger children.</div>
             </div>
-            <div class="admin-action-group">
+            <div class="admin-action-group adm-card">
+              <div class="adm-card-head">
+                <span class="adm-eyebrow" data-admin-scope-eyebrow="child">This child</span>
+                <span class="adm-saved-status" data-admin-saved-status role="status" aria-live="polite"></span>
+              </div>
               <h4>Week &amp; Clock</h4>
-              <div class="admin-option-row">
+              <div class="admin-option-row adm-row">
                 <span>Week Start:</span>
                 <select id="admin-week-start-select" class="pixel-select">
                   <option value="0">Sunday</option>
@@ -822,7 +831,7 @@
                 </select>
               </div>
               <div id="admin-week-start-status" class="admin-status-badge hidden"></div>
-              <div class="admin-option-row">
+              <div class="admin-option-row adm-row">
                 <span>App Timezone:</span>
                 <select id="admin-timezone-select" class="pixel-select">
                   <option value="default">Automatic (Use Device Time)</option>
@@ -832,7 +841,7 @@
                   <option value="America/New_York">Eastern Time (US &amp; Canada)</option>
                 </select>
               </div>
-              <div class="admin-option-row">
+              <div class="admin-option-row adm-row">
                 <span>Screensaver:</span>
                 <select id="admin-idle-timeout-select" class="pixel-select">
                   <option value="1">1 min</option>
@@ -882,7 +891,8 @@
         <!-- This child: Rewards -->
         <section id="admin-pane-rewards" class="admin-pane hidden" role="tabpanel" data-admin-section="rewards" aria-labelledby="admin-tab-rewards">
           <h3 class="admin-pane-title">🎁 Rewards</h3>
-          <div class="admin-action-group">
+          <div class="admin-action-group adm-card">
+            <span class="adm-eyebrow" data-admin-scope-eyebrow="child">This child</span>
             <h4>Reward Choices</h4>
             <button id="admin-customize-rewards-btn" class="pixel-btn adm-secondary">Customize Rewards</button>
             <div class="admin-option-hint">Edit the weekly and mega milestone rewards this child can pick from.</div>
@@ -904,7 +914,8 @@
         <!-- Family: Passcode -->
         <section id="admin-pane-passcode" class="admin-pane hidden" role="tabpanel" data-admin-section="passcode" aria-labelledby="admin-tab-passcode">
           <h3 class="admin-pane-title">🔑 Passcode</h3>
-          <div class="admin-action-group">
+          <div class="admin-action-group adm-card">
+            <span class="adm-eyebrow">Whole family</span>
             <h4>Parent Passcode</h4>
             <div class="admin-option-hint">One passcode for the whole family. It applies to every child.</div>
             <div class="adm-field">
@@ -918,42 +929,74 @@
         <!-- Family: Data (backup, system, quarantined danger block — D2) -->
         <section id="admin-pane-data" class="admin-pane hidden" role="tabpanel" data-admin-section="data" aria-labelledby="admin-tab-data">
           <h3 class="admin-pane-title">💾 Data</h3>
-          <div class="admin-action-group">
-            <h4>This child<span class="admin-child-name" data-admin-child-name></span></h4>
-            <div class="admin-action-row-buttons">
-              <button id="admin-export-btn" class="pixel-btn adm-secondary" title="Export current child's progress code to clipboard">📤 Export Child</button>
-              <button id="admin-import-btn" class="pixel-btn adm-secondary" title="Import current child's progress from clipboard code">📥 Import Child</button>
+          <div class="adm-column">
+            <div class="admin-action-group adm-card">
+              <span class="adm-eyebrow" data-admin-scope-eyebrow="child">This child</span>
+              <h4>Child backup<span class="admin-child-name" data-admin-child-name></span></h4>
+              <div class="admin-option-hint">A code with this child's progress. Keep it somewhere safe.</div>
+              <div class="admin-action-row-buttons">
+                <button id="admin-export-btn" class="pixel-btn adm-secondary" title="Copy this child's backup code to the clipboard">📤 Copy code</button>
+                <button id="admin-import-btn" class="pixel-btn adm-secondary" title="Restore this child's progress from a backup code">📥 Restore from code…</button>
+              </div>
             </div>
-          </div>
-          <div class="admin-action-group">
-            <h4>Whole family</h4>
-            <div class="admin-action-row-buttons">
-              <button id="admin-cloud-export-btn" class="pixel-btn adm-secondary" title="Export all family profiles and settings code to clipboard">📤 Export Family</button>
-              <button id="admin-cloud-import-btn" class="pixel-btn adm-secondary" title="Import all family profiles and settings from clipboard code">📥 Import Family</button>
+            <div class="admin-action-group adm-card">
+              <span class="adm-eyebrow">Whole family</span>
+              <h4>Family backup</h4>
+              <div class="admin-option-hint">Includes the parent passcode. Store it privately.</div>
+              <div class="admin-action-row-buttons">
+                <button id="admin-cloud-export-btn" class="pixel-btn adm-secondary" title="Copy the whole family's backup code to the clipboard">📤 Copy code</button>
+                <button id="admin-cloud-import-btn" class="pixel-btn adm-secondary" title="Restore every child from a family backup code">📥 Restore from code…</button>
+              </div>
             </div>
-          </div>
-          <div class="admin-action-group">
-            <h4>System</h4>
-            <button id="admin-diagnostics-btn" class="pixel-btn adm-secondary">Run Diagnostics</button>
-            <button id="admin-force-update-btn" class="pixel-btn adm-secondary">Force App Update</button>
-            <div class="admin-option-row">
-              <span>Debug Sidebar:</span>
-              <label class="switch">
-                <input type="checkbox" id="toggle-debug-sidebar">
-                <span class="slider"></span>
-              </label>
+            <div class="admin-action-group adm-card">
+              <span class="adm-eyebrow">This device</span>
+              <h4>App</h4>
+              <div class="admin-action-row-buttons">
+                <button id="admin-force-update-btn" class="pixel-btn adm-secondary" aria-describedby="admin-force-update-hint">🔄 Reload latest version</button>
+                <button id="admin-diagnostics-btn" class="pixel-btn adm-secondary">🛠️ Run Diagnostics</button>
+              </div>
+              <div id="admin-force-update-hint" class="admin-option-hint">Reload needs internet. Progress is kept.</div>
+              <details class="adm-advanced">
+                <summary>Advanced</summary>
+                <div class="admin-option-row adm-row">
+                  <span>Debug Sidebar:</span>
+                  <label class="switch">
+                    <input type="checkbox" id="toggle-debug-sidebar" aria-label="Debug sidebar">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </details>
             </div>
-          </div>
-          <hr class="admin-danger-divider">
-          <div class="danger-zone-section">
-            <h4>⚠️ Danger Zone</h4>
-            <button id="admin-wipe-btn" class="pixel-btn adm-danger">Reset This Child's Progress</button>
-            <div class="admin-option-hint danger-zone-hint">Activities, rewards, and settings are kept. Other children are not affected.</div>
+            <hr class="admin-danger-divider">
+            <div class="danger-zone-section adm-card adm-card--danger">
+              <span class="adm-eyebrow" data-admin-scope-eyebrow="child">This child</span>
+              <h4>⚠️ Danger Zone</h4>
+              <button id="admin-wipe-btn" class="pixel-btn adm-danger">Reset This Child's Progress</button>
+              <div class="admin-option-hint danger-zone-hint">Activities, rewards, and settings are kept. Other children are not affected.</div>
+            </div>
           </div>
         </section>
 
         <div class="admin-modal-footer">
           <button id="close-admin-modal-btn" class="pixel-btn adm-tertiary">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Backup code dialog (admin.js readBackupCode / showBackupCode): replaces
+         window.prompt() for Restore from code… and the manual-copy fallback. -->
+    <div id="admin-restore-dialog" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="admin-restore-title" aria-describedby="admin-restore-desc">
+      <div class="modal-content adm-dialog">
+        <h2 id="admin-restore-title">Restore from code</h2>
+        <p id="admin-restore-desc" class="adm-dialog-desc"></p>
+        <div class="adm-field">
+          <label for="admin-restore-input" class="adm-field-label">Backup code</label>
+          <textarea id="admin-restore-input" class="adm-textarea" rows="6" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        </div>
+        <div id="admin-restore-error" class="adm-inline-error hidden" role="alert"></div>
+        <div class="adm-dialog-actions">
+          <button type="button" id="admin-restore-cancel-btn" class="pixel-btn adm-tertiary">Cancel</button>
+          <button type="button" id="admin-restore-submit-btn" class="pixel-btn adm-primary">Restore</button>
         </div>
       </div>
     </div>
@@ -1082,7 +1125,7 @@
   </div>
 
   <script src="particles.js?v=10.4"></script>
-  <script type="module" src="app.js?v=10.60" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.61" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 

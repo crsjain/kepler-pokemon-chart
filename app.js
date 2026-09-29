@@ -226,7 +226,7 @@ import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault, getStarsFromDates } from './vault.js';
 import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES, getStageIndexForLevel } from './pokemon_data.js';
 import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
-import { initAdmin, refreshAdminScopeChip, adminNotice } from './admin.js';
+import { initAdmin, refreshAdminScopeChip, adminNotice, showAdminToast, setReadBackupCodeMock } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
 import { initShop, openPokemonShop, resetShopSession } from './shop.js';
 
@@ -1038,7 +1038,8 @@ initRewardsAdmin({
   getActiveProfileId: () => activeProfileId,
   saveRewards: (...args) => saveProfileRewardsToCloudFn(...args),
   renderRewardDropdowns: () => renderRewardDropdowns(),
-  showCustomNotification: (...args) => showCustomNotification(...args)
+  showCustomNotification: (...args) => showCustomNotification(...args),
+  showToast: (title, message) => showAdminToast(title, message)
 });
 initFirebaseUI();
 preloadImages();
@@ -1087,11 +1088,8 @@ function preloadImages() {
 
 export function showCustomConfirm(title, message, onYesCallback, onNoCallback, yesLabel = "Let's Go! 🚀", noLabel = "Not Yet", yesClass = "pixel-btn info", noClass = "pixel-btn greyed-out", options = {}) {
   if (!confirmModal || !confirmTitle || !confirmMessage || !confirmYesBtn || !confirmNoBtn) {
-    if (confirm(message)) {
-      onYesCallback(false);
-    } else if (onNoCallback && typeof onNoCallback === 'function') {
-      onNoCallback();
-    }
+    // No native confirm() fallback (AGENTS §6.2): the markup is always present.
+    console.error('showCustomConfirm: #confirm-modal markup is missing');
     return;
   }
   
@@ -1130,7 +1128,14 @@ export function showCustomConfirm(title, message, onYesCallback, onNoCallback, y
     confirmCheckboxContainer.classList.add('hidden');
   }
   
+  // Admin confirms: focus the least destructive button on open and hand focus
+  // back to the invoking control on close (PRD v2.0 §11.5). Kid confirms are
+  // unchanged.
+  const isAdminSurface = !!(options && options.surface === 'admin');
+  const returnFocusEl = isAdminSurface ? document.activeElement : null;
+
   confirmModal.classList.remove('hidden');
+  if (isAdminSurface) confirmNoBtn.focus({ preventScroll: true });
   
   const cleanUpConfirm = () => {
     confirmYesBtn.onclick = null;
@@ -1138,6 +1143,9 @@ export function showCustomConfirm(title, message, onYesCallback, onNoCallback, y
     confirmModal.onclick = null;
     if (confirmCheckboxContainer) {
       confirmCheckboxContainer.classList.add('hidden');
+    }
+    if (returnFocusEl && returnFocusEl.isConnected && returnFocusEl.getClientRects().length > 0) {
+      returnFocusEl.focus({ preventScroll: true });
     }
   };
   
@@ -3059,12 +3067,7 @@ function bindAdminSettingsEvents() {
         // Policy switched off: drop any live session so the dock does not linger.
         clearParentGrace({ revertToToday: false });
       }
-      showCustomNotification(
-        state.lockPastDays ? "Past Days Locked 🔒" : "Past Days Unlocked 🔓",
-        state.lockPastDays
-          ? "This child now needs the parent passcode to edit previous days."
-          : "This child can edit previous days without a passcode."
-      );
+      // Confirmed inline with "Saved ✓" by admin.js (no blocking modal).
     });
   }
   if (adminTimezoneSelect) {
@@ -3072,8 +3075,7 @@ function bindAdminSettingsEvents() {
       state.timezoneOffset = adminTimezoneSelect.value;
       saveState();
       renderState(true);
-      const tzText = adminTimezoneSelect.options[adminTimezoneSelect.selectedIndex].text;
-      showCustomNotification("Timezone Updated 🌐", `App timezone set to ${tzText}.`);
+      // Confirmed inline with "Saved ✓" by admin.js (no blocking modal).
     });
   }
 }
@@ -3991,6 +3993,8 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     setSaveProfileRewardsMock: (fn) => { saveProfileRewardsToCloudFn = fn || saveProfileRewardsToCloud; },
     setExportCloudDataMock: (fn) => { exportCloudDataFn = fn; },
     setImportCloudDataMock: (fn) => { importCloudDataFn = fn; },
+    // Bypasses #admin-restore-dialog: fn() returns the pasted code (or null = cancel).
+    setReadBackupCodeMock: (fn) => setReadBackupCodeMock(fn),
     setWipeDataMock: (fn) => { wipeCloudDataFn = fn || wipeActiveChildProgress; },
     setReloadMock: (fn) => { reloadFn = fn || (() => location.reload()); },
     setActiveProfileId: (id) => { activeProfileId = id; },

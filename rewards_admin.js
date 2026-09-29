@@ -35,6 +35,8 @@ const getActiveProfileId = () => deps.getActiveProfileId();
 const saveProfileRewardsToCloudFn = (...args) => deps.saveRewards(...args);
 const renderRewardDropdowns = (...args) => deps.renderRewardDropdowns(...args);
 const showCustomNotification = (...args) => deps.showCustomNotification(...args);
+// Routine success is a toast (PRD v2.0 §11.5); falls back to a notification.
+const showToast = (title, message) => (deps.showToast ? deps.showToast(title, message) : deps.showCustomNotification(title, message));
 // Rule 11 (same contract as admin.js adminNotice): neutral "Got it" in the admin
 // secondary style for errors/warnings; success copy is untouched.
 const adminNotice = (title, message) =>
@@ -150,7 +152,7 @@ export function bindRewardsEditorEvents() {
           renderRewardDropdowns();
         }
         
-        showCustomNotification("Saved ✨", "Rewards customized successfully!");
+        showToast("Saved ✨", "Rewards customized successfully!");
         editRewardsModal.classList.add('hidden');
         document.querySelector('.layout-container').classList.remove('blurred');
       } catch (err) {
