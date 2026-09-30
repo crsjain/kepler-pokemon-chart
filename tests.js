@@ -10060,6 +10060,35 @@ async function runSuite() {
         await sleep(30);
       }
 
+      // 107. Multi-month week range text stays centered when wrapping on mobile
+      {
+        console.log("Running Test Case 107: Multi-month week range text is centered when wrapping on mobile...");
+        const nav = document.querySelector('.week-navigation-container');
+        const center = document.querySelector('.week-nav-center');
+        const rangeEl = document.getElementById('week-range-display');
+        assert(getComputedStyle(rangeEl).textAlign === 'center', "week-range-text has text-align: center");
+        assert(getComputedStyle(center).textAlign === 'center', "week-nav-center has text-align: center");
+
+        const origText = rangeEl.textContent;
+        try {
+          nav.style.width = '298px';
+          rangeEl.textContent = 'Sep 27 - Oct 3, 2026';
+          const navRect = nav.getBoundingClientRect();
+          const navCenter = (navRect.left + navRect.right) / 2;
+          const textRange = document.createRange();
+          textRange.selectNodeContents(rangeEl);
+          const lineRects = [...textRange.getClientRects()];
+          assert(lineRects.length >= 2, `Two-month date range wraps onto multiple lines at mobile width (got ${lineRects.length})`);
+          for (let i = 0; i < lineRects.length; i++) {
+            const lineCenter = (lineRects[i].left + lineRects[i].right) / 2;
+            assert(Math.abs(lineCenter - navCenter) <= 2, `Wrapped date line ${i + 1} is horizontally centered (lineCenter=${Math.round(lineCenter)}, navCenter=${Math.round(navCenter)})`);
+          }
+        } finally {
+          nav.style.width = '';
+          rangeEl.textContent = origText;
+        }
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
