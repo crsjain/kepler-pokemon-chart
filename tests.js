@@ -6698,24 +6698,45 @@ async function runSuite() {
         assert(todayIndicator.textContent.trim() === '☆', "Today rest day indicator should display ghost star '☆'");
         assert(!todayIndicator.textContent.includes('🌟'), "Today rest day must NOT display yellow star 🌟 before midnight rollover");
 
-        // 4. Past day with ALL rest tasks (MUST award free rest star 🌟 because day has passed)
+        // 4. Past day with ALL rest tasks: 💤 rest day — no star, streak paused (prd_star_vault.md §3.2.1).
+        //    Dates before the rule start keep the legacy free rest star 🌟 (grandfathered).
         if (pastColIndex !== -1) {
           const pastDateStr = getDateOfColumn(state.weekStartDate, pastColIndex);
           tasks.forEach(t => {
             state.excused[`${pastDateStr}-${t.id}`] = 'rest';
           });
+
+          // 4a. New rule (rule start on/before this date)
+          helpers.setZeroRequiredRuleStartMock('2000-01-01');
           helpers.syncVaultStarsWithGrid();
           helpers.saveState();
           helpers.renderState(false);
           await sleep(50);
 
-          assert(helpers.isDayComplete(pastDateStr, state) === true, "Past rest day MUST be complete after day has concluded");
-          assert(state.starVault.earnedDates.includes(pastDateStr), "Past rest day MUST award free rest star into starVault.earnedDates");
+          assert(helpers.isDayComplete(pastDateStr, state) === false, "Past all-rest day must NOT be complete under the rest-day rule");
+          assert(helpers.isRestDay(pastDateStr, state) === true, "Past all-rest day must be a rest day");
+          assert(!state.starVault.earnedDates.includes(pastDateStr), "Past all-rest day must NOT award a star into starVault.earnedDates");
 
           const pastCell = document.querySelector(`.day-total-cell[data-day="${pastColIndex}"]`);
-          const pastIndicator = pastCell.querySelector('.badge-indicator');
-          assert(pastIndicator.classList.contains('unlocked'), "Past rest day indicator should be unlocked");
-          assert(pastIndicator.textContent.trim() === '🌟', `Past rest day indicator should display '🌟', got '${pastIndicator.textContent.trim()}'`);
+          let pastIndicator = pastCell.querySelector('.badge-indicator');
+          assert(pastIndicator.classList.contains('rest-day'), "Past rest day indicator should have .rest-day class");
+          assert(!pastIndicator.classList.contains('unlocked'), "Past rest day indicator must NOT be unlocked");
+          assert(pastIndicator.textContent.trim() === '💤', `Past rest day indicator should display '💤', got '${pastIndicator.textContent.trim()}'`);
+          assert(pastCell.title.includes('streak paused'), "Past rest day tooltip should explain the paused streak for parents");
+
+          // 4b. Legacy (rule start after this date): grandfathered free rest star
+          helpers.setZeroRequiredRuleStartMock('9999-12-31');
+          helpers.syncVaultStarsWithGrid();
+          helpers.renderState(false);
+          await sleep(50);
+
+          assert(helpers.isDayComplete(pastDateStr, state) === true, "Pre-rule past rest day keeps its legacy free star");
+          assert(state.starVault.earnedDates.includes(pastDateStr), "Pre-rule past rest day stays in starVault.earnedDates");
+          pastIndicator = pastCell.querySelector('.badge-indicator');
+          assert(pastIndicator.classList.contains('unlocked'), "Pre-rule past rest day indicator should be unlocked");
+          assert(pastIndicator.textContent.trim() === '🌟', `Pre-rule past rest day should display '🌟', got '${pastIndicator.textContent.trim()}'`);
+
+          helpers.setZeroRequiredRuleStartMock(null);
         }
 
         helpers.resetState();
@@ -9978,6 +9999,73 @@ async function runSuite() {
 
         $('close-admin-modal-btn').click();
         await sleep(30);
+        helpers.resetState();
+        await sleep(30);
+      }
+
+      // 106. Rest days pause the streak (no star) — prd_star_vault.md §3.2.1
+      {
+        console.log("Running Test Case 106: Rest days pause the streak without a star; completed bonus earns one...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        let state = window.__app_state__;
+        await sleep(30);
+
+        // A. Pure streak math: silver day 3, five rest days, first day back = silver day 4
+        const earned = ['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-09'];
+        const restRun = d => d >= '2026-10-04' && d <= '2026-10-08';
+        let stars = helpers.getStarsFromDates(earned, restRun);
+        assert(stars.length === 4, `Rest days add no stars (got ${stars.length})`);
+        assert(stars[2].streakDay === 3 && stars[2].color === 'silver', "Day 3 is silver before the trip");
+        assert(stars[3].streakDay === 4 && stars[3].color === 'silver', `First day back is silver day 4 (got day ${stars[3].streakDay} ${stars[3].color})`);
+
+        stars = helpers.getStarsFromDates(earned);
+        assert(stars[3].streakDay === 1 && stars[3].color === 'yellow', "Without the rest-day bridge the gap still resets to yellow day 1");
+
+        // B. One missed (non-rest) day inside the run breaks the streak
+        stars = helpers.getStarsFromDates(earned, d => restRun(d) && d !== '2026-10-06');
+        assert(stars[3].streakDay === 1, "A missed day inside the rest run breaks the streak");
+
+        // C. Bridge across a month/week boundary
+        stars = helpers.getStarsFromDates(['2026-10-30', '2026-10-31', '2026-11-03'], d => d === '2026-11-01' || d === '2026-11-02');
+        assert(stars[2].streakDay === 3 && stars[2].color === 'silver', "Bridge spans a month boundary");
+
+        // D. Live vault uses real rest days (rule start mocked into the past)
+        helpers.setZeroRequiredRuleStartMock('2000-01-01');
+        const today = getLocalDate(state?.timezoneOffset);
+        const dayOffset = n => formatLocalDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - n));
+        const tasks = state.tasks || [];
+        for (let n = 5; n >= 2; n--) {
+          tasks.forEach(t => { state.excused[`${dayOffset(n)}-${t.id}`] = 'rest'; });
+          assert(helpers.isRestDay(dayOffset(n), state) === true, `${dayOffset(n)} is a rest day`);
+          assert(helpers.isDayComplete(dayOffset(n), state) === false, `${dayOffset(n)} earns no star`);
+        }
+        state.starVault.earnedDates = [dayOffset(8), dayOffset(7), dayOffset(6), dayOffset(1)];
+        document.getElementById('open-vault-btn').click();
+        await sleep(100);
+        const vaultStars = document.querySelectorAll('#vault-grid .vault-star-wrapper');
+        assert(vaultStars.length === 4, `Vault shows 4 stars, none for rest days (got ${vaultStars.length})`);
+        assert(vaultStars[3].classList.contains('silver'), "Live vault: first day back after rest days is silver (day 4)");
+        document.getElementById('close-vault-modal-btn').click();
+        await sleep(50);
+
+        // E. Zero-required day with a completed bonus earns a star; unclaimed bonus + rest does not
+        const mixDate = dayOffset(3);
+        tasks.forEach((t, i) => { state.excused[`${mixDate}-${t.id}`] = i === 0 ? 'bonus' : 'rest'; });
+        assert(helpers.isRestDay(mixDate, state) === true, "Unclaimed bonus + rest day is a rest day");
+        assert(helpers.isDayComplete(mixDate, state) === false, "Unclaimed bonus + rest day earns no star");
+        state.grid[`${mixDate}-${tasks[0].id}`] = true;
+        assert(helpers.isRestDay(mixDate, state) === false, "Completed bonus: no longer a rest day");
+        assert(helpers.isDayComplete(mixDate, state) === true, "Completed bonus on a zero-required day earns a star");
+        assert(helpers.getDayTaskCounts(mixDate, state).isComplete === true, "getDayTaskCounts agrees with isDayComplete");
+
+        // F. All-bonus day with nothing completed is a rest day too
+        const bonusDate = dayOffset(4);
+        tasks.forEach(t => { state.excused[`${bonusDate}-${t.id}`] = 'bonus'; });
+        assert(helpers.isRestDay(bonusDate, state) === true, "All-bonus day with nothing done is a rest day");
+        assert(helpers.isDayComplete(bonusDate, state) === false, "All-bonus day with nothing done earns no star");
+
+        helpers.setZeroRequiredRuleStartMock(null);
         helpers.resetState();
         await sleep(30);
       }

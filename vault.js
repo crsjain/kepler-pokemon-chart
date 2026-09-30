@@ -1,5 +1,5 @@
-import { state, saveState } from './state.js';
-import { formatLocalDate, getDateOfColumn } from './date_utils.js';
+import { state, saveState, isRestDay } from './state.js';
+import { formatLocalDate, getDateOfColumn, getLocalDate } from './date_utils.js';
 import { openPokemonShop } from './shop.js';
 import { isBackdropClick } from './modal_backdrop.js';
 
@@ -173,7 +173,7 @@ export function updateAdminVaultStats() {
 export function openVault() {
   if (!vaultModal) initVault();
   
-  const stars = getStarsFromDates(state.starVault.earnedDates);
+  const stars = getStarsFromDates(state.starVault.earnedDates, isPastRestDay);
   const isMobile = window.innerWidth <= 480;
   const columns = isMobile ? 5 : 10;
   const pageSize = columns * 4;
@@ -217,7 +217,24 @@ function parseLocalDate(dateStr) {
   return new Date(parts[0], parts[1] - 1, parts[2]);
 }
 
-export function getStarsFromDates(dates) {
+function isGapAllRest(prevDate, diffDays, isBridgeDay) {
+  if (diffDays < 2) return false;
+  for (let offset = 1; offset < diffDays; offset++) {
+    const d = new Date(prevDate.getFullYear(), prevDate.getMonth(), prevDate.getDate() + offset);
+    if (!isBridgeDay(formatLocalDate(d))) return false;
+  }
+  return true;
+}
+
+// Default bridge predicate for the live vault: past 💤 rest days of the active child.
+function isPastRestDay(dateStr) {
+  const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
+  return dateStr < todayStr && isRestDay(dateStr, state);
+}
+
+// isBridgeDay(dateStr): true for a 💤 rest day. A gap between two earned stars made up
+// only of rest days pauses the streak instead of breaking it (prd_star_vault.md §3.2.1).
+export function getStarsFromDates(dates, isBridgeDay = () => false) {
   if (!dates || dates.length === 0) return [];
   
   // YYYY-MM-DD strings sort alphabetically in chronological order (deduplicate defensively)
@@ -239,7 +256,7 @@ export function getStarsFromDates(dates) {
       const diffTime = currDate.getTime() - prevDate.getTime();
       const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
       
-      if (diffDays === 1) {
+      if (diffDays === 1 || isGapAllRest(prevDate, diffDays, isBridgeDay)) {
         currentStreak.push(dateStr);
       } else {
         processStreak(currentStreak, stars);
@@ -298,7 +315,7 @@ export function renderVault() {
     }
   }
 
-  const stars = getStarsFromDates(state.starVault.earnedDates);
+  const stars = getStarsFromDates(state.starVault.earnedDates, isPastRestDay);
 
   if (!vaultGrid) return;
   vaultGrid.innerHTML = '';

@@ -161,6 +161,7 @@
    - [ ] Completed days display strictly **`🌟`** (`.badge-indicator.unlocked`).
    - [ ] Overachiever bonus days display the pulsating gold star **`🌟`** (`.badge-indicator.unlocked.super-trainer`).
    - [ ] Superseded / forward-hashed days display strictly **`➖`** (`.badge-indicator`).
+   - [ ] Past **rest days** (every activity 💤/✨ and nothing completed, dated 2026-09-30 or later) display strictly **`💤`** (`.badge-indicator.locked.rest-day`, tooltip `Rest day — streak paused 💤`) — no star, and the Star Vault streak resumes where it left off on the next earned day (see `prd_star_vault.md` §3.2.1; asserted via TC79 and TC106).
 3. **Verify Complete Absence of Raw Numbers in DOM**:
    - [ ] No `.day-total-count` DOM elements exist under `.day-total-cell` (asserted via Test 72).
    - [ ] No fractional strings like `0 / 4`, `3 / 4`, `4 / 4 ⭐`, `5 / 4 ⭐`, or `2 / 3 (+1)` are visible on screen to confuse a 7-year-old.
@@ -211,7 +212,7 @@ node run_headless_tests.js
 - [ ] Test 5: Smart Rollover verified (`✨ BONUS` auto-carries over; `💤 REST` auto-expires).
 - [ ] Test 6: Manual reset carry-over checkbox verified.
 - [ ] Test 7: Goal column denominator calculation verified.
-- [ ] Test 8: Child readability verified (clean `🌟`, `❌`, `➖` icons only; fractional counts accessible via parent hover tooltip).
+- [ ] Test 8: Child readability verified (clean `🌟`, `☆`, `❌`, `💤`, `➖` icons only; fractional counts accessible via parent hover tooltip).
 - [ ] Test 9: Floating XP animation timing (2.5s duration, 1.5s dwell phase) and screen edge clamping verified.
 - [ ] Test 10: Parent Command Dock verified (floats at bottom center during Exception Mode without colliding with sticky top Mini-HUD, `Escape` key dismisses, 96px bottom clearance protects page footer).
 - [ ] Test 11: Responsive Viewport Policy verified: Zero horizontal scroll on tablet/desktop ($\ge 768\text{px}$), horizontal scroll enabled on mobile ($< 768\text{px}$) with `min-width: 620px` and no overlapping Pokéball cells.

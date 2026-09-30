@@ -13,6 +13,8 @@ import {
   XP_BONUS_TASK,
   isDayComplete,
   getDayTaskCounts,
+  isRestDay,
+  setZeroRequiredRuleStartMock,
   rollNewWeeklyBadge,
   getTaskRequiredDays,
   replaceState,
@@ -69,6 +71,8 @@ let subscribeToProfileStateFn = (profileId, callback, errorCallback) => {
 const EARNED_STAR_HTML = `<svg class="earned-star-svg" width="27" height="27" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><polygon points="16,2 20.3,11.5 30.5,12.7 23,19.5 25,29.5 16,24.5 7,29.5 9,19.5 1.5,12.7 11.7,11.5" fill="#ffcb05" stroke="#2d3748" stroke-width="2.6" stroke-linejoin="round"/><polygon points="16,2 20.3,11.5 16,24.5 7,29.5 9,19.5 1.5,12.7 11.7,11.5" fill="#d97706" opacity="0.32"/><circle cx="16" cy="10" r="2.2" fill="#ffffff" opacity="0.9"/><polygon points="16,4.5 18,10 14,10" fill="#ffffff" opacity="0.85"/></svg><span class="sr-only">🌟</span>`;
 const HEADER_STAR_HTML = `<svg class="header-star-svg" width="22" height="22" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><polygon points="16,2 20.3,11.5 30.5,12.7 23,19.5 25,29.5 16,24.5 7,29.5 9,19.5 1.5,12.7 11.7,11.5" fill="#ffcb05" stroke="#2d3748" stroke-width="2.6" stroke-linejoin="round"/><polygon points="16,2 20.3,11.5 16,24.5 7,29.5 9,19.5 1.5,12.7 11.7,11.5" fill="#f59e0b" opacity="0.35"/><polygon points="16,5 17.5,10.5 13,10.5" fill="#ffffff" opacity="0.8"/></svg>`;
 const GHOST_STAR_HTML = `<svg class="ghost-star-svg" width="27" height="27" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><polygon points="16,2 20.3,11.5 30.5,12.7 23,19.5 25,29.5 16,24.5 7,29.5 9,19.5 1.5,12.7 11.7,11.5" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2.2" stroke-linejoin="round"/></svg><span class="sr-only">☆</span>`;
+// Past zero-required day with nothing completed: no star, streak paused (prd_star_vault.md §3.2.1).
+const REST_DAY_HTML = `<div class="badge-indicator locked rest-day" title="Rest day — streak paused 💤">💤</div>`;
 import { promptParentPassword } from './admin.js';
 import { initRewardsAdmin, openEditRewardsModal, bindRewardsEditorEvents } from './rewards_admin.js';
 
@@ -2053,6 +2057,11 @@ function updateDayTotalUI(day) {
     dayTotalCell.classList.add('future-total');
     dayTotalCell.classList.add('locked');
     dayTotalCell.classList.remove('unlocked');
+  } else if (counts.isRestDay) {
+    dayTotalCell.innerHTML = REST_DAY_HTML;
+    dayTotalCell.title = counts.displayString;
+    dayTotalCell.classList.add('locked');
+    dayTotalCell.classList.remove('unlocked');
   } else {
     dayTotalCell.innerHTML = `
       <div class="badge-indicator locked" title="${counts.displayString}">❌</div>
@@ -3881,6 +3890,11 @@ function renderProgress() {
         totalCell.classList.add('future-total');
         totalCell.classList.add('locked');
         totalCell.classList.remove('unlocked');
+      } else if (counts.isRestDay) {
+        totalCell.innerHTML = REST_DAY_HTML;
+        totalCell.title = counts.displayString;
+        totalCell.classList.add('locked');
+        totalCell.classList.remove('unlocked');
       } else {
         totalCell.innerHTML = `
           <div class="badge-indicator locked" title="${counts.displayString}">❌</div>
@@ -4167,6 +4181,9 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     hasTaskActivityInWeek: (task, weekStartStr) => hasTaskActivityInWeek(task, weekStartStr),
     isDayComplete: (dateStr, state) => isDayComplete(dateStr, state),
     getDayTaskCounts: (dateStr, state) => getDayTaskCounts(dateStr, state),
+    isRestDay: (dateStr, state) => isRestDay(dateStr, state),
+    getStarsFromDates: (dates, isBridgeDay) => getStarsFromDates(dates, isBridgeDay),
+    setZeroRequiredRuleStartMock: (dateStr) => setZeroRequiredRuleStartMock(dateStr),
     XP_BONUS_TASK: XP_BONUS_TASK,
     openPartnerShowcaseModal: () => openPartnerShowcaseModal(),
     closePartnerShowcaseModal: () => closePartnerShowcaseModal(),

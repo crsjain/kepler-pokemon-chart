@@ -321,7 +321,7 @@ readability rules.
 Two that get violated most often:
 
 - **No fractional text in the Daily Total row.** A 7-year-old gets icons only
-  (`🌟` / `☆` / `❌` / `➖`); counts live in `title` attributes for parents.
+  (`🌟` / `☆` / `❌` / `💤` / `➖`); counts live in `title` attributes for parents.
 - **Zero inline `style="..."`** on modal wrappers, filter bars, or grids. All
   layout belongs in `style.css`.
 

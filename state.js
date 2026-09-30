@@ -884,38 +884,62 @@ export function getEarliestDataWeekStartDate() {
   return earliest;
 }
 
-export function isDayComplete(dateStr, currentState = state) {
-  const tasks = currentState.tasks || [];
-  if (tasks.length === 0) return false;
+// Zero-required-day rule (see docs/prd_star_vault.md §3.2.1): from this date on, a
+// day with no required chores (all 💤 rest and/or ✨ bonus) earns a star only if
+// at least one bonus is completed. Otherwise it is a 💤 rest day: no star, and it
+// does not break the streak. Earlier dates keep the legacy free rest star so no
+// already-earned star is ever taken away.
+const DEFAULT_ZERO_REQUIRED_RULE_START = '2026-09-30';
+let zeroRequiredRuleStart = DEFAULT_ZERO_REQUIRED_RULE_START;
 
-  const activeTasks = tasks.filter(task => {
+// Test hook: pass a date string to move the cutoff, or null to restore the default.
+export function setZeroRequiredRuleStartMock(dateStr) {
+  zeroRequiredRuleStart = dateStr || DEFAULT_ZERO_REQUIRED_RULE_START;
+}
+
+function getActiveTasksForDate(dateStr, currentState) {
+  return (currentState.tasks || []).filter(task => {
     if (task.createdAt && dateStr < task.createdAt) return false;
     if (task.deletedAt && dateStr >= task.deletedAt) return false;
     if (task.active === false && (!task.deletedAt || dateStr >= task.deletedAt)) return false;
     return true;
   });
+}
 
+// Active tasks exist, none is required, and no bonus was completed. Date-agnostic
+// apart from the rule start: callers decide how past/today/future is shown.
+export function isRestDay(dateStr, currentState = state) {
+  if (dateStr < zeroRequiredRuleStart) return false;
+  const activeTasks = getActiveTasksForDate(dateStr, currentState);
+  if (activeTasks.length === 0) return false;
+  const excused = currentState.excused || {};
+  const grid = currentState.grid || {};
+  return activeTasks.every(task => !!excused[`${dateStr}-${task.id}`]) &&
+    !activeTasks.some(task => excused[`${dateStr}-${task.id}`] === 'bonus' && grid[`${dateStr}-${task.id}`]);
+}
+
+export function isDayComplete(dateStr, currentState = state) {
+  const activeTasks = getActiveTasksForDate(dateStr, currentState);
   if (activeTasks.length === 0) return false;
 
-  const requiredTasks = activeTasks.filter(task => !currentState.excused || !currentState.excused[`${dateStr}-${task.id}`]);
+  const excused = currentState.excused || {};
+  const grid = currentState.grid || {};
+  const requiredTasks = activeTasks.filter(task => !excused[`${dateStr}-${task.id}`]);
   if (requiredTasks.length === 0) {
-    // All tasks excused: Free rest star is only awarded once the rest day has concluded (at midnight rollover)!
-    // Future days or today in-progress cannot award a free rest star before midnight rollover.
+    // No required chores: a completed bonus earns the star straight away.
+    const bonusDone = activeTasks.some(task => excused[`${dateStr}-${task.id}`] === 'bonus' && grid[`${dateStr}-${task.id}`]);
+    if (bonusDone) return true;
+    if (dateStr >= zeroRequiredRuleStart) return false; // 💤 rest day: no star, streak paused
+    // Legacy (before the rule start): free rest star, awarded only once the day has concluded.
     const todayStr = formatLocalDate(getLocalDate(currentState?.timezoneOffset));
     return dateStr < todayStr;
   }
 
-  return requiredTasks.every(task => !!(currentState.grid && currentState.grid[`${dateStr}-${task.id}`]));
+  return requiredTasks.every(task => !!grid[`${dateStr}-${task.id}`]);
 }
 
 export function getDayTaskCounts(dateStr, currentState = state) {
-  const tasks = currentState.tasks || [];
-  const activeTasks = tasks.filter(task => {
-    if (task.createdAt && dateStr < task.createdAt) return false;
-    if (task.deletedAt && dateStr >= task.deletedAt) return false;
-    if (task.active === false && (!task.deletedAt || dateStr >= task.deletedAt)) return false;
-    return true;
-  });
+  const activeTasks = getActiveTasksForDate(dateStr, currentState);
 
   let requiredTotal = 0;
   let requiredCompleted = 0;
@@ -937,15 +961,16 @@ export function getDayTaskCounts(dateStr, currentState = state) {
     }
   });
 
-  const todayStr = formatLocalDate(getLocalDate(currentState?.timezoneOffset));
-  const isPast = dateStr < todayStr;
-  const isComplete = (requiredTotal === 0 && activeTasks.length > 0 && isPast) || (requiredTotal > 0 && requiredCompleted >= requiredTotal);
+  const isComplete = isDayComplete(dateStr, currentState);
+  const restDay = !isComplete && isRestDay(dateStr, currentState);
   let displayString = '';
 
   if (isComplete && bonusCompleted > 0) {
     displayString = `${requiredCompleted + bonusCompleted} / ${requiredTotal} ⭐ (Super Trainer! 🚀)`;
   } else if (isComplete) {
     displayString = `${requiredCompleted} / ${requiredTotal} ⭐`;
+  } else if (restDay) {
+    displayString = 'Rest day — streak paused 💤';
   } else if (bonusCompleted > 0) {
     displayString = `${requiredCompleted} / ${requiredTotal} (+${bonusCompleted})`;
   } else {
@@ -957,6 +982,7 @@ export function getDayTaskCounts(dateStr, currentState = state) {
     requiredCompleted,
     bonusCompleted,
     isComplete,
+    isRestDay: restDay,
     displayString
   };
 }

@@ -1097,6 +1097,21 @@ button:disabled,
   transform: scale(1.08);
 }
 
+/* 💤 Rest day in the Daily Total row: no star earned, streak paused.
+   Same floating-emoji treatment as the grid's rest cells; calm and static. */
+.badge-indicator.rest-day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 27px;
+  height: 27px;
+  font-size: 19px;
+  line-height: 1;
+  user-select: none;
+  vertical-align: middle;
+  filter: drop-shadow(0 2px 4px rgba(100, 116, 139, 0.35));
+}
+
 .total-desc .task-emoji {
   align-items: center;
 }

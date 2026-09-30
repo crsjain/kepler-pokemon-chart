@@ -27,7 +27,22 @@ Consecutive daily completions increase the streak count, upgrading the star's co
 *   **Streak Day 5-9**: 📘 **Blue Star** (Rare)
 *   **Streak Day 10+**: 🌈 **Prism Star** (Legendary - animated rainbow gradient with sparkle particles)
 
-*Note: Gaps in dates break the streak, resetting the next earned star to Day 1 (Yellow).*
+*Note: Gaps in dates break the streak, resetting the next earned star to Day 1 (Yellow) — **except** a gap made up entirely of 💤 rest days (§3.2.1), which pauses the streak instead.*
+
+#### 3.2.1. Rest Days: Streak Paused, No Star (effective 2026-09-30)
+A **zero-required day** is a day where every active activity is excused (all 💤 Rest, all ✨ Bonus, or any mix), so no chores are required.
+
+| Zero-required day | Star? | Streak | Daily Total icon |
+| :--- | :--- | :--- | :--- |
+| At least one ✨ bonus completed | ✅ Yes, awarded as soon as the bonus is checked (normal day-complete XP & celebration) | Counts as a streak day | `🌟` |
+| Nothing completed (all rest, unclaimed bonus + rest, or all unclaimed bonus) — a **💤 rest day** | ❌ No | **Paused**: neither increments nor breaks it | `💤` once the day has passed; ghost `☆` while today or in the future |
+
+*   **Worked example**: silver Day 3 → five 💤 rest days (family trip) → all chores done on the first day back = **silver Day 4**.
+*   **Bridge rule**: two earned stars stay in the same streak when *every* day between them is a 💤 rest day. One ordinary missed day (❌) anywhere in the gap still breaks the streak — so a parent must mark **every** activity on each trip day.
+*   **Why**: every star reflects real effort; rest days neither inflate the streak tier nor mint Shop currency, yet a trip the child didn't choose never wipes out their streak.
+*   **Grandfathering**: dates before **2026-09-30** keep the legacy rule (a fully excused day earned a free star after midnight). Existing stars are never removed.
+*   **Weekly badge**: rest days lower each activity's weekly target; a week in which every day is a rest day awards **no badge** (the badge and weekly reward carry over).
+*   **Implementation**: `isRestDay` / `isDayComplete` in `state.js` (cutoff `DEFAULT_ZERO_REQUIRED_RULE_START`, test hook `setZeroRequiredRuleStartMock`); `getStarsFromDates(dates, isBridgeDay)` in `vault.js`. No schema change. Covered by TC79 and TC106.
 
 ### 3.3. Star Vault Cabinet Modal
 *   **Access**: Click the "⭐ Vault" button next to the Daily Total row in the grid.
