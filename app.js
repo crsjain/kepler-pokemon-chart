@@ -2618,15 +2618,6 @@ function bindExceptionModeEvents() {
   if (exceptionsDoneBtn) {
     exceptionsDoneBtn.addEventListener('click', stopExceptionMode);
   }
-  // "↩ Admin" (secondary): leave Exception Mode exactly like Done, then ask for
-  // the passcode like any other Admin entry. No remembered auth session.
-  const exceptionsAdminBtn = document.getElementById('exceptions-admin-btn');
-  if (exceptionsAdminBtn) {
-    exceptionsAdminBtn.addEventListener('click', () => {
-      stopExceptionMode();
-      promptParentPassword(null);
-    });
-  }
   // Allow Escape key to cleanly dismiss Showcase Modal or exit Exception Mode
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {

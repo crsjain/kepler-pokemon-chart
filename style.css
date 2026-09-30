@@ -3865,7 +3865,7 @@ input:checked + .slider:before {
   gap: 6px;
   font-size: 0.85rem;
   color: #f1f5f9;
-  /* Wrap rather than overflow: a nowrap legend spilled under "↩ Admin". */
+  /* Wrap rather than overflow into the Done button on narrow docks. */
   flex-wrap: wrap;
   row-gap: 2px;
   min-width: 0;
@@ -3935,13 +3935,6 @@ input:checked + .slider:before {
     font-size: 0.85rem;
     margin-left: 10px;
     line-height: 1;
-  }
-}
-
-/* Desktop: room for the full legend plus "↩ Admin" and Done on one row. */
-@media (min-width: 860px) {
-  .exceptions-banner {
-    max-width: 800px;
   }
 }
 
@@ -7939,8 +7932,8 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 }
 
 /* ==========================================================================
-   Admin revamp Phase 5 (PRD v2.0 §11.5): hold-to-confirm, "↩ Admin" on the
-   Exceptions dock, and the Rule 8 sweep of modal z-indexes.
+   Admin revamp Phase 5 (PRD v2.0 §11.5): hold-to-confirm and the Rule 8
+   sweep of modal z-indexes.
    ========================================================================== */
 
 /* Rule 8: stacking moved out of index.html. Values are unchanged:
@@ -8038,61 +8031,6 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 
 #confirm-modal .adm-hold-hint.is-nudged {
   color: var(--adm-danger-ink, #991b1b);
-}
-
-/* "↩ Admin" on the Exceptions dock: quiet outline on the dark dock so the
-   green Done ✅ remains the one primary CTA (Rule 17.3). */
-.exceptions-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.exceptions-banner .exceptions-admin-btn {
-  flex-shrink: 0;
-  min-height: 42px;
-  margin: 0;
-  padding: 8px 12px;
-  background: transparent;
-  color: #e2e8f0;
-  border: 2px solid #64748b;
-  border-radius: 8px;
-  box-shadow: none;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.exceptions-banner .exceptions-admin-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: #cbd5e1;
-}
-
-.exceptions-banner .exceptions-admin-btn:active {
-  transform: translateY(2px);
-}
-
-.exceptions-banner .exceptions-admin-btn:focus-visible {
-  outline: 2px solid #93c5fd;
-  outline-offset: 2px;
-}
-
-@media (max-width: 480px) {
-  .exceptions-actions {
-    gap: 6px;
-  }
-
-  /* With "↩ Admin" beside Done, the cycle legend wraps instead of clipping. */
-  .exceptions-legend {
-    flex-wrap: wrap;
-    row-gap: 2px;
-  }
-
-  .exceptions-banner .exceptions-admin-btn {
-    padding: 6px 10px;
-    min-height: 38px;
-    font-size: 0.8rem;
-  }
 }
 
 /* ==========================================================================

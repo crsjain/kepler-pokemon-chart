@@ -9497,7 +9497,7 @@ async function runSuite() {
         await sleep(30);
       }
 
-      console.log("Running Test Case 102: Admin Phase 5 — hold-to-confirm, ↩ Admin on the dock, Rule 8 z-index sweep...");
+      console.log("Running Test Case 102: Admin Phase 5 — hold-to-confirm, dock has Done ✅ only (↩ Admin removed), Rule 8 z-index sweep...");
       {
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -9640,29 +9640,19 @@ async function runSuite() {
         await sleep(20);
         helpers.setHoldDurationMock(HOLD);
 
-        // 6. "↩ Admin" on the Exceptions dock: secondary, re-prompts, Done ✅ stays primary.
+        // 6. "↩ Admin" was removed from the Exceptions dock (owner request 2026-09-30):
+        //    Done ✅ is the dock's single action and lands on the chart.
         document.getElementById('exceptions-btn').click();
         await sleep(60);
         const banner = document.getElementById('exceptions-banner');
-        const backBtn = document.getElementById('exceptions-admin-btn');
         const doneBtn = document.getElementById('exceptions-done-btn');
-        assert(isOpen(banner) && !isOpen(adminModal), "Set Exceptions opens the dock");
-        assert(backBtn && banner.contains(backBtn), "↩ Admin sits on the dock");
-        assert(backBtn.compareDocumentPosition(doneBtn) & Node.DOCUMENT_POSITION_FOLLOWING, "Done ✅ stays last (the primary end of the dock)");
-        assert(!backBtn.classList.contains('success') && getComputedStyle(backBtn).backgroundColor === 'rgba(0, 0, 0, 0)', "↩ Admin is a quiet outline, not a filled CTA");
-        assert(backBtn.offsetHeight >= 38, "↩ Admin is a real touch target");
-        backBtn.click();
-        await sleep(60);
         const passwordModal = document.getElementById('password-modal');
-        assert(!isOpen(banner) && isOpen(passwordModal) && !isOpen(adminModal), "↩ Admin leaves Exception Mode and asks for the passcode (no session)");
-        document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
-        document.getElementById('password-submit-btn').click();
-        await sleep(60);
-        assert(isOpen(adminModal) && document.getElementById('admin-tab-today').getAttribute('aria-selected') === 'true', "The passcode reopens Admin on Settings");
-        document.getElementById('close-admin-modal-btn').click();
-        await sleep(30);
-        document.getElementById('exceptions-btn').click();
-        await sleep(60);
+        assert(isOpen(banner) && !isOpen(adminModal), "Set Exceptions opens the dock");
+        assert(document.getElementById('exceptions-admin-btn') === null, "↩ Admin button must be absent from the dock");
+        assert(document.querySelector('.exceptions-admin-btn, .exceptions-actions') === null, "No ↩ Admin markup or wrapper remains");
+        assert(!banner.textContent.includes('↩ Admin'), "Dock text must not mention ↩ Admin");
+        const dockButtons = banner.querySelectorAll('button');
+        assert(dockButtons.length === 1 && dockButtons[0] === doneBtn, `Done ✅ is the only dock button (found ${dockButtons.length})`);
         doneBtn.click();
         await sleep(30);
         assert(!isOpen(banner) && !isOpen(passwordModal) && !isOpen(adminModal), "Done ✅ still lands on the chart");

@@ -481,7 +481,7 @@ Source: the rev 2 revamp proposal and its 5-stage panel review (Batch 1 session,
 
 **Rewards (Phase 4):** the editor subtree is re-parented (one DOM node, IDs stay unique) into `#admin-pane-rewards` for the active child, and back into the restyled `#edit-rewards-modal` for a non-active child launched from a Family row.
 
-**Safety (Phase 5):** `holdToConfirm` (2s, visible ring from frame 1, Space/Enter hold, `aria-describedby` "Press and hold for 2 seconds") on **Delete child and Reset This Child's Progress only**. Test seam overrides the duration. Exceptions dock gains an optional secondary **"↩ Admin"** that re-prompts for the passcode; Done ✅ stays primary and lands on the chart.
+**Safety (Phase 5):** `holdToConfirm` (2s, visible ring from frame 1, Space/Enter hold, `aria-describedby` "Press and hold for 2 seconds") on **Delete child and Reset This Child's Progress only**. Test seam overrides the duration. ~~Exceptions dock gains an optional secondary **"↩ Admin"** that re-prompts for the passcode~~ — **removed 2026-09-30** (owner: extraneous next to Done ✅). Done ✅ is the dock's single action and lands on the chart; to get back to Admin, reopen it normally (passcode).
 
 ### 11.6 Batch 2 required mitigations (from the panel review)
 
@@ -490,7 +490,7 @@ Source: the rev 2 revamp proposal and its 5-stage panel review (Batch 1 session,
 - [x] 3. **Save bar never covers the last row** (pane `padding-bottom` ≥ bar height) and never steals focus. Toasts for routine success only. *(The bar is the pane's last in-flow sticky child, so at full scroll it sits below the last row.)*
 - [x] 4. **Passcode findability:** tab `title` + rail sub-label, card "Parent passcode 🔑", visible without scroll at TP/TL with 2 children. TC93 updated for 5 tabs. *(Phase 3: heading visible without scroll at TP, TL, desktop and phone even with 3 children; TC93 + TC100.)*
 - [x] 5. **2s hold only on Delete child and Reset progress**, keyboard hold, ring from frame 1, `{hold:0}` test override. *(Phase 5: `holdToConfirm` in admin.js + `showCustomConfirm({ hold: 2000 })`; linear fill instead of a ring, visible from the first frame; Space/Enter hold; `aria-describedby` hint; suite-wide `setHoldDurationMock(0)`, real hold in TC102. The shop hold was not extracted — kid code untouched.)*
-- [x] 6. **"↩ Admin" is secondary**, re-prompts the passcode; Done ✅ stays primary. *(Phase 5 / TC102.)*
+- [x] 6. ~~**"↩ Admin" is secondary**, re-prompts the passcode; Done ✅ stays primary.~~ *(Shipped in Phase 5, then **removed 2026-09-30** at the owner's request; TC102 step 6 now asserts the button is absent and Done ✅ is the only dock button.)*
 - [x] 7. **Escape layering** handles inline edits (stopPropagation); Android back via `pushState`, tested. *(Android back + guard Esc: Phase 2 / TC99. Inline reward-rename Esc stops propagation and returns focus to the row: Phase 4 / TC97 step 5.)*
 - [x] 8. **Reorder active tasks only**; inactive positions kept; a historical week's row order is unchanged after a reorder; TC58 cleanup removes by id. *(Phase 2, TC99: retired tasks keep their array index and a past week's row **set** is unchanged. Active tasks shown in a past week do follow the new order, because the grid renders in array order; fully frozen history order would need a persisted per-week order and a schema migration — not done. TC58 no longer pops: its draft is discarded through the guard.)*
 - [x] 9. **Phase 3 responsive ahead of Phase 4** — satisfied by the 0b portrait-tablet top-tab fix. `viewport-fit=cover` is **not** shipped without the kid-HUD safe-area padding and capture (deferred).
@@ -500,7 +500,7 @@ Source: the rev 2 revamp proposal and its 5-stage panel review (Batch 1 session,
 
 ### 11.7 Test impact
 
-- **New:** TC98 (Phase 1: restore dialog, toast, reload guard, focus), TC99 (Phase 2: guard + nightly path + dirty dot + reorder), TC100 (Phase 3: 5 tabs, Family passcode, add child without switch, roving focus), TC101 (Phase 4: inline rewards + sheet), TC102 (Phase 5: hold + ↩ Admin + Rule 8). Numbers are assigned as each lands; run the §0 audit.
+- **New:** TC98 (Phase 1: restore dialog, toast, reload guard, focus), TC99 (Phase 2: guard + nightly path + dirty dot + reorder), TC100 (Phase 3: 5 tabs, Family passcode, add child without switch, roving focus), TC101 (Phase 4: inline rewards + sheet), TC102 (Phase 5: hold + Rule 8; step 6 asserts ↩ Admin is absent since 2026-09-30). Numbers are assigned as each lands; run the §0 audit.
 - **Changed:** TC16/TC24 (`window.prompt` → `setReadBackupCodeMock`), TC1/TC58 (toast contract; guard on dirty close; cleanup by id), TC93 (5 tabs, placeholder below the list, guard at step 5), TC96/TC97 (close helpers and customize-button path), TC50 (confirm field), TC57/TC31/TC46 (inline editor for the active child), TC23/TC27/TC89 (hold override).
 - **Schema:** none. **Cache:** every phase bumps `CACHE_NAME`, `style.css?v=`, `app.js?v=` and all importmap entries (TC90).
 
