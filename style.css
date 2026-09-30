@@ -3812,6 +3812,7 @@ input:checked + .slider:before {
 
 .exceptions-info {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
@@ -3849,7 +3850,10 @@ input:checked + .slider:before {
   gap: 6px;
   font-size: 0.85rem;
   color: #f1f5f9;
-  flex-wrap: nowrap;
+  /* Wrap rather than overflow: a nowrap legend spilled under "↩ Admin". */
+  flex-wrap: wrap;
+  row-gap: 2px;
+  min-width: 0;
 }
 
 .exceptions-prompt {
@@ -3916,6 +3920,13 @@ input:checked + .slider:before {
     font-size: 0.85rem;
     margin-left: 10px;
     line-height: 1;
+  }
+}
+
+/* Desktop: room for the full legend plus "↩ Admin" and Done on one row. */
+@media (min-width: 860px) {
+  .exceptions-banner {
+    max-width: 800px;
   }
 }
 
