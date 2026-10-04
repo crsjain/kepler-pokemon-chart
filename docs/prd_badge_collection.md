@@ -29,7 +29,6 @@ The system is designed to mimic the core Pokémon experience of "filling the Pok
         *   **Date Earned** (default on open): Sorts badges chronologically (newest first).
         *   **No. (Dex #)**: Sorts badges numerically by their National Pokédex ID.
         *   **A–Z**: Sorts badges alphabetically by Pokémon name (tie-broken by Dex #).
-        *   **Type**: Sorts badges alphabetically by Pokémon Type (tie-broken by Dex #).
 *   **Empty State**: Shows an encouraging message if no badges have been collected yet (or if none match the active type filter).
 
 ### 3.3. Dynamic Badge Pool & Roller

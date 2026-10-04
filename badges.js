@@ -2,7 +2,7 @@ import { state, saveState, rollNewWeeklyBadge } from './state.js';
 import { getPokemonName, POKEMON_TYPES } from './pokemon_data.js';
 import { isBackdropClick } from './modal_backdrop.js';
 
-let badgeSortMethod = 'date'; // 'date' | 'dex' | 'name' | 'type'
+let badgeSortMethod = 'date'; // 'date' | 'dex' | 'name'
 let badgeFilterType = 'all';
 
 // One-shot listener binding guard (see initShop for the full rationale).
@@ -103,14 +103,6 @@ export function renderBadgeCaseGrid() {
       const nameB = (b.name || getPokemonName(b.id)).toLowerCase();
       if (nameA < nameB) return -1;
       if (nameA > nameB) return 1;
-      return a.id - b.id;
-    });
-  } else if (sortBy === 'type') {
-    badges.sort((a, b) => {
-      const typeA = (POKEMON_TYPES[a.id] || 'Normal').toLowerCase();
-      const typeB = (POKEMON_TYPES[b.id] || 'Normal').toLowerCase();
-      if (typeA < typeB) return -1;
-      if (typeA > typeB) return 1;
       return a.id - b.id;
     });
   } else {

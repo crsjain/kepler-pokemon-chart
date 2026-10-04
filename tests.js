@@ -7905,8 +7905,8 @@ async function runSuite() {
         }
       }
 
-      // 91. Test Case 91: Badge Case Shop-style Type filter & Date / Dex # / A–Z / Type sorting
-      console.log("Running Test Case 91: Badge Case Type filter & Date / Dex # / A-Z / Type sorting...");
+      // 91. Test Case 91: Badge Case Shop-style Type filter & Date / Dex # / A–Z sorting
+      console.log("Running Test Case 91: Badge Case Type filter & Date / Dex # / A-Z sorting...");
       {
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -7965,12 +7965,9 @@ async function runSuite() {
         assert(JSON.stringify(getRenderedBadgeIds()) === JSON.stringify([155, 94, 135, 179, 8]),
           `A-Z sort should order alphabetically, got ${JSON.stringify(getRenderedBadgeIds())}`);
 
-        // (D) Sort: Pokémon Type (Electric [135, 179], Fire [155], Ghost [94], Water [8])
-        sortSelect.value = 'type';
-        sortSelect.dispatchEvent(new Event('change'));
-        await sleep(30);
-        assert(JSON.stringify(getRenderedBadgeIds()) === JSON.stringify([135, 179, 155, 94, 8]),
-          `Type sort should group by type A-Z then Dex #, got ${JSON.stringify(getRenderedBadgeIds())}`);
+        // (D) Sort by Type is absent in Badge Case (redundant with Type filter)
+        assert(sortSelect.querySelector('option[value="type"]') === null,
+          "Badge Case sort dropdown must not include redundant 'Sort: Type' option");
 
         // (E) Filter by Type: Electric -> only Jolteon & Mareep
         filterSelect.value = 'Electric';
