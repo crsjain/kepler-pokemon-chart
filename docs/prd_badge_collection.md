@@ -22,11 +22,11 @@ The system is designed to mimic the core Pokémon experience of "filling the Pok
 
 ### 3.2. Badge Case Modal
 *   **Access**: Click the "🏆 Case" button in the weekly badge header.
-*   **UI**: Renders a wooden-styled case displaying all collected badges.
-*   **Filtering & Sorting** (matches the Pokémon Partner Shop dropdown bar):
+*   **UI**: Renders a wooden-styled case displaying a live count of collected Gym Badges, top-right `×` and bottom `Close` buttons, and all collected badges.
+*   **Filtering & Sorting** (matches the Pokémon Partner Shop dropdown bar, side-by-side on mobile):
     *   **Type Filter (`#badges-filter-type`)**: Filters badges by Pokémon Type (`All Types` default, or any elemental type).
     *   **Sort By (`#badges-sort-by`)**:
-        *   **Date Earned** (default on open): Sorts badges chronologically (newest first).
+        *   **Newest (`Sort: Newest 📅`, default on open)**: Sorts badges chronologically (newest first).
         *   **No. (Dex #)**: Sorts badges numerically by their National Pokédex ID.
         *   **A–Z**: Sorts badges alphabetically by Pokémon name (tie-broken by Dex #).
 *   **Empty State**: Shows an encouraging message if no badges have been collected yet (or if none match the active type filter).

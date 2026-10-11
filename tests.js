@@ -10086,12 +10086,13 @@ async function runSuite() {
         }
       }
 
-      // 108. Badge Case filter/sort bar never shrinks or overlaps cards when wrapped on mobile
+      // 108. Badge Case UX alignment: Sort: Newest, collection count subtitle, top-right X, and side-by-side mobile controls
       {
         console.log("Running Test Case 108: Badge Case mobile filter bar does not shrink or overlap cards...");
         const helpers = window.__test_helpers__;
         const stateObj = window.__app_state__;
         const origBadges = [...(stateObj.collectedBadges || [])];
+        const modal = document.getElementById('badges-modal');
         const modalContent = document.querySelector('#badges-modal .badges-modal-content');
         const controls = document.querySelector('.shop-filter-bar.badge-case-controls');
         const filterSelect = document.getElementById('badges-filter-type');
@@ -10099,8 +10100,41 @@ async function runSuite() {
         const gridContainer = document.querySelector('#badges-modal .badges-grid-container');
         const openBtn = document.getElementById('open-badges-btn');
         const closeBtn = document.getElementById('close-badges-modal-btn');
+        const closeXBtn = document.getElementById('close-badges-x-btn');
+        const countEl = document.getElementById('badges-collected-count');
+        const wordEl = document.getElementById('badges-collected-word');
 
         try {
+          stateObj.collectedBadges = [
+            { id: 8,   name: 'Wartortle', dateEarned: '2026-08-01T12:00:00.000Z' },
+            { id: 94,  name: 'Gengar',    dateEarned: '2026-08-08T12:00:00.000Z' },
+            { id: 131, name: 'Lapras',    dateEarned: '2026-08-12T12:00:00.000Z' },
+            { id: 135, name: 'Jolteon',   dateEarned: '2026-08-15T12:00:00.000Z' },
+            { id: 155, name: 'Cyndaquil', dateEarned: '2026-08-22T12:00:00.000Z' },
+            { id: 179, name: 'Mareep',    dateEarned: '2026-08-29T12:00:00.000Z' },
+            { id: 25,  name: 'Pikachu',   dateEarned: '2026-09-05T12:00:00.000Z' },
+            { id: 6,   name: 'Charizard', dateEarned: '2026-09-12T12:00:00.000Z' }
+          ];
+          openBtn.click();
+          modalContent.getAnimations().forEach(a => a.finish());
+
+          // (A) Sort: Newest label, live badge count subtitle, and top-right × button
+          const dateOpt = sortSelect.querySelector('option[value="date"]');
+          assert(dateOpt && dateOpt.textContent === 'Sort: Newest 📅',
+            `Badge Case date sort option must read 'Sort: Newest 📅' (got '${dateOpt?.textContent}')`);
+          assert(countEl && countEl.textContent === '8' && wordEl && wordEl.textContent === 'Gym Badges',
+            `Badge Case subtitle must show '8 Gym Badges' (got '${countEl?.textContent} ${wordEl?.textContent}')`);
+          assert(closeXBtn !== null, "Badge Case must have a top-right #close-badges-x-btn");
+
+          // Singular grammar check (1 Gym Badge)
+          stateObj.collectedBadges = [{ id: 25, name: 'Pikachu', dateEarned: '2026-09-05T12:00:00.000Z' }];
+          helpers.renderBadgeCaseGrid();
+          assert(countEl.textContent === '1' && wordEl.textContent === 'Gym Badge',
+            `Badge Case subtitle must use singular '1 Gym Badge' (got '${countEl.textContent} ${wordEl.textContent}')`);
+
+          // Restore 8 badges and verify top-right × closes modal
+          closeXBtn.click();
+          assert(modal.classList.contains('hidden'), "#close-badges-x-btn must close #badges-modal");
           stateObj.collectedBadges = [
             { id: 8,   name: 'Wartortle', dateEarned: '2026-08-01T12:00:00.000Z' },
             { id: 94,  name: 'Gengar',    dateEarned: '2026-08-08T12:00:00.000Z' },
@@ -10129,9 +10163,19 @@ async function runSuite() {
           assert(filterBorder === 'rgb(196, 164, 124)' && sortBorder === 'rgb(196, 164, 124)',
             `Badge Case dropdowns must share warm tan border rgb(196, 164, 124), got filter=${filterBorder}, sort=${sortBorder}`);
 
-          // Simulate narrow mobile width (260px inner width forces the two selects to stack onto 2 rows)
-          modalContent.style.width = '310px';
+          // (B) Standard mobile width (350px modal): the 2 dropdowns sit side-by-side on 1 row
+          modalContent.style.width = '350px';
           modalContent.style.maxHeight = '420px';
+          const sideFilterRect = filterSelect.getBoundingClientRect();
+          const sideSortRect = sortSelect.getBoundingClientRect();
+          const sideGridRect = gridContainer.getBoundingClientRect();
+          assert(Math.abs(sideFilterRect.top - sideSortRect.top) < 4,
+            `Badge Case Type and Sort dropdowns must sit side-by-side on mobile (filterTop=${Math.round(sideFilterRect.top)}, sortTop=${Math.round(sideSortRect.top)})`);
+          assert(sideGridRect.top >= sideSortRect.bottom,
+            `Badge grid container must sit below side-by-side dropdowns (sortBottom=${Math.round(sideSortRect.bottom)}, gridTop=${Math.round(sideGridRect.top)})`);
+
+          // (C) Ultra-narrow fallback (<340px, stacked rows): flex-shrink: 0 still prevents any card overlap
+          modalContent.style.width = '310px';
           filterSelect.style.flex = '1 1 100%';
           sortSelect.style.flex = '1 1 100%';
 
@@ -10158,6 +10202,69 @@ async function runSuite() {
           stateObj.collectedBadges = origBadges;
           helpers.saveState();
         }
+      }
+
+      // 109. Multi-viewport UX sweep regressions: Guide modal, Partner Shop title, Showcase stage, and Admin timezone select
+      {
+        console.log("Running Test Case 109: Multi-viewport UX sweep regressions...");
+        const helpers = window.__test_helpers__;
+
+        // (A) Task Guide modal: zero inline styles, top-right × button, and no orphan emoji wrap on mobile
+        const guideModal = document.getElementById('guide-modal');
+        const guideContent = guideModal.querySelector('.guide-modal-content');
+        const guideCloseBtn = document.getElementById('close-guide-modal-btn');
+        const guideCloseXBtn = document.getElementById('close-guide-x-btn');
+        assert(!guideCloseBtn.hasAttribute('style') && guideModal.querySelectorAll('[style]').length === 0,
+          "Guide modal must have zero inline style attributes (UX Rule 8)");
+        assert(guideCloseXBtn !== null, "Guide modal must have a top-right #close-guide-x-btn");
+
+        helpers.openGuide();
+        guideContent.getAnimations().forEach(a => a.finish());
+        assert(!guideModal.classList.contains('hidden'), "openGuide() must open #guide-modal");
+        guideCloseXBtn.click();
+        assert(guideModal.classList.contains('hidden'), "#close-guide-x-btn must close #guide-modal");
+
+        // (B) Partner Shop title: horizontal padding clears .shop-close-btn (×)
+        helpers.openPokemonShop();
+        const shopModal = document.getElementById('pokemon-shop-modal');
+        const shopContent = shopModal.querySelector('.modal-content');
+        shopContent.getAnimations().forEach(a => a.finish());
+        const shopTitle = shopModal.querySelector('.shop-title');
+        const shopCloseBtn = document.getElementById('close-shop-modal-btn');
+        const shopTitleCS = getComputedStyle(shopTitle);
+        assert(parseFloat(shopTitleCS.paddingLeft) >= 24 && parseFloat(shopTitleCS.paddingRight) >= 24,
+          `Partner Shop title must have >= 24px horizontal padding to clear close button (got L=${shopTitleCS.paddingLeft}, R=${shopTitleCS.paddingRight})`);
+        try {
+          shopContent.style.width = '351px';
+          const range = document.createRange();
+          range.selectNodeContents(shopTitle);
+          const titleTextRect = range.getBoundingClientRect();
+          const closeRect = shopCloseBtn.getBoundingClientRect();
+          assert(titleTextRect.right <= closeRect.left + 1,
+            `Partner Shop title text must not overlap close (×) button at 390px mobile width (titleRight=${Math.round(titleTextRect.right)}, closeLeft=${Math.round(closeRect.left)})`);
+        } finally {
+          shopContent.style.width = '';
+          shopCloseBtn.click();
+        }
+
+        // (C) Partner Showcase sprite stage: flex-shrink: 0 prevents compression in landscape
+        helpers.openPartnerShowcaseModal();
+        const showcaseStage = document.querySelector('#partner-showcase-modal .showcase-sprite-stage');
+        assert(getComputedStyle(showcaseStage).flexShrink === '0',
+          "Partner Showcase .showcase-sprite-stage must have flex-shrink: 0");
+        helpers.closePartnerShowcaseModal();
+
+        // (D) Admin Settings timezone select: 236px width on desktop fits 'Mountain (US & Canada)' without clipping
+        const adminModal = document.getElementById('admin-modal');
+        adminModal.classList.remove('hidden');
+        adminModal.querySelector('.modal-content').getAnimations().forEach(a => a.finish());
+        document.querySelector('#admin-nav .admin-nav-btn[data-section="today"]')?.click();
+        const tzSelect = document.getElementById('admin-timezone-select');
+        if (window.innerWidth > 520) {
+          assert(Math.round(tzSelect.getBoundingClientRect().width) === 236,
+            `Admin timezone select must be 236px wide on desktop to fit 'Mountain (US & Canada)' (got ${Math.round(tzSelect.getBoundingClientRect().width)}px)`);
+        }
+        adminModal.classList.add('hidden');
       }
 
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");

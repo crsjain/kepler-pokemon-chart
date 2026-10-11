@@ -11,6 +11,7 @@ let isBadgeCaseInitialized = false;
 export function initBadgeCase() {
   const openBtn = document.getElementById('open-badges-btn');
   const closeBtn = document.getElementById('close-badges-modal-btn');
+  const closeXBtn = document.getElementById('close-badges-x-btn');
   const modal = document.getElementById('badges-modal');
   const filterTypeSelect = document.getElementById('badges-filter-type');
   const sortSelect = document.getElementById('badges-sort-by');
@@ -24,6 +25,9 @@ export function initBadgeCase() {
   }
   if (closeBtn) {
     closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+  }
+  if (closeXBtn) {
+    closeXBtn.addEventListener('click', () => modal.classList.add('hidden'));
   }
   if (filterTypeSelect) {
     filterTypeSelect.addEventListener('change', () => {
@@ -80,6 +84,11 @@ export function renderBadgeCaseGrid() {
   grid.innerHTML = '';
 
   const allBadges = [...(state.collectedBadges || [])];
+  const countEl = document.getElementById('badges-collected-count');
+  const wordEl = document.getElementById('badges-collected-word');
+  if (countEl) countEl.textContent = String(allBadges.length);
+  if (wordEl) wordEl.textContent = allBadges.length === 1 ? 'Gym Badge' : 'Gym Badges';
+
   if (allBadges.length === 0) {
     grid.innerHTML = `<div class="no-badges">No badges collected yet. Complete your weekly goals to earn them! 🏆</div>`;
     return;

@@ -12,6 +12,7 @@ let isGuideInitialized = false;
 export function initGuide() {
   guideModal = document.getElementById('guide-modal');
   closeGuideBtn = document.getElementById('close-guide-modal-btn');
+  const closeGuideXBtn = document.getElementById('close-guide-x-btn');
   guideTasksList = document.getElementById('guide-tasks-list');
   openGuideBtn = document.getElementById('open-guide-btn');
 
@@ -24,6 +25,9 @@ export function initGuide() {
   }
   if (closeGuideBtn) {
     closeGuideBtn.addEventListener('click', closeGuide);
+  }
+  if (closeGuideXBtn) {
+    closeGuideXBtn.addEventListener('click', closeGuide);
   }
 
   // Close modal on clicking background
