@@ -10086,6 +10086,80 @@ async function runSuite() {
         }
       }
 
+      // 108. Badge Case filter/sort bar never shrinks or overlaps cards when wrapped on mobile
+      {
+        console.log("Running Test Case 108: Badge Case mobile filter bar does not shrink or overlap cards...");
+        const helpers = window.__test_helpers__;
+        const stateObj = window.__app_state__;
+        const origBadges = [...(stateObj.collectedBadges || [])];
+        const modalContent = document.querySelector('#badges-modal .badges-modal-content');
+        const controls = document.querySelector('.shop-filter-bar.badge-case-controls');
+        const filterSelect = document.getElementById('badges-filter-type');
+        const sortSelect = document.getElementById('badges-sort-by');
+        const gridContainer = document.querySelector('#badges-modal .badges-grid-container');
+        const openBtn = document.getElementById('open-badges-btn');
+        const closeBtn = document.getElementById('close-badges-modal-btn');
+
+        try {
+          stateObj.collectedBadges = [
+            { id: 8,   name: 'Wartortle', dateEarned: '2026-08-01T12:00:00.000Z' },
+            { id: 94,  name: 'Gengar',    dateEarned: '2026-08-08T12:00:00.000Z' },
+            { id: 131, name: 'Lapras',    dateEarned: '2026-08-12T12:00:00.000Z' },
+            { id: 135, name: 'Jolteon',   dateEarned: '2026-08-15T12:00:00.000Z' },
+            { id: 155, name: 'Cyndaquil', dateEarned: '2026-08-22T12:00:00.000Z' },
+            { id: 179, name: 'Mareep',    dateEarned: '2026-08-29T12:00:00.000Z' },
+            { id: 25,  name: 'Pikachu',   dateEarned: '2026-09-05T12:00:00.000Z' },
+            { id: 6,   name: 'Charizard', dateEarned: '2026-09-12T12:00:00.000Z' }
+          ];
+          openBtn.click();
+          modalContent.getAnimations().forEach(a => a.finish());
+
+          assert(getComputedStyle(controls).flexShrink === '0',
+            "Badge Case filter bar must have flex-shrink: 0 so wrapped rows never compress");
+          assert(getComputedStyle(gridContainer).minHeight === '0px',
+            "Badge Case grid container must have min-height: 0 so only the grid scrolls");
+          assert(getComputedStyle(modalContent).overflowY === 'hidden',
+            "Badge Case modal content must have overflow: hidden so scroll is isolated to grid container");
+
+          // Both selects must share the warm Badge Case border color in resting state
+          filterSelect.blur();
+          sortSelect.blur();
+          const filterBorder = getComputedStyle(filterSelect).borderColor;
+          const sortBorder = getComputedStyle(sortSelect).borderColor;
+          assert(filterBorder === 'rgb(196, 164, 124)' && sortBorder === 'rgb(196, 164, 124)',
+            `Badge Case dropdowns must share warm tan border rgb(196, 164, 124), got filter=${filterBorder}, sort=${sortBorder}`);
+
+          // Simulate narrow mobile width (260px inner width forces the two selects to stack onto 2 rows)
+          modalContent.style.width = '310px';
+          modalContent.style.maxHeight = '420px';
+          filterSelect.style.flex = '1 1 100%';
+          sortSelect.style.flex = '1 1 100%';
+
+          const controlsRect = controls.getBoundingClientRect();
+          const filterRect = filterSelect.getBoundingClientRect();
+          const sortRect = sortSelect.getBoundingClientRect();
+          const gridRect = gridContainer.getBoundingClientRect();
+          const firstCardRect = document.querySelector('#badges-grid .badge-case-card').getBoundingClientRect();
+
+          assert(sortRect.top >= filterRect.bottom,
+            `Stacked sort dropdown must sit below type dropdown (filterBottom=${Math.round(filterRect.bottom)}, sortTop=${Math.round(sortRect.top)})`);
+          assert(controlsRect.height >= 76,
+            `Wrapped filter bar must retain full two-row height >= 76px without shrinking (got ${Math.round(controlsRect.height)}px)`);
+          assert(gridRect.top >= sortRect.bottom,
+            `Badge grid container must not overlap stacked sort dropdown (sortBottom=${Math.round(sortRect.bottom)}, gridTop=${Math.round(gridRect.top)})`);
+          assert(firstCardRect.top >= sortRect.bottom,
+            `First badge card must not overlap stacked sort dropdown (sortBottom=${Math.round(sortRect.bottom)}, cardTop=${Math.round(firstCardRect.top)})`);
+        } finally {
+          modalContent.style.width = '';
+          modalContent.style.maxHeight = '';
+          filterSelect.style.flex = '';
+          sortSelect.style.flex = '';
+          closeBtn.click();
+          stateObj.collectedBadges = origBadges;
+          helpers.saveState();
+        }
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
