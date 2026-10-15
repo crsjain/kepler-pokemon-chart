@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.95">
+  <link rel="stylesheet" href="style.css?v=10.96">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script type="importmap">
   {
@@ -964,13 +964,14 @@
           <h3 class="admin-pane-title">👥 Family</h3>
           <div class="adm-column">
             <div class="admin-action-group adm-card">
-              <div class="adm-card-title-row">
-                <h4>Children</h4>
-                <button type="button" id="admin-add-child-btn" class="pixel-btn adm-secondary">+ Add child</button>
-              </div>
+              <h4>Children</h4>
               <div id="admin-profiles-list" class="admin-profiles-list">
                 <!-- Populated dynamically via JS -->
               </div>
+              <!-- Rarely used, so a quiet text link trailing the list rather than a
+                   header button (Staff UX review, 2026-10-15). Sibling of the list,
+                   not inside it: the list is re-rendered from JS. -->
+              <button type="button" id="admin-add-child-btn" class="adm-link-btn">+ Add a child</button>
             </div>
 
             <!-- Parent PIN (folded in from its own tab, PRD v2.0 Q11). One

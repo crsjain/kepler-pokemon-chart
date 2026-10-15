@@ -10598,6 +10598,40 @@ async function runSuite() {
         }
       }
 
+      // 113. Admin › Family "+ Add a child" is a quiet text link trailing the Children list.
+      {
+        console.log("Running Test Case 113: Family + Add a child is a quiet trailing text link...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const adminModal = document.getElementById('admin-modal');
+        try {
+          document.getElementById('admin-btn').click();
+          await sleep(30);
+          document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+          document.getElementById('password-submit-btn').click();
+          document.getElementById('admin-tab-children').click();
+          adminModal.querySelector('.modal-content').getAnimations().forEach(a => a.finish());
+          const btn = document.getElementById('admin-add-child-btn');
+          const list = document.getElementById('admin-profiles-list');
+          assert(btn && !btn.classList.contains('pixel-btn') && btn.classList.contains('adm-link-btn'), "+ Add a child is a text link, not a pixel button");
+          assert(btn.textContent.trim() === '+ Add a child', `Label is "+ Add a child" (got "${btn.textContent.trim()}")`);
+          assert(list.nextElementSibling === btn && !list.contains(btn), "The link trails the Children list (sibling after it, outside the re-rendered list)");
+          assert(!btn.closest('.adm-card-title-row'), "The link is no longer in the card header");
+          const cs = getComputedStyle(btn);
+          assert(cs.backgroundColor === 'rgba(0, 0, 0, 0)' && cs.borderTopStyle === 'none' && cs.boxShadow === 'none', "No fill, border or shadow");
+          assert(btn.offsetHeight >= 44, `Still a >=44px tap target (got ${btn.offsetHeight})`);
+          const listRect = list.getBoundingClientRect();
+          const btnRect = btn.getBoundingClientRect();
+          assert(btnRect.top >= listRect.bottom, "The link renders below the list");
+          assert(!btn.hasAttribute('style'), "No inline styles (Rule 8)");
+        } finally {
+          [document.getElementById('password-modal'), adminModal].forEach(el => el.classList.add('hidden'));
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

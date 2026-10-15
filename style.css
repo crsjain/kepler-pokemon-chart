@@ -8147,23 +8147,6 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
    Admin revamp Phase 3 (PRD v2.0 §11.5): Family tab (Children + Parent
    passcode), "+ Add child", rail sub-label, inline passcode errors.
    ========================================================================== */
-#admin-modal .adm-card-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-#admin-modal .adm-card-title-row h4 {
-  margin: 0;
-}
-
-#admin-modal .adm-card-title-row .pixel-btn {
-  margin: 0;
-  min-height: 44px;
-}
-
 /* Family pane is compact so the passcode card sits above the fold at tablet
    sizes with 2-3 children (§11.6 #4): the card is the container, so the
    list drops its own boxed well, and rows are a touch shorter. */
@@ -8176,6 +8159,38 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 
 #admin-pane-children .admin-profile-item {
   padding: 6px 10px;
+}
+
+/* "+ Add a child": rarely used, so a quiet text link at the foot of the
+   Children list instead of a header button (Staff UX review, 2026-10-15).
+   Not a .pixel-btn: no fill, border or shadow, so it never competes with the
+   row actions or reads as a form field. Still a 44px-tall tap target. */
+#admin-modal .adm-link-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--adm-primary-pressed); /* #1d4f90, 8.2:1 on white */
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+#admin-modal .adm-link-btn:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+#admin-modal .adm-link-btn:active {
+  transform: translateY(2px);
 }
 
 #admin-modal .adm-inline-error {
