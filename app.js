@@ -1199,6 +1199,13 @@ initAdmin({
   sendFamilyPasswordReset: (email) => sendFamilyPasswordResetFn(email),
   changeFamilyPassword: (currentPassword, newPassword) => changeFamilyPasswordFn(currentPassword, newPassword),
   reauthenticateFamily: (password) => reauthenticateFamilyFn(password),
+  // Forgot PIN? on a signed-out device hands off to Family sign-in.
+  openFamilyLogin: () => {
+    if (!familyLoginModal) return;
+    familyLoginModal.classList.remove('hidden');
+    const emailInput = document.getElementById('login-email');
+    if (emailInput) emailInput.focus();
+  },
   getActiveProfileName: () => {
     const profile = activeProfileId ? profilesList.find(p => p.id === activeProfileId) : null;
     return profile && profile.name ? profile.name : null;

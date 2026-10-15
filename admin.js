@@ -523,23 +523,23 @@ function refreshPinStatus() {
  *
  * Proving the family sign-in password (re-authentication, no password change)
  * opens Admin › Family so the parent can set a new PIN. The kids don't know the
- * family password, so the speed-bump threat model (§4) holds. Only offered when
- * this device is signed in to a family account; offline errors map to calm copy.
+ * family password, so the speed-bump threat model (§4) holds. Always offered; on
+ * a device that isn't signed in it explains that and hands off to Family
+ * sign-in instead. Offline errors map to calm copy.
  * ------------------------------------------------------------------------- */
 function isForgotPinMode() {
   return Boolean(passwordModal && passwordModal.classList.contains('forgot-mode'));
 }
 
-function refreshForgotPinLink() {
-  const link = document.getElementById('password-forgot-btn');
-  if (!link) return;
-  const email = appCallbacks.getFamilyEmail ? appCallbacks.getFamilyEmail() : null;
-  link.classList.toggle('hidden', !email);
+function isFamilySignedIn() {
+  return Boolean(appCallbacks.getFamilyEmail && appCallbacks.getFamilyEmail());
 }
 
 function setForgotPinMode(on) {
   if (!passwordModal) return;
+  const signedIn = isFamilySignedIn();
   passwordModal.classList.toggle('forgot-mode', on);
+  passwordModal.classList.toggle('forgot-signed-out', on && !signedIn);
   const panel = document.getElementById('password-forgot-panel');
   if (panel) panel.classList.toggle('hidden', !on);
   const forgotInput = document.getElementById('password-forgot-input');
@@ -550,14 +550,26 @@ function setForgotPinMode(on) {
     forgotError.classList.add('hidden');
   }
   if (passwordError) passwordError.classList.add('hidden');
-  if (passwordSubmitBtn) passwordSubmitBtn.textContent = on ? 'Reset PIN' : 'Unlock';
+  if (passwordSubmitBtn) passwordSubmitBtn.textContent = on ? (signedIn ? 'Reset PIN' : 'Sign in') : 'Unlock';
   const title = document.getElementById('password-title');
   if (title) title.textContent = on ? 'Forgot PIN? 🔑' : 'Parent PIN 🔑';
   // The prompt is already open here, so focus at once (no open animation to wait for).
-  if (on && forgotInput) forgotInput.focus();
+  if (on) {
+    const target = signedIn ? forgotInput : passwordSubmitBtn;
+    if (target) target.focus();
+  }
 }
 
 async function handleForgotPinSubmit() {
+  // Not signed in: there's no family password to check here, so hand off to
+  // Family sign-in. After signing in, Forgot PIN? offers the reset.
+  if (!isFamilySignedIn()) {
+    passwordSuccessCallback = null;
+    setForgotPinMode(false);
+    passwordModal.classList.add('hidden');
+    if (appCallbacks.openFamilyLogin) appCallbacks.openFamilyLogin();
+    return;
+  }
   const forgotInput = document.getElementById('password-forgot-input');
   const forgotError = document.getElementById('password-forgot-error');
   const showError = (msg) => {
@@ -603,7 +615,6 @@ async function handleForgotPinSubmit() {
 export function promptParentPassword(onSuccess, customDescription = 'Enter the Parent PIN to open Admin.') {
   passwordSuccessCallback = onSuccess;
   setForgotPinMode(false);
-  refreshForgotPinLink();
   applyPasswordPromptMode();
   if (passwordInput) passwordInput.value = '';
   if (passwordError) passwordError.classList.add('hidden');

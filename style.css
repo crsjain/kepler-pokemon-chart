@@ -7533,6 +7533,14 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   text-wrap: pretty;
 }
 
+/* Signed in: the family-password field. Signed out: only the sign-in hint. */
+#password-modal:not(.forgot-signed-out) #password-forgot-signed-out,
+#password-modal.forgot-signed-out .password-forgot-label,
+#password-modal.forgot-signed-out #password-forgot-input,
+#password-modal.forgot-signed-out #password-forgot-help {
+  display: none;
+}
+
 /* Forgot mode swaps the PIN entry for the family-password field. */
 #password-modal.forgot-mode #password-input,
 #password-modal.forgot-mode #password-keypad,

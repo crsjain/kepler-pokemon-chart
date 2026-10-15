@@ -10735,7 +10735,7 @@ async function runSuite() {
       // 115. "Forgot PIN?": the family sign-in password unlocks setting a new PIN
       //      (docs/prd_parent_pin_and_family_signin.md §7, Phase 1).
       {
-        console.log("Running Test Case 115: Forgot PIN? re-authenticates with the family password...");
+        console.log("Running Test Case 115: Forgot PIN? re-authenticates with the family password (or hands off to sign-in)...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
         await sleep(30);
@@ -10750,12 +10750,24 @@ async function runSuite() {
         const title = document.getElementById('password-title');
         const shown = el => el.offsetParent !== null;
         try {
-          // 1. Not signed in: there is no family password to use, so no link.
-          helpers.setFamilyAuthMock({ email: null });
+          // 1. Not signed in: the link is still offered, explains, and hands off to Family sign-in.
+          const loginModal = document.getElementById('family-login-modal');
+          const signedOutHint = document.getElementById('password-forgot-signed-out');
+          helpers.setFamilyAuthMock({ email: null, reauth: () => { throw new Error('must not re-auth while signed out'); } });
           document.getElementById('admin-btn').click();
           await sleep(30);
-          assert(isOpen(passwordModal) && link.classList.contains('hidden'), "Signed out: Forgot PIN? is not offered");
-          document.getElementById('password-cancel-btn').click();
+          assert(isOpen(passwordModal) && !link.classList.contains('hidden') && shown(link), "Signed out: Forgot PIN? is still offered");
+          link.click();
+          await sleep(30);
+          assert(passwordModal.classList.contains('forgot-signed-out') && shown(signedOutHint), "Signed out: forgot mode explains the device isn't signed in");
+          assert(!shown(forgotInput) && !shown(document.getElementById('password-forgot-help')), "Signed out: no family-password field (nothing to check it against)");
+          assert(submitBtn.textContent === 'Sign in' && document.activeElement === submitBtn, "Signed out: the primary is a focused 'Sign in'");
+          assert(!signedOutHint.hasAttribute('style'), "No inline styles on the hint (Rule 8)");
+          submitBtn.click();
+          await sleep(30);
+          assert(!isOpen(passwordModal) && isOpen(loginModal), "Sign in hands off to the Family sign-in modal");
+          assert(document.activeElement === document.getElementById('login-email'), "Family sign-in opens with the email field focused");
+          loginModal.classList.add('hidden');
 
           // 2. Signed in, PIN mode: a quiet 44px text link under the keypad.
           const reauthCalls = [];
@@ -10775,7 +10787,8 @@ async function runSuite() {
           // 3. Forgot mode swaps the keypad for the family-password field.
           link.click();
           await sleep(60);
-          assert(passwordModal.classList.contains('forgot-mode') && isOpen(panel), "Forgot mode shows the family-password panel");
+          assert(passwordModal.classList.contains('forgot-mode') && !passwordModal.classList.contains('forgot-signed-out') && isOpen(panel) && !shown(signedOutHint),
+            "Signed in: forgot mode shows the family-password panel, not the sign-in hint");
           assert(!shown(document.getElementById('password-input')) && !shown(document.getElementById('password-keypad')) && !shown(link),
             "PIN field, keypad and the link itself are hidden in forgot mode");
           assert(title.textContent === 'Forgot PIN? 🔑' && submitBtn.textContent === 'Reset PIN', "Title and primary button switch to the reset flow");
@@ -10814,7 +10827,7 @@ async function runSuite() {
           helpers.setFamilyAuthMock(null);
           helpers.setFamilyPasscode(null);
           document.querySelectorAll('.notif-modal').forEach(el => el.remove());
-          [passwordModal, adminModal].forEach(el => el.classList.add('hidden'));
+          [passwordModal, adminModal, document.getElementById('family-login-modal')].forEach(el => el.classList.add('hidden'));
           helpers.resetState();
           await sleep(30);
         }
