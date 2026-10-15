@@ -948,7 +948,7 @@ function bindFamilySignInCard() {
       }, RESET_EMAIL_COOLDOWN_MS);
       try {
         await appCallbacks.sendFamilyPasswordReset(email);
-        setSignInMessage('status', `Reset link sent to ${email}. Check the inbox and spam folder.`);
+        setSignInMessage('status', `Reset link sent to ${email}. Check the inbox and spam folder. The new sign-in password needs 6+ characters (the 4–6 digit Parent PIN is separate).`);
       } catch (err) {
         console.error('Password reset email failed:', err);
         setSignInMessage('error', describeAuthError(err));

@@ -13,20 +13,20 @@
   <script type="importmap">
   {
     "imports": {
-      "./app.js": "./app.js?v=10.82",
-      "./state.js": "./state.js?v=10.82",
-      "./firebase.js": "./firebase.js?v=10.82",
-      "./migrations.js": "./migrations.js?v=10.82",
-      "./vault.js": "./vault.js?v=10.82",
-      "./badges.js": "./badges.js?v=10.82",
-      "./shop.js": "./shop.js?v=10.82",
-      "./guide.js": "./guide.js?v=10.82",
-      "./pokemon_data.js": "./pokemon_data.js?v=10.82",
-      "./date_utils.js": "./date_utils.js?v=10.82",
-      "./admin.js": "./admin.js?v=10.82",
-      "./rewards_admin.js": "./rewards_admin.js?v=10.82",
-      "./audio.js": "./audio.js?v=10.82",
-      "./modal_backdrop.js": "./modal_backdrop.js?v=10.82"
+      "./app.js": "./app.js?v=10.83",
+      "./state.js": "./state.js?v=10.83",
+      "./firebase.js": "./firebase.js?v=10.83",
+      "./migrations.js": "./migrations.js?v=10.83",
+      "./vault.js": "./vault.js?v=10.83",
+      "./badges.js": "./badges.js?v=10.83",
+      "./shop.js": "./shop.js?v=10.83",
+      "./guide.js": "./guide.js?v=10.83",
+      "./pokemon_data.js": "./pokemon_data.js?v=10.83",
+      "./date_utils.js": "./date_utils.js?v=10.83",
+      "./admin.js": "./admin.js?v=10.83",
+      "./rewards_admin.js": "./rewards_admin.js?v=10.83",
+      "./audio.js": "./audio.js?v=10.83",
+      "./modal_backdrop.js": "./modal_backdrop.js?v=10.83"
     }
   }
   </script>
@@ -994,7 +994,7 @@
             <!-- Family sign-in: the Firebase email + password, needed once per device. -->
             <div id="admin-signin-card" class="admin-action-group adm-card">
               <h4>Family sign-in ✉️</h4>
-              <div class="admin-option-hint">Needed once on each device to sync charts. Signed in as <strong id="admin-family-email">not signed in on this device</strong>.</div>
+              <div class="admin-option-hint">The family account password: needed once on each device to sync charts, at least 6 characters. It is not the Parent PIN. Signed in as <strong id="admin-family-email">not signed in on this device</strong>.</div>
               <p id="admin-signin-status" class="adm-inline-status hidden" role="status"></p>
               <p id="admin-signin-error" class="adm-inline-error hidden" role="alert"></p>
               <div class="adm-btn-row">
@@ -1111,7 +1111,7 @@
           </div>
           <div class="login-field">
             <label for="login-password">Password:</label>
-            <input type="password" id="login-password" class="login-input" placeholder="Password" autocomplete="current-password">
+            <input type="password" id="login-password" class="login-input" placeholder="Family password (6+ characters)" autocomplete="current-password">
           </div>
           <p id="login-error" class="error-message login-error hidden" role="alert"></p>
           <p id="login-info" class="login-info hidden" role="status"></p>
@@ -1229,7 +1229,7 @@
   </div>
 
   <script src="particles.js?v=10.4"></script>
-  <script type="module" src="app.js?v=10.82" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.83" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 

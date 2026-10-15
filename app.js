@@ -492,7 +492,7 @@ function bindForgotPassword() {
     try {
       await sendFamilyPasswordResetFn(email);
       const emulatorNote = useEmulator ? ' (Emulator: the link is in the emulator log.)' : '';
-      setLoginMessage('info', `If ${email} has a family account, a reset link is on its way. Check the inbox and spam folder.${emulatorNote}`);
+      setLoginMessage('info', `If ${email} has a family account, a reset link is on its way. Check the inbox and spam folder. This resets the family sign-in password (6+ characters), not the Parent PIN.${emulatorNote}`);
     } catch (err) {
       console.error("Password reset email failed:", err);
       setLoginMessage('error', describeAuthError(err));
