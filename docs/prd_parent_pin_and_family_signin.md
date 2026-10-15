@@ -109,6 +109,42 @@ The PIN is a **speed bump for a 7-year-old**, not security. Firestore rules chec
 
 ## 6. Follow-ups
 
-- Stop fanning the PIN out to `profiles.*.state.adminPassword` after one release, and drop `adminPassword` from the state template with a migration.
-- Optional: a "This is a parent device" trust toggle (skip the PIN on the parent phone).
-- Manual check against real Firebase: reset email delivery (prod and staging) and the sign-out of other devices after a password change.
+- Retiring the per-child PIN copies (`profiles.*.state.adminPassword`) is planned and tracked in **§7** — check its phase table for status and the earliest start date of the next phase.
+- Optional: a "This is a parent device" trust toggle (skip the PIN on the parent phone). Parked 2026-10-15: build only if PIN entry on the parent phone proves to be real friction; if built, Admin entry only, 30-day expiry, Sign Out always gated.
+- Manual check against real Firebase: the sign-out of other devices after a password change (reset email delivery was verified on prod 2026-10-15). Steps: change the password on the phone (Admin › Family › Change password), reload the kid tablet → expect the Family login modal (without a reload it can take up to ~60 min, the ID-token lifetime). Do it on prod; the emulator doesn't model revocation faithfully.
+
+## 7. Retiring per-child PIN copies (approved 2026-10-15)
+
+### 7.1 Decisions
+
+The evaluation (`adminPassword` read/write map, options, review panel) was approved on **2026-10-15** through the owner's artifact review policy, with its recommended defaults:
+
+| # | Decision (2026-10-15) |
+| :--- | :--- |
+| R1 | **Option B**: backfill the doc-level field, then remove `adminPassword` from per-child state with a **V20 migration** (`delete s.adminPassword`). Rejected: Option A (ignore at read time), which leaves stale PINs in cloud docs and in child backup codes forever. |
+| R2 | **"Forgot PIN?" ships in Phase 1**: re-authenticate with the family sign-in password, then set a new PIN. It turns any lost passcode into a 30-second fix. |
+| R3 | **7-day soaks** between phases, plus a manual Firestore-console check that `users/{uid}.adminPassword` exists on prod and staging. |
+| R4 | Restoring a family code **without** the doc field no longer reverts the PIN: derive it from the code's child copies, else keep the current family PIN. Codes that carry the field still restore it (D4). |
+
+### 7.2 Key findings that shaped the plan
+
+- `runStateDiagnostics` never touches `adminPassword`, so it needs no change.
+- Pre-v209 clients check `state.adminPassword || ADMIN_PASSWORD`; once copies are erased they accept `zxcv`. Network-first SW (Checkpoint 63) updates any device that opens online, so the soak covers rarely-opened devices.
+- `saveProfileStateToCloud` writes the whole `state`, so once `state` stops carrying the key, the next save erases that child's cloud copy. `importFamilyData` is `setDoc` without merge, so an old family code with no doc field deletes it.
+- **The one real data-loss path:** shipping the backfill and the V20 removal together. `subscribeToProfiles` (backfill) and `subscribeToProfileState` (`replaceState` → V20 → first-load `saveState`) watch the same doc, so a slow or offline backfill could lose the race and the only copy would be erased. Mitigated by phase separation + the console check, with Forgot PIN as the backstop.
+- Backfill can't be a migration (migrations run per child and can't write the doc). It lives in `handleProfilesUpdate`, which sees `familyMeta` and the raw child states, and writes **only if absent inside a `runTransaction`** so it can never overwrite a PIN changed concurrently on another device.
+- Drift resolver (pure, exported): ignore empty / non-string / `zxcv` copies → nothing left: write nothing (stay legacy `zxcv`) → prefer a 4–6 digit PIN over text → the value most children share → newest `profiles.{id}.updatedAt`. Text passcodes are copied verbatim, so legacy mode keeps working.
+
+### 7.3 Phases
+
+| Phase | Scope | Files | Tests | Preconditions / earliest start | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **1. Backfill + safety net** | `resolveLegacyFamilyPasscode` + `ensureFamilyPasscode` (transactional write-if-absent) in `handleProfilesUpdate`; family-import normalisation (R4); **Forgot PIN?** link in `#password-modal` (family password → `reauthenticateWithCredential` → Admin › Family PIN card). Fan-out unchanged. | `app.js`, `firebase.js`, `admin.js`, `index.html`, `style.css`, `service-worker.js` | **TC114** resolver, no-write cases, transaction skip, import with/without the doc field. **TC115** Forgot PIN: wrong password, success opens the PIN card, signed-out disabled, Rule 8, 44px. | None. **Earliest 2026-10-15.** | - [ ] |
+| **2. Stop per-child writes** | `saveAdminPasswordToCloud` writes only the doc field; drop `state.adminPassword = newPin` (change-PIN), the add-child copy, and make child restore drop the incoming field. `getParentPasscode` keeps the child tier as a read-only fallback. | `firebase.js`, `admin.js`, `app.js`, `service-worker.js`, `index.html` | TC50 asserts `getParentPasscode()`; TC100 asserts the family PIN and a captured save payload with no `profiles.*` keys; TC110 new/restored child carries no `adminPassword`. | Phase 1 deployed, v210 live ≥ 7 days, doc field verified in the Firestore console (prod + staging). **Earliest 2026-10-22.** | - [ ] |
+| **3. Remove the field (V20)** | V20 `delete s.adminPassword`; remove it from the module `state`, `getDefaultStateTemplate` (stays version 16), `WIPE_PRESERVED_KEYS`; `getParentPasscode` = family → `ADMIN_PASSWORD`. Keep the Phase 1 backfill + import normalisation permanently (old family codes). Update §3.1. | `migrations.js`, `state.js`, `admin.js`, `firebase.js`, `tests.js`, `service-worker.js`, `index.html`, this PRD | **TC116** "no passcode lost" fixtures: doc field present; no field + one custom copy; no field + drift `{zxcv, 1357, abcd}`; legacy text only. V20 strips; wipe has no key; restoring an old child backup with `adminPassword` → absent, PIN unchanged. The 9 `version === 19` asserts → `helpers.LATEST_SCHEMA_VERSION`. TC110 precedence rewritten. `run_migration_test.js` unchanged. | Phase 2 live ≥ 7 days; doc field re-verified. **Earliest 2026-10-29** (or Phase 2 ship + 7 days, if later). | - [ ] |
+
+### 7.4 Rollback
+
+- **Phase 1:** revert. The doc field it wrote is the source of truth anyway, so leaving it is harmless; Forgot PIN simply disappears.
+- **Phase 2:** revert. The fan-out resumes on the next PIN change; child copies are still in the docs.
+- **Phase 3:** revert. v19 diagnostics force `version` 20 → 19 (harmless; V20 is idempotent and re-runs on re-deploy). Child copies are gone, so the reverted code relies on the doc field (a precondition of this phase), with Forgot PIN as the last resort.
