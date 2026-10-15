@@ -105,7 +105,9 @@ The PIN is a **speed bump for a 7-year-old**, not security. Firestore rules chec
   - Reset email with cooldown.
   - Change-password validation, wrong current password, success toast.
 - **Updated:** TC50 and TC100 (numeric PINs, new copy, reset `setFamilyPasscode(null)`); TC97 (title "Parent PIN 🔑"); the TC98 export-hint copy.
-- **Seams:** `setFamilyPasscode`, `getParentPasscode`, `setFamilyAuthMock({ email, sendReset, changePassword } | null)`, and `triggerProfilesUpdate(profiles, familyMeta)`.
+- **TC114** (§7 Phase 1): backfill resolver, write-if-absent cases, skipped transaction, retry after failure, family-restore normalisation (unit + end to end).
+- **TC115** (§7 Phase 1): Forgot PIN? link (hidden when signed out, 44px, Rule 8), forgot mode swap, empty/wrong password copy, success → Admin › Family with New PIN focused, reset on reopen.
+- **Seams:** `setEnsureFamilyPasscodeMock(fn | null)`, `resolveLegacyFamilyPasscode`, `normalizeFamilyBackup`, `setFamilyAuthMock({ …, reauth })`, `setFamilyPasscode`, `getParentPasscode`, `setFamilyAuthMock({ email, sendReset, changePassword } | null)`, and `triggerProfilesUpdate(profiles, familyMeta)`.
 
 ## 6. Follow-ups
 
@@ -139,9 +141,13 @@ The evaluation (`adminPassword` read/write map, options, review panel) was appro
 
 | Phase | Scope | Files | Tests | Preconditions / earliest start | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1. Backfill + safety net** | `resolveLegacyFamilyPasscode` + `ensureFamilyPasscode` (transactional write-if-absent) in `handleProfilesUpdate`; family-import normalisation (R4); **Forgot PIN?** link in `#password-modal` (family password → `reauthenticateWithCredential` → Admin › Family PIN card). Fan-out unchanged. | `app.js`, `firebase.js`, `admin.js`, `index.html`, `style.css`, `service-worker.js` | **TC114** resolver, no-write cases, transaction skip, import with/without the doc field. **TC115** Forgot PIN: wrong password, success opens the PIN card, signed-out disabled, Rule 8, 44px. | None. **Earliest 2026-10-15.** | - [ ] |
+| **1. Backfill + safety net** | `resolveLegacyFamilyPasscode` + `ensureFamilyPasscode` (transactional write-if-absent) in `handleProfilesUpdate`; family-import normalisation (R4); **Forgot PIN?** link in `#password-modal` (family password → `reauthenticateWithCredential` → Admin › Family PIN card). Fan-out unchanged. | `app.js`, `firebase.js`, `admin.js`, `index.html`, `style.css`, `service-worker.js` | **TC114** resolver, no-write cases, transaction skip, import with/without the doc field. **TC115** Forgot PIN: wrong password, success opens the PIN card, signed-out hidden, Rule 8, 44px. | None. **Earliest 2026-10-15.** | - [x] `54217c5` (2026-10-15, cache v212) |
 | **2. Stop per-child writes** | `saveAdminPasswordToCloud` writes only the doc field; drop `state.adminPassword = newPin` (change-PIN), the add-child copy, and make child restore drop the incoming field. `getParentPasscode` keeps the child tier as a read-only fallback. | `firebase.js`, `admin.js`, `app.js`, `service-worker.js`, `index.html` | TC50 asserts `getParentPasscode()`; TC100 asserts the family PIN and a captured save payload with no `profiles.*` keys; TC110 new/restored child carries no `adminPassword`. | Phase 1 deployed, v210 live ≥ 7 days, doc field verified in the Firestore console (prod + staging). **Earliest 2026-10-22.** | - [ ] |
 | **3. Remove the field (V20)** | V20 `delete s.adminPassword`; remove it from the module `state`, `getDefaultStateTemplate` (stays version 16), `WIPE_PRESERVED_KEYS`; `getParentPasscode` = family → `ADMIN_PASSWORD`. Keep the Phase 1 backfill + import normalisation permanently (old family codes). Update §3.1. | `migrations.js`, `state.js`, `admin.js`, `firebase.js`, `tests.js`, `service-worker.js`, `index.html`, this PRD | **TC116** "no passcode lost" fixtures: doc field present; no field + one custom copy; no field + drift `{zxcv, 1357, abcd}`; legacy text only. V20 strips; wipe has no key; restoring an old child backup with `adminPassword` → absent, PIN unchanged. The 9 `version === 19` asserts → `helpers.LATEST_SCHEMA_VERSION`. TC110 precedence rewritten. `run_migration_test.js` unchanged. | Phase 2 live ≥ 7 days; doc field re-verified. **Earliest 2026-10-29** (or Phase 2 ship + 7 days, if later). | - [ ] |
+
+**Change log**
+
+- 2026-10-15 (Phase 1): the Forgot PIN link is **hidden** when the device isn't signed in (planned: disabled). With no family account there is no password to prove, so a disabled link would be a dead end. Offline errors still map to calm copy ("No internet connection…"). Also: on success the gated action is **not** run; the parent lands on Admin › Family with the New PIN field focused, and re-authenticating alone never changes the PIN.
 
 ### 7.4 Rollback
 
