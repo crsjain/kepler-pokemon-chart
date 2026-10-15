@@ -2,3 +2,6 @@
 firestore-debug.log
 .firebase/
 firebase-debug.log
+
+# Emulator autosaves (run_emulator.sh). Local family data; never commit.
+.emulator_autosave/

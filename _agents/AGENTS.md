@@ -219,11 +219,31 @@ Then http://crsjain.c.googlers.com:8000/ (or `localhost:8000`). Admin password `
 **Firebase emulator** (only needed for auth/Firestore work):
 
 ```bash
-./run_emulator.sh    # firebase emulators:start, imports/exports ./emulator_data
+./run_emulator.sh    # firebase emulators:start with crash-safe autosave (see below)
 ```
 
 Ports: auth `9099`, firestore `8080`, emulator UI `4000`. There is also a Jetski
 sidecar at `.agents/sidecars/firebase_emulator/` that runs this automatically.
+
+Emulator data persistence (since 2026-10-15) — nobody needs to remember a clean
+shutdown:
+
+- Live data lives in the **gitignored** `.emulator_autosave/` (`snap-<timestamp>`
+  folders + a `latest` symlink; newest 10 kept). `run_emulator.sh` autosaves every
+  10 min (`EMULATOR_AUTOSAVE_SECS`) and turns SIGINT/SIGTERM/SIGHUP into a clean
+  shutdown that exports a final snapshot. Worst case after a hard kill/reboot:
+  ~10 minutes lost.
+- On start it imports the newest snapshot, falling back to the committed seed in
+  `emulator_data/`. **Never write the seed automatically** — this repo is public,
+  and a dirty `emulator_data/` breaks the session-start clean-tree gate. If an old
+  `--export-on-exit` ever rewrites it, restore with `git checkout -- emulator_data`.
+- Gotcha: the Firebase CLI checks `--import` with `lstat()`, so a symlink path
+  silently starts the emulator **empty** ("Could not find import/export metadata
+  file"). The script resolves `latest` before passing it.
+- The emulator binds to `127.0.0.1`, so the UI on `:4000` is not reachable via
+  `crsjain.c.googlers.com`. Use `ssh -L 4000:localhost:4000 -L 9099:localhost:9099`
+  or read password-reset links from
+  `curl http://127.0.0.1:9099/emulator/v1/projects/demo-pokemon-chart/oobCodes`.
 
 **Useful URL flags:** `?runTests=true` (loads `tests.js` and runs the suite),
 `?headless=true` (skips service-worker registration), `?exposeState=true` (puts

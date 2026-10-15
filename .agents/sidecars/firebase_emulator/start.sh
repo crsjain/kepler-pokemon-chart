@@ -1,3 +1,4 @@
 #!/bin/bash
 cd ../../..
-./run_emulator.sh
+# exec so the sidecar's stop signal reaches run_emulator.sh (clean save on stop).
+exec ./run_emulator.sh
