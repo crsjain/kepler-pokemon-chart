@@ -530,3 +530,7 @@ A Staff UX review found the Settings tab spread out horizontally. A short colon 
   - Time zone options are shortened to fit the 220px select, e.g. "Automatic (device)" and "Pacific (US & Canada)".
 - On phones (≤520px), select rows and the exceptions row stack, with full-width controls. The switch stays inline.
 - The styles are scoped to `#admin-pane-today`, so the Data tab's `.adm-advanced` rows are unchanged. Covered by TC105.
+
+### 11.9 Parent PIN & Family sign-in (2026-10-15)
+
+The Q11 "Parent passcode 🔑" card is now **"Parent PIN 🔑"**: one family-wide 4–6 digit PIN, stored once at the doc-level `users/{uid}.adminPassword`. A new **"Family sign-in ✉️"** card sits below it, with *Send reset email* and *Change password*. The Q8 prompt is titled "Parent PIN 🔑" and shows a number keypad in PIN mode. The Family tab title is now "Children, Parent PIN & sign-in" and the rail sub-label is "Children · PIN". Canonical spec: [`prd_parent_pin_and_family_signin.md`](prd_parent_pin_and_family_signin.md). Tests: TC110–TC112, plus updated TC50, TC97 and TC100.

@@ -4518,6 +4518,82 @@ input:checked + .slider:before {
   line-height: 1.4;
 }
 
+/* Login form: moved out of inline style="" attributes (Rule 8). */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+}
+
+.login-field label {
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.9rem;
+  color: var(--poke-dark-blue);
+}
+
+.login-input {
+  padding: 10px;
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 1rem;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.login-error,
+.login-info {
+  margin: 0;
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.login-error {
+  color: var(--poke-red);
+}
+
+.login-info {
+  color: var(--poke-dark-blue);
+}
+
+.login-submit-btn {
+  width: 100%;
+  margin: 4px 0 0;
+}
+
+/* Text link, but still a 44px touch target. */
+.login-link-btn {
+  align-self: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: var(--poke-dark-blue);
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* The global button:disabled rule paints a grey box with !important; a text
+   link should just dim while the reset email cools down. */
+.login-link-btn:disabled {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: var(--poke-dark-blue) !important;
+  opacity: 0.55;
+  cursor: default !important;
+}
+
 .profile-select-content {
   max-width: 500px;
   width: 90%;
@@ -7349,10 +7425,117 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   color: var(--adm-ink);
 }
 
+/* Wrong-code line: a warning, not an error (Rule 11 tonal matching). Burnt
+   orange on a soft amber tint so a parent can't miss it, but never red (Q8:
+   Lyra sees this prompt on past days). #c2410c on #fff7ed = 4.88:1 (AA);
+   #ea580c border = 3.56:1 non-text. Still no animation, shake or sound. */
 #password-modal .error-message {
-  color: var(--adm-ink);
+  color: #c2410c;
+  background: #fff7ed;
+  border: 1.5px solid #ea580c;
+  border-radius: 8px;
+  padding: 8px 12px;
   font-weight: 700;
   margin: 0 0 4px;
+}
+
+/* ---- Parent PIN keypad (docs/prd_parent_pin_and_family_signin.md) --------
+   .pin-mode is set by admin.js when the family PIN is 4–6 digits. Keys are
+   >=56px (tablet thumbs), tonal blue like admin secondaries, with the pixel
+   shadow and a translateY(2px) press (Rule 12 shadow compensation via gap). */
+#password-modal.pin-mode .password-prompt-input {
+  text-align: center;
+  font-size: 1.6rem;
+  letter-spacing: 0.4em;
+  caret-color: transparent;
+}
+
+#password-modal .pin-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 280px;
+  margin: 8px auto 0;
+}
+
+#password-modal .pin-keypad.hidden {
+  display: none;
+}
+
+#password-modal .pin-key {
+  min-height: 56px;
+  border-radius: 12px;
+  border: 2px solid var(--adm-primary);
+  background: var(--adm-secondary-fill);
+  color: var(--adm-primary-pressed);
+  box-shadow: 0 3px 0 var(--adm-primary-pressed);
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.5rem;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+
+#password-modal .pin-key:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--adm-primary-pressed);
+}
+
+#password-modal .pin-key:focus-visible {
+  outline: 2px solid var(--adm-focus);
+  outline-offset: 2px;
+}
+
+#password-modal .pin-key--util {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+#password-modal .password-legacy-hint {
+  margin: 4px 0 0;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: var(--adm-ink-2);
+  text-wrap: pretty;
+}
+
+/* ---- Family card: PIN status + Family sign-in --------------------------- */
+#admin-modal .adm-inline-status {
+  margin: 0;
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--adm-primary-pressed);
+}
+
+#admin-modal .adm-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+#admin-modal .adm-btn-row .pixel-btn {
+  flex: 1 1 180px;
+  margin: 0;
+}
+
+#admin-modal .adm-signin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#admin-modal .adm-signin-form.hidden {
+  display: none;
+}
+
+#admin-family-email {
+  overflow-wrap: anywhere;
 }
 
 /* ---- Admin notifications (adminNotice): neutral "Got it" ----------------- */

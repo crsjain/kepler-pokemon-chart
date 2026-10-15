@@ -8,25 +8,25 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=10.93">
+  <link rel="stylesheet" href="style.css?v=10.95">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script type="importmap">
   {
     "imports": {
-      "./app.js": "./app.js?v=10.81",
-      "./state.js": "./state.js?v=10.81",
-      "./firebase.js": "./firebase.js?v=10.81",
-      "./migrations.js": "./migrations.js?v=10.81",
-      "./vault.js": "./vault.js?v=10.81",
-      "./badges.js": "./badges.js?v=10.81",
-      "./shop.js": "./shop.js?v=10.81",
-      "./guide.js": "./guide.js?v=10.81",
-      "./pokemon_data.js": "./pokemon_data.js?v=10.81",
-      "./date_utils.js": "./date_utils.js?v=10.81",
-      "./admin.js": "./admin.js?v=10.81",
-      "./rewards_admin.js": "./rewards_admin.js?v=10.81",
-      "./audio.js": "./audio.js?v=10.81",
-      "./modal_backdrop.js": "./modal_backdrop.js?v=10.81"
+      "./app.js": "./app.js?v=10.82",
+      "./state.js": "./state.js?v=10.82",
+      "./firebase.js": "./firebase.js?v=10.82",
+      "./migrations.js": "./migrations.js?v=10.82",
+      "./vault.js": "./vault.js?v=10.82",
+      "./badges.js": "./badges.js?v=10.82",
+      "./shop.js": "./shop.js?v=10.82",
+      "./guide.js": "./guide.js?v=10.82",
+      "./pokemon_data.js": "./pokemon_data.js?v=10.82",
+      "./date_utils.js": "./date_utils.js?v=10.82",
+      "./admin.js": "./admin.js?v=10.82",
+      "./rewards_admin.js": "./rewards_admin.js?v=10.82",
+      "./audio.js": "./audio.js?v=10.82",
+      "./modal_backdrop.js": "./modal_backdrop.js?v=10.82"
     }
   }
   </script>
@@ -461,16 +461,34 @@
       </div>
     </div>
 
-    <!-- Parent passcode prompt. Shared by the Admin entry and the kid-side past-day
-         grace unlock (promptParentPassword); both are restyled by ID in style.css
-         (owner Q8). Blue + white only, calm inline error, no sound or shake. -->
+    <!-- Parent PIN prompt. Shared by Admin entry, the kid-side past-day grace
+         unlock, + Add Child and Sign Out Family (promptParentPassword); restyled by
+         ID in style.css (owner Q8). Blue + white only, calm inline error, no sound
+         or shake. .pin-mode (a 4–6 digit family PIN) shows the number keypad; any
+         other stored value keeps the legacy text field and #password-legacy-hint.
+         See docs/prd_parent_pin_and_family_signin.md. -->
     <div id="password-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="password-title" aria-describedby="password-prompt-desc">
       <div class="modal-content password-prompt-content">
-        <h2 id="password-title">Parent passcode 🔑</h2>
+        <h2 id="password-title">Parent PIN 🔑</h2>
         <div class="password-prompt-body">
-          <p id="password-prompt-desc">Enter the parent passcode to open Admin.</p>
+          <p id="password-prompt-desc">Enter the Parent PIN to open Admin.</p>
           <input type="password" id="password-input" class="password-prompt-input" placeholder="Passcode" autocomplete="off" aria-label="Parent passcode">
           <p id="password-error" class="error-message hidden" role="status" aria-live="polite">That's not the code — try again.</p>
+          <p id="password-legacy-hint" class="password-legacy-hint hidden">Using your old passcode. Set a 4–6 digit PIN in Admin › Family to get the number keypad.</p>
+          <div id="password-keypad" class="pin-keypad hidden" role="group" aria-label="Number keypad">
+            <button type="button" class="pin-key" data-key="1">1</button>
+            <button type="button" class="pin-key" data-key="2">2</button>
+            <button type="button" class="pin-key" data-key="3">3</button>
+            <button type="button" class="pin-key" data-key="4">4</button>
+            <button type="button" class="pin-key" data-key="5">5</button>
+            <button type="button" class="pin-key" data-key="6">6</button>
+            <button type="button" class="pin-key" data-key="7">7</button>
+            <button type="button" class="pin-key" data-key="8">8</button>
+            <button type="button" class="pin-key" data-key="9">9</button>
+            <button type="button" class="pin-key pin-key--util" data-key="clear">Clear</button>
+            <button type="button" class="pin-key" data-key="0">0</button>
+            <button type="button" class="pin-key pin-key--util" data-key="back" aria-label="Delete last digit">⌫</button>
+          </div>
         </div>
         <div class="password-prompt-actions">
           <button id="password-cancel-btn" class="pixel-btn adm-tertiary">Cancel</button>
@@ -785,7 +803,7 @@
           <button type="button" id="admin-tab-rewards" class="admin-nav-btn" role="tab" data-admin-section="rewards" aria-controls="admin-pane-rewards" aria-selected="false" tabindex="-1">🎁 Rewards</button>
           <span class="admin-nav-divider" aria-hidden="true"></span>
           <span class="admin-nav-group-label">Whole family</span>
-          <button type="button" id="admin-tab-children" class="admin-nav-btn" role="tab" data-admin-section="children" aria-controls="admin-pane-children" aria-selected="false" title="Children &amp; parent passcode" tabindex="-1"><span class="admin-nav-label">👥 Family</span><span class="admin-nav-sub" aria-hidden="true">Children · Passcode</span></button>
+          <button type="button" id="admin-tab-children" class="admin-nav-btn" role="tab" data-admin-section="children" aria-controls="admin-pane-children" aria-selected="false" title="Children, Parent PIN &amp; sign-in" tabindex="-1"><span class="admin-nav-label">👥 Family</span><span class="admin-nav-sub" aria-hidden="true">Children · PIN</span></button>
           <button type="button" id="admin-tab-data" class="admin-nav-btn" role="tab" data-admin-section="data" aria-controls="admin-pane-data" aria-selected="false" tabindex="-1">💾 Data</button>
         </nav>
 
@@ -809,7 +827,7 @@
               <div class="admin-option-row adm-row adm-setting-row">
                 <span class="adm-setting-label">
                   <label class="adm-setting-name" for="admin-parent-grace-select">Parent edit window</label>
-                  <span id="admin-parent-grace-help" class="adm-setting-help">How long past days stay unlocked after you enter the passcode.</span>
+                  <span id="admin-parent-grace-help" class="adm-setting-help">How long past days stay unlocked after you enter the Parent PIN.</span>
                 </span>
                 <select id="admin-parent-grace-select" class="pixel-select" aria-describedby="admin-parent-grace-help">
                   <option value="1">1 min</option>
@@ -820,10 +838,10 @@
               <div class="admin-option-row adm-row adm-setting-row admin-switch-row">
                 <span class="adm-setting-label">
                   <label class="admin-switch-label adm-setting-name" for="admin-lock-past-days-toggle">🔒 Approve past days</label>
-                  <span id="admin-lock-past-days-hint" class="adm-setting-help">Requires the parent passcode before this child can edit previous days. Recommended for younger children.</span>
+                  <span id="admin-lock-past-days-hint" class="adm-setting-help">Requires the Parent PIN before this child can edit previous days. Recommended for younger children.</span>
                 </span>
                 <label class="switch">
-                  <input type="checkbox" id="admin-lock-past-days-toggle" aria-label="Approve past days: ask for the parent passcode" aria-describedby="admin-lock-past-days-hint">
+                  <input type="checkbox" id="admin-lock-past-days-toggle" aria-label="Approve past days: ask for the Parent PIN" aria-describedby="admin-lock-past-days-hint">
                   <span class="slider"></span>
                 </label>
               </div>
@@ -955,20 +973,53 @@
               </div>
             </div>
 
-            <!-- Parent passcode (folded in from its own tab, PRD v2.0 Q11) -->
+            <!-- Parent PIN (folded in from its own tab, PRD v2.0 Q11). One
+                 family-wide 4–6 digit PIN: docs/prd_parent_pin_and_family_signin.md -->
             <div id="admin-passcode-card" class="admin-action-group adm-card">
-              <h4>Parent passcode 🔑</h4>
-              <div class="admin-option-hint">One passcode for the whole family. It opens Admin and unlocks past days for every child.</div>
+              <h4>Parent PIN 🔑</h4>
+              <div class="admin-option-hint">One 4–6 digit PIN for the whole family, on every device. It opens Admin, unlocks past days, adds children and signs a device out.</div>
+              <p id="admin-pin-status" class="adm-inline-status hidden" role="status">You're still using an old-style passcode. Choose a 4–6 digit PIN to get the number keypad.</p>
               <div class="adm-field">
-                <label for="admin-new-passcode-input" class="adm-field-label">New passcode</label>
-                <input type="password" id="admin-new-passcode-input" class="pixel-input" placeholder="At least 4 characters" minlength="4" autocomplete="new-password" aria-describedby="admin-passcode-error">
+                <label for="admin-new-passcode-input" class="adm-field-label">New PIN</label>
+                <input type="password" id="admin-new-passcode-input" class="pixel-input" placeholder="4 to 6 digits" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="new-password" aria-describedby="admin-passcode-error">
               </div>
               <div class="adm-field">
-                <label for="admin-new-passcode-confirm" class="adm-field-label">Confirm new passcode</label>
-                <input type="password" id="admin-new-passcode-confirm" class="pixel-input" minlength="4" autocomplete="new-password" aria-describedby="admin-passcode-error">
+                <label for="admin-new-passcode-confirm" class="adm-field-label">Confirm new PIN</label>
+                <input type="password" id="admin-new-passcode-confirm" class="pixel-input" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="new-password" aria-describedby="admin-passcode-error">
               </div>
               <p id="admin-passcode-error" class="adm-inline-error hidden" role="alert"></p>
-              <button type="button" id="admin-change-passcode-btn" class="pixel-btn adm-primary">Update Passcode</button>
+              <button type="button" id="admin-change-passcode-btn" class="pixel-btn adm-primary">Update PIN</button>
+            </div>
+
+            <!-- Family sign-in: the Firebase email + password, needed once per device. -->
+            <div id="admin-signin-card" class="admin-action-group adm-card">
+              <h4>Family sign-in ✉️</h4>
+              <div class="admin-option-hint">Needed once on each device to sync charts. Signed in as <strong id="admin-family-email">not signed in on this device</strong>.</div>
+              <p id="admin-signin-status" class="adm-inline-status hidden" role="status"></p>
+              <p id="admin-signin-error" class="adm-inline-error hidden" role="alert"></p>
+              <div class="adm-btn-row">
+                <button type="button" id="admin-send-reset-btn" class="pixel-btn adm-secondary">Send reset email</button>
+                <button type="button" id="admin-change-signin-btn" class="pixel-btn adm-secondary" aria-expanded="false" aria-controls="admin-change-signin-form">Change password</button>
+              </div>
+              <div id="admin-change-signin-form" class="adm-signin-form hidden">
+                <div class="admin-option-hint">Changing it signs out every other device (like the kids' tablets). Sign them back in with the new password.</div>
+                <div class="adm-field">
+                  <label for="admin-signin-current" class="adm-field-label">Current password</label>
+                  <input type="password" id="admin-signin-current" class="pixel-input" autocomplete="current-password" aria-describedby="admin-signin-error">
+                </div>
+                <div class="adm-field">
+                  <label for="admin-signin-new" class="adm-field-label">New password</label>
+                  <input type="password" id="admin-signin-new" class="pixel-input" placeholder="At least 6 characters" minlength="6" autocomplete="new-password" aria-describedby="admin-signin-error">
+                </div>
+                <div class="adm-field">
+                  <label for="admin-signin-confirm" class="adm-field-label">Confirm new password</label>
+                  <input type="password" id="admin-signin-confirm" class="pixel-input" minlength="6" autocomplete="new-password" aria-describedby="admin-signin-error">
+                </div>
+                <div class="adm-btn-row">
+                  <button type="button" id="admin-change-signin-cancel" class="pixel-btn adm-tertiary">Cancel</button>
+                  <button type="button" id="admin-change-signin-submit" class="pixel-btn adm-primary">Update password</button>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -989,7 +1040,7 @@
             <div class="admin-action-group adm-card">
               <span class="adm-eyebrow">Whole family</span>
               <h4>Family backup</h4>
-              <div class="admin-option-hint">Includes the parent passcode. Store it privately.</div>
+              <div class="admin-option-hint">Includes the Parent PIN. Store it privately.</div>
               <div class="admin-action-row-buttons">
                 <button id="admin-cloud-export-btn" class="pixel-btn adm-secondary" title="Copy the whole family's backup code to the clipboard">📤 Copy code</button>
                 <button id="admin-cloud-import-btn" class="pixel-btn adm-secondary" title="Restore every child from a family backup code">📥 Restore from code</button>
@@ -1048,22 +1099,24 @@
       </div>
     </div>
 
-    <!-- Family Login Modal -->
+    <!-- Family Login Modal (inline styles moved to style.css, Rule 8) -->
     <div id="family-login-modal" class="modal hidden">
       <div class="modal-content login-modal-content pixel-card">
         <h2>Parent Family Login 👨‍👩‍👧‍👦</h2>
-        <p class="login-subtitle">Connect your family's Poke-Charts to sync data across all devices.</p>
+        <p class="login-subtitle">Sign in once on each device to sync your family's charts. Daily approvals use the Parent PIN.</p>
         <div class="login-form">
-          <div class="login-field" style="margin-bottom: 15px; display: flex; flex-direction: column; text-align: left; gap: 5px;">
-            <label for="login-email" style="font-family: 'Fredoka One', cursive; font-size: 0.9rem; color: var(--poke-dark-blue);">Email:</label>
-            <input type="email" id="login-email" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 6px; font-family: 'Quicksand', sans-serif;" placeholder="family@example.com">
+          <div class="login-field">
+            <label for="login-email">Email:</label>
+            <input type="email" id="login-email" class="login-input" placeholder="family@example.com" autocomplete="username">
           </div>
-          <div class="login-field" style="margin-bottom: 15px; display: flex; flex-direction: column; text-align: left; gap: 5px;">
-            <label for="login-password" style="font-family: 'Fredoka One', cursive; font-size: 0.9rem; color: var(--poke-dark-blue);">Password:</label>
-            <input type="password" id="login-password" style="padding: 10px; border: 2px solid var(--border-color); border-radius: 6px; font-family: 'Quicksand', sans-serif;" placeholder="Password">
+          <div class="login-field">
+            <label for="login-password">Password:</label>
+            <input type="password" id="login-password" class="login-input" placeholder="Password" autocomplete="current-password">
           </div>
-          <p id="login-error" class="error-message hidden" style="color: var(--poke-red); font-family: 'Fredoka One', cursive; font-size: 0.85rem; margin-top: 10px;"></p>
-          <button id="login-submit-btn" class="pixel-btn info" style="width: 100%; margin-top: 15px;">Sign In</button>
+          <p id="login-error" class="error-message login-error hidden" role="alert"></p>
+          <p id="login-info" class="login-info hidden" role="status"></p>
+          <button id="login-submit-btn" class="pixel-btn info login-submit-btn">Sign In</button>
+          <button type="button" id="login-forgot-btn" class="login-link-btn">Forgot password?</button>
         </div>
       </div>
     </div>
@@ -1176,7 +1229,7 @@
   </div>
 
   <script src="particles.js?v=10.4"></script>
-  <script type="module" src="app.js?v=10.81" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=10.82" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 

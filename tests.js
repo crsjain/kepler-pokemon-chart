@@ -4012,14 +4012,14 @@ async function runSuite() {
         assert(newPasscodeInput !== null, "New passcode input should exist in admin panel");
         assert(updatePasscodeBtn !== null, "Update passcode button should exist in admin panel");
 
-        newPasscodeInput.value = "abcd";
-        document.getElementById('admin-new-passcode-confirm').value = "abcd";
+        newPasscodeInput.value = "4321";
+        document.getElementById('admin-new-passcode-confirm').value = "4321";
 
         updatePasscodeBtn.click();
         await sleep(100);
 
         // Verify local state updated
-        assert(state.adminPassword === "abcd", `Local state adminPassword should update to abcd, got ${state.adminPassword}`);
+        assert(state.adminPassword === "4321", `Local state adminPassword should update to 4321, got ${state.adminPassword}`);
 
         // Close Admin Modal
         const closeAdminBtn = document.getElementById('close-admin-modal-btn');
@@ -4035,11 +4035,11 @@ async function runSuite() {
         await sleep(50);
         assert(adminModal.classList.contains('hidden'), "Admin panel should remain hidden on old password zxcv");
 
-        // 5. Verify new password abcd successfully opens the admin panel
-        passwordInput.value = "abcd";
+        // 5. Verify new PIN 4321 successfully opens the admin panel
+        passwordInput.value = "4321";
         passwordSubmit.click();
         await sleep(100);
-        assert(!adminModal.classList.contains('hidden'), "Admin panel should open on new passcode abcd");
+        assert(!adminModal.classList.contains('hidden'), "Admin panel should open on new PIN 4321");
 
         // 6. Verify sticky header close button exists and closes the admin panel
         const closeAdminHeaderBtn = document.getElementById('close-admin-header-btn');
@@ -4049,6 +4049,7 @@ async function runSuite() {
         assert(adminModal.classList.contains('hidden'), "Admin panel should close on sticky header close button click");
 
         // Clean up and restore default passcode zxcv
+        helpers.setFamilyPasscode(null);
         state.adminPassword = "zxcv";
         helpers.saveState();
         helpers.resetState();
@@ -8633,7 +8634,7 @@ async function runSuite() {
         const escOnDocument = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
         const dismissNotifs = () => document.querySelectorAll('.notif-modal').forEach(el => el.remove());
         const assertPasscodeRestyle = (path) => {
-          assert(document.getElementById('password-title').textContent === 'Parent passcode 🔑', `${path}: title should be 'Parent passcode 🔑'`);
+          assert(document.getElementById('password-title').textContent === 'Parent PIN 🔑', `${path}: title should be 'Parent PIN 🔑'`);
           assert(submitBtn.textContent === 'Unlock' && submitBtn.classList.contains('adm-primary'), `${path}: primary should be the blue 'Unlock'`);
           assert(cancelBtn.textContent === 'Cancel' && cancelBtn.classList.contains('adm-tertiary') && !cancelBtn.classList.contains('greyed-out'), `${path}: Cancel should be tertiary, never .greyed-out`);
           assert(rgb(submitBtn) === 'rgb(42, 113, 208)', `${path}: Unlock should be Poké Blue, got ${rgb(submitBtn)}`);
@@ -8656,7 +8657,7 @@ async function runSuite() {
         assert(isOpen(passwordModal) && isOpen(passwordError), "Wrong code keeps the prompt open with the inline error");
         assert(passwordInput.value === '' && document.activeElement === passwordInput, "Wrong code clears and refocuses the field");
         assert(getComputedStyle(passwordError).animationName === 'none', "Wrong-code line must not animate");
-        assert(getComputedStyle(passwordError).color === 'rgb(30, 41, 59)', `Wrong-code line must be calm ink, not red; got ${getComputedStyle(passwordError).color}`);
+        assert(getComputedStyle(passwordError).color === 'rgb(194, 65, 12)' && getComputedStyle(passwordError).backgroundColor === 'rgb(255, 247, 237)', `Wrong-code line must be burnt-orange warning on amber tint (never red); got ${getComputedStyle(passwordError).color} on ${getComputedStyle(passwordError).backgroundColor}`);
         passwordInput.value = helpers.ADMIN_PASSWORD;
         passwordInput.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter', bubbles: true }));
         await sleep(60);
@@ -8849,7 +8850,7 @@ async function runSuite() {
         assert(document.querySelectorAll('#admin-pane-data .adm-card').length === 4 && document.getElementById('admin-wipe-btn').closest('.adm-card--danger'), "Data has 4 cards; Reset sits in the danger card");
         assert(document.getElementById('admin-force-update-btn').textContent.includes('Reload latest version'), "Force App Update is relabelled 'Reload latest version'");
         assert(document.getElementById('toggle-debug-sidebar').closest('details.adm-advanced'), "Debug sidebar lives under Advanced");
-        assert([...document.querySelectorAll('#admin-pane-data .admin-option-hint')].some(el => el.textContent.includes('Includes the parent passcode')), "Family backup warns that it includes the passcode");
+        assert([...document.querySelectorAll('#admin-pane-data .admin-option-hint')].some(el => el.textContent.includes('Includes the Parent PIN')), "Family backup warns that it includes the PIN");
 
         // 2. Auto-saving Settings confirm inline ("Saved ✓"), not with a blocking modal.
         const idleSelect = document.getElementById('admin-idle-timeout-select');
@@ -9205,11 +9206,11 @@ async function runSuite() {
         assert(JSON.stringify(navBtns().map(b => b.dataset.adminSection)) === JSON.stringify(['today', 'tasks', 'rewards', 'children', 'data']), "Tabs: Settings · Activities · Rewards | Family · Data");
         const familyTab = document.getElementById('admin-tab-children');
         assert(familyTab.querySelector('.admin-nav-label').textContent.trim() === '👥 Family', "Family tab label");
-        assert(familyTab.title === 'Children & parent passcode', "Family tab title names the passcode");
-        assert(familyTab.querySelector('.admin-nav-sub').textContent.includes('Passcode'), "Rail sub-label mentions Passcode");
+        assert(familyTab.title === 'Children, Parent PIN & sign-in', "Family tab title names the PIN and sign-in");
+        assert(familyTab.querySelector('.admin-nav-sub').textContent.includes('PIN'), "Rail sub-label mentions PIN");
         const passcodeCard = document.getElementById('admin-passcode-card');
         assert(passcodeCard.closest('.admin-pane').id === 'admin-pane-children', "Passcode card lives in Family");
-        assert(passcodeCard.querySelector('h4').textContent.trim() === 'Parent passcode 🔑', "Card heading 'Parent passcode 🔑'");
+        assert(passcodeCard.querySelector('h4').textContent.trim() === 'Parent PIN 🔑', "Card heading 'Parent PIN 🔑'");
 
         // 2. Roving focus: one tab stop; arrows / Home / End move and activate.
         assert(navBtns().filter(b => b.tabIndex === 0).length === 1 && document.getElementById('admin-tab-today').tabIndex === 0, "Only the selected tab is in the Tab order");
@@ -9241,20 +9242,24 @@ async function runSuite() {
         assert(isOpen(pcError) && pcError.textContent.length > 0 && blocking() === 0, "Empty passcode shows an inline error, not a modal");
         pcInput.value = 'abc'; pcConfirm.value = 'abc';
         pcBtn.click();
-        assert(isOpen(pcError) && pcError.textContent.includes('4'), "Short passcode explains the 4-character minimum inline");
-        pcInput.value = 'wxyz'; pcConfirm.value = 'wxyq';
+        assert(isOpen(pcError) && pcError.textContent.includes('4'), "Short passcode explains the 4-digit minimum inline");
+        pcInput.value = 'wxyz'; pcConfirm.value = 'wxyz';
+        pcBtn.click();
+        assert(isOpen(pcError) && pcError.textContent.includes('digits') && live.adminPassword !== 'wxyz', "Letters are rejected: the PIN is 4–6 digits");
+        pcInput.value = '5678'; pcConfirm.value = '5679';
         pcBtn.click();
         assert(isOpen(pcError) && pcError.textContent.includes("match") && document.activeElement === pcConfirm, "Mismatch errors inline and focuses the confirm field");
-        assert(live.adminPassword !== 'wxyz', "A failed update writes nothing");
-        pcConfirm.value = 'wxyz';
+        assert(live.adminPassword !== '5678', "A failed update writes nothing");
+        pcConfirm.value = '5678';
         pcConfirm.dispatchEvent(new Event('input', { bubbles: true }));
         assert(!isOpen(pcError), "Typing clears the inline error");
         pcBtn.click();
         await sleep(60);
-        assert(live.adminPassword === 'wxyz' && pcInput.value === '' && pcConfirm.value === '', "Matching passcodes update state and clear the fields");
+        assert(live.adminPassword === '5678' && helpers.getParentPasscode() === '5678' && pcInput.value === '' && pcConfirm.value === '', "Matching PINs update the family PIN + state and clear the fields");
         const pcToast = [...document.querySelectorAll('.notif-modal')].pop();
-        assert(pcToast && pcToast.classList.contains('toast') && pcToast.textContent.includes('Passcode Updated'), "Success is a toast");
+        assert(pcToast && pcToast.classList.contains('toast') && pcToast.textContent.includes('PIN Updated'), "Success is a toast");
         dismissNotifs();
+        helpers.setFamilyPasscode(null);
         live.adminPassword = helpers.ADMIN_PASSWORD;
         helpers.saveState();
 
@@ -10265,6 +10270,332 @@ async function runSuite() {
             `Admin timezone select must be 236px wide on desktop to fit 'Mountain (US & Canada)' (got ${Math.round(tzSelect.getBoundingClientRect().width)}px)`);
         }
         adminModal.classList.add('hidden');
+      }
+
+      // 110. Parent PIN: one family source of truth, drift fixes, Sign Out gate
+      //      (docs/prd_parent_pin_and_family_signin.md, Phases 0–1)
+      {
+        console.log("Running Test Case 110: Parent PIN source of truth, drift fixes & Sign Out gate...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const live = window.__app_state__;
+        const isOpen = el => !el.classList.contains('hidden');
+        const dismissNotifs = () => document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+        const passwordModal = document.getElementById('password-modal');
+        const passwordInput = document.getElementById('password-input');
+        const submitBtn = document.getElementById('password-submit-btn');
+        const cancelBtn = document.getElementById('password-cancel-btn');
+        const adminModal = document.getElementById('admin-modal');
+        const confirmModal = document.getElementById('confirm-modal');
+        const enter = (code) => { passwordInput.value = code; submitBtn.click(); };
+        const kidId = 'tc110_kepler';
+        helpers.setProfilesList([{ id: kidId, name: 'Kepler', avatarId: '25', state: JSON.parse(JSON.stringify(live)) }]);
+        helpers.setActiveProfileId(kidId);
+        try {
+          // 1. Precedence: the family doc field beats the child's (drifted) copy.
+          assert(live.adminPassword === 'zxcv' && helpers.getParentPasscode() === 'zxcv', "No family PIN yet: falls back to the child's copy");
+          helpers.setFamilyPasscode('9876');
+          assert(helpers.getParentPasscode() === '9876', "Family PIN wins over state.adminPassword");
+          document.getElementById('admin-btn').click();
+          await sleep(30);
+          enter('zxcv');
+          assert(isOpen(passwordModal) && !isOpen(adminModal), "A child's stale 'zxcv' copy no longer opens Admin");
+          enter('9876');
+          assert(!isOpen(passwordModal) && isOpen(adminModal), "The family PIN opens Admin");
+          document.getElementById('close-admin-modal-btn').click();
+          await sleep(20);
+
+          // 2. The profiles snapshot carries the doc-level PIN; null falls back.
+          const profiles = helpers.getProfilesList();
+          helpers.triggerProfilesUpdate(profiles, { adminPassword: '1357' });
+          assert(helpers.getParentPasscode() === '1357', "Snapshot meta sets the family PIN");
+          helpers.triggerProfilesUpdate(profiles, { adminPassword: null });
+          assert(helpers.getParentPasscode() === 'zxcv', "No doc field: falls back to the child's copy");
+          helpers.triggerProfilesUpdate(profiles);
+          assert(helpers.getParentPasscode() === 'zxcv', "A snapshot without meta leaves the PIN untouched");
+          helpers.setFamilyPasscode('9876');
+
+          // 3. Picker "+ Add Child" checks the family PIN, not the default/previous child's copy (D2).
+          const picker = document.getElementById('profile-select-modal');
+          const addProfileModal = document.getElementById('add-profile-modal');
+          picker.classList.remove('hidden');
+          document.getElementById('add-profile-open-btn').click();
+          await sleep(30);
+          assert(isOpen(passwordModal) && document.getElementById('password-prompt-desc').textContent.includes('add a child'), "Picker + Add Child asks for the Parent PIN");
+          enter('zxcv');
+          assert(isOpen(passwordModal) && !isOpen(addProfileModal), "Default 'zxcv' is rejected at the picker");
+          enter('9876');
+          assert(!isOpen(passwordModal) && isOpen(addProfileModal), "Family PIN opens the add-child sheet");
+          document.getElementById('add-profile-cancel-btn').click();
+          await sleep(20);
+
+          // 4. Sign Out Family is behind the PIN; Cancel never reaches the sign-out confirm.
+          const logoutBtn = document.getElementById('logout-family-btn');
+          logoutBtn.click();
+          await sleep(30);
+          assert(isOpen(passwordModal) && document.getElementById('password-prompt-desc').textContent.includes('sign this device out'), "Sign Out Family asks for the Parent PIN");
+          cancelBtn.click();
+          await sleep(20);
+          assert(!isOpen(passwordModal) && !isOpen(confirmModal), "Cancel closes the prompt without a sign-out confirm");
+          logoutBtn.click();
+          await sleep(30);
+          enter('0000');
+          assert(isOpen(passwordModal) && !isOpen(confirmModal), "A wrong PIN never reaches the sign-out confirm");
+          enter('9876');
+          await sleep(30);
+          assert(isOpen(confirmModal) && document.getElementById('confirm-title').textContent.includes('Sign Out'), "Correct PIN shows the existing Sign Out? confirm");
+          document.getElementById('confirm-no-btn').click(); // Stay Signed In
+          await sleep(20);
+          picker.classList.add('hidden');
+
+          // 5. A child added from Admin inherits the family PIN, not the template's 'zxcv' (D1).
+          let createdState = null;
+          helpers.setCreateChildProfileMock(async (name, targetState) => { createdState = targetState; return 'tc110_new_1234'; });
+          document.getElementById('admin-btn').click();
+          await sleep(30);
+          enter('9876');
+          document.getElementById('admin-tab-children').click();
+          document.getElementById('admin-add-child-btn').click();
+          await sleep(60);
+          document.getElementById('new-profile-name').value = 'Juniper';
+          document.getElementById('add-profile-submit-btn').click();
+          await sleep(120);
+          assert(createdState && createdState.adminPassword === '9876', `New child must inherit the family PIN (got ${createdState && createdState.adminPassword})`);
+          dismissNotifs();
+
+          // 6. A per-child restore keeps the family PIN instead of the backup's old one (D3).
+          const backup = JSON.parse(JSON.stringify(live));
+          backup.adminPassword = 'oldcode';
+          helpers.setReadBackupCodeMock(() => JSON.stringify(backup));
+          document.getElementById('admin-tab-data').click();
+          document.getElementById('admin-import-btn').click();
+          await sleep(60);
+          assert(isOpen(confirmModal), "Restore asks for confirmation");
+          document.getElementById('confirm-yes-btn').click();
+          await sleep(60);
+          assert(live.adminPassword === '9876', `Restore must keep the family PIN (got ${live.adminPassword})`);
+        } finally {
+          dismissNotifs();
+          helpers.setReadBackupCodeMock(null);
+          helpers.setCreateChildProfileMock(null);
+          helpers.setFamilyPasscode(null);
+          [passwordModal, confirmModal, adminModal, document.getElementById('profile-select-modal'), document.getElementById('add-profile-modal')].forEach(el => el.classList.add('hidden'));
+          helpers.setProfilesList([]);
+          helpers.setActiveProfileId(null);
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
+      // 111. Parent PIN number keypad + legacy text mode
+      {
+        console.log("Running Test Case 111: Parent PIN number keypad & legacy passcode mode...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const isOpen = el => !el.classList.contains('hidden');
+        const passwordModal = document.getElementById('password-modal');
+        const passwordInput = document.getElementById('password-input');
+        const passwordError = document.getElementById('password-error');
+        const keypad = document.getElementById('password-keypad');
+        const legacyHint = document.getElementById('password-legacy-hint');
+        const adminModal = document.getElementById('admin-modal');
+        const key = k => keypad.querySelector(`.pin-key[data-key="${k}"]`);
+        const press = (...keys) => keys.forEach(k => key(k).click());
+        try {
+          // A. PIN mode: keypad shown, soft keyboard suppressed, legacy hint hidden.
+          helpers.setFamilyPasscode('2468');
+          document.getElementById('admin-btn').click();
+          await sleep(30);
+          passwordModal.querySelector('.modal-content').getAnimations().forEach(a => a.finish());
+          assert(passwordModal.classList.contains('pin-mode') && isOpen(keypad) && !isOpen(legacyHint), "A 4–6 digit family PIN shows the keypad");
+          assert(passwordInput.getAttribute('inputmode') === 'none' && passwordInput.getAttribute('maxlength') === '6', "PIN mode suppresses the soft keyboard and caps at 6");
+          assert(document.getElementById('password-title').textContent === 'Parent PIN 🔑', "Prompt title is 'Parent PIN 🔑'");
+          const keys = [...keypad.querySelectorAll('.pin-key')];
+          assert(keys.length === 12 && keys.map(b => b.dataset.key).join(',') === '1,2,3,4,5,6,7,8,9,clear,0,back', "Keypad is 1–9, Clear, 0, ⌫");
+          assert(keys.every(b => b.offsetHeight >= 48 && b.type === 'button'), "Every key is a >=48px type=button target");
+          assert(!keypad.hasAttribute('style') && keys.every(b => !b.hasAttribute('style')), "Keypad carries no inline styles (Rule 8)");
+
+          // B. Typing, backspace, clear.
+          press('2', '4', '6');
+          assert(passwordInput.value === '246' && isOpen(passwordModal), "Digits append; no submit before the PIN length");
+          press('back');
+          assert(passwordInput.value === '24', "⌫ deletes the last digit");
+          press('clear');
+          assert(passwordInput.value === '', "Clear empties the field");
+
+          // C. Auto-submit at the PIN's length: wrong → calm error + cleared; right → Admin.
+          press('1', '1', '1', '1');
+          assert(isOpen(passwordModal) && isOpen(passwordError) && passwordInput.value === '', "Wrong 4-digit PIN auto-submits, shows the inline error and clears");
+          press('2');
+          assert(!isOpen(passwordError), "The next key press hides the error");
+          press('4', '6', '8');
+          assert(!isOpen(passwordModal) && isOpen(adminModal), "The right PIN opens Admin with no Unlock tap");
+          document.getElementById('close-admin-modal-btn').click();
+          await sleep(20);
+
+          // D. Physical keyboard / paste: non-digits are stripped, then auto-submit.
+          document.getElementById('admin-btn').click();
+          await sleep(30);
+          passwordInput.value = 'a2b4';
+          passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+          assert(passwordInput.value === '24', "Non-digits are stripped in PIN mode");
+          passwordInput.value = '2468';
+          passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+          assert(!isOpen(passwordModal) && isOpen(adminModal), "Typed PIN auto-submits");
+
+          // E. Family card status: hidden for a real PIN.
+          document.getElementById('admin-tab-children').click();
+          assert(!isOpen(document.getElementById('admin-pin-status')), "No legacy nudge once a PIN is set");
+          document.getElementById('close-admin-modal-btn').click();
+          await sleep(20);
+
+          // F. Legacy mode: a non-numeric passcode keeps the text field plus a nudge.
+          helpers.setFamilyPasscode(null);
+          document.getElementById('admin-btn').click();
+          await sleep(30);
+          assert(!passwordModal.classList.contains('pin-mode') && !isOpen(keypad) && isOpen(legacyHint), "Legacy passcode: no keypad, hint shown");
+          assert(passwordInput.getAttribute('inputmode') === 'text' && !passwordInput.hasAttribute('maxlength'), "Legacy passcode keeps the normal keyboard");
+          passwordInput.value = 'zx';
+          passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+          assert(passwordInput.value === 'zx' && isOpen(passwordModal), "Legacy mode never strips letters or auto-submits");
+          passwordInput.value = 'zxcv';
+          document.getElementById('password-submit-btn').click();
+          assert(isOpen(adminModal), "Legacy passcode still opens Admin");
+          document.getElementById('admin-tab-children').click();
+          assert(isOpen(document.getElementById('admin-pin-status')), "Family card nudges a legacy family to set a PIN");
+          helpers.setFamilyPasscode('2468');
+          assert(!isOpen(document.getElementById('admin-pin-status')), "Setting a PIN clears the nudge");
+        } finally {
+          helpers.setFamilyPasscode(null);
+          [passwordModal, adminModal].forEach(el => el.classList.add('hidden'));
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
+      // 112. Family sign-in: Forgot password on login, Admin reset email & change password
+      {
+        console.log("Running Test Case 112: Family sign-in reset email & change password...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const isOpen = el => !el.classList.contains('hidden');
+        const dismissNotifs = () => document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+        const loginModal = document.getElementById('family-login-modal');
+        const loginEmail = document.getElementById('login-email');
+        const loginError = document.getElementById('login-error');
+        const loginInfo = document.getElementById('login-info');
+        const forgotBtn = document.getElementById('login-forgot-btn');
+        const adminModal = document.getElementById('admin-modal');
+        const openAdmin = async () => {
+          document.getElementById('admin-btn').click();
+          await sleep(30);
+          document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+          document.getElementById('password-submit-btn').click();
+          document.getElementById('admin-tab-children').click();
+        };
+        const sent = [];
+        const changes = [];
+        try {
+          // A. Login modal: Rule 8 clean, a 44px "Forgot password?" link, once-per-device copy.
+          assert(loginModal.querySelectorAll('[style]').length === 0 && !loginModal.hasAttribute('style'), "#family-login-modal carries no inline styles (Rule 8)");
+          assert(loginModal.querySelector('.login-subtitle').textContent.includes('Parent PIN'), "Login copy separates sign-in from the daily Parent PIN");
+          loginModal.classList.remove('hidden');
+          loginModal.querySelector('.modal-content').getAnimations().forEach(a => a.finish());
+          assert(forgotBtn.offsetHeight >= 44, `Forgot password? must be a >=44px target (got ${forgotBtn.offsetHeight})`);
+
+          // B. Forgot password: needs an email, sends once, then throttles; errors are calm copy.
+          helpers.setFamilyAuthMock({ sendReset: async (email) => { sent.push(email); } });
+          loginEmail.value = '';
+          forgotBtn.click();
+          await sleep(20);
+          assert(isOpen(loginError) && loginError.textContent.includes('email') && sent.length === 0, "No email: inline hint, nothing sent");
+          loginEmail.value = 'parent@example.com';
+          forgotBtn.click();
+          await sleep(30);
+          assert(sent.length === 1 && sent[0] === 'parent@example.com', "Reset email requested for the typed address");
+          assert(isOpen(loginInfo) && loginInfo.textContent.includes('parent@example.com') && !isOpen(loginError), "Success shows a calm info line");
+          assert(forgotBtn.disabled, "Forgot password? throttles after a send");
+          forgotBtn.disabled = false;
+          helpers.setFamilyAuthMock({ sendReset: async () => { const e = new Error('x'); e.code = 'auth/too-many-requests'; throw e; } });
+          forgotBtn.click();
+          await sleep(30);
+          assert(isOpen(loginError) && loginError.textContent.includes('Too many tries') && !isOpen(loginInfo), "Firebase errors map to calm copy");
+          loginModal.classList.add('hidden');
+          loginError.classList.add('hidden');
+          loginEmail.value = '';
+
+          // C. Admin › Family sign-in card: not signed in → buttons disabled.
+          helpers.setFamilyAuthMock({ email: null, sendReset: async (email) => { sent.push(email); } });
+          await openAdmin();
+          const card = document.getElementById('admin-signin-card');
+          const resetBtn = document.getElementById('admin-send-reset-btn');
+          const changeBtn = document.getElementById('admin-change-signin-btn');
+          const form = document.getElementById('admin-change-signin-form');
+          const status = document.getElementById('admin-signin-status');
+          const error = document.getElementById('admin-signin-error');
+          assert(card.closest('.admin-pane').id === 'admin-pane-children', "Family sign-in card lives in Family");
+          assert(document.getElementById('admin-family-email').textContent.includes('not signed in') && resetBtn.disabled && changeBtn.disabled, "Signed out: email says so and both actions are disabled");
+          assert(card.querySelectorAll('.pixel-btn.adm-primary:not(.hidden *)').length <= 1, "At most one primary visible in the card");
+          document.getElementById('close-admin-modal-btn').click();
+          await sleep(20);
+
+          // D. Signed in: send reset email to the account address.
+          sent.length = 0;
+          helpers.setFamilyAuthMock({
+            email: 'parent@example.com',
+            sendReset: async (email) => { sent.push(email); },
+            changePassword: async (current, next) => { changes.push([current, next]); }
+          });
+          await openAdmin();
+          assert(document.getElementById('admin-family-email').textContent === 'parent@example.com' && !resetBtn.disabled && !changeBtn.disabled, "Signed in: shows the email and enables both actions");
+          resetBtn.click();
+          await sleep(30);
+          assert(sent.length === 1 && sent[0] === 'parent@example.com', "Reset email goes to the signed-in account");
+          assert(isOpen(status) && status.textContent.includes('parent@example.com') && resetBtn.disabled, "Inline confirmation and a cooldown");
+
+          // E. Change password: validation, wrong current password, success.
+          changeBtn.click();
+          assert(isOpen(form) && changeBtn.getAttribute('aria-expanded') === 'true' && document.activeElement === document.getElementById('admin-signin-current'), "Change password reveals the form and focuses Current");
+          const cur = document.getElementById('admin-signin-current');
+          const nxt = document.getElementById('admin-signin-new');
+          const cnf = document.getElementById('admin-signin-confirm');
+          const submit = document.getElementById('admin-change-signin-submit');
+          submit.click();
+          await sleep(10);
+          assert(isOpen(error) && error.textContent.includes('current password') && changes.length === 0, "Current password is required");
+          cur.value = 'oldpass'; nxt.value = '12345'; cnf.value = '12345';
+          submit.click();
+          await sleep(10);
+          assert(isOpen(error) && error.textContent.includes('6 characters'), "New password needs 6+ characters");
+          nxt.value = 'newpass1'; cnf.value = 'newpass2';
+          submit.click();
+          await sleep(10);
+          assert(isOpen(error) && error.textContent.includes("don't match") && changes.length === 0, "Mismatched new passwords are caught inline");
+          cnf.value = 'newpass1';
+          helpers.setFamilyAuthMock({ changePassword: async () => { const e = new Error('x'); e.code = 'auth/invalid-credential'; throw e; } });
+          submit.click();
+          await sleep(30);
+          assert(isOpen(error) && error.textContent.includes("current password isn't right") && isOpen(form), "Wrong current password: calm inline error, form stays open");
+          helpers.setFamilyAuthMock({ changePassword: async (current, next) => { changes.push([current, next]); } });
+          submit.click();
+          await sleep(30);
+          assert(changes.length === 1 && changes[0][0] === 'oldpass' && changes[0][1] === 'newpass1', "Change password passes current + new");
+          assert(!isOpen(form) && isOpen(status) && status.textContent.includes('Password updated') && cur.value === '' && nxt.value === '', "Success closes and clears the form");
+          const toast = [...document.querySelectorAll('.notif-modal')].pop();
+          assert(toast && toast.classList.contains('toast') && toast.textContent.includes('Password Updated'), "Success is a toast");
+        } finally {
+          dismissNotifs();
+          helpers.setFamilyAuthMock(null);
+          loginModal.classList.add('hidden');
+          [loginError, loginInfo].forEach(el => el.classList.add('hidden'));
+          forgotBtn.disabled = false;
+          [document.getElementById('password-modal'), adminModal].forEach(el => el.classList.add('hidden'));
+          helpers.resetState();
+          await sleep(30);
+        }
       }
 
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");

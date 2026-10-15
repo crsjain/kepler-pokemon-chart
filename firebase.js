@@ -5,7 +5,11 @@ import {
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  connectAuthEmulator
+  connectAuthEmulator,
+  sendPasswordResetEmail,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { 
   getFirestore, 
@@ -85,6 +89,33 @@ export function loginFamily(email, password) {
   return signInWithEmailAndPassword(auth, email, password);
 }
 
+// Email a Firebase password-reset link for the family account. Uses Firebase's
+// hosted action page, so no custom domain setup is needed. In emulator mode the
+// link is printed to the emulator log / UI instead of being emailed.
+export function sendFamilyPasswordReset(email) {
+  return sendPasswordResetEmail(auth, email);
+}
+
+// The signed-in family account's email, or null.
+export function getFamilyEmail() {
+  return auth.currentUser ? auth.currentUser.email : null;
+}
+
+// Change the family password in place: re-authenticate with the current
+// password, then update. Firebase revokes the refresh tokens of every other
+// device, so tablets will ask for the new password.
+export async function changeFamilyPassword(currentPassword, newPassword) {
+  const user = auth.currentUser;
+  if (!user || !user.email) {
+    const err = new Error('Not signed in');
+    err.code = 'auth/no-current-user';
+    throw err;
+  }
+  const credential = EmailAuthProvider.credential(user.email, currentPassword);
+  await reauthenticateWithCredential(user, credential);
+  await updatePassword(user, newPassword);
+}
+
 // Log out family session
 export function logoutFamily() {
   if (profileUnsubscribe) profileUnsubscribe();
@@ -116,8 +147,15 @@ export function subscribeToProfiles(callback, errorCallback) {
   
   profileUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
     const profiles = [];
+    // Family-wide fields that live on the doc itself, not in any child's state.
+    // adminPassword is the Parent PIN's source of truth
+    // (docs/prd_parent_pin_and_family_signin.md).
+    const familyMeta = { adminPassword: null };
     if (docSnap.exists()) {
       const data = docSnap.data();
+      if (typeof data.adminPassword === 'string' && data.adminPassword) {
+        familyMeta.adminPassword = data.adminPassword;
+      }
       if (data.profiles) {
         Object.keys(data.profiles).forEach((profileId) => {
           profiles.push({
@@ -127,7 +165,7 @@ export function subscribeToProfiles(callback, errorCallback) {
         });
       }
     }
-    callback(profiles);
+    callback(profiles, familyMeta);
   }, (error) => {
     console.error("Error fetching profiles:", error);
     if (errorCallback) errorCallback(error);

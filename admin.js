@@ -386,8 +386,97 @@ let adminAddTaskBtn = null;
 let adminSaveTasksBtn = null;
 let passwordSuccessCallback = null;
 
-export function promptParentPassword(onSuccess, customDescription = 'Enter the parent passcode to open Admin.') {
+/* ---------------------------------------------------------------------------
+ * Parent PIN (docs/prd_parent_pin_and_family_signin.md)
+ *
+ * ONE family-wide secret. The source of truth is the doc-level
+ * users/{uid}.adminPassword field, pushed in by app.js from the profiles
+ * snapshot via setFamilyPasscode(). Each child's state.adminPassword is only a
+ * legacy fallback: those copies drifted (new children seeded with "zxcv",
+ * per-child restores, stale whole-state writes).
+ *
+ * A 4–6 digit value switches the prompt to the on-screen number keypad. Any
+ * other value (the old "zxcv" default or a custom text passcode) keeps the
+ * legacy text field until the parent sets a PIN in Admin › Family.
+ * ------------------------------------------------------------------------- */
+const PIN_PATTERN = /^\d{4,6}$/;
+const PIN_MAX_LENGTH = 6;
+let familyPasscode = null;
+
+/** Called by app.js with the doc-level value (or null on sign-out). */
+export function setFamilyPasscode(value) {
+  familyPasscode = (typeof value === 'string' && value) ? value : null;
+  refreshPinStatus();
+}
+
+/** The family passcode every gate checks: family doc → this child → default. */
+export function getParentPasscode() {
+  return familyPasscode || (state && state.adminPassword) || ADMIN_PASSWORD;
+}
+
+export function isPinPasscode(value) {
+  return PIN_PATTERN.test(String(value || ''));
+}
+
+function isPinPromptMode() {
+  return Boolean(passwordModal && passwordModal.classList.contains('pin-mode'));
+}
+
+/** Puts #password-modal into keypad (PIN) or legacy text mode. */
+function applyPasswordPromptMode() {
+  if (!passwordModal || !passwordInput) return;
+  const pinMode = isPinPasscode(getParentPasscode());
+  passwordModal.classList.toggle('pin-mode', pinMode);
+  // inputmode="none" keeps the tablet's soft keyboard from covering the keypad
+  // while a physical keyboard can still type digits.
+  passwordInput.setAttribute('inputmode', pinMode ? 'none' : 'text');
+  if (pinMode) {
+    passwordInput.setAttribute('maxlength', String(PIN_MAX_LENGTH));
+  } else {
+    passwordInput.removeAttribute('maxlength');
+  }
+  passwordInput.placeholder = pinMode ? 'PIN' : 'Passcode';
+  passwordInput.setAttribute('aria-label', pinMode ? 'Parent PIN' : 'Parent passcode');
+  const keypad = document.getElementById('password-keypad');
+  if (keypad) keypad.classList.toggle('hidden', !pinMode);
+  const legacyHint = document.getElementById('password-legacy-hint');
+  if (legacyHint) legacyHint.classList.toggle('hidden', pinMode);
+}
+
+/** Auto-submits once the typed PIN reaches the stored PIN's length. */
+function maybeAutoSubmitPin() {
+  if (!isPinPromptMode() || !passwordInput) return;
+  if (passwordInput.value.length === getParentPasscode().length) {
+    handlePasswordSubmit();
+  }
+}
+
+function pressPinKey(key) {
+  if (!passwordInput) return;
+  let value = passwordInput.value;
+  if (key === 'back') {
+    value = value.slice(0, -1);
+  } else if (key === 'clear') {
+    value = '';
+  } else if (/^\d$/.test(key) && value.length < PIN_MAX_LENGTH) {
+    value += key;
+  }
+  passwordInput.value = value;
+  if (passwordError) passwordError.classList.add('hidden');
+  passwordInput.focus({ preventScroll: true });
+  maybeAutoSubmitPin();
+}
+
+/** Family card status line: nudges legacy-passcode families to set a PIN. */
+function refreshPinStatus() {
+  const status = document.getElementById('admin-pin-status');
+  if (!status) return;
+  status.classList.toggle('hidden', isPinPasscode(getParentPasscode()));
+}
+
+export function promptParentPassword(onSuccess, customDescription = 'Enter the Parent PIN to open Admin.') {
   passwordSuccessCallback = onSuccess;
+  applyPasswordPromptMode();
   if (passwordInput) passwordInput.value = '';
   if (passwordError) passwordError.classList.add('hidden');
   
@@ -486,6 +575,22 @@ export function initAdmin(callbacks) {
       if (e.key === 'Enter') {
         handlePasswordSubmit();
       }
+    });
+    // PIN mode: digits only (physical keyboards and paste), then auto-submit.
+    passwordInput.addEventListener('input', () => {
+      if (!isPinPromptMode()) return;
+      const digits = passwordInput.value.replace(/\D/g, '').slice(0, PIN_MAX_LENGTH);
+      if (digits !== passwordInput.value) passwordInput.value = digits;
+      if (passwordError) passwordError.classList.add('hidden');
+      maybeAutoSubmitPin();
+    });
+  }
+  const pinKeypad = document.getElementById('password-keypad');
+  if (pinKeypad) {
+    pinKeypad.addEventListener('click', (e) => {
+      const key = e.target.closest('.pin-key');
+      if (!key || !pinKeypad.contains(key)) return;
+      pressPinKey(key.dataset.key);
     });
   }
   if (passwordCancelBtn) {
@@ -688,39 +793,230 @@ export function initAdmin(callbacks) {
 
   if (changePasscodeBtn && newPasscodeInput) {
     changePasscodeBtn.addEventListener('click', () => {
-      const newPasscode = newPasscodeInput.value.trim();
-      const confirmPasscode = confirmPasscodeInput ? confirmPasscodeInput.value.trim() : newPasscode;
-      if (!newPasscode) {
-        showPasscodeError('Enter a new passcode.', newPasscodeInput);
+      const newPin = newPasscodeInput.value.trim();
+      const confirmPin = confirmPasscodeInput ? confirmPasscodeInput.value.trim() : newPin;
+      if (!newPin) {
+        showPasscodeError('Enter a new PIN.', newPasscodeInput);
         return;
       }
-      if (newPasscode.length < 4) {
-        showPasscodeError('Use at least 4 characters.', newPasscodeInput);
+      if (!PIN_PATTERN.test(newPin)) {
+        showPasscodeError('Use 4 to 6 digits (numbers only).', newPasscodeInput);
         return;
       }
-      if (confirmPasscode !== newPasscode) {
-        showPasscodeError("The two passcodes don't match.", confirmPasscodeInput);
+      if (confirmPin !== newPin) {
+        showPasscodeError("The two PINs don't match.", confirmPasscodeInput);
         return;
       }
       clearPasscodeError();
 
-      state.adminPassword = newPasscode;
+      // The family field is the source of truth; set it optimistically so this
+      // device switches to the new PIN at once (the snapshot echo agrees).
+      // state.adminPassword stays in step as the legacy fallback for older
+      // cached clients (fan-out kept for one release).
+      setFamilyPasscode(newPin);
+      state.adminPassword = newPin;
       saveState();
 
       newPasscodeInput.value = '';
       if (confirmPasscodeInput) confirmPasscodeInput.value = '';
 
       if (appCallbacks.saveAdminPassword) {
-        appCallbacks.saveAdminPassword(newPasscode)
+        appCallbacks.saveAdminPassword(newPin)
           .then(() => {
-            showAdminToast("Passcode Updated 🔑", "Parent Admin passcode updated successfully!");
+            showAdminToast("PIN Updated 🔑", "The Parent PIN is updated for the whole family.");
           })
           .catch(err => {
-            console.error("Cloud passcode update failed:", err);
-            adminNotice("Passcode Warning ⚠️", "Passcode saved locally, but failed to sync to database: " + err.message);
+            console.error("Cloud PIN update failed:", err);
+            adminNotice("PIN Warning ⚠️", "The PIN works on this device, but it didn't sync to your other devices: " + err.message);
           });
       } else {
-        showAdminToast("Passcode Updated 🔑", "Parent Admin passcode updated successfully!");
+        showAdminToast("PIN Updated 🔑", "The Parent PIN is updated for the whole family.");
+      }
+    });
+  }
+
+  bindFamilySignInCard();
+}
+
+/* ---------------------------------------------------------------------------
+ * Family sign-in card (Admin › Family). The Firebase email + password is used
+ * once per device; the parent can email themselves a reset link or change it
+ * in place. Auth calls come from app.js callbacks so tests can mock them.
+ * ------------------------------------------------------------------------- */
+const RESET_EMAIL_COOLDOWN_MS = 30000;
+
+/** Maps Firebase Auth error codes to calm, parent-readable copy. */
+export function describeAuthError(err, context = 'signin') {
+  const code = (err && err.code) || '';
+  switch (code) {
+    case 'auth/missing-email':
+      return 'Enter your family email first.';
+    case 'auth/invalid-email':
+      return "That doesn't look like an email address.";
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+    case 'auth/invalid-login-credentials':
+      return context === 'change'
+        ? "That current password isn't right."
+        : "That email and password don't match.";
+    case 'auth/too-many-requests':
+      return 'Too many tries. Wait a few minutes and try again.';
+    case 'auth/network-request-failed':
+      return 'No internet connection. Check the Wi-Fi and try again.';
+    case 'auth/weak-password':
+      return 'Use at least 6 characters.';
+    case 'auth/requires-recent-login':
+      return 'Please sign out and back in, then try again.';
+    case 'auth/no-current-user':
+      return 'This device is not signed in to a family account.';
+    default:
+      return 'Something went wrong. Please try again.';
+  }
+}
+
+function getFamilyEmail() {
+  return appCallbacks.getFamilyEmail ? appCallbacks.getFamilyEmail() : null;
+}
+
+function setSignInMessage(kind, message) {
+  const status = document.getElementById('admin-signin-status');
+  const error = document.getElementById('admin-signin-error');
+  [status, error].forEach(el => {
+    if (!el) return;
+    el.textContent = '';
+    el.classList.add('hidden');
+  });
+  const target = kind === 'error' ? error : status;
+  if (target && message) {
+    target.textContent = message;
+    target.classList.remove('hidden');
+  }
+}
+
+function setChangeSignInFormOpen(open) {
+  const form = document.getElementById('admin-change-signin-form');
+  const toggle = document.getElementById('admin-change-signin-btn');
+  if (!form) return;
+  form.classList.toggle('hidden', !open);
+  if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  ['admin-signin-current', 'admin-signin-new', 'admin-signin-confirm'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  if (open) {
+    const first = document.getElementById('admin-signin-current');
+    if (first) first.focus();
+  }
+}
+
+/** Re-renders the card from the live auth state. Called on every Admin open. */
+export function refreshFamilySignInCard() {
+  const email = getFamilyEmail();
+  const emailEl = document.getElementById('admin-family-email');
+  if (emailEl) emailEl.textContent = email || 'not signed in on this device';
+  const resetBtn = document.getElementById('admin-send-reset-btn');
+  const changeBtn = document.getElementById('admin-change-signin-btn');
+  if (resetBtn && !resetBtn.dataset.cooldown) resetBtn.disabled = !email;
+  if (changeBtn) changeBtn.disabled = !email;
+  setSignInMessage(null, '');
+  setChangeSignInFormOpen(false);
+}
+
+function bindFamilySignInCard() {
+  const resetBtn = document.getElementById('admin-send-reset-btn');
+  const changeBtn = document.getElementById('admin-change-signin-btn');
+  const cancelBtn = document.getElementById('admin-change-signin-cancel');
+  const submitBtn = document.getElementById('admin-change-signin-submit');
+  const currentInput = document.getElementById('admin-signin-current');
+  const newInput = document.getElementById('admin-signin-new');
+  const confirmInput = document.getElementById('admin-signin-confirm');
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', async () => {
+      const email = getFamilyEmail();
+      if (!email || !appCallbacks.sendFamilyPasswordReset) {
+        setSignInMessage('error', describeAuthError({ code: 'auth/no-current-user' }));
+        return;
+      }
+      // Throttle: one email per 30s, so a double-tap never sends two.
+      resetBtn.disabled = true;
+      resetBtn.dataset.cooldown = 'true';
+      setTimeout(() => {
+        delete resetBtn.dataset.cooldown;
+        resetBtn.disabled = !getFamilyEmail();
+      }, RESET_EMAIL_COOLDOWN_MS);
+      try {
+        await appCallbacks.sendFamilyPasswordReset(email);
+        setSignInMessage('status', `Reset link sent to ${email}. Check the inbox and spam folder.`);
+      } catch (err) {
+        console.error('Password reset email failed:', err);
+        setSignInMessage('error', describeAuthError(err));
+      }
+    });
+  }
+
+  if (changeBtn) {
+    changeBtn.addEventListener('click', () => {
+      const form = document.getElementById('admin-change-signin-form');
+      setSignInMessage(null, '');
+      setChangeSignInFormOpen(form ? form.classList.contains('hidden') : true);
+    });
+  }
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      setSignInMessage(null, '');
+      setChangeSignInFormOpen(false);
+      if (changeBtn) changeBtn.focus();
+    });
+  }
+
+  [currentInput, newInput, confirmInput].forEach(el => {
+    if (!el) return;
+    el.addEventListener('input', () => setSignInMessage(null, ''));
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && submitBtn) {
+        e.preventDefault();
+        submitBtn.click();
+      }
+    });
+  });
+
+  if (submitBtn) {
+    submitBtn.addEventListener('click', async () => {
+      const current = currentInput ? currentInput.value : '';
+      const next = newInput ? newInput.value : '';
+      const confirm = confirmInput ? confirmInput.value : '';
+      if (!current) {
+        setSignInMessage('error', 'Enter your current password.');
+        if (currentInput) currentInput.focus();
+        return;
+      }
+      if (next.length < 6) {
+        setSignInMessage('error', 'Use at least 6 characters for the new password.');
+        if (newInput) newInput.focus();
+        return;
+      }
+      if (confirm !== next) {
+        setSignInMessage('error', "The two new passwords don't match.");
+        if (confirmInput) confirmInput.focus();
+        return;
+      }
+      if (!appCallbacks.changeFamilyPassword) {
+        setSignInMessage('error', describeAuthError({ code: 'auth/no-current-user' }));
+        return;
+      }
+      submitBtn.disabled = true;
+      try {
+        await appCallbacks.changeFamilyPassword(current, next);
+        setChangeSignInFormOpen(false);
+        setSignInMessage('status', 'Password updated. Other devices will ask for the new password.');
+        showAdminToast('Password Updated ✉️', 'Sign in with the new password on the kids\u2019 tablets.');
+      } catch (err) {
+        console.error('Family password change failed:', err);
+        setSignInMessage('error', describeAuthError(err, 'change'));
+      } finally {
+        submitBtn.disabled = false;
       }
     });
   }
@@ -728,7 +1024,7 @@ export function initAdmin(callbacks) {
 
 function handlePasswordSubmit() {
   const password = passwordInput.value;
-  const currentPassword = state.adminPassword || ADMIN_PASSWORD;
+  const currentPassword = getParentPasscode();
   if (password === currentPassword) {
     passwordModal.classList.add('hidden');
     if (passwordSuccessCallback) {
@@ -817,6 +1113,8 @@ function openAdminPanel() {
   renderAdminTasksList();
   renderClaimedRewardsHistory();
   appCallbacks.renderAdminProfilesList();
+  refreshPinStatus();
+  refreshFamilySignInCard();
   pushAdminHistoryEntry();
   const activeTab = adminModal.querySelector('.admin-nav-btn[aria-selected="true"]');
   if (activeTab && typeof activeTab.scrollIntoView === 'function') {
@@ -1475,7 +1773,11 @@ async function importState() {
     "Restore Backup? ⚠️",
     `Restoring overwrites ${name}'s current progress with the backup. This can't be undone.`,
     () => {
+      // The Parent PIN is family-wide: a child backup must not bring back the
+      // passcode that was current when it was exported.
+      const familyPin = getParentPasscode();
       replaceState(parsed);
+      state.adminPassword = familyPin;
       saveState();
       renderState(true);
       showCustomNotification("RESTORE SUCCESS", "Trainer progress restored successfully!");
@@ -1498,7 +1800,7 @@ async function exportCloudState() {
       adminNotice("EXPORT FAILED ❌", "No cloud data found. Ensure you are logged in and have profiles.");
       return;
     }
-    copyBackupCode(JSON.stringify(data), "Family Code Copied 📋", "The family backup code is on the clipboard. It includes the parent passcode — store it privately.");
+    copyBackupCode(JSON.stringify(data), "Family Code Copied 📋", "The family backup code is on the clipboard. It includes the Parent PIN — store it privately.");
   } catch (err) {
     console.error("Cloud export failed:", err);
     adminNotice("EXPORT ERROR ❌", "Failed to export cloud data: " + err.message);

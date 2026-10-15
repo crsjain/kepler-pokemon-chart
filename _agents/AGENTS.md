@@ -117,6 +117,7 @@ decisions that are expensive to rediscover.
 | `plan_header_refactoring.md` | Refactoring plan behind that state machine |
 | `prd_rest_day_passes_and_bonus_tasks.md` | Rest passes 💤, bonus tasks ✨, Great Ball, icon states |
 | `prd_parent_past_day_approval.md` | Parent approval + timed grace window for past-day edits |
+| `prd_parent_pin_and_family_signin.md` | Family-wide Parent PIN (doc-level source of truth, keypad, legacy mode) and Family sign-in reset/change |
 | `prd_legendary_evolutions.md` | Mega and branching evolutions (Eevee, Onix→Steelix) |
 | `prd_alternating_activity_pairs.md` | Alternating activity pairs & dynamic schedule swapping |
 | `prd_kindness_quests.md` | Kindness Quests & partner berry feeding |
@@ -187,7 +188,7 @@ Key entry points:
 - [`state.js`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/state.js) —
   the single `state` object, `saveState` / `loadState`, `runStateDiagnostics`, and
   the XP constants (`XP_PER_TASK` 5, `XP_DAILY_BONUS` 15, `XP_BONUS_TASK` 10,
-  `XP_LEVEL_THRESHOLD` 100). `ADMIN_PASSWORD` is `"zxcv"`.
+  `XP_LEVEL_THRESHOLD` 100). `ADMIN_PASSWORD` (`"zxcv"`) is only the legacy fallback: the Parent PIN's source of truth is the doc-level `users/{uid}.adminPassword`, read via `getParentPasscode()` in admin.js (see `prd_parent_pin_and_family_signin.md`).
 - [`migrations.js`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/migrations.js) —
   versioned schema migrations. Current schema is **V19** (starter Pikachu
   `minStageId` floor); the full shape is printed in the latest checkpoint. Any

@@ -1,0 +1,7 @@
+# Allowlist for the git-secrets pre-commit hook (one regex per line).
+# These are Firebase *web* API keys (prod `pokemon-chart-3154f` and staging
+# `kepler-pokemon-chart-staging`) in firebase.js. They are public client
+# identifiers by design, shipped to every browser; access is enforced by
+# Firestore rules + Firebase Auth, not by keeping these secret.
+AIzaSyA7qf6YhCUvUMjX9MgtZoTwpYCo-xKuFME
+AIzaSyDPEaSo8nZuVMcQ6dSGqbP8eqA6ZSo7fH4

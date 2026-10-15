@@ -39,8 +39,15 @@ import {
   useEmulator,
   useProd,
   useStaging,
-  saveAdminPasswordToCloud
+  saveAdminPasswordToCloud,
+  sendFamilyPasswordReset,
+  changeFamilyPassword,
+  getFamilyEmail
 } from './firebase.js';
+// Family sign-in calls, swappable in tests (setFamilyAuthMock).
+let sendFamilyPasswordResetFn = (email) => sendFamilyPasswordReset(email);
+let changeFamilyPasswordFn = (currentPassword, newPassword) => changeFamilyPassword(currentPassword, newPassword);
+let getFamilyEmailFn = () => getFamilyEmail();
 let deleteChildProfileFn = deleteChildProfile;
 let saveProfileRewardsToCloudFn = saveProfileRewardsToCloud;
 let createChildProfileFn = (name, targetState, avatarId) => {
@@ -73,7 +80,7 @@ const HEADER_STAR_HTML = `<svg class="header-star-svg" width="22" height="22" vi
 const GHOST_STAR_HTML = `<svg class="ghost-star-svg" width="27" height="27" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><polygon points="16,2 20.3,11.5 30.5,12.7 23,19.5 25,29.5 16,24.5 7,29.5 9,19.5 1.5,12.7 11.7,11.5" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2.2" stroke-linejoin="round"/></svg><span class="sr-only">☆</span>`;
 // Past zero-required day with nothing completed: no star, streak paused (prd_star_vault.md §3.2.1).
 const REST_DAY_HTML = `<div class="badge-indicator locked rest-day" title="Rest day — streak paused 💤">💤</div>`;
-import { promptParentPassword } from './admin.js';
+import { promptParentPassword, setFamilyPasscode, getParentPasscode, describeAuthError } from './admin.js';
 import { initRewardsAdmin, openEditRewardsModal, bindRewardsEditorEvents } from './rewards_admin.js';
 
 let currentViewingWeekStartDate = null;
@@ -222,7 +229,7 @@ function withParentApproval(dateStr, onApproved) {
   promptParentPassword(() => {
     startParentGrace();
     onApproved();
-  }, `Enter parent passcode to unlock editing for previous days (${mins}-minute window):`);
+  }, `Enter the Parent PIN to unlock editing for previous days (${mins}-minute window):`);
 }
 
 
@@ -380,8 +387,11 @@ function markAppReady() {
   if (typeof window.__markAppReady === 'function') window.__markAppReady();
 }
 
-function handleProfilesUpdate(profiles) {
+function handleProfilesUpdate(profiles, familyMeta) {
   console.log("Received profiles list from Firestore! Count:", profiles.length);
+  // The family doc carries the Parent PIN; push it before anything (picker,
+  // Admin, approvals) can prompt for it.
+  if (familyMeta) setFamilyPasscode(familyMeta.adminPassword);
   profilesList = profiles;
   renderProfilesGrid();
   renderAdminProfilesList();
@@ -447,6 +457,49 @@ function initEnvBanner() {
   }
 }
 
+// Login modal inline messages: one of error (red) / info (blue), or neither.
+function setLoginMessage(kind, message) {
+  const errorEl = document.getElementById('login-error');
+  const infoEl = document.getElementById('login-info');
+  [errorEl, infoEl].forEach(el => {
+    if (!el) return;
+    el.textContent = '';
+    el.classList.add('hidden');
+  });
+  const target = kind === 'error' ? errorEl : (kind === 'info' ? infoEl : null);
+  if (target && message) {
+    target.textContent = message;
+    target.classList.remove('hidden');
+  }
+}
+
+// "Forgot password?" on the family login: emails a Firebase reset link to the
+// address typed above. Throttled to one send per 30s so a double-tap is safe.
+function bindForgotPassword() {
+  const forgotBtn = document.getElementById('login-forgot-btn');
+  if (!forgotBtn || forgotBtn.dataset.bound) return;
+  forgotBtn.dataset.bound = 'true';
+  forgotBtn.addEventListener('click', async () => {
+    const emailInput = document.getElementById('login-email');
+    const email = emailInput ? emailInput.value.trim() : '';
+    if (!email) {
+      setLoginMessage('error', 'Type your family email above, then tap Forgot password.');
+      if (emailInput) emailInput.focus();
+      return;
+    }
+    forgotBtn.disabled = true;
+    setTimeout(() => { forgotBtn.disabled = false; }, 30000);
+    try {
+      await sendFamilyPasswordResetFn(email);
+      const emulatorNote = useEmulator ? ' (Emulator: the link is in the emulator log.)' : '';
+      setLoginMessage('info', `If ${email} has a family account, a reset link is on its way. Check the inbox and spam folder.${emulatorNote}`);
+    } catch (err) {
+      console.error("Password reset email failed:", err);
+      setLoginMessage('error', describeAuthError(err));
+    }
+  });
+}
+
 function initFirebaseUI() {
   initEnvBanner();
   const isTestMode = location.search.includes('runTests=true');
@@ -501,6 +554,8 @@ function initFirebaseUI() {
       if (!user) {
         activeProfileId = null;
         localStorage.removeItem('last_active_profile_id');
+        // Never carry one family's PIN into the next sign-in.
+        setFamilyPasscode(null);
         
         // Blur app container & show login
         const appContainer = document.querySelector('.app-container');
@@ -519,8 +574,8 @@ function initFirebaseUI() {
         
         // Load Profiles List
         console.log("Subscribing to profiles database collection...");
-        subscribeToProfiles((profiles) => {
-          handleProfilesUpdate(profiles);
+        subscribeToProfiles((profiles, familyMeta) => {
+          handleProfilesUpdate(profiles, familyMeta);
         }, (err) => {
           console.error("Profiles subscription failed:", err);
           markAppReady();
@@ -535,24 +590,31 @@ function initFirebaseUI() {
       loginSubmitBtn.addEventListener('click', async () => {
         const email = loginEmailInput ? loginEmailInput.value.trim() : '';
         const password = loginPasswordInput ? loginPasswordInput.value : '';
-        if (loginError) loginError.classList.add('hidden');
+        setLoginMessage(null, '');
         loginSubmitBtn.disabled = true;
         loginSubmitBtn.textContent = 'Signing in...';
         
         try {
           await loginFamily(email, password);
         } catch (err) {
-          if (loginError) {
-            loginError.textContent = err.message;
-            loginError.classList.remove('hidden');
-          }
+          console.error("Family sign-in failed:", err);
+          setLoginMessage('error', describeAuthError(err));
         } finally {
           loginSubmitBtn.disabled = false;
           loginSubmitBtn.textContent = 'Sign In';
         }
       });
     }
+    if (loginPasswordInput && loginSubmitBtn) {
+      loginPasswordInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          loginSubmitBtn.click();
+        }
+      });
+    }
   }
+  bindForgotPassword();
 
   // Switch Profile and Click-Outside listeners moved to setupEventListeners
 
@@ -650,7 +712,7 @@ function initFirebaseUI() {
     addProfileOpenBtn.addEventListener('click', () => {
       promptParentPassword(() => {
         openAddProfileSheet(false);
-      }, 'Enter the parent passcode to add a child.');
+      }, 'Enter the Parent PIN to add a child.');
     });
   }
 
@@ -702,6 +764,8 @@ function initFirebaseUI() {
         }
         
         targetState.childName = name;
+        // New children share the family PIN instead of the template's "zxcv".
+        targetState.adminPassword = getParentPasscode();
         
         const newId = await createChildProfileFn(name, targetState, selectedNewProfileAvatar);
         
@@ -779,30 +843,36 @@ function initFirebaseUI() {
   });
 
   // Logout Family Action
+  // Sign Out Family is behind the Parent PIN: the picker is reachable by kids
+  // (Switch Trainer), and signing a tablet out forces the long family password.
   if (logoutFamilyBtn) {
     logoutFamilyBtn.addEventListener('click', () => {
-      const logoutHtml = `
-        <div class="confirm-detail">
-          <div class="schedule-hero-card">
-            <div class="schedule-hero-label">🚪 SIGN OUT</div>
-            <div class="schedule-hero-main">Sign Out of Family</div>
-            <div class="schedule-hero-sub">Are you sure you want to sign out of this family account?</div>
-          </div>
-        </div>
-      `;
-      showCustomConfirm(
-        "Sign Out? 🚪",
-        logoutHtml,
-        async () => {
-          await logoutFamily();
-        },
-        null,
-        "Sign Out",
-        "Stay Signed In",
-        "pixel-btn danger",
-        "pixel-btn greyed-out"
-      );
+      promptParentPassword(() => confirmSignOutFamily(), 'Enter the Parent PIN to sign this device out.');
     });
+  }
+
+  function confirmSignOutFamily() {
+    const logoutHtml = `
+      <div class="confirm-detail">
+        <div class="schedule-hero-card">
+          <div class="schedule-hero-label">🚪 SIGN OUT</div>
+          <div class="schedule-hero-main">Sign Out of Family</div>
+          <div class="schedule-hero-sub">Are you sure you want to sign out of this family account?</div>
+        </div>
+      </div>
+    `;
+    showCustomConfirm(
+      "Sign Out? 🚪",
+      logoutHtml,
+      async () => {
+        await logoutFamily();
+      },
+      null,
+      "Sign Out",
+      "Stay Signed In",
+      "pixel-btn danger",
+      "pixel-btn greyed-out"
+    );
   }
 }
 
@@ -1093,6 +1163,9 @@ initAdmin({
   saveAdminPassword: async (newPassword) => {
     await saveAdminPasswordToCloud(newPassword, profilesList);
   },
+  getFamilyEmail: () => getFamilyEmailFn(),
+  sendFamilyPasswordReset: (email) => sendFamilyPasswordResetFn(email),
+  changeFamilyPassword: (currentPassword, newPassword) => changeFamilyPasswordFn(currentPassword, newPassword),
   getActiveProfileName: () => {
     const profile = activeProfileId ? profilesList.find(p => p.id === activeProfileId) : null;
     return profile && profile.name ? profile.name : null;
@@ -4156,7 +4229,22 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     setReloadMock: (fn) => { reloadFn = fn || (() => location.reload()); },
     setActiveProfileId: (id) => { activeProfileId = id; },
     getActiveProfileId: () => activeProfileId,
-    triggerProfilesUpdate: (profiles) => handleProfilesUpdate(profiles),
+    triggerProfilesUpdate: (profiles, familyMeta) => handleProfilesUpdate(profiles, familyMeta),
+    // Parent PIN source of truth (doc-level users/{uid}.adminPassword); null = none.
+    setFamilyPasscode: (value) => setFamilyPasscode(value),
+    getParentPasscode: () => getParentPasscode(),
+    // Family sign-in: pass { email, sendReset, changePassword } or null to restore.
+    setFamilyAuthMock: (mock) => {
+      if (!mock) {
+        sendFamilyPasswordResetFn = (email) => sendFamilyPasswordReset(email);
+        changeFamilyPasswordFn = (currentPassword, newPassword) => changeFamilyPassword(currentPassword, newPassword);
+        getFamilyEmailFn = () => getFamilyEmail();
+        return;
+      }
+      if (mock.sendReset) sendFamilyPasswordResetFn = mock.sendReset;
+      if (mock.changePassword) changeFamilyPasswordFn = mock.changePassword;
+      if ('email' in mock) getFamilyEmailFn = () => mock.email;
+    },
     selectProfile: (id) => selectProfile(id),
     isParentGraceActive: () => isParentGraceActive(),
     requiresParentApproval: (dateStr) => requiresParentApproval(dateStr),

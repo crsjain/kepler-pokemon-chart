@@ -24,7 +24,7 @@ Under the current Column State Machine ([`docs/prd_column_state_machine.md`](fil
 
 ### 1.3 Proposed Solution (Option 2: Per-Profile Policy + Timed Grace Window)
 1. **Per-Profile Configuration**: Add a profile-level setting `lockPastDays: boolean` (configured in Admin Profile Settings). Kepler stays on `false` (preserving his autonomy); Lyra is set to `true`.
-2. **Parent Passcode Gate**: When `lockPastDays` is active, clicking any past header or cell prompts for the Parent Admin Passcode (`adminPassword`, default `"zxcv"`).
+2. **Parent Passcode Gate**: When `lockPastDays` is active, clicking any past header or cell prompts for the Parent Admin Passcode (`adminPassword`, default `"zxcv"`). *(Updated 2026-10-15: this is now the family-wide **Parent PIN** with a number keypad; see [`prd_parent_pin_and_family_signin.md`](prd_parent_pin_and_family_signin.md).)*
 3. **Timed Grace Window (Parent Session)**: Entering the passcode successfully activates a **configurable Grace Window** (`1 / 2 / 5 minutes`, default **2 minutes**), configured per-profile in the Admin Panel. During this window, the parent and child can freely review and toggle any past tasks without repetitive passcode prompts.
 4. **Bottom Floating Dock (UX Rule 17)**: A discreet, high-contrast session dock at the bottom of the screen displays remaining time (`🗝️ Parent Edit Active: 01:45`) with an instant `[Lock Now 🔒]` button.
 5. **Auto-Relock & Auto-Return**: When the countdown reaches `0:00` (or if the user taps `[Lock Now]` or `[Back to Today]`), past editing immediately relocks, and the active column safely reverts to **Today**.
