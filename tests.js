@@ -10632,6 +10632,194 @@ async function runSuite() {
         }
       }
 
+      // 114. Retiring per-child PIN copies, Phase 1: backfill the doc-level PIN from
+      //      legacy child copies, and never let a family restore revert it
+      //      (docs/prd_parent_pin_and_family_signin.md §7).
+      {
+        console.log("Running Test Case 114: Parent PIN backfill resolver, write-if-absent & family-restore normalisation...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const resolve = helpers.resolveLegacyFamilyPasscode;
+        const kid = (id, pin, updatedAt) => ({ id, name: id, avatarId: '25', updatedAt, state: pin === undefined ? {} : { adminPassword: pin } });
+        const savedProfiles = helpers.getProfilesList();
+        const savedActive = helpers.getActiveProfileId();
+        try {
+          // 1. Resolver (pure).
+          assert(resolve([]) === null && resolve(null) === null, "No profiles: nothing to backfill");
+          assert(resolve([kid('a', 'zxcv'), kid('b', 'zxcv'), kid('c'), kid('d', ''), kid('e', 1234)]) === null,
+            "Only default / empty / non-string copies: write nothing (family stays legacy zxcv)");
+          assert(resolve([kid('a', 'zxcv'), kid('b', '1357')]) === '1357', "A custom copy beats template-drift zxcv");
+          assert(resolve([kid('a', 'abcd'), kid('b', 'abcd'), kid('c', '1357')]) === '1357', "A 4–6 digit PIN beats a text passcode");
+          assert(resolve([kid('a', 'abcd'), kid('b', 'abcd'), kid('c', 'efgh')]) === 'abcd', "Then the value most children share");
+          assert(resolve([kid('a', '2468', '2026-10-01T00:00:00Z'), kid('b', '1357', '2026-10-10T00:00:00Z')]) === '1357',
+            "Then the most recently updated profile");
+          assert(resolve([kid('a', 'abcd')]) === 'abcd', "Legacy text passcodes are kept verbatim");
+
+          // 2. Backfill through the profiles snapshot (write-if-absent mock).
+          const calls = [];
+          let reply = () => Promise.resolve(true);
+          helpers.setEnsureFamilyPasscodeMock((value) => { calls.push(value); return reply(value); });
+          const drifted = [kid('tc114_kepler', 'zxcv'), kid('tc114_lyra', '1357')];
+          helpers.setActiveProfileId('tc114_kepler');
+          helpers.setFamilyPasscode(null);
+          helpers.triggerProfilesUpdate(drifted, { adminPassword: null });
+          await sleep(20);
+          assert(calls.length === 1 && calls[0] === '1357', `No doc field: backfills the resolved copy once (calls=${JSON.stringify(calls)})`);
+          assert(helpers.getParentPasscode() === '1357', "After a successful write the family PIN is live on this device");
+
+          calls.length = 0;
+          helpers.triggerProfilesUpdate(drifted, { adminPassword: '9999' });
+          await sleep(20);
+          assert(calls.length === 0 && helpers.getParentPasscode() === '9999', "Doc field present: never backfills");
+          helpers.triggerProfilesUpdate(drifted);
+          await sleep(20);
+          assert(calls.length === 0, "A snapshot without meta never backfills");
+          helpers.triggerProfilesUpdate([kid('tc114_kepler', 'zxcv')], { adminPassword: null });
+          await sleep(20);
+          assert(calls.length === 0, "Only zxcv copies: no write");
+
+          // Transaction found a PIN set meanwhile on another device: nothing applied locally.
+          helpers.setFamilyPasscode(null);
+          reply = () => Promise.resolve(false);
+          helpers.triggerProfilesUpdate(drifted, { adminPassword: null });
+          await sleep(20);
+          assert(calls.length === 1 && helpers.getParentPasscode() !== '1357', "A skipped transaction leaves the local PIN alone (the echo brings the real one)");
+
+          // A failed write is swallowed and retried on the next snapshot.
+          calls.length = 0;
+          reply = () => Promise.reject(new Error('offline'));
+          helpers.triggerProfilesUpdate(drifted, { adminPassword: null });
+          await sleep(20);
+          reply = () => Promise.resolve(true);
+          helpers.triggerProfilesUpdate(drifted, { adminPassword: null });
+          await sleep(20);
+          assert(calls.length === 2 && helpers.getParentPasscode() === '1357', "After a failure the next snapshot retries");
+
+          // 3. Family restore normalisation (§7.1 R4).
+          const norm = helpers.normalizeFamilyBackup;
+          const withField = { adminPassword: '4444', profiles: { a: { state: { adminPassword: '1357' } } } };
+          assert(norm(withField) === withField, "A code that carries the doc field restores it unchanged (D4)");
+          const oldCode = { profiles: { a: { state: { adminPassword: 'zxcv' } }, b: { state: { adminPassword: '1357' } } } };
+          const fixed = norm(oldCode);
+          assert(fixed.adminPassword === '1357' && oldCode.adminPassword === undefined, "An old code without the field gets one from its own copies (input untouched)");
+          helpers.setFamilyPasscode('9876');
+          assert(norm({ profiles: { a: { state: { adminPassword: 'zxcv' } } } }).adminPassword === '9876', "No usable copies: keeps the current family PIN, never reverts to zxcv");
+          helpers.setFamilyPasscode(null);
+          assert(norm({ profiles: { a: { state: {} } } }).adminPassword === undefined, "Nothing to keep: the code restores as-is");
+
+          // End to end: the restore button hands the normalised code to importCloudData.
+          let imported = null;
+          helpers.setFamilyPasscode('9876');
+          helpers.setImportCloudDataMock((data) => { imported = data; return Promise.resolve(); });
+          helpers.setReadBackupCodeMock(() => JSON.stringify({ profiles: { a: { name: 'A', state: { adminPassword: 'zxcv' } } } }));
+          document.getElementById('admin-cloud-import-btn').click();
+          await sleep(60);
+          document.getElementById('confirm-yes-btn').click();
+          await sleep(60);
+          assert(imported && imported.adminPassword === '9876', `Restoring an old family code keeps the family PIN (got ${imported && imported.adminPassword})`);
+        } finally {
+          helpers.setEnsureFamilyPasscodeMock(null);
+          helpers.setImportCloudDataMock(null);
+          helpers.setReadBackupCodeMock(null);
+          helpers.setFamilyPasscode(null);
+          helpers.setProfilesList(savedProfiles);
+          helpers.setActiveProfileId(savedActive);
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          ['confirm-modal', 'admin-modal', 'password-modal'].forEach(id => document.getElementById(id).classList.add('hidden'));
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
+      // 115. "Forgot PIN?": the family sign-in password unlocks setting a new PIN
+      //      (docs/prd_parent_pin_and_family_signin.md §7, Phase 1).
+      {
+        console.log("Running Test Case 115: Forgot PIN? re-authenticates with the family password...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const isOpen = el => !el.classList.contains('hidden');
+        const passwordModal = document.getElementById('password-modal');
+        const adminModal = document.getElementById('admin-modal');
+        const link = document.getElementById('password-forgot-btn');
+        const panel = document.getElementById('password-forgot-panel');
+        const forgotInput = document.getElementById('password-forgot-input');
+        const forgotError = document.getElementById('password-forgot-error');
+        const submitBtn = document.getElementById('password-submit-btn');
+        const title = document.getElementById('password-title');
+        const shown = el => el.offsetParent !== null;
+        try {
+          // 1. Not signed in: there is no family password to use, so no link.
+          helpers.setFamilyAuthMock({ email: null });
+          document.getElementById('admin-btn').click();
+          await sleep(30);
+          assert(isOpen(passwordModal) && link.classList.contains('hidden'), "Signed out: Forgot PIN? is not offered");
+          document.getElementById('password-cancel-btn').click();
+
+          // 2. Signed in, PIN mode: a quiet 44px text link under the keypad.
+          const reauthCalls = [];
+          helpers.setFamilyAuthMock({
+            email: 'family@example.com',
+            reauth: (pw) => { reauthCalls.push(pw); return pw === 'familypass' ? Promise.resolve() : Promise.reject({ code: 'auth/invalid-credential' }); }
+          });
+          helpers.setFamilyPasscode('2468');
+          document.getElementById('admin-btn').click();
+          await sleep(30);
+          passwordModal.querySelector('.modal-content').getAnimations().forEach(a => a.finish());
+          assert(!link.classList.contains('hidden') && shown(link), "Signed in: Forgot PIN? is shown");
+          assert(link.textContent.trim() === 'Forgot PIN?' && link.offsetHeight >= 44, `44px text link labelled "Forgot PIN?" (h=${link.offsetHeight})`);
+          assert(!link.classList.contains('pixel-btn'), "It is a text link, not a second primary button");
+          [link, panel, forgotInput].forEach(el => assert(!el.hasAttribute('style'), `No inline styles on #${el.id} (Rule 8)`));
+
+          // 3. Forgot mode swaps the keypad for the family-password field.
+          link.click();
+          await sleep(60);
+          assert(passwordModal.classList.contains('forgot-mode') && isOpen(panel), "Forgot mode shows the family-password panel");
+          assert(!shown(document.getElementById('password-input')) && !shown(document.getElementById('password-keypad')) && !shown(link),
+            "PIN field, keypad and the link itself are hidden in forgot mode");
+          assert(title.textContent === 'Forgot PIN? 🔑' && submitBtn.textContent === 'Reset PIN', "Title and primary button switch to the reset flow");
+          assert(forgotInput.type === 'password' && forgotInput.getAttribute('inputmode') === 'text', "The family-password field opens the normal keyboard");
+          assert(document.activeElement === forgotInput, "Focus moves to the family-password field");
+
+          // 4. Validation and a wrong password (calm inline copy; Admin stays shut).
+          submitBtn.click();
+          await sleep(20);
+          assert(isOpen(forgotError) && forgotError.textContent === 'Enter the family sign-in password.' && reauthCalls.length === 0, "Empty: inline prompt, no auth call");
+          forgotInput.value = 'nope';
+          submitBtn.click();
+          await sleep(30);
+          assert(reauthCalls[0] === 'nope' && forgotError.textContent === "That family password isn't right.", `Wrong password: mapped copy (got "${forgotError.textContent}")`);
+          assert(isOpen(passwordModal) && !isOpen(adminModal) && forgotInput.value === '', "Wrong password: Admin stays closed and the field clears");
+
+          // 5. Right password: lands on Admin › Family with the New PIN field focused.
+          forgotInput.value = 'familypass';
+          forgotInput.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter' }));
+          await sleep(40);
+          assert(!isOpen(passwordModal) && isOpen(adminModal), "Right password: the prompt closes and Admin opens");
+          const familyPane = adminModal.querySelector('.admin-pane[data-admin-section="children"]');
+          assert(familyPane && !familyPane.classList.contains('hidden'), "Admin opens on the Family tab");
+          assert(document.activeElement === document.getElementById('admin-new-passcode-input'), "The New PIN field is focused");
+          assert(helpers.getParentPasscode() === '2468', "Re-authenticating alone never changes the PIN");
+          document.getElementById('close-admin-modal-btn').click();
+          await sleep(20);
+
+          // 6. The next prompt starts in normal PIN mode again.
+          document.getElementById('admin-btn').click();
+          await sleep(30);
+          assert(!passwordModal.classList.contains('forgot-mode') && title.textContent === 'Parent PIN 🔑' && submitBtn.textContent === 'Unlock' && !isOpen(panel),
+            "Reopening the prompt resets forgot mode");
+          document.getElementById('password-cancel-btn').click();
+        } finally {
+          helpers.setFamilyAuthMock(null);
+          helpers.setFamilyPasscode(null);
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          [passwordModal, adminModal].forEach(el => el.classList.add('hidden'));
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

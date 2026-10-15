@@ -418,6 +418,50 @@ export function isPinPasscode(value) {
   return PIN_PATTERN.test(String(value || ''));
 }
 
+/**
+ * Picks the family passcode from legacy per-child copies, for families whose
+ * doc has no users/{uid}.adminPassword yet (prd_parent_pin_and_family_signin.md
+ * §7.2). Pure. `profiles` is [{ id, updatedAt, state }] (the shape the profiles
+ * snapshot delivers). Returns null when there is nothing worth writing:
+ *   1. ignore empty / non-string copies and the template default ("zxcv"),
+ *   2. prefer a 4–6 digit PIN over a text passcode,
+ *   3. then the value most children share,
+ *   4. then the copy on the most recently updated profile.
+ */
+export function resolveLegacyFamilyPasscode(profiles) {
+  if (!Array.isArray(profiles)) return null;
+  const tally = new Map();
+  profiles.forEach(p => {
+    const value = p && p.state ? p.state.adminPassword : null;
+    if (typeof value !== 'string' || !value || value === ADMIN_PASSWORD) return;
+    const stamp = Date.parse(p.updatedAt) || 0;
+    const entry = tally.get(value) || { value, count: 0, newest: 0 };
+    entry.count += 1;
+    entry.newest = Math.max(entry.newest, stamp);
+    tally.set(value, entry);
+  });
+  const ranked = [...tally.values()].sort((a, b) =>
+    (Number(isPinPasscode(b.value)) - Number(isPinPasscode(a.value))) ||
+    (b.count - a.count) ||
+    (b.newest - a.newest));
+  return ranked.length ? ranked[0].value : null;
+}
+
+/**
+ * Family restore (§7.1 R4): a code that carries the doc-level PIN restores it
+ * (D4). A code without one gets a PIN derived from its own child copies, else
+ * keeps the current family PIN, so restoring an old code never silently
+ * reverts the family to "zxcv". Returns a new object; `parsed` is untouched.
+ */
+export function normalizeFamilyBackup(parsed) {
+  if (!parsed || typeof parsed !== 'object') return parsed;
+  if (typeof parsed.adminPassword === 'string' && parsed.adminPassword) return parsed;
+  const profiles = Object.keys(parsed.profiles || {}).map(id => ({ id, ...parsed.profiles[id] }));
+  const pin = resolveLegacyFamilyPasscode(profiles) || familyPasscode;
+  if (!pin) return parsed;
+  return { ...parsed, adminPassword: pin };
+}
+
 function isPinPromptMode() {
   return Boolean(passwordModal && passwordModal.classList.contains('pin-mode'));
 }
@@ -474,8 +518,92 @@ function refreshPinStatus() {
   status.classList.toggle('hidden', isPinPasscode(getParentPasscode()));
 }
 
+/* ---------------------------------------------------------------------------
+ * Forgot PIN? (prd_parent_pin_and_family_signin.md §7, Phase 1)
+ *
+ * Proving the family sign-in password (re-authentication, no password change)
+ * opens Admin › Family so the parent can set a new PIN. The kids don't know the
+ * family password, so the speed-bump threat model (§4) holds. Only offered when
+ * this device is signed in to a family account; offline errors map to calm copy.
+ * ------------------------------------------------------------------------- */
+function isForgotPinMode() {
+  return Boolean(passwordModal && passwordModal.classList.contains('forgot-mode'));
+}
+
+function refreshForgotPinLink() {
+  const link = document.getElementById('password-forgot-btn');
+  if (!link) return;
+  const email = appCallbacks.getFamilyEmail ? appCallbacks.getFamilyEmail() : null;
+  link.classList.toggle('hidden', !email);
+}
+
+function setForgotPinMode(on) {
+  if (!passwordModal) return;
+  passwordModal.classList.toggle('forgot-mode', on);
+  const panel = document.getElementById('password-forgot-panel');
+  if (panel) panel.classList.toggle('hidden', !on);
+  const forgotInput = document.getElementById('password-forgot-input');
+  const forgotError = document.getElementById('password-forgot-error');
+  if (forgotInput) forgotInput.value = '';
+  if (forgotError) {
+    forgotError.textContent = '';
+    forgotError.classList.add('hidden');
+  }
+  if (passwordError) passwordError.classList.add('hidden');
+  if (passwordSubmitBtn) passwordSubmitBtn.textContent = on ? 'Reset PIN' : 'Unlock';
+  const title = document.getElementById('password-title');
+  if (title) title.textContent = on ? 'Forgot PIN? 🔑' : 'Parent PIN 🔑';
+  // The prompt is already open here, so focus at once (no open animation to wait for).
+  if (on && forgotInput) forgotInput.focus();
+}
+
+async function handleForgotPinSubmit() {
+  const forgotInput = document.getElementById('password-forgot-input');
+  const forgotError = document.getElementById('password-forgot-error');
+  const showError = (msg) => {
+    if (!forgotError) return;
+    forgotError.textContent = msg;
+    forgotError.classList.remove('hidden');
+    if (forgotInput) forgotInput.focus();
+  };
+  const password = forgotInput ? forgotInput.value : '';
+  if (!password) {
+    showError('Enter the family sign-in password.');
+    return;
+  }
+  if (!appCallbacks.reauthenticateFamily) {
+    showError(describeAuthError({ code: 'auth/no-current-user' }, 'reauth'));
+    return;
+  }
+  if (passwordSubmitBtn) passwordSubmitBtn.disabled = true;
+  try {
+    await appCallbacks.reauthenticateFamily(password);
+  } catch (err) {
+    console.error('Forgot PIN re-authentication failed:', err);
+    if (forgotInput) forgotInput.value = '';
+    showError(describeAuthError(err, 'reauth'));
+    return;
+  } finally {
+    if (passwordSubmitBtn) passwordSubmitBtn.disabled = false;
+  }
+  // Verified: the gated action is NOT run; the parent lands on the PIN card.
+  passwordSuccessCallback = null;
+  setForgotPinMode(false);
+  passwordModal.classList.add('hidden');
+  openAdminPanel();
+  showAdminSection('children');
+  const pinInput = document.getElementById('admin-new-passcode-input');
+  if (pinInput) {
+    if (typeof pinInput.scrollIntoView === 'function') pinInput.scrollIntoView({ block: 'center' });
+    pinInput.focus({ preventScroll: true });
+  }
+  showAdminToast('Set a new PIN 🔑', 'Family password confirmed. Choose a new Parent PIN below.');
+}
+
 export function promptParentPassword(onSuccess, customDescription = 'Enter the Parent PIN to open Admin.') {
   passwordSuccessCallback = onSuccess;
+  setForgotPinMode(false);
+  refreshForgotPinLink();
   applyPasswordPromptMode();
   if (passwordInput) passwordInput.value = '';
   if (passwordError) passwordError.classList.add('hidden');
@@ -583,6 +711,16 @@ export function initAdmin(callbacks) {
       if (digits !== passwordInput.value) passwordInput.value = digits;
       if (passwordError) passwordError.classList.add('hidden');
       maybeAutoSubmitPin();
+    });
+  }
+  const forgotPinBtn = document.getElementById('password-forgot-btn');
+  if (forgotPinBtn) {
+    forgotPinBtn.addEventListener('click', () => setForgotPinMode(true));
+  }
+  const forgotPinInput = document.getElementById('password-forgot-input');
+  if (forgotPinInput) {
+    forgotPinInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleForgotPinSubmit();
     });
   }
   const pinKeypad = document.getElementById('password-keypad');
@@ -857,9 +995,9 @@ export function describeAuthError(err, context = 'signin') {
     case 'auth/wrong-password':
     case 'auth/invalid-credential':
     case 'auth/invalid-login-credentials':
-      return context === 'change'
-        ? "That current password isn't right."
-        : "That email and password don't match.";
+      if (context === 'change') return "That current password isn't right.";
+      if (context === 'reauth') return "That family password isn't right.";
+      return "That email and password don't match.";
     case 'auth/too-many-requests':
       return 'Too many tries. Wait a few minutes and try again.';
     case 'auth/network-request-failed':
@@ -1023,6 +1161,10 @@ function bindFamilySignInCard() {
 }
 
 function handlePasswordSubmit() {
+  if (isForgotPinMode()) {
+    handleForgotPinSubmit();
+    return;
+  }
   const password = passwordInput.value;
   const currentPassword = getParentPasscode();
   if (password === currentPassword) {
@@ -1832,7 +1974,7 @@ async function importCloudState() {
     "Restoring completely overwrites ALL children and their progress with the backup. This can't be undone.",
     async () => {
       try {
-        await appCallbacks.importCloudData(parsed);
+        await appCallbacks.importCloudData(normalizeFamilyBackup(parsed));
         showCustomNotification("RESTORE SUCCESS", "Full family progress restored successfully!");
         const adminModalEl = document.getElementById('admin-modal');
         if (adminModalEl) adminModalEl.classList.add('hidden');

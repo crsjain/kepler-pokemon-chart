@@ -7503,6 +7503,45 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   text-wrap: pretty;
 }
 
+/* ---- Forgot PIN? (prd_parent_pin_and_family_signin.md §7) --------------- */
+#password-modal .password-forgot-link {
+  display: block;
+  margin: 8px auto 0;
+}
+
+#password-modal .password-forgot-panel {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+#password-modal .password-forgot-label {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--adm-ink);
+}
+
+#password-modal .password-forgot-help {
+  margin: 0;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: var(--adm-ink-2);
+  text-wrap: pretty;
+}
+
+/* Forgot mode swaps the PIN entry for the family-password field. */
+#password-modal.forgot-mode #password-input,
+#password-modal.forgot-mode #password-keypad,
+#password-modal.forgot-mode #password-error,
+#password-modal.forgot-mode #password-legacy-hint,
+#password-modal.forgot-mode #password-forgot-btn {
+  display: none;
+}
+
 /* ---- Family card: PIN status + Family sign-in --------------------------- */
 #admin-modal .adm-inline-status {
   margin: 0;

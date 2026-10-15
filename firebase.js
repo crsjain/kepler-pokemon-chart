@@ -21,7 +21,8 @@ import {
   query,
   connectFirestoreEmulator,
   deleteField,
-  updateDoc
+  updateDoc,
+  runTransaction
 } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 // --- PLACEHOLDER CONFIGURATION ---
@@ -114,6 +115,20 @@ export async function changeFamilyPassword(currentPassword, newPassword) {
   const credential = EmailAuthProvider.credential(user.email, currentPassword);
   await reauthenticateWithCredential(user, credential);
   await updatePassword(user, newPassword);
+}
+
+// Re-authenticate with the family sign-in password without changing it. Used by
+// "Forgot PIN?" (prd_parent_pin_and_family_signin.md §7): proving the family
+// password lets a parent set a new Parent PIN.
+export async function reauthenticateFamily(password) {
+  const user = auth.currentUser;
+  if (!user || !user.email) {
+    const err = new Error('Not signed in');
+    err.code = 'auth/no-current-user';
+    throw err;
+  }
+  const credential = EmailAuthProvider.credential(user.email, password);
+  await reauthenticateWithCredential(user, credential);
 }
 
 // Log out family session
@@ -307,6 +322,23 @@ export async function saveAdminPasswordToCloud(newPassword, profilesList) {
   }
   
   await updateDoc(userDocRef, updates);
+}
+
+// Backfill the doc-level Parent PIN once (prd_parent_pin_and_family_signin.md
+// §7, Phase 1). Write-if-absent inside a transaction, so a PIN changed at the
+// same moment on another device is never overwritten. Resolves true only if
+// this call wrote the field.
+export async function ensureFamilyPasscodeInCloud(value) {
+  if (!currentFamilyUid || typeof value !== 'string' || !value) return false;
+  const userDocRef = doc(db, 'users', currentFamilyUid);
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(userDocRef);
+    if (!snap.exists()) return false;
+    const current = snap.data().adminPassword;
+    if (typeof current === 'string' && current) return false;
+    tx.update(userDocRef, { adminPassword: value, updatedAt: new Date().toISOString() });
+    return true;
+  });
 }
 
 // Export the entire family JSON blob (all profiles)

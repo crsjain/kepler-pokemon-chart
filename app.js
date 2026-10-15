@@ -42,12 +42,21 @@ import {
   saveAdminPasswordToCloud,
   sendFamilyPasswordReset,
   changeFamilyPassword,
-  getFamilyEmail
+  getFamilyEmail,
+  reauthenticateFamily,
+  ensureFamilyPasscodeInCloud
 } from './firebase.js';
 // Family sign-in calls, swappable in tests (setFamilyAuthMock).
 let sendFamilyPasswordResetFn = (email) => sendFamilyPasswordReset(email);
 let changeFamilyPasswordFn = (currentPassword, newPassword) => changeFamilyPassword(currentPassword, newPassword);
 let getFamilyEmailFn = () => getFamilyEmail();
+let reauthenticateFamilyFn = (password) => reauthenticateFamily(password);
+// Parent PIN backfill (prd_parent_pin_and_family_signin.md §7, Phase 1).
+// Cloud writes are off in test mode; tests swap this via setEnsureFamilyPasscodeMock.
+let ensureFamilyPasscodeFn = (value) => location.search.includes('runTests=true')
+  ? Promise.resolve(false)
+  : ensureFamilyPasscodeInCloud(value);
+let familyPasscodeBackfillInFlight = false;
 let deleteChildProfileFn = deleteChildProfile;
 let saveProfileRewardsToCloudFn = saveProfileRewardsToCloud;
 let createChildProfileFn = (name, targetState, avatarId) => {
@@ -80,7 +89,7 @@ const HEADER_STAR_HTML = `<svg class="header-star-svg" width="22" height="22" vi
 const GHOST_STAR_HTML = `<svg class="ghost-star-svg" width="27" height="27" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><polygon points="16,2 20.3,11.5 30.5,12.7 23,19.5 25,29.5 16,24.5 7,29.5 9,19.5 1.5,12.7 11.7,11.5" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2.2" stroke-linejoin="round"/></svg><span class="sr-only">☆</span>`;
 // Past zero-required day with nothing completed: no star, streak paused (prd_star_vault.md §3.2.1).
 const REST_DAY_HTML = `<div class="badge-indicator locked rest-day" title="Rest day — streak paused 💤">💤</div>`;
-import { promptParentPassword, setFamilyPasscode, getParentPasscode, describeAuthError } from './admin.js';
+import { promptParentPassword, setFamilyPasscode, getParentPasscode, describeAuthError, resolveLegacyFamilyPasscode, normalizeFamilyBackup } from './admin.js';
 import { initRewardsAdmin, openEditRewardsModal, bindRewardsEditorEvents } from './rewards_admin.js';
 
 let currentViewingWeekStartDate = null;
@@ -387,11 +396,34 @@ function markAppReady() {
   if (typeof window.__markAppReady === 'function') window.__markAppReady();
 }
 
+// Families whose doc has no users/{uid}.adminPassword (never changed the
+// passcode, or restored an old family code) only have per-child copies. Write
+// the doc field once from them, before those copies are retired (§7). The cloud
+// call is write-if-absent in a transaction, so it can never overwrite a PIN set
+// meanwhile on another device; the snapshot echo then pushes it in as usual.
+function backfillFamilyPasscode(profiles) {
+  if (familyPasscodeBackfillInFlight) return;
+  const value = resolveLegacyFamilyPasscode(profiles);
+  if (!value) return;
+  familyPasscodeBackfillInFlight = true;
+  Promise.resolve()
+    .then(() => ensureFamilyPasscodeFn(value))
+    .then(wrote => {
+      if (wrote) {
+        console.log('Backfilled the family Parent PIN from per-child copies.');
+        setFamilyPasscode(value);
+      }
+    })
+    .catch(err => console.error('Parent PIN backfill failed (will retry on next sync):', err))
+    .finally(() => { familyPasscodeBackfillInFlight = false; });
+}
+
 function handleProfilesUpdate(profiles, familyMeta) {
   console.log("Received profiles list from Firestore! Count:", profiles.length);
   // The family doc carries the Parent PIN; push it before anything (picker,
   // Admin, approvals) can prompt for it.
   if (familyMeta) setFamilyPasscode(familyMeta.adminPassword);
+  if (familyMeta && !familyMeta.adminPassword) backfillFamilyPasscode(profiles);
   profilesList = profiles;
   renderProfilesGrid();
   renderAdminProfilesList();
@@ -1166,6 +1198,7 @@ initAdmin({
   getFamilyEmail: () => getFamilyEmailFn(),
   sendFamilyPasswordReset: (email) => sendFamilyPasswordResetFn(email),
   changeFamilyPassword: (currentPassword, newPassword) => changeFamilyPasswordFn(currentPassword, newPassword),
+  reauthenticateFamily: (password) => reauthenticateFamilyFn(password),
   getActiveProfileName: () => {
     const profile = activeProfileId ? profilesList.find(p => p.id === activeProfileId) : null;
     return profile && profile.name ? profile.name : null;
@@ -4233,18 +4266,28 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     // Parent PIN source of truth (doc-level users/{uid}.adminPassword); null = none.
     setFamilyPasscode: (value) => setFamilyPasscode(value),
     getParentPasscode: () => getParentPasscode(),
-    // Family sign-in: pass { email, sendReset, changePassword } or null to restore.
+    // Family sign-in: pass { email, sendReset, changePassword, reauth } or null to restore.
     setFamilyAuthMock: (mock) => {
       if (!mock) {
         sendFamilyPasswordResetFn = (email) => sendFamilyPasswordReset(email);
         changeFamilyPasswordFn = (currentPassword, newPassword) => changeFamilyPassword(currentPassword, newPassword);
         getFamilyEmailFn = () => getFamilyEmail();
+        reauthenticateFamilyFn = (password) => reauthenticateFamily(password);
         return;
       }
       if (mock.sendReset) sendFamilyPasswordResetFn = mock.sendReset;
       if (mock.changePassword) changeFamilyPasswordFn = mock.changePassword;
+      if (mock.reauth) reauthenticateFamilyFn = mock.reauth;
       if ('email' in mock) getFamilyEmailFn = () => mock.email;
     },
+    // Parent PIN backfill (§7 Phase 1): fn(value) -> Promise<boolean wrote>, or null to restore.
+    setEnsureFamilyPasscodeMock: (fn) => {
+      ensureFamilyPasscodeFn = fn || ((value) => location.search.includes('runTests=true')
+        ? Promise.resolve(false)
+        : ensureFamilyPasscodeInCloud(value));
+    },
+    resolveLegacyFamilyPasscode: (profiles) => resolveLegacyFamilyPasscode(profiles),
+    normalizeFamilyBackup: (parsed) => normalizeFamilyBackup(parsed),
     selectProfile: (id) => selectProfile(id),
     isParentGraceActive: () => isParentGraceActive(),
     requiresParentApproval: (dateStr) => requiresParentApproval(dateStr),
