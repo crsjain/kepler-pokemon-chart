@@ -40,6 +40,7 @@ import {
   useProd,
   useStaging,
   saveAdminPasswordToCloud,
+  buildFamilyPasscodeUpdate,
   sendFamilyPasswordReset,
   changeFamilyPassword,
   getFamilyEmail,
@@ -57,6 +58,8 @@ let ensureFamilyPasscodeFn = (value) => location.search.includes('runTests=true'
   ? Promise.resolve(false)
   : ensureFamilyPasscodeInCloud(value);
 let familyPasscodeBackfillInFlight = false;
+// Doc-level PIN save; swappable in tests (setSaveAdminPasswordMock).
+let saveAdminPasswordFn = (newPassword) => saveAdminPasswordToCloud(newPassword);
 let deleteChildProfileFn = deleteChildProfile;
 let saveProfileRewardsToCloudFn = saveProfileRewardsToCloud;
 let createChildProfileFn = (name, targetState, avatarId) => {
@@ -796,8 +799,9 @@ function initFirebaseUI() {
         }
         
         targetState.childName = name;
-        // New children share the family PIN instead of the template's "zxcv".
-        targetState.adminPassword = getParentPasscode();
+        // The Parent PIN is family-wide (doc-level field): new children carry
+        // no per-child copy (§7 Phase 2).
+        delete targetState.adminPassword;
         
         const newId = await createChildProfileFn(name, targetState, selectedNewProfileAvatar);
         
@@ -1192,9 +1196,7 @@ initAdmin({
   importCloudData: (data) => importCloudDataFn(data),
   wipeData: () => wipeCloudDataFn(),
   reload: () => reloadFn(),
-  saveAdminPassword: async (newPassword) => {
-    await saveAdminPasswordToCloud(newPassword, profilesList);
-  },
+  saveAdminPassword: (newPassword) => saveAdminPasswordFn(newPassword),
   getFamilyEmail: () => getFamilyEmailFn(),
   sendFamilyPasswordReset: (email) => sendFamilyPasswordResetFn(email),
   changeFamilyPassword: (currentPassword, newPassword) => changeFamilyPasswordFn(currentPassword, newPassword),
@@ -4294,6 +4296,9 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
         : ensureFamilyPasscodeInCloud(value));
     },
     resolveLegacyFamilyPasscode: (profiles) => resolveLegacyFamilyPasscode(profiles),
+    // §7 Phase 2: the PIN save writes only the doc field.
+    setSaveAdminPasswordMock: (fn) => { saveAdminPasswordFn = fn || ((newPassword) => saveAdminPasswordToCloud(newPassword)); },
+    buildFamilyPasscodeUpdate: (pin) => buildFamilyPasscodeUpdate(pin),
     normalizeFamilyBackup: (parsed) => normalizeFamilyBackup(parsed),
     selectProfile: (id) => selectProfile(id),
     isParentGraceActive: () => isParentGraceActive(),

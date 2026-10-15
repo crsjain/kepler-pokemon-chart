@@ -4018,8 +4018,9 @@ async function runSuite() {
         updatePasscodeBtn.click();
         await sleep(100);
 
-        // Verify local state updated
-        assert(state.adminPassword === "4321", `Local state adminPassword should update to 4321, got ${state.adminPassword}`);
+        // Verify the family PIN updated, and (§7 Phase 2) the child's copy was not written
+        assert(helpers.getParentPasscode() === "4321", `Family PIN should update to 4321, got ${helpers.getParentPasscode()}`);
+        assert(state.adminPassword !== "4321", `The per-child copy must no longer be written (got ${state.adminPassword})`);
 
         // Close Admin Modal
         const closeAdminBtn = document.getElementById('close-admin-modal-btn');
@@ -9245,17 +9246,25 @@ async function runSuite() {
         assert(isOpen(pcError) && pcError.textContent.includes('4'), "Short passcode explains the 4-digit minimum inline");
         pcInput.value = 'wxyz'; pcConfirm.value = 'wxyz';
         pcBtn.click();
-        assert(isOpen(pcError) && pcError.textContent.includes('digits') && live.adminPassword !== 'wxyz', "Letters are rejected: the PIN is 4–6 digits");
+        assert(isOpen(pcError) && pcError.textContent.includes('digits') && helpers.getParentPasscode() !== 'wxyz', "Letters are rejected: the PIN is 4–6 digits");
         pcInput.value = '5678'; pcConfirm.value = '5679';
         pcBtn.click();
         assert(isOpen(pcError) && pcError.textContent.includes("match") && document.activeElement === pcConfirm, "Mismatch errors inline and focuses the confirm field");
-        assert(live.adminPassword !== '5678', "A failed update writes nothing");
+        assert(helpers.getParentPasscode() !== '5678', "A failed update writes nothing");
+        const pinSaves = [];
+        helpers.setSaveAdminPasswordMock((...args) => { pinSaves.push(args); return Promise.resolve(); });
         pcConfirm.value = '5678';
         pcConfirm.dispatchEvent(new Event('input', { bubbles: true }));
         assert(!isOpen(pcError), "Typing clears the inline error");
         pcBtn.click();
         await sleep(60);
-        assert(live.adminPassword === '5678' && helpers.getParentPasscode() === '5678' && pcInput.value === '' && pcConfirm.value === '', "Matching PINs update the family PIN + state and clear the fields");
+        assert(helpers.getParentPasscode() === '5678' && pcInput.value === '' && pcConfirm.value === '', "Matching PINs update the family PIN and clear the fields");
+        assert(live.adminPassword !== '5678', "§7 Phase 2: the active child's copy is not written");
+        assert(pinSaves.length === 1 && pinSaves[0].length === 1 && pinSaves[0][0] === '5678', `The cloud save gets only the PIN, no profiles list (got ${JSON.stringify(pinSaves)})`);
+        const pinUpdate = helpers.buildFamilyPasscodeUpdate('5678');
+        assert(JSON.stringify(Object.keys(pinUpdate).sort()) === JSON.stringify(['adminPassword', 'updatedAt']) && pinUpdate.adminPassword === '5678',
+          `The Firestore update writes only the doc-level field (keys: ${Object.keys(pinUpdate).join(', ')})`);
+        helpers.setSaveAdminPasswordMock(null);
         const pcToast = [...document.querySelectorAll('.notif-modal')].pop();
         assert(pcToast && pcToast.classList.contains('toast') && pcToast.textContent.includes('PIN Updated'), "Success is a toast");
         dismissNotifs();
@@ -10361,7 +10370,8 @@ async function runSuite() {
           document.getElementById('new-profile-name').value = 'Juniper';
           document.getElementById('add-profile-submit-btn').click();
           await sleep(120);
-          assert(createdState && createdState.adminPassword === '9876', `New child must inherit the family PIN (got ${createdState && createdState.adminPassword})`);
+          assert(createdState && !('adminPassword' in createdState), `§7 Phase 2: a new child carries no per-child PIN copy (got ${createdState && createdState.adminPassword})`);
+          assert(helpers.getParentPasscode() === '9876', "The family PIN still applies after adding a child");
           dismissNotifs();
 
           // 6. A per-child restore keeps the family PIN instead of the backup's old one (D3).
@@ -10374,7 +10384,8 @@ async function runSuite() {
           assert(isOpen(confirmModal), "Restore asks for confirmation");
           document.getElementById('confirm-yes-btn').click();
           await sleep(60);
-          assert(live.adminPassword === '9876', `Restore must keep the family PIN (got ${live.adminPassword})`);
+          assert(!('adminPassword' in live), `§7 Phase 2: the backup's old copy is dropped, not restored (got ${live.adminPassword})`);
+          assert(helpers.getParentPasscode() === '9876', `Restore keeps the family PIN (got ${helpers.getParentPasscode()})`);
         } finally {
           dismissNotifs();
           helpers.setReadBackupCodeMock(null);

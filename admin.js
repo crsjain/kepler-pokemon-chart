@@ -392,8 +392,9 @@ let passwordSuccessCallback = null;
  * ONE family-wide secret. The source of truth is the doc-level
  * users/{uid}.adminPassword field, pushed in by app.js from the profiles
  * snapshot via setFamilyPasscode(). Each child's state.adminPassword is only a
- * legacy fallback: those copies drifted (new children seeded with "zxcv",
- * per-child restores, stale whole-state writes).
+ * read-only legacy fallback: those copies drifted (new children seeded with
+ * "zxcv", per-child restores, stale whole-state writes), and since §7 Phase 2
+ * nothing writes them any more. Phase 3 removes them with a V20 migration.
  *
  * A 4–6 digit value switches the prompt to the on-screen number keypad. Any
  * other value (the old "zxcv" default or a custom text passcode) keeps the
@@ -960,11 +961,8 @@ export function initAdmin(callbacks) {
 
       // The family field is the source of truth; set it optimistically so this
       // device switches to the new PIN at once (the snapshot echo agrees).
-      // state.adminPassword stays in step as the legacy fallback for older
-      // cached clients (fan-out kept for one release).
+      // Per-child copies are no longer written (§7 Phase 2).
       setFamilyPasscode(newPin);
-      state.adminPassword = newPin;
-      saveState();
 
       newPasscodeInput.value = '';
       if (confirmPasscodeInput) confirmPasscodeInput.value = '';
@@ -1927,10 +1925,11 @@ async function importState() {
     `Restoring overwrites ${name}'s current progress with the backup. This can't be undone.`,
     () => {
       // The Parent PIN is family-wide: a child backup must not bring back the
-      // passcode that was current when it was exported.
-      const familyPin = getParentPasscode();
-      replaceState(parsed);
-      state.adminPassword = familyPin;
+      // passcode that was current when it was exported, so its copy is dropped
+      // (§7 Phase 2; the family field is untouched).
+      const restored = { ...parsed };
+      delete restored.adminPassword;
+      replaceState(restored);
       saveState();
       renderState(true);
       showCustomNotification("RESTORE SUCCESS", "Trainer progress restored successfully!");

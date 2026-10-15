@@ -305,23 +305,21 @@ export async function saveProfileStateToCloud(profileId, localState) {
   });
 }
 
-// Save Admin Passcode across all family profiles
-export async function saveAdminPasswordToCloud(newPassword, profilesList) {
-  if (!currentFamilyUid) return;
-  const userDocRef = doc(db, 'users', currentFamilyUid);
-  
-  const updates = {
+// The Parent PIN update: the doc-level field only. Per-child copies
+// (profiles.*.state.adminPassword) are no longer written
+// (prd_parent_pin_and_family_signin.md §7, Phase 2). Pure, so tests can pin it.
+export function buildFamilyPasscodeUpdate(newPassword) {
+  return {
     adminPassword: newPassword,
     updatedAt: new Date().toISOString()
   };
-  
-  if (profilesList) {
-    profilesList.forEach(p => {
-      updates[`profiles.${p.id}.state.adminPassword`] = newPassword;
-    });
-  }
-  
-  await updateDoc(userDocRef, updates);
+}
+
+// Save the family Parent PIN (doc-level users/{uid}.adminPassword).
+export async function saveAdminPasswordToCloud(newPassword) {
+  if (!currentFamilyUid) return;
+  const userDocRef = doc(db, 'users', currentFamilyUid);
+  await updateDoc(userDocRef, buildFamilyPasscodeUpdate(newPassword));
 }
 
 // Backfill the doc-level Parent PIN once (prd_parent_pin_and_family_signin.md
