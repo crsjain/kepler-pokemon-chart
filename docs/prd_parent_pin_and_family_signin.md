@@ -148,6 +148,8 @@ The evaluation (`adminPassword` read/write map, options, review panel) was appro
 
 **Change log**
 
+- 2026-10-15 (Phase 2 gate): the doc-level field is **verified on both prod and staging**. On prod, the owner checked the Firebase console: `users/{uid}.adminPassword` is a top-level string, written 2026-10-15T15:05Z. On staging, an emulator REST read found the field present and matching the child copy. The only remaining Phase 2 precondition is ≥ 1 day of owner use in prod (R5), so the earliest deploy is 2026-10-16.
+
 - 2026-10-15 (R5): Phase 2 soak shortened to ≥ 1 day at the owner's request. This is low-risk because Phase 2 only **stops writing** child copies and still reads them as a fallback; nothing is erased until Phase 3. The residual risk: a rarely-opened pre-v209 tablet keeps accepting the PIN that was current before a later change. Phase 3, which actually erases copies, keeps the 7-day gate.
 
 - 2026-10-15 (Phase 1, owner request, `5033759`): the Forgot PIN link is **always shown**. On a device that isn't signed in, there's no family password to check, so forgot mode explains that and its primary becomes **Sign in**, which opens Family sign-in (email focused); after signing in, Forgot PIN? offers the reset. (`54217c5` had briefly hidden the link when signed out.) Offline errors still map to calm copy ("No internet connection…"). Also: on success the gated action is **not** run; the parent lands on Admin › Family with the New PIN field focused, and re-authenticating alone never changes the PIN.
