@@ -3708,6 +3708,12 @@ input:checked + .slider:before {
   display: block;
 }
 
+/* "Badge locked again" notice: the badge shows greyed out, matching the
+   locked badge slot, so a pre-reader sees it is waiting again. */
+.badge-locked-again .notif-img {
+  filter: grayscale(1) opacity(0.5);
+}
+
 /* Evolution Celebration Large Sprite */
 .evolution-celebration .notif-img {
   max-height: 180px;

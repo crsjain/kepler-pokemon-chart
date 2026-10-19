@@ -2347,10 +2347,13 @@ function handleCheckboxChange(e) {
     spawnXpFloat(cb, text);
   }
 
-  addXp(xpGained);
+  // An untick that drops the week below its goals opens "BADGE LOCKED AGAIN";
+  // keep the devolve notice quiet so the child sees one modal, not two.
+  const willRevokeBadge = !isChecked && state.weeklyClaimed && !checkWeeklySuccess();
+  addXp(xpGained, { quiet: willRevokeBadge });
   saveState();
   
-  checkAndTriggerWeeklySuccess();
+  checkAndTriggerWeeklySuccess(taskId);
   renderState(false);
 }
 
@@ -3699,7 +3702,9 @@ function setWeek(weekNum) {
   renderState(true);
 }
 
-function addXp(amount) {
+// quiet: skip the devolve notice when another notice explains the same untick
+// (the "BADGE LOCKED AGAIN" pop-up), so only one modal opens at a time.
+function addXp(amount, { quiet = false } = {}) {
   if (amount === 0) return;
   
   const instanceId = state.activePartnerInstanceId || '25';
@@ -3793,13 +3798,14 @@ function addXp(amount) {
       playSound('levelUp');
     }
   } else if (levelDecreased) {
-    if (devolved) {
+    if (devolved && !quiet) {
       const activePokemon = getStageInfo(family, stats.stageId).currentStage;
       const oldPokemon = getStageInfo(family, oldStageId).currentStage;
       
+      // Calm, forward-looking framing: a setback, not a scolding (UX Rule 11).
       showCustomNotification(
-        "😢 POKÉMON DEVOLVED 😢",
-        `Oh no! ${state.childName || 'Trainer'}'s ${oldPokemon.name} devolved back into ${activePokemon.name} because their level dropped.`,
+        "🔄 TIME TO TRAIN",
+        `${state.childName || 'Trainer'}'s ${oldPokemon.name} went back to ${activePokemon.name} for now. Earn more XP to evolve again!`,
         `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`,
         false,
         null,
@@ -3826,8 +3832,9 @@ function checkWeeklySuccess() {
 // An unchecked pokeball can drop the week back below its goals after the badge
 // was awarded. Retract the claim, the badge and the claimed-reward log entries
 // so the week can't be archived as earned on the next reset.
-function revokeWeeklySuccess() {
+function revokeWeeklySuccess(changedTaskId = null) {
   const weekStartMs = new Date(state.weekStartDate + 'T00:00:00').getTime();
+  const badgeId = state.activeWeeklyBadgeId;
   state.weeklyClaimed = false;
   revokeCurrentWeeklyBadge(state.weekStartDate);
   if (Array.isArray(state.claimedRewardsHistory)) {
@@ -3843,13 +3850,41 @@ function revokeWeeklySuccess() {
   }
   saveState();
   renderProgress();
+  showBadgeLockedAgainNotice(badgeId, changedTaskId);
 }
 
-function checkAndTriggerWeeklySuccess() {
+// Calm, forward-looking notice (UX Rule 11): name the activity that is now short
+// and show the badge greyed out so a pre-reader still gets the message.
+function showBadgeLockedAgainNotice(badgeId, changedTaskId) {
+  const tasks = state.tasks || [];
+  const isShort = task => {
+    let checked = 0;
+    for (let d = 0; d < 7; d++) {
+      if (state.grid[`${getDateOfColumn(state.weekStartDate, d)}-${task.id}`]) checked++;
+    }
+    return checked < getTaskRequiredDays(task.id);
+  };
+  const changed = tasks.find(t => t.id === changedTaskId);
+  const shortTask = (changed && isShort(changed)) ? changed : tasks.find(isShort);
+  const badgeName = getPokemonName(badgeId);
+  const lead = shortTask ? `${shortTask.name} still needs one more check this week. ` : '';
+  showCustomNotification(
+    "🔒 BADGE LOCKED AGAIN",
+    `${lead}Finish all your goals to win the ${badgeName} Badge and your reward!`,
+    `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png`,
+    false,
+    null,
+    'badge-locked-again',
+    "I'll win it back! 💪",
+    'info'
+  );
+}
+
+function checkAndTriggerWeeklySuccess(changedTaskId = null) {
   const weeklySuccess = checkWeeklySuccess();
   
   if (!weeklySuccess && state.weeklyClaimed) {
-    revokeWeeklySuccess();
+    revokeWeeklySuccess(changedTaskId);
     return;
   }
   
@@ -4267,7 +4302,7 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
       renderState(true);
     },
     renderState: (rebuildGrid) => renderState(rebuildGrid),
-    addXp: (amount) => addXp(amount),
+    addXp: (amount, opts) => addXp(amount, opts),
     setViewingWeekStartDate: (dateStr) => { currentViewingWeekStartDate = dateStr; },
     ADMIN_PASSWORD: ADMIN_PASSWORD,
     resetWeekGrid: (carryOver) => resetWeekGrid(carryOver),

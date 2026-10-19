@@ -10845,7 +10845,8 @@ async function runSuite() {
       }
 
       // 117. Unchecking a pokeball after the weekly badge was earned retracts it
-      //      (the claim, the badge-case copy, and the claimed-reward log entry).
+      //      (the claim, the badge-case copy, and the claimed-reward log entry) with a
+      //      calm "BADGE LOCKED AGAIN" notice; the devolve notice is calm too.
       {
         console.log("Running Test Case 117: Unchecking after a weekly success retracts the badge...");
         const helpers = window.__test_helpers__;
@@ -10880,7 +10881,16 @@ async function runSuite() {
           assert(state.weeklyClaimed === false, "Unchecked below the goal: the claim is retracted");
           assert(!state.collectedBadges.some(b => b.id === badgeId), "Unchecked below the goal: this week's badge is removed");
           assert(!state.claimedRewardsHistory.some(e => e.type === 'weekly'), "Unchecked below the goal: the weekly reward log entry is removed");
-          assert(document.querySelectorAll('.notif-modal').length === 0, "Retracting shows no celebration");
+          const lockedNotices = document.querySelectorAll('.notif-modal.badge-locked-again');
+          assert(lockedNotices.length === 1 && document.querySelectorAll('.notif-modal').length === 1, "Retracting opens exactly one 'BADGE LOCKED AGAIN' notice");
+          const notice = lockedNotices[0];
+          assert(notice.textContent.includes('BADGE LOCKED AGAIN') && !notice.textContent.includes('😢'), "The notice is calm: locked-again title, no sad face");
+          const lastTask = state.tasks.find(t => weekKeys[weekKeys.length - 1].endsWith(`-${t.id}`));
+          assert(notice.textContent.includes(`${lastTask.name} still needs one more check`), "The notice names the activity that is now short");
+          assert(notice.textContent.includes("I'll win it back! 💪"), "The notice CTA is motivating, not celebratory");
+          const noticeImg = notice.querySelector('.notif-img');
+          assert(noticeImg && getComputedStyle(noticeImg).filter.includes('grayscale'), "The badge art is greyed out");
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
 
           // A copy earned in an earlier cycle is never taken away.
           state.grid[weekKeys[weekKeys.length - 1]] = true;
@@ -10893,6 +10903,22 @@ async function runSuite() {
           await sleep(30);
           assert(state.weeklyClaimed === false && state.collectedBadges.length === 1 && state.collectedBadges[0].name === 'Old copy',
             "A badge collected in an earlier cycle survives the retraction");
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+
+          // Devolve notice: calm framing, and quiet when the badge notice covers the same untick.
+          state.activePartnerInstanceId = '133';
+          state.partnersData['133'] = { familyId: '133', level: 5, xp: 0, stageId: '134' }; // Vaporeon
+          helpers.addXp(-5, { quiet: true });
+          await sleep(30);
+          assert(state.partnersData['133'].stageId === '133', "Quiet XP loss still devolves");
+          assert(document.querySelectorAll('.notif-modal').length === 0, "Quiet XP loss opens no devolve notice");
+          state.partnersData['133'] = { familyId: '133', level: 5, xp: 0, stageId: '134' };
+          helpers.addXp(-5);
+          await sleep(30);
+          const devolveNotice = document.querySelector('.notif-modal');
+          assert(devolveNotice && devolveNotice.textContent.includes('TIME TO TRAIN') && !devolveNotice.textContent.includes('😢') && !devolveNotice.textContent.includes('Oh no'),
+            "The devolve notice is calm: 'TIME TO TRAIN', no sad face or 'Oh no'");
+          assert(devolveNotice.textContent.includes('Earn more XP to evolve again'), "The devolve notice points forward");
         } finally {
           document.querySelectorAll('.notif-modal').forEach(el => el.remove());
           helpers.resetState();
