@@ -117,6 +117,7 @@ decisions that are expensive to rediscover.
 | `plan_header_refactoring.md` | Refactoring plan behind that state machine |
 | `prd_rest_day_passes_and_bonus_tasks.md` | Rest passes 💤, bonus tasks ✨, Great Ball, icon states |
 | `prd_parent_past_day_approval.md` | Parent approval + timed grace window for past-day edits |
+| `prd_parent_edit_last_week.md` | "Fix last week": parent edits the most recent archived week (stars/XP update, badges frozen); reserves TC118 |
 | `prd_parent_pin_and_family_signin.md` | Family-wide Parent PIN (doc-level source of truth, keypad, legacy mode) and Family sign-in reset/change; §7 phased retirement of per-child PIN copies (status + earliest start dates) |
 | `prd_legendary_evolutions.md` | Mega and branching evolutions (Eevee, Onix→Steelix) |
 | `prd_alternating_activity_pairs.md` | Alternating activity pairs & dynamic schedule swapping |
