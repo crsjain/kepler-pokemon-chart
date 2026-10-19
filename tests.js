@@ -10926,6 +10926,113 @@ async function runSuite() {
         }
       }
 
+      // 118. Fix last week: a parent edits the most recent archived week from Admin.
+      //      Stars, streak and XP update; badges, claims and Mega progress stay frozen
+      //      (docs/prd_parent_edit_last_week.md).
+      {
+        console.log("Running Test Case 118: Fix last week edits the most recent archived week (stars/XP update, badges frozen)...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const state = window.__app_state__;
+        const fmt = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+        const addDays = (s, n) => { const d = new Date(s + 'T00:00:00'); d.setDate(d.getDate() + n); return fmt(d); };
+        const layout = document.querySelector('.layout-container');
+        const dock = document.getElementById('parent-grace-dock');
+        const sub = document.getElementById('parent-grace-sub');
+        const doneBtn = document.getElementById('parent-grace-lock-btn');
+        const prevBtn = document.getElementById('prev-week-btn');
+        const nextBtn = document.getElementById('next-week-btn');
+        try {
+          state.reward = 'Ice cream';
+          state.megaReward = 'Zoo trip';
+          const curStart = state.weekStartDate;
+          const lastStart = addDays(curStart, -7);
+          const olderStart = addDays(curStart, -14);
+          state.weeklyHistory = {
+            [olderStart]: { weekStartDay: state.weekStartDay, weeklyClaimed: false, badgeId: 1, xpEarned: 0, megaWeeks: 0 },
+            [lastStart]: { weekStartDay: state.weekStartDay, weeklyClaimed: false, badgeId: 7, xpEarned: 0, megaWeeks: 0 }
+          };
+          const thu = addDays(lastStart, 4);
+          state.tasks.forEach(t => { if (t.id !== 'math') state.grid[`${thu}-${t.id}`] = true; });
+          state.starVault.earnedDates = state.starVault.earnedDates.filter(d => d !== thu);
+          const partner = state.partnersData[state.activePartnerInstanceId];
+          partner.level = 2;
+          partner.xp = 10;
+          const frozen = () => JSON.stringify([state.weeklyClaimed, state.collectedBadges, state.megaWeeks, state.activeWeeklyBadgeId,
+            state.weeklyHistory[lastStart].weeklyClaimed, state.weeklyHistory[lastStart].badgeId, state.claimedRewardsHistory]);
+          const frozenBefore = frozen();
+          helpers.renderState(true);
+          await sleep(30);
+
+          // 1. Admin copy names the exact week and says only that week can be fixed.
+          const fixBtn = document.getElementById('admin-fix-last-week-btn');
+          assert(fixBtn && !fixBtn.disabled, "Fix last week is available when an archived week exists");
+          assert(/^✏️ Fix \w{3} \d+/.test(fixBtn.textContent) && !fixBtn.textContent.includes(',') , `The button names last week's dates (got "${fixBtn.textContent}")`);
+          assert(document.getElementById('admin-fix-last-week-help').textContent.includes('Only the most recent week can be fixed'),
+            "The help text says only the most recent week can be fixed");
+
+          // 2. Entering the mode.
+          fixBtn.click();
+          await sleep(30);
+          assert(layout.classList.contains('last-week-edit'), "Edit mode marks the layout");
+          assert(!dock.classList.contains('hidden') && dock.classList.contains('last-week-mode'), "The parent dock shows in last-week mode");
+          assert(dock.textContent.toLowerCase().includes('editing last week') && sub.textContent.includes("badges don't change"), "The dock names the mode and the frozen-badge rule");
+          assert(doneBtn.textContent === 'Done ✅', "Done ✅ is the dock CTA");
+          assert(prevBtn.disabled && nextBtn.disabled && prevBtn.title === 'Only last week can be fixed', "Week navigation is locked and says why");
+
+          // 3. Ticking the missed activity completes the day: star + 20 XP, nothing frozen changes.
+          let mathInput = document.querySelector('input[data-day="4"][data-task="math"]');
+          assert(mathInput && !mathInput.disabled, "Last week's cells are editable in the mode");
+          mathInput.click();
+          await sleep(30);
+          assert(state.grid[`${thu}-math`] === true, "The tick is saved to last week's grid");
+          assert(state.starVault.earnedDates.includes(thu), "The completed day earns its star (streak repaired)");
+          assert(partner.level === 2 && partner.xp === 30, `Task + day-complete XP is awarded (+20; got L${partner.level} ${partner.xp}xp)`);
+          assert(state.weeklyHistory[lastStart].xpEarned > 0, "Last week's XP total is recomputed");
+          assert(frozen() === frozenBefore, "Badges, claims, Mega progress and reward history are untouched");
+          assert(!document.querySelector('.notif-modal'), "No weekly-success or badge notice opens");
+
+          // 4. Unticking reverses it.
+          mathInput = document.querySelector('input[data-day="4"][data-task="math"]');
+          mathInput.click();
+          await sleep(30);
+          assert(state.grid[`${thu}-math`] === false && !state.starVault.earnedDates.includes(thu) && partner.xp === 10,
+            "Unticking removes the star and the 20 XP");
+
+          // 5. A fix that makes an unwon week meet every goal tells the parent, without awarding anything.
+          for (let d = 0; d < 7; d++) state.tasks.forEach(t => { state.grid[`${addDays(lastStart, d)}-${t.id}`] = true; });
+          state.grid[`${thu}-math`] = false;
+          helpers.renderState(true);
+          await sleep(30);
+          mathInput = document.querySelector('input[data-day="4"][data-task="math"]');
+          mathInput.click();
+          await sleep(30);
+          assert(sub.textContent.includes('meets every goal') && sub.textContent.includes('give the reward in person'), "The dock tells the parent the week now meets every goal");
+          assert(frozen() === frozenBefore, "Completing the week still awards no badge");
+
+          // 6. Rest cells stay inert.
+          state.excused[`${addDays(lastStart, 1)}-piano`] = 'rest';
+          helpers.renderState(true);
+          await sleep(30);
+          assert(document.querySelector('input[data-day="1"][data-task="piano"]').disabled, "Rest cells cannot be edited");
+
+          // 7. Done returns to the current week, read-only for kids.
+          doneBtn.click();
+          await sleep(30);
+          assert(!layout.classList.contains('last-week-edit') && dock.classList.contains('hidden'), "Done ends the mode and hides the dock");
+          assert(prevBtn.title !== 'Only last week can be fixed', "Week navigation unlocks after Done");
+          prevBtn.click();
+          await sleep(30);
+          assert(document.querySelector('input[data-day="4"][data-task="math"]').disabled, "Without the mode, last week stays read-only");
+        } finally {
+          helpers.clearParentGrace();
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

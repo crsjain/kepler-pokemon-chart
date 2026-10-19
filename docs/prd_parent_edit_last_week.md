@@ -1,8 +1,8 @@
 # PRD: Fix Last Week (Parent Editing of the Most Recent Archived Week)
 
 **Document**: `docs/prd_parent_edit_last_week.md`
-**Version**: 1.0.0-draft
-**Status**: Draft — awaiting owner decisions (§7). Not started.
+**Version**: 1.0.0
+**Status**: Implemented locally (TC118), not yet deployed.
 **Authors**: crsjain & Jetski
 **Target Systems**: `app.js`, `admin.js`, `index.html`, `style.css`, `tests.js`. **No schema change** (stays V19).
 **Companion docs**: [`prd_parent_past_day_approval.md`](prd_parent_past_day_approval.md) (grace session + bottom dock this feature reuses), [`prd_column_state_machine.md`](prd_column_state_machine.md) (the `HISTORICAL` column state), [`prd_star_vault.md`](prd_star_vault.md) §3.2.1 (rest-day streak rule), [`prd_historical_weeks.md`](prd_historical_weeks.md) (week intervals and archiving), [`_agents/rules/ux-guidelines.md`](../_agents/rules/ux-guidelines.md).
@@ -91,7 +91,7 @@ The edit path **never** calls `checkAndTriggerWeeklySuccess`, and never touches 
 
 *Why:* at reset, the archived week has already decided the badge outcome, rolled the next badge, and moved Mega progress forward. Re-deciding it later would cascade through every week after it. If a fixed week "should" have won its badge, the parent handles the reward in real life.
 
-**Parent heads-up (pending Q3):** if a fix makes an archived week that was saved as *not won* meet every goal, the dock sub-label switches to *"Last week now meets every goal 🎉 — badges don't update; give the reward in person."* That way the parent isn't left wondering why no badge appeared.
+**Parent heads-up:** if a fix makes an archived week that was saved as *not won* meet every goal, the dock sub-label switches to *"Last week now meets every goal 🎉 — badges don't update; give the reward in person."* That way the parent isn't left wondering why no badge appeared.
 
 ### 4.4 XP goes to today's partner
 If the child switched partners since that week, the XP goes to the partner active now. That's acceptable: XP is a reward for the child's effort, not a record of history.
@@ -130,12 +130,12 @@ If the child switched partners since that week, the XP goes to the partner activ
 | :--- | :--- | :--- |
 | Q1 | Should edit mode auto-end on a timer? | **Yes** (2026-10-19): reuse `parentGraceMinutes` (default 2 min). |
 | Q2 | Allow editing only the most recent archived week, or also older ones? | **Most recent only** (2026-10-19). The Admin copy must make the limit read as intentional (§3.1). |
-| Q3 | Should a fixed week that now meets every goal award its badge after the fact? | **Open**: risk analysis requested by owner. Recommendation: keep frozen, and tell the parent when a fix completes the week (§4.3). |
+| Q3 | Should a fixed week that now meets every goal award its badge after the fact? | **No, frozen** (2026-10-19), after reviewing the risks: mid-week badge-target and reward swaps, surprise Mega completion, double awards, and take-backs. The dock tells the parent when a fix completes an unwon week (§4.3). |
 | Q4 | Show live-tick celebrations (XP float, day-complete burst, level-up) during a fix? | **Yes** (2026-10-19). |
 
 ## 8. Rollout
 
-- [ ] Owner answers Q1–Q4
-- [ ] Implement + TC118, suite green, cache bump
+- [x] Owner answers Q1–Q4 (2026-10-19)
+- [x] Implement + TC118, suite green, cache bump (v217, modules 10.89, style 11.00)
 - [ ] Deploy via `pokemon-session-wrapup`
 - [ ] **Acceptance on prod:** use Fix last week to tick Kepler's Thu 2026-10-15 Math Practice and confirm the Star Vault streak rejoins Wed 10/14 → Fri 10/16 (Sat 10/17 is a 💤 bridge day).

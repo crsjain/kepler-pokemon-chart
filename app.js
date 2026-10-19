@@ -193,6 +193,10 @@ function clearParentGrace({ revertToToday = true, notify = false } = {}) {
 
   if (!wasActive) return;
 
+  // Fix last week shares this session: ending it returns to the current week.
+  const wasLastWeekEdit = isLastWeekEditActive();
+  if (wasLastWeekEdit) endLastWeekEdit();
+
   if (revertToToday) {
     const todayRealDay = getLocalDate(state?.timezoneOffset).getDay();
     if (state.activeDay !== todayRealDay) {
@@ -205,7 +209,7 @@ function clearParentGrace({ revertToToday = true, notify = false } = {}) {
   if (notify) {
     showCustomNotification(
       "Edit Window Closed 🔒",
-      "Parent edit window ended. Back to Today!"
+      wasLastWeekEdit ? "Parent edit window ended. Back to this week!" : "Parent edit window ended. Back to Today!"
     );
   }
 }
@@ -242,6 +246,168 @@ function withParentApproval(dateStr, onApproved) {
     startParentGrace();
     onApproved();
   }, `Enter the Parent PIN to unlock editing for previous days (${mins}-minute window):`);
+}
+
+/* ============================================================
+   Fix Last Week (docs/prd_parent_edit_last_week.md)
+
+   A parent opens it from Admin (already PIN-gated) to tick or
+   untick activities in the most recent archived week. It rides
+   on the grace session for its timer and dock. Runtime-only.
+   Stars, streak and XP update; badges, rewards and Mega
+   progress for that week stay frozen.
+   ============================================================ */
+let lastWeekEditStart = null; // startDate of the archived week being fixed
+
+// The archived interval immediately before the current week, or null.
+function getLastArchivedInterval() {
+  if (!state || !state.weekStartDate) return null;
+  const archived = getHistoricalWeekIntervals(state, state.weekStartDate)
+    .filter(i => i.startDate < state.weekStartDate);
+  return archived.length ? archived[archived.length - 1] : null;
+}
+
+function isLastWeekEditActive() {
+  return lastWeekEditStart !== null;
+}
+
+function isLastWeekEditCell(dateStr) {
+  if (!lastWeekEditStart || currentViewingWeekStartDate !== lastWeekEditStart) return false;
+  const interval = getLastArchivedInterval();
+  return !!(interval && interval.startDate === lastWeekEditStart && interval.activeDates.includes(dateStr));
+}
+
+const LAST_WEEK_SUB_DEFAULT = "Stars & XP update · badges don't change";
+const LAST_WEEK_SUB_COMPLETE = "Last week now meets every goal 🎉 — badges don't update; give the reward in person.";
+
+function setGraceDockMode(lastWeek) {
+  const dock = document.getElementById('parent-grace-dock');
+  const label = document.getElementById('parent-grace-label');
+  const sub = document.getElementById('parent-grace-sub');
+  const btn = document.getElementById('parent-grace-lock-btn');
+  if (dock) dock.classList.toggle('last-week-mode', lastWeek);
+  if (label) label.textContent = lastWeek ? '✏️ Editing last week' : '🗝️ Parent Edit Active';
+  if (sub) {
+    sub.textContent = LAST_WEEK_SUB_DEFAULT;
+    sub.classList.toggle('hidden', !lastWeek);
+  }
+  if (btn) {
+    btn.textContent = lastWeek ? 'Done ✅' : 'Lock Now 🔒';
+    btn.classList.toggle('danger', !lastWeek);
+    btn.classList.toggle('info', lastWeek);
+  }
+}
+
+// Did every goal get met in the archived week? Mirrors checkWeeklySuccess for a past interval.
+function archivedWeekMeetsEveryGoal(weekStart) {
+  const tasks = (state.tasks || []).filter(task => isTaskActiveInWeek(task, weekStart));
+  return tasks.length > 0 && tasks.every(task => {
+    let checked = 0;
+    for (let d = 0; d < 7; d++) {
+      if (state.grid[`${getDateOfColumn(weekStart, d)}-${task.id}`]) checked++;
+    }
+    return checked >= getTaskRequiredDays(task.id);
+  });
+}
+
+function refreshLastWeekDockNote() {
+  const sub = document.getElementById('parent-grace-sub');
+  if (!sub || !lastWeekEditStart) return;
+  const history = state.weeklyHistory[lastWeekEditStart] || {};
+  const nowComplete = !history.weeklyClaimed && archivedWeekMeetsEveryGoal(lastWeekEditStart);
+  sub.textContent = nowComplete ? LAST_WEEK_SUB_COMPLETE : LAST_WEEK_SUB_DEFAULT;
+  sub.classList.toggle('week-complete', nowComplete);
+}
+
+// Admin › Settings button names the exact week so "only last week" reads as a rule (PRD §3.1).
+function refreshFixLastWeekButton() {
+  const btn = document.getElementById('admin-fix-last-week-btn');
+  const help = document.getElementById('admin-fix-last-week-help');
+  if (!btn) return;
+  const interval = getLastArchivedInterval();
+  if (interval) {
+    btn.disabled = false;
+    btn.textContent = `✏️ Fix ${interval.rangeDisplay.split(',')[0]}`;
+    if (help) help.textContent = "Tick activities that were done but missed before the reset. Only the most recent week can be fixed — older weeks stay locked so their stars and badges are settled.";
+  } else {
+    btn.disabled = true;
+    btn.textContent = '✏️ Fix last week';
+    if (help) help.textContent = 'Available after your first week is reset.';
+  }
+}
+
+function startLastWeekEdit() {
+  const interval = getLastArchivedInterval();
+  if (!interval) return false;
+  stopExceptionMode();
+  lastWeekEditStart = interval.startDate;
+  currentViewingWeekStartDate = interval.startDate;
+  if (layoutContainer) layoutContainer.classList.add('last-week-edit');
+  setGraceDockMode(true);
+  startParentGrace();
+  renderState(true);
+  refreshLastWeekDockNote();
+  return true;
+}
+
+// Called from clearParentGrace, so every way the session ends (Done, timer,
+// profile switch, Admin open) also leaves Fix last week.
+function endLastWeekEdit() {
+  if (!lastWeekEditStart) return;
+  lastWeekEditStart = null;
+  if (layoutContainer) layoutContainer.classList.remove('last-week-edit');
+  setGraceDockMode(false);
+  currentViewingWeekStartDate = state.weekStartDate;
+  renderState(true);
+}
+
+// One tap in Fix last week (PRD §4.2). Never touches badges, claims or Mega progress.
+function handleLastWeekToggle(e) {
+  const cb = e.target;
+  const day = parseInt(cb.dataset.day);
+  const taskId = cb.dataset.task;
+  const dateStr = getDateOfColumn(lastWeekEditStart, day);
+  const key = `${dateStr}-${taskId}`;
+  const excusedVal = state.excused[key];
+  if (!isLastWeekEditCell(dateStr) || excusedVal === 'rest' || excusedVal === true) {
+    if (e.preventDefault) e.preventDefault();
+    cb.checked = !!state.grid[key];
+    return;
+  }
+
+  const isChecked = cb.checked;
+  const isBonus = excusedVal === 'bonus';
+  const taskXp = isBonus ? XP_BONUS_TASK : XP_PER_TASK;
+  const wasComplete = isDayComplete(dateStr, state);
+  state.grid[key] = isChecked;
+  const isComplete = isDayComplete(dateStr, state);
+
+  let xpGained = isChecked ? taskXp : -taskXp;
+  if (isComplete && !wasComplete) xpGained += XP_DAILY_BONUS;
+  else if (!isComplete && wasComplete) xpGained -= XP_DAILY_BONUS;
+
+  playSound(isChecked ? 'check' : 'uncheck');
+  if (isChecked) {
+    let text = isBonus ? `+${taskXp} XP (Bonus!)` : `+${taskXp} XP`;
+    if (isComplete && !wasComplete) {
+      text = isBonus ? `+${xpGained} XP Super Trainer! 🚀` : `+${xpGained} XP! 🎉`;
+      const dayCell = domCache.dayTotals[day];
+      if (dayCell) {
+        const rect = dayCell.getBoundingClientRect();
+        CelebrationEngine.triggerDailyCelebration(day, rect.left + rect.width / 2, rect.top + rect.height / 2);
+      }
+    }
+    spawnXpFloat(cb, text);
+  }
+
+  checkDayCompleted(dateStr, isComplete);
+  addXp(xpGained);
+  if (state.weeklyHistory[lastWeekEditStart]) {
+    state.weeklyHistory[lastWeekEditStart].xpEarned = calculateWeekXpEarned(lastWeekEditStart);
+  }
+  saveState();
+  renderState(false);
+  refreshLastWeekDockNote();
 }
 
 
@@ -1558,6 +1724,17 @@ export function renderState(rebuildGrid = false) {
   if (prevWeekBtn) {
     prevWeekBtn.disabled = (currentIndex <= 0);
   }
+
+  // Fix last week is tied to one week: lock navigation and say why (PRD §3.2).
+  [prevWeekBtn, nextWeekBtn].forEach(btn => {
+    if (!btn) return;
+    if (isLastWeekEditActive()) {
+      btn.disabled = true;
+      btn.title = 'Only last week can be fixed';
+    } else if (btn.title === 'Only last week can be fixed') {
+      btn.title = '';
+    }
+  });
   
   if (resetBtn) {
     const canReset = canStartNextWeek(state, currentViewingWeekStartDate);
@@ -1705,6 +1882,7 @@ export function renderState(rebuildGrid = false) {
   if (adminLockPastDaysToggle) {
     adminLockPastDaysToggle.checked = Boolean(state.lockPastDays);
   }
+  refreshFixLastWeekButton();
   if (adminTimezoneSelect) {
     adminTimezoneSelect.value = state.timezoneOffset !== undefined ? state.timezoneOffset.toString() : 'default';
   }
@@ -1787,7 +1965,7 @@ function updateActiveColumnUI() {
           const col = colStates[d];
           const isRest = cell.classList.contains('rest-cell');
           const isOutOfRange = cell.classList.contains('out-of-range-cell');
-          input.disabled = isOutOfRange || (col ? col.isCellDisabled : true) || isRest;
+          input.disabled = isOutOfRange || ((col ? col.isCellDisabled : true) && !(col && isLastWeekEditCell(col.dateStr))) || isRest;
           if (d === activeColIndex) {
             cell.classList.add('active-column');
           } else {
@@ -1928,7 +2106,7 @@ function renderGridTable() {
       const checked = !!state.grid[stateKey];
       const excused = isBonus || isRest;
       const isOutOfRange = (task.createdAt && dateStr < task.createdAt) || (task.deletedAt && dateStr >= task.deletedAt);
-      const shouldDisable = isOutOfRange || col.isCellDisabled || isRest;
+      const shouldDisable = isOutOfRange || (col.isCellDisabled && !isLastWeekEditCell(dateStr)) || isRest;
       
       let cellTitle = col.tooltip;
       if (col.state === 'SUPERSEDED') {
@@ -2189,6 +2367,10 @@ function updateDayTotalUI(day) {
 
 function handleCheckboxChange(e) {
   if (isExceptionMode) return;
+  if (isLastWeekEditActive() && currentViewingWeekStartDate === lastWeekEditStart) {
+    handleLastWeekToggle(e);
+    return;
+  }
   const cb = e.target;
   const day = parseInt(cb.dataset.day);
   const col = getColumnState(day, state, currentViewingWeekStartDate);
@@ -2731,6 +2913,21 @@ function bindExceptionModeEvents() {
         return;
       }
       requestCloseAdmin(startExceptionMode);
+    });
+  }
+  const fixLastWeekBtn = document.getElementById('admin-fix-last-week-btn');
+  if (fixLastWeekBtn) {
+    fixLastWeekBtn.addEventListener('click', () => {
+      requestCloseAdmin(() => {
+        if (adminModal) adminModal.classList.add('hidden');
+        startLastWeekEdit();
+      });
+    });
+  }
+  // Opening Admin ends Fix last week (PRD §3.3) so the grid is never left editable behind it.
+  if (adminBtn) {
+    adminBtn.addEventListener('click', () => {
+      if (isLastWeekEditActive()) clearParentGrace({ revertToToday: false });
     });
   }
   if (exceptionsDoneBtn) {

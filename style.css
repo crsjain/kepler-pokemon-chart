@@ -6857,6 +6857,48 @@ body.has-banner .mini-hud.visible {
   margin: 0;
 }
 
+/* Fix last week (docs/prd_parent_edit_last_week.md): same dock, typographic
+   coral mode label (no button affordance), one-line note, Done ✅ as sole CTA. */
+.parent-grace-dock.last-week-mode {
+  max-width: min(560px, calc(100% - 32px));
+}
+
+.parent-grace-dock.last-week-mode .parent-grace-label {
+  color: #fca5a5;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.parent-grace-sub {
+  color: #cbd5e1;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  text-align: center;
+  flex-basis: 100%;
+  order: 3;
+}
+
+.parent-grace-sub.hidden {
+  display: none;
+}
+
+.parent-grace-sub.week-complete {
+  color: #fde68a;
+}
+
+.layout-container.last-week-edit {
+  padding-bottom: 120px; /* Clear the floating dock (UX Rule 17.4) */
+}
+
+/* Editable archived cells: full opacity with the parent amber tint used by Exception Mode. */
+.layout-container.last-week-edit .weekly-grid td.checkbox-cell[data-column-state="historical"]:not(.rest-cell):not(.out-of-range-cell) {
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  background-color: #fffbeb;
+  cursor: pointer;
+}
+
 @media (max-width: 480px) {
   .parent-grace-dock {
     width: calc(100% - 24px);
