@@ -128,6 +128,7 @@ decisions that are expensive to rediscover.
 Manual/verification guides: `test_plan_pokemon_shop_evolutions.md`,
 `test_plan_rest_day_passes_and_bonus_tasks.md`,
 `test_plan_unearned_badge_and_reward_carryover.md`,
+`test_plan_badge_retraction_and_fix_last_week.md`,
 `manual_test_guide_adaptive_weeks.md`.
 
 UX rules live separately in `_agents/rules/ux-guidelines.md` (see §6.3).
