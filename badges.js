@@ -188,3 +188,20 @@ export function awardCurrentWeeklyBadge() {
     saveState();
   }
 }
+
+// Undo awardCurrentWeeklyBadge() when a pokeball is unchecked and the week no
+// longer meets every goal. Only a copy earned during the current week is
+// removed, so a badge already collected in an earlier cycle (pool refills can
+// repeat an id) is never taken away.
+export function revokeCurrentWeeklyBadge(weekStartDate) {
+  const id = state.activeWeeklyBadgeId;
+  if (!state.collectedBadges || !weekStartDate) return false;
+  const weekStartMs = new Date(weekStartDate + 'T00:00:00').getTime();
+  const index = state.collectedBadges.findIndex(b =>
+    b.id === id && new Date(b.dateEarned).getTime() >= weekStartMs
+  );
+  if (index === -1) return false;
+  state.collectedBadges.splice(index, 1);
+  console.log(`Revoked badge: ${getPokemonName(id)} (#${id})`);
+  return true;
+}

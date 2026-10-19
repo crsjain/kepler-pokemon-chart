@@ -248,7 +248,7 @@ function withParentApproval(dateStr, onApproved) {
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault, getStarsFromDates } from './vault.js';
 import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES, getStageIndexForLevel } from './pokemon_data.js';
-import { initBadgeCase, awardCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
+import { initBadgeCase, awardCurrentWeeklyBadge, revokeCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
 import { initAdmin, refreshAdminScopeChip, adminNotice, showAdminToast, setReadBackupCodeMock, requestCloseAdmin, openAdminRewardsTab, holdToConfirm, resolveHoldMs, setHoldDurationMock } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
 import { initShop, openPokemonShop, resetShopSession } from './shop.js';
@@ -3823,8 +3823,35 @@ function checkWeeklySuccess() {
   });
 }
 
+// An unchecked pokeball can drop the week back below its goals after the badge
+// was awarded. Retract the claim, the badge and the claimed-reward log entries
+// so the week can't be archived as earned on the next reset.
+function revokeWeeklySuccess() {
+  const weekStartMs = new Date(state.weekStartDate + 'T00:00:00').getTime();
+  state.weeklyClaimed = false;
+  revokeCurrentWeeklyBadge(state.weekStartDate);
+  if (Array.isArray(state.claimedRewardsHistory)) {
+    const weekNumber = state.megaWeeks + 1;
+    const megaToo = state.megaWeeks === 3;
+    state.claimedRewardsHistory = state.claimedRewardsHistory.filter(entry => {
+      const thisWeek = new Date(entry.date).getTime() >= weekStartMs;
+      if (!thisWeek) return true;
+      if (entry.type === 'weekly' && entry.weekNumber === weekNumber) return false;
+      if (megaToo && entry.type === 'mega') return false;
+      return true;
+    });
+  }
+  saveState();
+  renderProgress();
+}
+
 function checkAndTriggerWeeklySuccess() {
   const weeklySuccess = checkWeeklySuccess();
+  
+  if (!weeklySuccess && state.weeklyClaimed) {
+    revokeWeeklySuccess();
+    return;
+  }
   
   if (weeklySuccess && !state.weeklyClaimed) {
     state.weeklyClaimed = true;
@@ -4244,6 +4271,7 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     setViewingWeekStartDate: (dateStr) => { currentViewingWeekStartDate = dateStr; },
     ADMIN_PASSWORD: ADMIN_PASSWORD,
     resetWeekGrid: (carryOver) => resetWeekGrid(carryOver),
+    checkAndTriggerWeeklySuccess: () => checkAndTriggerWeeklySuccess(),
     renderBadgeCaseGrid: () => renderBadgeCaseGrid(),
     loadState: () => loadState(),
     saveState: () => saveState(),

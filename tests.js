@@ -10844,6 +10844,62 @@ async function runSuite() {
         }
       }
 
+      // 117. Unchecking a pokeball after the weekly badge was earned retracts it
+      //      (the claim, the badge-case copy, and the claimed-reward log entry).
+      {
+        console.log("Running Test Case 117: Unchecking after a weekly success retracts the badge...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const state = window.__app_state__;
+        try {
+          state.reward = 'Ice cream';
+          state.megaReward = 'Zoo trip';
+          const badgeId = state.activeWeeklyBadgeId;
+          // An older copy of the same id (pool refill) must survive the revoke.
+          state.collectedBadges = [{ id: badgeId, name: 'Old copy', dateEarned: '2020-01-01T00:00:00.000Z' }];
+          const weekKeys = [];
+          for (let d = 0; d < 7; d++) {
+            const dt = new Date(state.weekStartDate + 'T00:00:00');
+            dt.setDate(dt.getDate() + d);
+            const ds = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+            state.tasks.forEach(t => { const k = `${ds}-${t.id}`; state.grid[k] = true; weekKeys.push(k); });
+          }
+          // A fresh copy so the award actually adds this week's badge.
+          state.collectedBadges = [];
+          helpers.checkAndTriggerWeeklySuccess();
+          await sleep(30);
+          assert(state.weeklyClaimed === true, "All goals met: the week is claimed");
+          assert(state.collectedBadges.filter(b => b.id === badgeId).length === 1, "All goals met: the badge is collected");
+          assert(state.claimedRewardsHistory.some(e => e.type === 'weekly'), "All goals met: the weekly reward is logged");
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+
+          state.grid[weekKeys[weekKeys.length - 1]] = false;
+          helpers.checkAndTriggerWeeklySuccess();
+          await sleep(30);
+          assert(state.weeklyClaimed === false, "Unchecked below the goal: the claim is retracted");
+          assert(!state.collectedBadges.some(b => b.id === badgeId), "Unchecked below the goal: this week's badge is removed");
+          assert(!state.claimedRewardsHistory.some(e => e.type === 'weekly'), "Unchecked below the goal: the weekly reward log entry is removed");
+          assert(document.querySelectorAll('.notif-modal').length === 0, "Retracting shows no celebration");
+
+          // A copy earned in an earlier cycle is never taken away.
+          state.grid[weekKeys[weekKeys.length - 1]] = true;
+          state.collectedBadges = [{ id: badgeId, name: 'Old copy', dateEarned: '2020-01-01T00:00:00.000Z' }];
+          helpers.checkAndTriggerWeeklySuccess();
+          await sleep(30);
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          state.grid[weekKeys[0]] = false;
+          helpers.checkAndTriggerWeeklySuccess();
+          await sleep(30);
+          assert(state.weeklyClaimed === false && state.collectedBadges.length === 1 && state.collectedBadges[0].name === 'Old copy',
+            "A badge collected in an earlier cycle survives the retraction");
+        } finally {
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
