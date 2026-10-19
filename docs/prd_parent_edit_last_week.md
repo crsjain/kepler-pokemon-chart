@@ -33,11 +33,11 @@ A related bug (commit `ecce894`) let an early tick + untick leave the weekly bad
 ## 3. User experience
 
 ### 3.1 Entry point (parent-only)
-- **Admin › 🗓️ Settings** gets a new `.adm-setting-row`:
+- **Admin › 🗓️ Settings** gets a new `.adm-setting-row`. The copy names the exact week and says up front that only that week can be fixed, so the limit reads as a rule, not a bug (owner request, Q2):
   - Label: **Fix last week**
-  - Help: *"Tick activities that were done but missed before the week was reset. Stars and XP update; badges don't change."*
-  - Button: `#admin-fix-last-week-btn` (`adm-secondary`), label **"✏️ Fix last week"**.
-- Disabled (with the help text saying why) when there is no archived week.
+  - Help: *"Tick activities that were done but missed before the reset. Only the most recent week can be fixed — older weeks stay locked so their stars and badges are settled."*
+  - Button: `#admin-fix-last-week-btn` (`adm-secondary`), labelled with the dates: **"✏️ Fix Oct 11 – 17"** (from the archived interval's `rangeDisplay`).
+- With no archived week (a new child), the button is disabled and the help says *"Available after your first week is reset."*
 - Admin is already behind the Parent PIN, so **no second PIN prompt**.
 
 ### 3.2 Edit mode
@@ -49,7 +49,7 @@ On tap:
    - sub-label *"Stars & XP update · badges don't change"*
    - countdown timer (see §3.3)
    - **Done ✅**, the only button
-4. **Prev / Next** week buttons are disabled while editing. The mode is tied to one week.
+4. **Prev / Next** week buttons are disabled while editing, with the tooltip *"Only last week can be fixed"*. The mode is tied to one week.
 
 ### 3.3 Session lifetime
 - Runtime-only, never persisted (same rule as the grace session in `prd_parent_past_day_approval.md` §2.2).
@@ -91,6 +91,8 @@ The edit path **never** calls `checkAndTriggerWeeklySuccess`, and never touches 
 
 *Why:* at reset, the archived week has already decided the badge outcome, rolled the next badge, and moved Mega progress forward. Re-deciding it later would cascade through every week after it. If a fixed week "should" have won its badge, the parent handles the reward in real life.
 
+**Parent heads-up (pending Q3):** if a fix makes an archived week that was saved as *not won* meet every goal, the dock sub-label switches to *"Last week now meets every goal 🎉 — badges don't update; give the reward in person."* That way the parent isn't left wondering why no badge appeared.
+
 ### 4.4 XP goes to today's partner
 If the child switched partners since that week, the XP goes to the partner active now. That's acceptable: XP is a reward for the child's effort, not a record of history.
 
@@ -122,14 +124,14 @@ If the child switched partners since that week, the XP goes to the partner activ
 7. **Done ✅** → mode off, view back on the current week, past-week cells disabled again.
 8. Without edit mode, a past-week cell stays inert (regression guard for kids).
 
-## 7. Owner decisions (open)
+## 7. Owner decisions
 
-| # | Question | Recommendation |
+| # | Question | Decision |
 | :--- | :--- | :--- |
-| Q1 | Should edit mode auto-end on a timer? | **Yes, reuse `parentGraceMinutes`** (default 2 min), so a forgotten session can't leave last week open to Lyra. |
-| Q2 | Allow editing only the most recent archived week, or also older ones? | **Most recent only.** |
-| Q3 | Should a fixed week that now meets every goal award its badge after the fact? | **No, badges stay frozen** (§4.3). |
-| Q4 | Show live-tick celebrations (XP float, day-complete burst, level-up) during a fix? | **Yes**: the child sees the effort count, which is the point. |
+| Q1 | Should edit mode auto-end on a timer? | **Yes** (2026-10-19): reuse `parentGraceMinutes` (default 2 min). |
+| Q2 | Allow editing only the most recent archived week, or also older ones? | **Most recent only** (2026-10-19). The Admin copy must make the limit read as intentional (§3.1). |
+| Q3 | Should a fixed week that now meets every goal award its badge after the fact? | **Open**: risk analysis requested by owner. Recommendation: keep frozen, and tell the parent when a fix completes the week (§4.3). |
+| Q4 | Show live-tick celebrations (XP float, day-complete burst, level-up) during a fix? | **Yes** (2026-10-19). |
 
 ## 8. Rollout
 
