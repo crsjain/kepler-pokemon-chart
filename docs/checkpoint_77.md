@@ -14,7 +14,7 @@ This document contains a complete, chronological record of user requests, system
 
 ### Known Follow-ups / Nice-to-haves
 
-- [ ] **Next unshipped phase: §7 Phase 3, remove `adminPassword` from per-child state (V20).** Earliest start **2026-10-29** as written in §7. The rule itself is "Phase 2 live ≥ 7 days", which is satisfied from 2026-10-26 if the owner prefers. Before starting, re-verify the doc field in the Firebase console. Scope, the TC116 "no passcode lost" fixtures, and rollback are in §7.3–7.4.
+- [ ] **Next unshipped phase: §7 Phase 3, remove `adminPassword` from per-child state (V20).** Earliest start **2026-10-26** (owner decision R6, 2026-10-19: the full 7 days after Phase 2; no owner testing required). Before starting, re-verify the doc field in the Firebase console. Scope, the TC116 "no passcode lost" fixtures, and rollback are in §7.3–7.4.
 - [ ] **Real-Firebase check, remaining half** (carried): changing the family password signs out the kids' tablets. Steps are in PRD §6.
 - [ ] **Optional "This is a parent device" toggle** (carried): parked (PRD §6).
 - [ ] **Stale-module error on localhost** (carried).
