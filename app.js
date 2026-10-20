@@ -1594,20 +1594,13 @@ export function showCustomNotification(title, message, imageUrl = null, isMega =
   let imageHtml = '';
   if (isMega) {
     imageHtml = `<div class="notif-mega-badges-row">`;
-    const badgeIds = [];
-    for (let i = 0; i < 4; i++) {
-      const historyIndex = state.collectedBadges.length - 4 + i;
-      const badge = state.collectedBadges[historyIndex];
-      badgeIds.push(badge ? badge.id : null);
-    }
-    
-    badgeIds.forEach((id, idx) => {
+    getMegaSlotBadges().forEach(({ index: idx, id, themeClass }) => {
       if (id) {
         const imgUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
         const name = getPokemonName(id);
         imageHtml += `
           <div class="notif-badge-slot">
-            <div class="notif-badge-wrapper badge-theme-${idx + 1}">
+            <div class="notif-badge-wrapper ${themeClass}">
               <img src="${imgUrl}" class="notif-badge-img" title="${name}">
             </div>
             <span class="notif-badge-label">Week ${idx + 1}</span>
@@ -4177,6 +4170,31 @@ function checkAndTriggerWeeklySuccess(changedTaskId = null) {
   }
 }
 
+// The four Mega Milestone slots (badge id + colour theme). Single source for the
+// main-screen Mega card and the Mega Milestone pop-up, so the two always match.
+function getMegaSlotBadges() {
+  return [0, 1, 2, 3].map(index => {
+    const isUnlocked = index < state.megaWeeks || (index === state.megaWeeks && state.weeklyClaimed);
+    let id = null;
+    let name = '';
+    if (isUnlocked) {
+      if (index < state.megaWeeks) {
+        const isCurrentCollected = state.weeklyClaimed &&
+          state.collectedBadges.length > 0 &&
+          state.collectedBadges[state.collectedBadges.length - 1].id === state.activeWeeklyBadgeId;
+        const historyIndex = state.collectedBadges.length - (isCurrentCollected ? 1 : 0) - state.megaWeeks + index;
+        const badge = state.collectedBadges[historyIndex];
+        id = badge ? badge.id : null;
+        name = badge ? badge.name : '';
+      } else {
+        id = state.activeWeeklyBadgeId;
+        name = getPokemonName(id);
+      }
+    }
+    return { index, isUnlocked, id, name, themeClass: `badge-theme-${index + 1}` };
+  });
+}
+
 function renderProgress() {
   const tasks = (state.tasks || []).filter(task => isTaskActiveInWeek(task, currentViewingWeekStartDate));
   
@@ -4362,35 +4380,19 @@ function renderProgress() {
   }
 
   megaWeeksCountEl.textContent = `${state.weeklyClaimed ? Math.min(4, state.megaWeeks + 1) : state.megaWeeks}`;
-  megaSlots.forEach((slot, index) => {
-    const isUnlocked = index < state.megaWeeks || (index === state.megaWeeks && state.weeklyClaimed);
-    
-    slot.classList.remove(`badge-theme-${index + 1}`);
+  getMegaSlotBadges().forEach(({ index, isUnlocked, id: bId, name: bName, themeClass }) => {
+    const slot = megaSlots[index];
+    if (!slot) return;
+    for (let i = 1; i <= 4; i++) slot.classList.remove(`badge-theme-${i}`);
     
     if (isUnlocked) {
-      let bId;
-      let bName;
-      
-      if (index < state.megaWeeks) {
-        const isCurrentCollected = state.weeklyClaimed && 
-          state.collectedBadges.length > 0 && 
-          state.collectedBadges[state.collectedBadges.length - 1].id === state.activeWeeklyBadgeId;
-        const historyIndex = state.collectedBadges.length - (isCurrentCollected ? 1 : 0) - state.megaWeeks + index;
-        const badge = state.collectedBadges[historyIndex];
-        bId = badge ? badge.id : null;
-        bName = badge ? badge.name : '';
-      } else {
-        bId = state.activeWeeklyBadgeId;
-        bName = getPokemonName(bId);
-      }
-      
       if (bId) {
         slot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${bId}.png" alt="${bName}" class="mega-slot-img ${index === state.megaWeeks && state.weeklyClaimed ? 'animate-pop' : ''}">`;
       } else {
         slot.innerHTML = `<div class="badge-placeholder">?</div>`;
       }
       slot.classList.add('unlocked');
-      slot.classList.add(`badge-theme-${index + 1}`);
+      slot.classList.add(themeClass);
     } else {
       slot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png" alt="Locked" class="mega-slot-img locked">`;
       slot.classList.remove('unlocked');

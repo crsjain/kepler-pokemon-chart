@@ -11076,8 +11076,15 @@ async function runSuite() {
           const modal = document.querySelector('.notif-modal.mega-celebration');
           assert(modal, "Week 4 opens the Mega Milestone modal");
           const wrappers = [...modal.querySelectorAll('.notif-badge-wrapper')];
-          assert(wrappers.length === 4 && wrappers.every((w, i) => w.classList.contains(`badge-theme-${i + 1}`)),
-            "Each modal badge circle carries its week theme (badge-theme-1..4), matching the main screen");
+          const mainSlots = [...document.querySelectorAll('.mega-slot')];
+          const themeOf = el => [...el.classList].find(c => c.startsWith('badge-theme-')) || 'none';
+          const idOf = el => { const img = el.querySelector('img'); const m = img && img.src.match(/\/(\d+)\.png$/); return m ? m[1] : null; };
+          assert(wrappers.length === 4 && mainSlots.length === 4, "Four modal circles and four main-screen slots");
+          wrappers.forEach((w, i) => {
+            assert(themeOf(w) === themeOf(mainSlots[i]) && themeOf(w) !== 'none',
+              `Modal circle ${i + 1} uses the same colour theme as the main-screen slot (${themeOf(w)} vs ${themeOf(mainSlots[i])})`);
+            assert(idOf(w) === idOf(mainSlots[i]), `Modal circle ${i + 1} shows the same badge as the main-screen slot`);
+          });
           const bg = getComputedStyle(wrappers[3]).backgroundImage;
           assert(bg.includes('radial-gradient'), `Week 4 circle is themed, not plain white (got ${bg.slice(0, 40)})`);
           const megaName = modal.querySelector('.reward-box.mega .reward-box-name').textContent;
@@ -11105,6 +11112,14 @@ async function runSuite() {
           helpers.resetState();
           await sleep(30);
         }
+      }
+
+      // 120. Reward names are capped at 60 characters in the reward editor.
+      {
+        console.log("Running Test Case 120: Reward name entry boxes cap names at 60 characters...");
+        const weeklyInput = document.getElementById('new-weekly-reward-input');
+        const megaInput = document.getElementById('new-mega-reward-input');
+        assert(weeklyInput.maxLength === 60 && megaInput.maxLength === 60, "Both new-reward boxes have maxlength 60");
       }
 
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");

@@ -59,6 +59,14 @@ const addWeeklyRewardBtn = document.getElementById('add-weekly-reward-btn');
 const megaRewardsList = document.getElementById('mega-rewards-list');
 const newMegaRewardInput = document.getElementById('new-mega-reward-input');
 const addMegaRewardBtn = document.getElementById('add-mega-reward-btn');
+
+// Kid-readable cap on reward names (owner request 2026-10-20). 60 keeps every
+// built-in label (longest: 55) valid while stopping paragraph-length rewards.
+export const REWARD_NAME_MAX = 60;
+[newWeeklyRewardInput, newMegaRewardInput].forEach(input => {
+  if (input) input.maxLength = REWARD_NAME_MAX;
+});
+const clampRewardName = (raw) => String(raw || '').trim().slice(0, REWARD_NAME_MAX).trim();
 const editRewardsCancelBtn = document.getElementById('edit-rewards-cancel-btn');
 const editRewardsSaveBtn = document.getElementById('edit-rewards-save-btn');
 const rewardsEditor = document.getElementById('rewards-editor');
@@ -94,7 +102,7 @@ let draggedRewardInfo = null;
 export function bindRewardsEditorEvents() {
   if (addWeeklyRewardBtn) {
     addWeeklyRewardBtn.addEventListener('click', () => {
-      const val = newWeeklyRewardInput.value.trim();
+      const val = clampRewardName(newWeeklyRewardInput.value);
       if (val && !tempWeeklyRewards.some(r => r.value === val || r.text === val)) {
         tempWeeklyRewards.push({ value: val, text: val });
         renderEditRewardsLists();
@@ -105,7 +113,7 @@ export function bindRewardsEditorEvents() {
 
   if (addMegaRewardBtn) {
     addMegaRewardBtn.addEventListener('click', () => {
-      const val = newMegaRewardInput.value.trim();
+      const val = clampRewardName(newMegaRewardInput.value);
       if (val && !tempMegaRewards.some(r => r.value === val || r.text === val)) {
         tempMegaRewards.push({ value: val, text: val });
         renderEditRewardsLists();
@@ -471,7 +479,7 @@ function renderRewardList(container, list, type) {
     
     if (isEditing) {
       row.innerHTML = `
-        <input type="text" class="reward-edit-input" value="${escapeHtml(item.text)}" placeholder="Enter reward description...">
+        <input type="text" class="reward-edit-input" maxlength="${REWARD_NAME_MAX}" value="${escapeHtml(item.text)}" placeholder="Enter reward description...">
         <div class="reward-actions">
           <button class="pixel-btn adm-primary adm-icon-btn save-reward-edit-btn" data-type="${type}" data-index="${idx}" title="Save Changes" aria-label="Save reward name">
             <svg class="admin-btn-icon" viewBox="0 0 512 512" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -491,7 +499,7 @@ function renderRewardList(container, list, type) {
       const cancelBtn = row.querySelector('.cancel-reward-edit-btn');
       
       const performSave = () => {
-        const val = input.value.trim();
+        const val = clampRewardName(input.value);
         if (val) {
           const oldVal = list[idx].value;
           list[idx] = { value: val, text: val };
