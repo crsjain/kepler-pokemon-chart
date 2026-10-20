@@ -832,17 +832,10 @@
                 </span>
                 <button id="exceptions-btn" class="pixel-btn adm-primary" aria-describedby="admin-exceptions-help">Set Exceptions</button>
               </div>
-              <div class="admin-option-row adm-row adm-setting-row adm-setting-action">
-                <span class="adm-setting-label">
-                  <span class="adm-setting-name">Fix last week</span>
-                  <span id="admin-fix-last-week-help" class="adm-setting-help">Tick activities that were done but missed before the reset. Only the most recent week can be fixed — older weeks stay locked so their stars and badges are settled.</span>
-                </span>
-                <button id="admin-fix-last-week-btn" class="pixel-btn adm-secondary" aria-describedby="admin-fix-last-week-help">✏️ Fix last week</button>
-              </div>
               <div class="admin-option-row adm-row adm-setting-row">
                 <span class="adm-setting-label">
                   <label class="adm-setting-name" for="admin-parent-grace-select">Parent edit window</label>
-                  <span id="admin-parent-grace-help" class="adm-setting-help">How long past days stay unlocked after you enter the Parent PIN.</span>
+                  <span id="admin-parent-grace-help" class="adm-setting-help">How long past days, and Fix last week, stay unlocked for editing.</span>
                 </span>
                 <select id="admin-parent-grace-select" class="pixel-select" aria-describedby="admin-parent-grace-help">
                   <option value="1">1 min</option>
@@ -859,6 +852,13 @@
                   <input type="checkbox" id="admin-lock-past-days-toggle" aria-label="Approve past days: ask for the Parent PIN" aria-describedby="admin-lock-past-days-hint">
                   <span class="slider"></span>
                 </label>
+              </div>
+              <div class="admin-option-row adm-row adm-setting-row adm-setting-action">
+                <span class="adm-setting-label">
+                  <span class="adm-setting-name">Fix last week</span>
+                  <span id="admin-fix-last-week-help" class="adm-setting-help">Tick activities that were done but missed before the reset. Only the most recent week can be fixed — older weeks stay locked so their stars and badges are settled.</span>
+                </span>
+                <button id="admin-fix-last-week-btn" class="pixel-btn adm-secondary" aria-describedby="admin-fix-last-week-help">✏️ Fix last week</button>
               </div>
             </div>
             <div class="admin-action-group adm-card">

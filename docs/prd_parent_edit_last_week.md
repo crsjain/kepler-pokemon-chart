@@ -33,7 +33,7 @@ A related bug (commit `ecce894`) let an early tick + untick leave the weekly bad
 ## 3. User experience
 
 ### 3.1 Entry point (parent-only)
-- **Admin › 🗓️ Settings** gets a new `.adm-setting-row`. The copy names the exact week and says up front that only that week can be fixed, so the limit reads as a rule, not a bug (owner request, Q2):
+- **Admin › 🗓️ Settings** gets a new `.adm-setting-row`, placed **last** in the Tonight's Check-in card, after the current-week and past-day controls (owner request, 2026-10-20). The copy names the exact week and says up front that only that week can be fixed, so the limit reads as a rule, not a bug (owner request, Q2):
   - Label: **Fix last week**
   - Help: *"Tick activities that were done but missed before the reset. Only the most recent week can be fixed — older weeks stay locked so their stars and badges are settled."*
   - Button: `#admin-fix-last-week-btn` (`adm-secondary`), labelled with the dates: **"✏️ Fix Oct 11 – 17"** (from the archived interval's `rangeDisplay`).
