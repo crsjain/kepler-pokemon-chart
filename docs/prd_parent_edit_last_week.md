@@ -91,7 +91,7 @@ The edit path **never** calls `checkAndTriggerWeeklySuccess`, and never touches 
 
 *Why:* at reset, the archived week has already decided the badge outcome, rolled the next badge, and moved Mega progress forward. Re-deciding it later would cascade through every week after it. If a fixed week "should" have won its badge, the parent handles the reward in real life.
 
-**Parent heads-up:** if a fix makes an archived week that was saved as *not won* meet every goal, the dock sub-label switches to *"Last week now meets every goal 🎉 — badges don't update; give the reward in person."* That way the parent isn't left wondering why no badge appeared.
+**Parent heads-up:** if a fix makes an archived week that was saved as *not won* meet every goal, a parent dialog opens (**🎉 LAST WEEK NOW MEETS EVERY GOAL**, naming the reward(s) to give in person; owner 2026-10-20: the dock note alone was too easy to miss) and the dock sub-label switches to a highlighted *"Last week now meets every goal 🎉 — badges don't update; give the reward in person."* That way the parent isn't left wondering why no badge appeared.
 
 ### 4.4 XP goes to today's partner
 If the child switched partners since that week, the XP goes to the partner active now. That's acceptable: XP is a reward for the child's effort, not a record of history.

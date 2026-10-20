@@ -11025,6 +11025,18 @@ async function runSuite() {
           mathInput.click();
           await sleep(30);
           assert(sub.textContent.includes('meets every goal') && sub.textContent.includes('give the reward in person'), "The dock tells the parent the week now meets every goal");
+          const completeNotices = document.querySelectorAll('.notif-modal.last-week-complete');
+          assert(completeNotices.length === 1, "Completing an unwon week opens one parent dialog (not just the dock note)");
+          const cn = completeNotices[0].textContent;
+          assert(cn.includes('LAST WEEK NOW MEETS EVERY GOAL') && cn.includes('give') && cn.includes('in person') && cn.includes('WEEKLY REWARD'),
+            "The dialog says the week is complete, badges don't update, and names the reward to give in person");
+          assert(sub.classList.contains('week-complete'), "The dock note switches to its highlighted style");
+          completeNotices[0].remove();
+          // Another tick on an already-complete week does not repeat the dialog.
+          const extra = document.querySelector('input[data-day="0"][data-task="math"]');
+          extra.click(); await sleep(30); extra.click(); await sleep(30);
+          assert(document.querySelectorAll('.notif-modal.last-week-complete').length === 1, "Un-completing then re-completing shows the dialog again (once)");
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
           assert(frozen() === frozenBefore, "Completing the week still awards no badge");
 
           // 6. Rest cells stay inert.

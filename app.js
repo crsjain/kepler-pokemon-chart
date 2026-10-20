@@ -310,13 +310,43 @@ function archivedWeekMeetsEveryGoal(weekStart) {
   });
 }
 
-function refreshLastWeekDockNote() {
+// Was the archived week already complete at the last check? A dialog fires only
+// on the not-complete -> complete transition (owner 2026-10-20: the dock note
+// alone was too easy to miss).
+let lastWeekWasComplete = false;
+
+function refreshLastWeekDockNote({ notify = false } = {}) {
   const sub = document.getElementById('parent-grace-sub');
   if (!sub || !lastWeekEditStart) return;
   const history = state.weeklyHistory[lastWeekEditStart] || {};
   const nowComplete = !history.weeklyClaimed && archivedWeekMeetsEveryGoal(lastWeekEditStart);
   sub.textContent = nowComplete ? LAST_WEEK_SUB_COMPLETE : LAST_WEEK_SUB_DEFAULT;
   sub.classList.toggle('week-complete', nowComplete);
+  if (notify && nowComplete && !lastWeekWasComplete) showLastWeekCompleteNotice(history);
+  lastWeekWasComplete = nowComplete;
+}
+
+// Parent-facing: the fixed week now meets every goal, but badges and rewards for
+// past weeks are frozen (PRD §4.3), so the parent hands over the reward.
+function showLastWeekCompleteNotice(history) {
+  const interval = getLastArchivedInterval();
+  const range = interval ? interval.rangeDisplay.split(',')[0] : 'Last week';
+  const child = state.childName || 'your child';
+  const weekly = getRewardLabel(history.reward, state.weeklyRewardOptions);
+  const mega = history.megaWeeks === 3 ? getRewardLabel(history.megaReward, state.megaRewardOptions) : '';
+  let rewards = `<div class="notif-rewards-container">`;
+  if (mega) rewards += `<div class="reward-box mega"><div class="reward-box-header">🏆 MEGA REWARD 🏆</div><div class="reward-box-name">${mega}</div></div>`;
+  rewards += `<div class="reward-box"><div class="reward-box-header">🎁 WEEKLY REWARD 🎁</div><div class="reward-box-name">${weekly || 'Weekly reward'}</div></div></div>`;
+  showCustomNotification(
+    "🎉 LAST WEEK NOW MEETS EVERY GOAL",
+    `<p class="notif-desc">Every goal for <strong>${range}</strong> is now met. Badges and rewards for past weeks don't update in the app, so give ${child} the reward in person.</p>${rewards}`,
+    null,
+    false,
+    null,
+    'last-week-complete',
+    'Got it',
+    'info'
+  );
 }
 
 // Admin › Settings button names the exact week so "only last week" reads as a rule (PRD §3.1).
@@ -346,6 +376,7 @@ function startLastWeekEdit() {
   setGraceDockMode(true);
   startParentGrace();
   renderState(true);
+  lastWeekWasComplete = false;
   refreshLastWeekDockNote();
   return true;
 }
@@ -407,7 +438,7 @@ function handleLastWeekToggle(e) {
   }
   saveState();
   renderState(false);
-  refreshLastWeekDockNote();
+  refreshLastWeekDockNote({ notify: true });
 }
 
 

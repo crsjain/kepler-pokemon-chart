@@ -6884,7 +6884,11 @@ body.has-banner .mini-hud.visible {
 }
 
 .parent-grace-sub.week-complete {
-  color: #fde68a;
+  color: #1e293b; /* Dark charcoal on Pikachu yellow (contrast invariant) */
+  background: #ffcb05;
+  border-radius: 10px;
+  padding: 4px 10px;
+  font-weight: 700;
 }
 
 .layout-container.last-week-edit {
