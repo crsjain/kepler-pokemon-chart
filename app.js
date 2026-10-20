@@ -1607,7 +1607,7 @@ export function showCustomNotification(title, message, imageUrl = null, isMega =
         const name = getPokemonName(id);
         imageHtml += `
           <div class="notif-badge-slot">
-            <div class="notif-badge-wrapper">
+            <div class="notif-badge-wrapper badge-theme-${idx + 1}">
               <img src="${imgUrl}" class="notif-badge-img" title="${name}">
             </div>
             <span class="notif-badge-label">Week ${idx + 1}</span>
@@ -4077,6 +4077,14 @@ function showBadgeLockedAgainNotice(badgeId, changedTaskId) {
   );
 }
 
+// A reward is stored by its option value (built-in options use a short key such
+// as "Dessert Outing"); show parents and kids the label they picked from the list.
+function getRewardLabel(value, options) {
+  if (!value) return '';
+  const match = (options || []).find(opt => opt && opt.value === value);
+  return match && match.text ? match.text : value;
+}
+
 function checkAndTriggerWeeklySuccess(changedTaskId = null) {
   const weeklySuccess = checkWeeklySuccess();
   
@@ -4128,9 +4136,9 @@ function checkAndTriggerWeeklySuccess(changedTaskId = null) {
     let successMessage = `<p class="notif-desc">${state.childName || 'Trainer'} has completed all training goals for <strong>Week ${weekDisplayNum}</strong>!</p>`;
     successMessage += `<div class="notif-rewards-container">`;
     if (isMegaWeek) {
-      successMessage += `<div class="reward-box mega"><div class="reward-box-header">🏆 MEGA REWARD 🏆</div><div class="reward-box-name">${state.megaReward || 'Mega Reward'}</div></div>`;
+      successMessage += `<div class="reward-box mega"><div class="reward-box-header">🏆 MEGA REWARD 🏆</div><div class="reward-box-name">${getRewardLabel(state.megaReward, state.megaRewardOptions) || 'Mega Reward'}</div></div>`;
     }
-    successMessage += `<div class="reward-box"><div class="reward-box-header">🎁 WEEKLY REWARD 🎁</div><div class="reward-box-name">${state.reward || 'Weekly Reward'}</div></div>`;
+    successMessage += `<div class="reward-box"><div class="reward-box-header">🎁 WEEKLY REWARD 🎁</div><div class="reward-box-name">${getRewardLabel(state.reward, state.weeklyRewardOptions) || 'Weekly Reward'}</div></div>`;
     successMessage += `</div>`;
     
     showCustomNotification(

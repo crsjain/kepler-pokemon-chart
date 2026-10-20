@@ -11050,6 +11050,63 @@ async function runSuite() {
         }
       }
 
+      // 119. Mega Milestone modal: badge circles use the same week themes as the
+      //      main-screen Mega slots, and rewards show the label picked from the list.
+      {
+        console.log("Running Test Case 119: Mega Milestone modal themes badges and shows reward labels...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const state = window.__app_state__;
+        try {
+          state.megaRewardOptions = [{ value: 'Dessert Outing', text: '🍦 Sweet Victory: Special Dessert Outing!' }];
+          state.weeklyRewardOptions = [{ value: 'Parent Playtime', text: '🎮 30-Min Playing Pokémon with a Parent!' }];
+          state.megaReward = 'Dessert Outing';
+          state.reward = 'Parent Playtime';
+          state.megaWeeks = 3;
+          state.collectedBadges = [25, 133, 197].map((id, i) => ({ id, name: 'B' + i, dateEarned: '2020-01-0' + (i + 1) + 'T00:00:00.000Z' }));
+          for (let d = 0; d < 7; d++) {
+            const dt = new Date(state.weekStartDate + 'T00:00:00');
+            dt.setDate(dt.getDate() + d);
+            const ds = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+            state.tasks.forEach(t => { state.grid[`${ds}-${t.id}`] = true; });
+          }
+          helpers.checkAndTriggerWeeklySuccess();
+          await sleep(30);
+          const modal = document.querySelector('.notif-modal.mega-celebration');
+          assert(modal, "Week 4 opens the Mega Milestone modal");
+          const wrappers = [...modal.querySelectorAll('.notif-badge-wrapper')];
+          assert(wrappers.length === 4 && wrappers.every((w, i) => w.classList.contains(`badge-theme-${i + 1}`)),
+            "Each modal badge circle carries its week theme (badge-theme-1..4), matching the main screen");
+          const bg = getComputedStyle(wrappers[3]).backgroundImage;
+          assert(bg.includes('radial-gradient'), `Week 4 circle is themed, not plain white (got ${bg.slice(0, 40)})`);
+          const megaName = modal.querySelector('.reward-box.mega .reward-box-name').textContent;
+          const weeklyName = modal.querySelector('.reward-box:not(.mega) .reward-box-name').textContent;
+          assert(megaName === '🍦 Sweet Victory: Special Dessert Outing!', `Mega reward shows its list label (got "${megaName}")`);
+          assert(weeklyName === '🎮 30-Min Playing Pokémon with a Parent!', `Weekly reward shows its list label (got "${weeklyName}")`);
+
+          // A very long reward wraps inside its box: no horizontal overflow, nothing clipped.
+          const box = modal.querySelector('.reward-box.mega');
+          box.querySelector('.reward-box-name').textContent = '🏆 Grand Adventure Day: pick any museum, aquarium, or science center and we go together all afternoon with lunch!';
+          const unbreakable = modal.querySelector('.reward-box:not(.mega) .reward-box-name');
+          unbreakable.textContent = 'Supercalifragilisticexpialidocious-Unbreakable-Reward-Name-Test';
+          await sleep(20);
+          const content = modal.querySelector('.modal-content');
+          assert(content.scrollWidth <= content.clientWidth + 1, `Long reward text never overflows the modal sideways (${content.scrollWidth} > ${content.clientWidth})`);
+          [box, unbreakable.parentElement].forEach(b => {
+            const r = b.getBoundingClientRect();
+            [...b.querySelectorAll('.reward-box-name')].forEach(n => {
+              const nr = n.getBoundingClientRect();
+              assert(nr.left >= r.left - 1 && nr.right <= r.right + 1, "Reward name stays inside its box");
+            });
+          });
+        } finally {
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
