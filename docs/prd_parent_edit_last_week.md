@@ -2,7 +2,7 @@
 
 **Document**: `docs/prd_parent_edit_last_week.md`
 **Version**: 1.0.0
-**Status**: Implemented locally (TC118), not yet deployed.
+**Status**: Implemented and deployed (TC118, Checkpoint 78).
 **Authors**: crsjain & Jetski
 **Target Systems**: `app.js`, `admin.js`, `index.html`, `style.css`, `tests.js`. **No schema change** (stays V19).
 **Companion docs**: [`prd_parent_past_day_approval.md`](prd_parent_past_day_approval.md) (grace session + bottom dock this feature reuses), [`prd_column_state_machine.md`](prd_column_state_machine.md) (the `HISTORICAL` column state), [`prd_star_vault.md`](prd_star_vault.md) §3.2.1 (rest-day streak rule), [`prd_historical_weeks.md`](prd_historical_weeks.md) (week intervals and archiving), [`_agents/rules/ux-guidelines.md`](../_agents/rules/ux-guidelines.md).
@@ -137,5 +137,5 @@ If the child switched partners since that week, the XP goes to the partner activ
 
 - [x] Owner answers Q1–Q4 (2026-10-19)
 - [x] Implement + TC118, suite green, cache bump (v217, modules 10.89, style 11.00)
-- [ ] Deploy via `pokemon-session-wrapup`
+- [x] Deploy via `pokemon-session-wrapup` (2026-10-20, Checkpoint 78, cache v226)
 - [ ] **Acceptance on prod:** use Fix last week to tick Kepler's Thu 2026-10-15 Math Practice and confirm the Star Vault streak rejoins Wed 10/14 → Fri 10/16 (Sat 10/17 is a 💤 bridge day).
