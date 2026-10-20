@@ -440,9 +440,9 @@ async function runSuite() {
         // In the middle of the week without claim/rollover, canStartNextWeek should be false
         assert(window.__test_helpers__.canStartNextWeek(mockState, todayStr, true) === false, "canStartNextWeek should be false in middle of uncompleted week");
         
-        // If weeklyClaimed is true, can reset
+        // A weekly win does NOT unlock an early reset; the week stays open until it ends (owner 2026-10-20)
         mockState.weeklyClaimed = true;
-        assert(window.__test_helpers__.canStartNextWeek(mockState, todayStr, true) === true, "canStartNextWeek should be true when weekly goal claimed");
+        assert(window.__test_helpers__.canStartNextWeek(mockState, todayStr, true) === false, "canStartNextWeek stays false mid-week even after the weekly goal is claimed");
         
         // If pendingWeekStartDate has arrived, can reset
         mockState.weeklyClaimed = false;

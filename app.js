@@ -1682,7 +1682,9 @@ export function canStartNextWeek(state, viewingDateStr = null, forceCheck = fals
   nextWeekStart.setDate(currentWeekStart.getDate() + 7);
   const nextWeekStartStr = formatLocalDate(nextWeekStart);
   
-  return todayStr >= nextWeekStartStr || state.weeklyClaimed === true;
+  // A weekly win no longer unlocks an early reset (owner 2026-10-20): the week
+  // stays open until it ends, so a child can't freeze it early.
+  return todayStr >= nextWeekStartStr;
 }
 
 export function renderState(rebuildGrid = false) {
