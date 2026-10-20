@@ -11186,6 +11186,45 @@ async function runSuite() {
         }
       }
 
+      // 122. Exception Mode locks week navigation (exceptions are for the current week only).
+      {
+        console.log("Running Test Case 122: Exception Mode disables Prev/Next instead of silently exiting...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const state = window.__app_state__;
+        const layout = document.querySelector('.layout-container');
+        const prevBtn = document.getElementById('prev-week-btn');
+        const nextBtn = document.getElementById('next-week-btn');
+        try {
+          // Give the child an archived week so Prev would normally be enabled.
+          const back = new Date(state.weekStartDate + 'T00:00:00');
+          back.setDate(back.getDate() - 7);
+          const lastStart = `${back.getFullYear()}-${String(back.getMonth() + 1).padStart(2, '0')}-${String(back.getDate()).padStart(2, '0')}`;
+          state.weeklyHistory = { [lastStart]: { weekStartDay: state.weekStartDay, weeklyClaimed: false, badgeId: 7, xpEarned: 0, megaWeeks: 0 } };
+          helpers.renderState(true);
+          await sleep(30);
+          assert(!prevBtn.disabled, "Outside Exception Mode, Prev is available when a past week exists");
+
+          document.getElementById('exceptions-btn').click();
+          await sleep(30);
+          assert(layout.classList.contains('exception-mode'), "Set Exceptions enters Exception Mode");
+          assert(prevBtn.disabled && nextBtn.disabled, "Prev and Next are disabled in Exception Mode");
+          assert(prevBtn.title.includes('this week only'), `Prev says why it is locked (got "${prevBtn.title}")`);
+          prevBtn.click();
+          await sleep(30);
+          assert(layout.classList.contains('exception-mode'), "Clicking Prev does not exit Exception Mode");
+
+          document.getElementById('exceptions-done-btn').click();
+          await sleep(30);
+          assert(!layout.classList.contains('exception-mode') && !prevBtn.disabled && prevBtn.title === '', "Done restores Prev");
+        } finally {
+          if (layout.classList.contains('exception-mode')) document.getElementById('exceptions-done-btn').click();
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

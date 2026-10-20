@@ -1747,16 +1747,7 @@ export function renderState(rebuildGrid = false) {
     prevWeekBtn.disabled = (currentIndex <= 0);
   }
 
-  // Fix last week is tied to one week: lock navigation and say why (PRD §3.2).
-  [prevWeekBtn, nextWeekBtn].forEach(btn => {
-    if (!btn) return;
-    if (isLastWeekEditActive()) {
-      btn.disabled = true;
-      btn.title = 'Only last week can be fixed';
-    } else if (btn.title === 'Only last week can be fixed') {
-      btn.title = '';
-    }
-  });
+  applyWeekNavLock();
   
   if (resetBtn) {
     const canReset = canStartNextWeek(state, currentViewingWeekStartDate);
@@ -2225,6 +2216,28 @@ function isViewingPastWeek() {
   return !!(state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate));
 }
 
+// Parent modes are tied to one week, so week navigation is locked while they
+// run, with a tooltip saying why: Fix last week (PRD §3.2) and Exception Mode
+// (exceptions are for the current week only; owner 2026-10-20).
+// (Titles live inside the function: renderState runs during module init, before
+// a module-level const further down would be initialised.)
+function applyWeekNavLock() {
+  const WEEK_NAV_LOCK_TITLES = {
+    lastWeek: 'Only last week can be fixed',
+    exceptions: 'Exceptions are set for this week only. Tap Done ✅ first.'
+  };
+  const lock = isLastWeekEditActive() ? 'lastWeek' : (isExceptionMode ? 'exceptions' : null);
+  [prevWeekBtn, nextWeekBtn].forEach(btn => {
+    if (!btn) return;
+    if (lock) {
+      btn.disabled = true;
+      btn.title = WEEK_NAV_LOCK_TITLES[lock];
+    } else if (Object.values(WEEK_NAV_LOCK_TITLES).includes(btn.title)) {
+      btn.title = '';
+    }
+  });
+}
+
 function startExceptionMode() {
   if (isViewingPastWeek()) {
     adminNotice("Read-Only 🔒", "Cannot edit exceptions for past weeks.");
@@ -2234,6 +2247,7 @@ function startExceptionMode() {
   if (exceptionsBanner) {
     exceptionsBanner.classList.remove('hidden');
   }
+  applyWeekNavLock();
   if (layoutContainer) {
     layoutContainer.classList.add('exception-mode');
   }
@@ -2244,6 +2258,7 @@ function startExceptionMode() {
 }
 
 function stopExceptionMode() {
+  const wasActive = isExceptionMode;
   isExceptionMode = false;
   if (exceptionsBanner) {
     exceptionsBanner.classList.add('hidden');
@@ -2251,6 +2266,8 @@ function stopExceptionMode() {
   if (layoutContainer) {
     layoutContainer.classList.remove('exception-mode');
   }
+  // Re-render so Prev/Next get their normal enabled state back.
+  if (wasActive) renderState(false);
 }
 
 function handleGridClick(e) {
@@ -2976,6 +2993,7 @@ function bindExceptionModeEvents() {
 function bindWeekNavigationEvents() {
   if (prevWeekBtn) {
     prevWeekBtn.addEventListener('click', () => {
+      if (prevWeekBtn.disabled || isExceptionMode || isLastWeekEditActive()) return;
       const intervals = getHistoricalWeekIntervals(state, currentViewingWeekStartDate);
       if (intervals.length === 0) return;
       const currentIndex = intervals.findIndex(i => i.startDate === currentViewingWeekStartDate);
@@ -2989,6 +3007,7 @@ function bindWeekNavigationEvents() {
 
   if (nextWeekBtn) {
     nextWeekBtn.addEventListener('click', () => {
+      if (nextWeekBtn.disabled || isExceptionMode || isLastWeekEditActive()) return;
       const intervals = getHistoricalWeekIntervals(state, currentViewingWeekStartDate);
       if (intervals.length === 0) return;
       const currentIndex = intervals.findIndex(i => i.startDate === currentViewingWeekStartDate);
