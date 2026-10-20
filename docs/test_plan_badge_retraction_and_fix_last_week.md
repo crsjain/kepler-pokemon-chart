@@ -16,7 +16,7 @@
 
 - [ ] **Cache check:** DevTools › Application › Cache Storage shows `poke-chart-cache-v217`.
 - [ ] **Test child:** use a throwaway child, or export a backup code first (Admin › 💾 Data). Section 1 ticks a full week.
-- [ ] **Debug helpers (local only):** Admin › Data › **Debug sidebar** toggle. The sidebar's **Future Edits** checkbox lets you tick future days and start a new week early.
+- [ ] **Debug helpers (local only):** Admin › 💾 Data › **Advanced** › **Debug Sidebar** switch. In the sidebar, check **Future Edits** to tick future days and start a new week early. It resets on page reload, so re-check it after refreshing.
 - [ ] **Rewards chosen:** pick a Weekly and a Mega reward first, or ticking is blocked.
 
 ---
