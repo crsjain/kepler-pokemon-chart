@@ -415,7 +415,7 @@ import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault, getStarsFromDates } from './vault.js';
 import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES, getStageIndexForLevel } from './pokemon_data.js';
 import { initBadgeCase, awardCurrentWeeklyBadge, revokeCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
-import { initAdmin, refreshAdminScopeChip, adminNotice, showAdminToast, setReadBackupCodeMock, requestCloseAdmin, openAdminRewardsTab, holdToConfirm, resolveHoldMs, setHoldDurationMock } from './admin.js';
+import { initAdmin, refreshAdminScopeChip, adminNotice, showAdminToast, setReadBackupCodeMock, setCloudRestoreSlowMsMock, requestCloseAdmin, openAdminRewardsTab, holdToConfirm, resolveHoldMs, setHoldDurationMock } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
 import { initShop, openPokemonShop, resetShopSession } from './shop.js';
 import { isBackdropClick, bindBackdropDismiss } from './modal_backdrop.js';
@@ -4526,6 +4526,7 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     setImportCloudDataMock: (fn) => { importCloudDataFn = fn; },
     // Bypasses #admin-restore-dialog: fn() returns the pasted code (or null = cancel).
     setReadBackupCodeMock: (fn) => setReadBackupCodeMock(fn),
+    setCloudRestoreSlowMsMock: (ms) => setCloudRestoreSlowMsMock(ms),
     setHoldDurationMock: (ms) => setHoldDurationMock(ms),
     setWipeDataMock: (fn) => { wipeCloudDataFn = fn || wipeActiveChildProgress; },
     setReloadMock: (fn) => { reloadFn = fn || (() => location.reload()); },

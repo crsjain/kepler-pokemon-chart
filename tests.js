@@ -10729,9 +10729,26 @@ async function runSuite() {
           document.getElementById('confirm-yes-btn').click();
           await sleep(60);
           assert(imported && imported.adminPassword === '9876', `Restoring an old family code keeps the family PIN (got ${imported && imported.adminPassword})`);
+
+          // Offline: the cloud write hangs until reconnect. The parent must see a
+          // "still restoring" notice, then the success once it lands.
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          let finishRestore = null;
+          helpers.setCloudRestoreSlowMsMock(0);
+          helpers.setImportCloudDataMock(() => new Promise(resolve => { finishRestore = resolve; }));
+          document.getElementById('admin-cloud-import-btn').click();
+          await sleep(60);
+          document.getElementById('confirm-yes-btn').click();
+          await sleep(60);
+          const pendingNotice = [...document.querySelectorAll('.notif-modal')].map(n => n.textContent).join(' ');
+          assert(pendingNotice.includes('STILL RESTORING') && !pendingNotice.includes('RESTORE SUCCESS'), "A hanging cloud write shows 'STILL RESTORING', not silence");
+          finishRestore();
+          await sleep(60);
+          assert([...document.querySelectorAll('.notif-modal')].some(n => n.textContent.includes('RESTORE SUCCESS')), "When the write lands, the success notice follows");
         } finally {
           helpers.setEnsureFamilyPasscodeMock(null);
           helpers.setImportCloudDataMock(null);
+          helpers.setCloudRestoreSlowMsMock(null);
           helpers.setReadBackupCodeMock(null);
           helpers.setFamilyPasscode(null);
           helpers.setProfilesList(savedProfiles);

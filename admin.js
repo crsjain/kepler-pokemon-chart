@@ -1972,6 +1972,14 @@ function validateFamilyBackup(code) {
   return { ok: false, title: "INVALID CODE ❌", message: "This isn't a family backup code." };
 }
 
+// How long a family restore may wait on the cloud before the parent is told it is
+// still pending (offline). Test seam: setCloudRestoreSlowMsMock(ms | null).
+const CLOUD_RESTORE_SLOW_MS = 8000;
+let cloudRestoreSlowMs = CLOUD_RESTORE_SLOW_MS;
+export function setCloudRestoreSlowMsMock(ms) {
+  cloudRestoreSlowMs = typeof ms === 'number' ? ms : CLOUD_RESTORE_SLOW_MS;
+}
+
 async function importCloudState() {
   const parsed = await readBackupCode({
     title: 'Restore family from code',
@@ -1983,12 +1991,20 @@ async function importCloudState() {
     "Restore Full Cloud Backup? ⚠️",
     "Restoring completely overwrites ALL children and their progress with the backup. This can't be undone.",
     async () => {
+      // The Firestore write only settles once the server acknowledges it, so
+      // with no connection it waits silently (and finishes on reconnect). Tell
+      // the parent instead of showing nothing.
+      const slowTimer = setTimeout(() => {
+        adminNotice("STILL RESTORING ⏳", "Can't reach the cloud right now. Keep this page open: the restore finishes by itself when the connection is back, and you'll see a confirmation.");
+      }, cloudRestoreSlowMs);
       try {
         await appCallbacks.importCloudData(normalizeFamilyBackup(parsed));
+        clearTimeout(slowTimer);
         showCustomNotification("RESTORE SUCCESS", "Full family progress restored successfully!");
         const adminModalEl = document.getElementById('admin-modal');
         if (adminModalEl) adminModalEl.classList.add('hidden');
       } catch (err) {
+        clearTimeout(slowTimer);
         console.error("Cloud restore failed:", err);
         adminNotice("RESTORE ERROR ❌", "Failed to restore cloud data: " + err.message);
       }
