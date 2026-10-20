@@ -27,9 +27,28 @@ PENDING_EXIT="$AUTOSAVE_DIR/pending-exit"
 log() { echo "[run_emulator] $*"; }
 
 # Run the firebase binary directly (not through npx) so signals reach it.
-FIREBASE_BIN="$(npx --yes --package=firebase-tools -c 'command -v firebase' 2>/dev/null | tail -1)"
+#
+# The CLI version is PINNED. On 2026-10-20 the corp npm proxy started
+# resolving "latest" to firebase-tools 14.9.0, whose Firestore emulator jar
+# (v1.19.8) cannot start on the installed Java ("Enabling a Security Manager is
+# not supported"); a bare `npx` call also hung on that proxy after a cloudtop
+# restart. So: use a cached install of the pinned version if one exists,
+# otherwise fetch exactly that version from the public npm registry.
+FIREBASE_TOOLS_VERSION="${FIREBASE_TOOLS_VERSION:-15.24.0}"
+find_firebase() {
+  local d v
+  for d in "$HOME"/.npm/_npx/*/node_modules; do
+    v="$(node -p "require('$d/firebase-tools/package.json').version" 2>/dev/null)"
+    if [ "$v" = "$FIREBASE_TOOLS_VERSION" ] && [ -x "$d/.bin/firebase" ]; then
+      echo "$d/.bin/firebase"; return
+    fi
+  done
+  timeout 300 npx --yes --registry=https://registry.npmjs.org/ \
+    --package="firebase-tools@$FIREBASE_TOOLS_VERSION" -c 'command -v firebase' 2>/dev/null | tail -1
+}
+FIREBASE_BIN="$(find_firebase)"
 if [ -z "$FIREBASE_BIN" ] || [ ! -x "$FIREBASE_BIN" ]; then
-  log "Could not locate the firebase CLI via npx."
+  log "Could not locate the firebase CLI (no cached install, and npx failed or timed out)."
   exit 1
 fi
 
