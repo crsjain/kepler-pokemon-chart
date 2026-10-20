@@ -3440,28 +3440,27 @@ async function runSuite() {
         const keplerProfile = profiles.find(p => p.name.includes('Kepler'));
         const profileId = keplerProfile ? keplerProfile.id : (profiles[0] ? profiles[0].id : null);
         assert(profileId !== null, "Should have at least one profile available to test startup alert");
+        // The prompt never stacks on another dialog; clear leftovers from earlier cases (e.g. Level Up).
+        document.querySelectorAll('.modal:not(.hidden)').forEach(m => m.classList.add('hidden'));
+        document.querySelectorAll('.notif-modal').forEach(m => m.remove());
+        helpers.resetNewWeekPrompt();
         helpers.selectProfile(profileId);
         await sleep(800); // Increased wait for snapshot load
 
-        // Check if the notification modal is displayed
-        const notifModal = document.querySelector('.notif-modal');
-        assert(notifModal && !notifModal.classList.contains('hidden'), "New Week notification modal should be displayed");
-        
-        // Assert text content has the instructions
-        const notifTitle = notifModal.querySelector('h2');
-        assert(notifTitle && notifTitle.textContent === "New Week Training! 📅", "Notification title should match");
-        
-        const notifBody = notifModal.querySelector('.notif-body-text');
-        assert(notifBody && notifBody.textContent.includes("Reset Week Grid"), "Notification message should instruct to reset the grid");
+        // The week is over, so the new-week prompt opens (it replaced the old
+        // "New Week Training! 📅" notice, owner 2026-10-20).
+        const confirmModalEl = document.getElementById('confirm-modal');
+        assert(!confirmModalEl.classList.contains('hidden'), `New-week prompt should be displayed when the active week is over (open: ${[...document.querySelectorAll('.modal:not(.hidden)')].map(m => m.id || m.className).join(', ')})`);
+        assert(document.getElementById('confirm-title').textContent === "Start New Training Week? 📅", "Prompt title should match");
+        assert(confirmModalEl.textContent.includes('A new week has started!') && confirmModalEl.textContent.includes('Not Yet'),
+          "Unwon week: the prompt explains a new week started and offers Not Yet to finish last week first");
 
-        // Close the notification
-        const closeBtn = notifModal.querySelector('.notif-close-btn');
-        assert(closeBtn, "Awesome! close button should exist");
-        closeBtn.click();
+        // Not Yet keeps the old week (nothing reset) and the prompt does not repeat this session.
+        document.getElementById('confirm-no-btn').click();
         await sleep(100);
-
-        // Verify it is hidden
-        assert(notifModal.classList.contains('hidden') || !document.body.contains(notifModal), "Notification should be closed");
+        assert(confirmModalEl.classList.contains('hidden') && window.__app_state__.weekStartDate === '2026-07-27', "Not Yet closes the prompt without resetting");
+        assert(helpers.maybePromptNewWeek() === false, "The prompt is offered once per week per session");
+        helpers.resetNewWeekPrompt();
 
         // Restore Date
         window.Date = OriginalDate;
@@ -11120,6 +11119,59 @@ async function runSuite() {
         const weeklyInput = document.getElementById('new-weekly-reward-input');
         const megaInput = document.getElementById('new-mega-reward-input');
         assert(weeklyInput.maxLength === 60 && megaInput.maxLength === 60, "Both new-reward boxes have maxlength 60");
+      }
+
+      // 121. "Start New Training Week?" never follows a weekly win; it appears only
+      //      once the active week is over (owner 2026-10-20).
+      {
+        console.log("Running Test Case 121: New-week prompt only after the week ends, never right after a win...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const state = window.__app_state__;
+        const confirmEl = document.getElementById('confirm-modal');
+        try {
+          helpers.resetNewWeekPrompt();
+          state.reward = 'Ice cream';
+          state.megaReward = 'Zoo trip';
+          for (let d = 0; d < 7; d++) {
+            const dt = new Date(state.weekStartDate + 'T00:00:00');
+            dt.setDate(dt.getDate() + d);
+            const ds = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+            state.tasks.forEach(t => { state.grid[`${ds}-${t.id}`] = true; });
+          }
+          helpers.checkAndTriggerWeeklySuccess();
+          await sleep(30);
+          const success = document.querySelector('.notif-modal');
+          assert(success && success.textContent.includes('WEEKLY SUCCESS'), "A weekly win shows the success notice");
+          success.querySelector('.notif-close-btn').click();
+          await sleep(60);
+          assert(confirmEl.classList.contains('hidden'), "Closing the success notice does NOT open 'Start New Training Week?'");
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          assert(helpers.maybePromptNewWeek() === false && confirmEl.classList.contains('hidden'), "Mid-week (even after a win) the new-week prompt stays away");
+
+          // Once the next week has begun, the prompt appears; a won 4th week offers the new Mega cycle.
+          const back = new Date(state.weekStartDate + 'T00:00:00');
+          back.setDate(back.getDate() - 7);
+          state.weekStartDate = `${back.getFullYear()}-${String(back.getMonth() + 1).padStart(2, '0')}-${String(back.getDate()).padStart(2, '0')}`;
+          state.weeklyClaimed = true;
+          state.megaWeeks = 3;
+          // Leftover dialogs from earlier cases (e.g. Level Up) would block it: the prompt never stacks.
+          document.querySelectorAll('.modal:not(.hidden)').forEach(m => m.classList.add('hidden'));
+          const openBefore = [...document.querySelectorAll('.modal:not(.hidden)')].map(m => m.id || m.className).join(', ');
+          const prompted = helpers.maybePromptNewWeek();
+          assert(prompted === true && !confirmEl.classList.contains('hidden'), `After the week ends the prompt opens (week ${state.weekStartDate}, pending ${state.pendingWeekStartDate}, open: ${openBefore})`);
+          assert(document.getElementById('confirm-title').textContent === 'Start New Mega Cycle? 👑', "A won 4th week offers the new Mega cycle");
+          document.getElementById('confirm-no-btn').click();
+          await sleep(30);
+          assert(helpers.maybePromptNewWeek() === false, "Not Yet: no repeat prompt this session");
+        } finally {
+          helpers.resetNewWeekPrompt();
+          confirmEl.classList.add('hidden');
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetState();
+          await sleep(30);
+        }
       }
 
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");

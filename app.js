@@ -1284,13 +1284,9 @@ function selectProfile(profileId) {
           }
         }
         
-        // Notify if today belongs to a later week than the grid week start
-        if (state.weekStartDate && currentRealWeekStart > state.weekStartDate) {
-          showCustomNotification(
-            "New Week Training! 📅",
-            `You are looking at last week's grid!<br><br>🌟 <b>Did you finish tasks last week?</b> Mark them complete now to get your stars!<br><br>🚀 <b>Ready for a new week?</b> Scroll down and click <b>Reset Week Grid</b> to start your brand new week of training! Let's go!`
-          );
-        }
+        // The week is over: offer to start the new one (owner 2026-10-20: never
+        // straight after a weekly win, only once the next week has begun).
+        maybePromptNewWeek();
       }
       
       // Update Trainer Names in UI
@@ -4070,6 +4066,66 @@ function showBadgeLockedAgainNotice(badgeId, changedTaskId) {
   );
 }
 
+/* ============================================================
+   New-week prompt (owner 2026-10-20)
+   "Start New Training Week?" appears only once the active week
+   is over (today on/after the next week's start, or a pending
+   start-day shift), never right after a weekly win. Shown at
+   profile load and re-checked while the app stays open, so a
+   tablet left on overnight asks the next morning. One prompt
+   per week per session; "Not Yet" leaves the Reset button.
+   ============================================================ */
+let newWeekPromptedFor = null;
+
+function isNewWeekDue() {
+  if (!state || !state.weekStartDate) return false;
+  const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
+  if (state.pendingWeekStartDate) return todayStr >= state.pendingWeekStartDate;
+  const next = new Date(state.weekStartDate + 'T00:00:00');
+  next.setDate(next.getDate() + 7);
+  return todayStr >= formatLocalDate(next);
+}
+
+function maybePromptNewWeek() {
+  if (!isNewWeekDue()) return false;
+  const promptKey = `${activeProfileId || ''}:${state.weekStartDate}`;
+  if (newWeekPromptedFor === promptKey) return false;
+  // Never stack on another dialog or interrupt a parent mode; the periodic
+  // check tries again once the screen is clear.
+  if (document.querySelector('.modal:not(.hidden)') || isExceptionMode || isLastWeekEditActive()) return false;
+  newWeekPromptedFor = promptKey;
+
+  const claimed = !!state.weeklyClaimed;
+  const isMega = claimed && state.megaWeeks === 3;
+  const nextWeekNum = claimed ? (isMega ? 1 : state.megaWeeks + 2) : state.megaWeeks + 1;
+  const label = isMega ? '👑 MEGA MILESTONE' : (claimed ? '🎉 NEW WEEK CYCLE' : '📅 NEW WEEK');
+  const main = isMega ? 'Begin New Mega Cycle' : (claimed ? `Start Week ${nextWeekNum}` : 'A new week has started!');
+  const sub = isMega
+    ? 'Loop back to Week 1 and start working towards your NEXT Mega Milestone!'
+    : (claimed
+      ? `Last week is saved with its badge. Reset the grid and begin Week ${nextWeekNum} of training.`
+      : 'Missed a check last week? Tap Not Yet and finish it first. Your badge and reward carry over to the new week.');
+  showCustomConfirm(
+    isMega ? "Start New Mega Cycle? 👑" : "Start New Training Week? 📅",
+    `<div class="confirm-detail"><div class="schedule-hero-card ${isMega ? 'future' : ''}"><div class="schedule-hero-label">${label}</div><div class="schedule-hero-main">${main}</div><div class="schedule-hero-sub">${sub}</div></div></div>`,
+    (carryOver) => { resetWeekGrid(carryOver); },
+    null,
+    "Let's Go! 🚀",
+    "Not Yet",
+    "pixel-btn info",
+    "pixel-btn",
+    { showCheckbox: true, checkboxLabel: "Carry over exceptions", checkboxDefaultChecked: true }
+  );
+  return true;
+}
+
+if (!location.search.includes('runTests=true') && !location.search.includes('runMigrationTest=true')) {
+  setInterval(() => { if (activeProfileId) maybePromptNewWeek(); }, 60 * 1000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && activeProfileId) maybePromptNewWeek();
+  });
+}
+
 // A reward is stored by its option value (built-in options use a short key such
 // as "Dessert Outing"); show parents and kids the label they picked from the list.
 function getRewardLabel(value, options) {
@@ -4140,32 +4196,9 @@ function checkAndTriggerWeeklySuccess(changedTaskId = null) {
       isMegaWeek 
         ? null 
         : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${state.activeWeeklyBadgeId}.png`,
-      isMegaWeek,
-      () => {
-        const nextWeekNum = weekDisplayNum === 4 ? 1 : weekDisplayNum + 1;
-        const celebConfirmHtml = `
-          <div class="confirm-detail">
-            <div class="schedule-hero-card ${isMegaWeek ? 'future' : ''}">
-              <div class="schedule-hero-label">${isMegaWeek ? '👑 MEGA MILESTONE' : '🎉 NEW WEEK CYCLE'}</div>
-              <div class="schedule-hero-main">${isMegaWeek ? 'Begin New Mega Cycle' : 'Start Week ' + nextWeekNum}</div>
-              <div class="schedule-hero-sub">${isMegaWeek ? 'Loop back to Week 1 and start working towards your NEXT Mega Milestone!' : 'Reset the grid and advance to Week ' + nextWeekNum + ' of training.'}</div>
-            </div>
-          </div>
-        `;
-        showCustomConfirm(
-          isMegaWeek ? "Start New Mega Cycle? 👑" : "Start New Training Week? 📅",
-          celebConfirmHtml,
-          (carryOver) => {
-            resetWeekGrid(carryOver);
-          },
-          null,
-          "Let's Go! 🚀",
-          "Not Yet",
-          "pixel-btn info",
-          "pixel-btn",
-          { showCheckbox: true, checkboxLabel: "Carry over exceptions", checkboxDefaultChecked: true }
-        );
-      }
+      isMegaWeek
+      // No "Start New Training Week?" here: a child could tap Let's Go and freeze
+      // the week early. maybePromptNewWeek() offers it once the next week begins.
     );
   }
 }
@@ -4514,6 +4547,8 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     ADMIN_PASSWORD: ADMIN_PASSWORD,
     resetWeekGrid: (carryOver) => resetWeekGrid(carryOver),
     checkAndTriggerWeeklySuccess: () => checkAndTriggerWeeklySuccess(),
+    maybePromptNewWeek: () => maybePromptNewWeek(),
+    resetNewWeekPrompt: () => { newWeekPromptedFor = null; },
     renderBadgeCaseGrid: () => renderBadgeCaseGrid(),
     loadState: () => loadState(),
     saveState: () => saveState(),
