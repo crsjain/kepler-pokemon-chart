@@ -306,7 +306,7 @@ function archivedWeekMeetsEveryGoal(weekStart) {
     for (let d = 0; d < 7; d++) {
       if (state.grid[`${getDateOfColumn(weekStart, d)}-${task.id}`]) checked++;
     }
-    return checked >= getTaskRequiredDays(task.id);
+    return checked >= getTaskRequiredDays(task.id, weekStart);
   });
 }
 
@@ -2093,7 +2093,7 @@ function renderGridTable() {
     row.className = 'task-row';
     row.dataset.task = task.id;
     
-    const reqDays = getTaskRequiredDays(task.id);
+    const reqDays = getTaskRequiredDays(task.id, currentViewingWeekStartDate);
     const taskName = task.name || 'Unknown';
     const emoji = task.emoji || '📝';
     
@@ -4321,7 +4321,7 @@ function renderProgress() {
 
     const totalCell = domCache.taskTotals[task.id];
     if (totalCell) {
-      const required = getTaskRequiredDays(task.id);
+      const required = getTaskRequiredDays(task.id, currentViewingWeekStartDate);
       totalCell.textContent = `${taskTotals[task.id]} / ${required}`;
       
       if (taskTotals[task.id] >= required) {
@@ -4600,6 +4600,7 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     resetWeekGrid: (carryOver) => resetWeekGrid(carryOver),
     checkAndTriggerWeeklySuccess: () => checkAndTriggerWeeklySuccess(),
     maybePromptNewWeek: () => maybePromptNewWeek(),
+    archivedWeekMeetsEveryGoal: (weekStart) => archivedWeekMeetsEveryGoal(weekStart),
     resetNewWeekPrompt: () => { newWeekPromptedFor = null; },
     renderBadgeCaseGrid: () => renderBadgeCaseGrid(),
     loadState: () => loadState(),

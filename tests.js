@@ -11019,6 +11019,11 @@ async function runSuite() {
           // 5. A fix that makes an unwon week meet every goal tells the parent, without awarding anything.
           for (let d = 0; d < 7; d++) state.tasks.forEach(t => { state.grid[`${addDays(lastStart, d)}-${t.id}`] = true; });
           state.grid[`${thu}-math`] = false;
+          // Regression (2026-10-20): goals for last week must use LAST week's exceptions.
+          // Excusing math all of the CURRENT week must not make last week look complete.
+          for (let d = 0; d < 7; d++) state.excused[`${addDays(curStart, d)}-math`] = 'rest';
+          assert(helpers.archivedWeekMeetsEveryGoal(lastStart) === false, "Current-week exceptions don't lower last week's goals");
+          for (let d = 0; d < 7; d++) delete state.excused[`${addDays(curStart, d)}-math`];
           helpers.renderState(true);
           await sleep(30);
           mathInput = document.querySelector('input[data-day="4"][data-task="math"]');

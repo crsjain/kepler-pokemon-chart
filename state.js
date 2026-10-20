@@ -830,13 +830,16 @@ function expandBadgePool() {
   saveState();
 }
 
-export function getTaskRequiredDays(taskId) {
-  if (!state.weekStartDate) return 7;
+// Required days for a task in a given week (default: the current week). Rest/bonus
+// exceptions and out-of-range days come from THAT week, so past weeks are judged
+// by their own exceptions, not the current week's.
+export function getTaskRequiredDays(taskId, weekStartDate = state.weekStartDate) {
+  if (!weekStartDate) return 7;
   const task = state.tasks.find(t => t.id === taskId);
   if (!task) return 7;
   
   const excusedCount = DAYS.filter(day => {
-    const dateStr = getDateOfColumn(state.weekStartDate, day);
+    const dateStr = getDateOfColumn(weekStartDate, day);
     const isExcused = !!state.excused[`${dateStr}-${taskId}`];
     const isOutOfRange = (task.createdAt && dateStr < task.createdAt) || (task.deletedAt && dateStr >= task.deletedAt);
     return isExcused || isOutOfRange;
