@@ -99,12 +99,28 @@ let currentViewingWeekStartDate = null;
 
 const APP_VERSION = 'v1.8.0 (v58)';
 
+// The debug "Future Edits" switch is remembered per device on the LOCAL test site
+// only (owner 2026-10-21). On the live site it still resets on every reload, so
+// it can never get stuck on for the kids.
+const FUTURE_EDITS_STORAGE_KEY = 'kpc_debug_future_edits';
+function isFutureEditsRemembered() {
+  if (!useEmulator) return false;
+  try { return localStorage.getItem(FUTURE_EDITS_STORAGE_KEY) === '1'; } catch (e) { return false; }
+}
+function rememberFutureEdits(on) {
+  if (!useEmulator) return;
+  try {
+    if (on) localStorage.setItem(FUTURE_EDITS_STORAGE_KEY, '1');
+    else localStorage.removeItem(FUTURE_EDITS_STORAGE_KEY);
+  } catch (e) { /* storage unavailable: behaves like the live site */ }
+}
+
 function areFutureEditsAllowed() {
   if (window.__mock_allow_future_edits__ !== undefined) {
     return window.__mock_allow_future_edits__;
   }
   const isTestMode = location.search.includes('runTests=true');
-  return isTestMode;
+  return isTestMode || isFutureEditsRemembered();
 }
 
 let idleTimer = null;
@@ -675,7 +691,9 @@ function initEnvBanner() {
   if (!banner) return;
 
   if (useEmulator) {
-    banner.textContent = "🔌 Running in Emulator Mode. Do not use with production credentials.";
+    // Make a remembered Future Edits switch impossible to forget.
+    const futureNote = (areFutureEditsAllowed() && !location.search.includes('runTests=true')) ? ' · 🧪 Future Edits ON' : '';
+    banner.textContent = "🔌 Running in Emulator Mode. Do not use with production credentials." + futureNote;
     banner.className = "emulator-banner";
     document.body.classList.add('has-banner');
   } else if (useStaging) {
@@ -3202,6 +3220,8 @@ function bindDebugTestEvents() {
   if (debugAllowFutureEditsCheckbox) {
     debugAllowFutureEditsCheckbox.addEventListener('change', () => {
       window.__mock_allow_future_edits__ = debugAllowFutureEditsCheckbox.checked;
+      rememberFutureEdits(debugAllowFutureEditsCheckbox.checked);
+      initEnvBanner();
       renderState(true);
     });
   }
@@ -4600,6 +4620,8 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     resetWeekGrid: (carryOver) => resetWeekGrid(carryOver),
     checkAndTriggerWeeklySuccess: () => checkAndTriggerWeeklySuccess(),
     maybePromptNewWeek: () => maybePromptNewWeek(),
+    isFutureEditsRemembered: () => isFutureEditsRemembered(),
+    isLocalTestSite: () => !!useEmulator,
     archivedWeekMeetsEveryGoal: (weekStart) => archivedWeekMeetsEveryGoal(weekStart),
     resetNewWeekPrompt: () => { newWeekPromptedFor = null; },
     renderBadgeCaseGrid: () => renderBadgeCaseGrid(),

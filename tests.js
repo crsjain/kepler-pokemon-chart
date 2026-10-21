@@ -11230,6 +11230,36 @@ async function runSuite() {
         }
       }
 
+      // 123. Future Edits is remembered per device on the local test site only.
+      {
+        console.log("Running Test Case 123: Future Edits switch survives reloads on the local test site only...");
+        const helpers = window.__test_helpers__;
+        const cb = document.getElementById('debug-allow-future-edits');
+        const saved = window.__mock_allow_future_edits__;
+        try {
+          localStorage.removeItem('kpc_debug_future_edits');
+          cb.checked = true;
+          cb.dispatchEvent(new Event('change'));
+          await sleep(20);
+          const local = helpers.isLocalTestSite();
+          assert(helpers.isFutureEditsRemembered() === local,
+            `Turning it on is remembered only on the local test site (local=${local}, remembered=${helpers.isFutureEditsRemembered()})`);
+          if (local) {
+            const banner = document.getElementById('env-banner');
+            assert(banner && banner.textContent.includes('Emulator'), "The local site shows its emulator banner");
+          }
+          cb.checked = false;
+          cb.dispatchEvent(new Event('change'));
+          await sleep(20);
+          assert(helpers.isFutureEditsRemembered() === false && localStorage.getItem('kpc_debug_future_edits') === null, "Turning it off forgets it");
+        } finally {
+          localStorage.removeItem('kpc_debug_future_edits');
+          window.__mock_allow_future_edits__ = saved;
+          helpers.renderState(true);
+          await sleep(20);
+        }
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {
