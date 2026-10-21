@@ -11260,6 +11260,75 @@ async function runSuite() {
         }
       }
 
+      // 124. Parent edits that complete a week award the badge (never revoke), and a
+      //      past week whose goals are met after the fact shows "✅ Goal completed!"
+      //      with a star badge — but never for an all-rest week (owner 2026-10-21).
+      {
+        console.log("Running Test Case 124: Exception Mode completion awards the badge; past 'Goal completed' star; all-rest weeks excluded...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const state = window.__app_state__;
+        const fmt = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+        const addDays = (s0, n) => { const d = new Date(s0 + 'T00:00:00'); d.setDate(d.getDate() + n); return fmt(d); };
+        const layout = document.querySelector('.layout-container');
+        try {
+          state.reward = 'Ice cream';
+          state.megaReward = 'Zoo trip';
+          const cur = state.weekStartDate;
+          for (let d = 0; d < 7; d++) state.tasks.forEach(t => { state.grid[`${addDays(cur, d)}-${t.id}`] = true; });
+          const shortKey = `${addDays(cur, 0)}-piano`;
+          state.grid[shortKey] = false;
+          helpers.renderState(true);
+          await sleep(30);
+          assert(state.weeklyClaimed === false, "One activity short: the week is not won yet");
+
+          // 1. Exception Mode: marking the missing day ✨ completes the week -> badge awarded now.
+          document.getElementById('exceptions-btn').click();
+          await sleep(30);
+          document.querySelector('input[data-day="0"][data-task="piano"]').closest('td.checkbox-cell').click();
+          await sleep(40);
+          assert(state.excused[shortKey] === 'bonus', "The cell became a bonus task");
+          assert(state.weeklyClaimed === true && state.collectedBadges.some(b => b.id === state.activeWeeklyBadgeId), "Completing the week in Exception Mode awards the badge immediately");
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+
+          // 2. Parent edits never revoke: cycling back to Required (still unticked) keeps the badge.
+          document.querySelector('input[data-day="0"][data-task="piano"]').closest('td.checkbox-cell').click(); // bonus -> rest
+          await sleep(20);
+          document.querySelector('input[data-day="0"][data-task="piano"]').closest('td.checkbox-cell').click(); // rest -> required
+          await sleep(30);
+          assert(state.excused[shortKey] === undefined && state.weeklyClaimed === true, "Exception Mode never takes an earned badge back");
+          assert(!document.querySelector('.notif-modal.badge-locked-again'), "No 'BADGE LOCKED AGAIN' from a parent edit");
+          document.getElementById('exceptions-done-btn').click();
+          await sleep(20);
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+
+          // 3. Past week: unwon but every goal met -> star badge + "✅ Goal completed!".
+          const lastStart = addDays(cur, -7);
+          state.weeklyHistory = { [lastStart]: { weekStartDay: state.weekStartDay, weeklyClaimed: false, badgeId: 7, xpEarned: 0, megaWeeks: 1 } };
+          for (let d = 0; d < 7; d++) state.tasks.forEach(t => { state.grid[`${addDays(lastStart, d)}-${t.id}`] = true; });
+          helpers.setViewingWeekStartDate(lastStart);
+          helpers.renderState(true);
+          await sleep(30);
+          const slot = document.getElementById('weekly-badge-slot');
+          assert(document.getElementById('badge-status').textContent === '✅ Goal completed!', `Badge status reads "✅ Goal completed!" (got "${document.getElementById('badge-status').textContent}")`);
+          assert(slot.querySelector('.goal-completed-star svg') && slot.classList.contains('badge-theme-2') && !slot.querySelector('img'),
+            "The slot shows a generic star on the week's colour theme, not a Pokémon");
+
+          // 4. An all-rest past week never counts as completed.
+          for (let d = 0; d < 7; d++) state.tasks.forEach(t => { const k = `${addDays(lastStart, d)}-${t.id}`; state.grid[k] = false; state.excused[k] = 'rest'; });
+          assert(helpers.archivedWeekMeetsEveryGoal(lastStart) === false, "An all-rest week is never 'Goal completed'");
+          helpers.renderState(true);
+          await sleep(30);
+          assert(document.getElementById('badge-status').textContent !== '✅ Goal completed!', "All-rest week keeps its normal badge text");
+        } finally {
+          if (layout.classList.contains('exception-mode')) document.getElementById('exceptions-done-btn').click();
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

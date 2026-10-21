@@ -3714,6 +3714,21 @@ input:checked + .slider:before {
   filter: grayscale(1) opacity(0.5);
 }
 
+/* Past week whose goals were all met after the fact: a generic star badge on the
+   week's colour theme (badge-theme-N), so it reads as "goals met", not a Pokémon. */
+.goal-completed-star {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+.goal-completed-star .earned-star-svg {
+  width: 60%;
+  height: 60%;
+  filter: drop-shadow(0 2px 0 rgba(15, 23, 42, 0.35));
+}
+
 /* Evolution Celebration Large Sprite */
 .evolution-celebration .notif-img {
   max-height: 180px;

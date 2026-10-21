@@ -91,6 +91,8 @@ The edit path **never** calls `checkAndTriggerWeeklySuccess`, and never touches 
 
 *Why:* at reset, the archived week has already decided the badge outcome, rolled the next badge, and moved Mega progress forward. Re-deciding it later would cascade through every week after it. If a fixed week "should" have won its badge, the parent handles the reward in real life.
 
+**Past-week badge panel (2026-10-21):** any archived week that was *not won* but now meets every goal (via Fix last week or otherwise) shows a generic star on the week's colour theme and **"✅ Goal completed!"** instead of "The Pokémon Fled!". No badge is awarded. All-rest weeks (nothing required, nothing ticked) never count. Going forward, Exception Mode and saving Activities can also complete the *current* week and award its badge at that moment; parent edits never revoke one.
+
 **Parent heads-up:** if a fix makes an archived week that was saved as *not won* meet every goal, a parent dialog opens (**🎉 LAST WEEK NOW MEETS EVERY GOAL**, naming the reward(s) to give in person; owner 2026-10-20: the dock note alone was too easy to miss) and the dock sub-label switches to a highlighted *"Last week now meets every goal 🎉 — badges don't update; give the reward in person."* That way the parent isn't left wondering why no badge appeared.
 
 ### 4.4 XP goes to today's partner

@@ -316,14 +316,7 @@ function setGraceDockMode(lastWeek) {
 
 // Did every goal get met in the archived week? Mirrors checkWeeklySuccess for a past interval.
 function archivedWeekMeetsEveryGoal(weekStart) {
-  const tasks = (state.tasks || []).filter(task => isTaskActiveInWeek(task, weekStart));
-  return tasks.length > 0 && tasks.every(task => {
-    let checked = 0;
-    for (let d = 0; d < 7; d++) {
-      if (state.grid[`${getDateOfColumn(weekStart, d)}-${task.id}`]) checked++;
-    }
-    return checked >= getTaskRequiredDays(task.id, weekStart);
-  });
+  return weekMeetsEveryGoal(weekStart, (state.tasks || []).filter(task => isTaskActiveInWeek(task, weekStart)));
 }
 
 // Was the archived week already complete at the last check? A dialog fires only
@@ -1423,7 +1416,9 @@ initAdmin({
     const profile = activeProfileId ? profilesList.find(p => p.id === activeProfileId) : null;
     return profile && profile.name ? profile.name : null;
   },
-  openAddChild: () => openAddProfileSheet(true)
+  openAddChild: () => openAddProfileSheet(true),
+  // Saving Activities (e.g. deleting the only activity still short) can complete the week.
+  recheckWeeklyGoals: () => checkAndTriggerWeeklySuccess(null, { allowRevoke: false })
 });
 initRewardsAdmin({
   getProfilesList: () => profilesList,
@@ -2332,6 +2327,10 @@ function handleGridClick(e) {
   
   // Update overall progress
   renderProgress();
+
+  // Marking the last missing day 💤/✨ can complete the week: award the badge now
+  // instead of leaving the week unwon (owner 2026-10-21).
+  checkAndTriggerWeeklySuccess(taskId, { allowRevoke: false });
 }
 
 function updateCellUI(cell, key) {
@@ -4075,16 +4074,28 @@ function addXp(amount, { quiet = false } = {}) {
   }
 }
 
-function checkWeeklySuccess() {
-  const tasks = state.tasks || [];
-  return tasks.length > 0 && tasks.every(task => {
+// Does a week meet every goal? Shared by the live weekly win and past-week checks.
+// A week where nothing was required and nothing was ticked (all rest, e.g. a
+// vacation) never counts (owner 2026-10-21).
+function weekMeetsEveryGoal(weekStart, tasks) {
+  if (!weekStart || !tasks || tasks.length === 0) return false;
+  let totalRequired = 0;
+  let anyChecked = false;
+  const allMet = tasks.every(task => {
     let checkedDays = 0;
     for (let d = 0; d < 7; d++) {
-      const dateStr = getDateOfColumn(state.weekStartDate, d);
-      if (state.grid[`${dateStr}-${task.id}`]) checkedDays++;
+      if (state.grid[`${getDateOfColumn(weekStart, d)}-${task.id}`]) checkedDays++;
     }
-    return checkedDays >= getTaskRequiredDays(task.id);
+    const required = getTaskRequiredDays(task.id, weekStart);
+    totalRequired += required;
+    if (checkedDays > 0) anyChecked = true;
+    return checkedDays >= required;
   });
+  return allMet && (totalRequired > 0 || anyChecked);
+}
+
+function checkWeeklySuccess() {
+  return weekMeetsEveryGoal(state.weekStartDate, state.tasks || []);
 }
 
 // An unchecked pokeball can drop the week back below its goals after the badge
@@ -4206,10 +4217,13 @@ function getRewardLabel(value, options) {
   return match && match.text ? match.text : value;
 }
 
-function checkAndTriggerWeeklySuccess(changedTaskId = null) {
+// allowRevoke: false for parent edits (Exception Mode, saving Activities). They can
+// complete a week and award its badge, but never take an earned badge back; only
+// unticking a pokeball does that (owner 2026-10-21).
+function checkAndTriggerWeeklySuccess(changedTaskId = null, { allowRevoke = true } = {}) {
   const weeklySuccess = checkWeeklySuccess();
   
-  if (!weeklySuccess && state.weeklyClaimed) {
+  if (!weeklySuccess && state.weeklyClaimed && allowRevoke) {
     revokeWeeklySuccess(changedTaskId);
     return;
   }
@@ -4408,7 +4422,19 @@ function renderProgress() {
 
   if (isPastWeek) {
     rewardSelectContainer.classList.remove('earned');
-    if (isClaimed && badgeId) {
+    const historyForTheme = state.weeklyHistory[currentViewingWeekStartDate];
+    if (!isClaimed && archivedWeekMeetsEveryGoal(currentViewingWeekStartDate)) {
+      // Not won at the time, but every goal is met now (e.g. via Fix last week):
+      // a badge-style star on the week's colour instead of "The Pokémon Fled!"
+      // (owner 2026-10-21). No badge is awarded retroactively.
+      weeklyBadgeSlot.innerHTML = `<div class="goal-completed-star" role="img" aria-label="Goal completed">${EARNED_STAR_HTML}</div>`;
+      badgeStatusEl.textContent = '✅ Goal completed!';
+      badgeStatusEl.title = 'Every goal was met after the week ended. No badge was awarded for this week.';
+      weeklyBadgeSlot.classList.remove('locked');
+      weeklyBadgeSlot.classList.add('unlocked');
+      const goalThemeIndex = (historyForTheme && historyForTheme.megaWeeks !== undefined) ? historyForTheme.megaWeeks + 1 : (state.megaWeeks + 1);
+      weeklyBadgeSlot.classList.add(`badge-theme-${Math.min(4, Math.max(1, goalThemeIndex))}`);
+    } else if (isClaimed && badgeId) {
       const badgeName = getPokemonName(badgeId);
       weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="${badgeName}" class="mega-slot-img">`;
       badgeStatusEl.textContent = `🏆 ${badgeName} Badge Earned!`;

@@ -1860,6 +1860,7 @@ function saveAdminTasks() {
   renderState(true);
   renderAdminTasksList();
   showAdminToast("Activities Saved ✨", "Activities saved successfully!");
+  if (typeof appCallbacks.recheckWeeklyGoals === 'function') appCallbacks.recheckWeeklyGoals();
   return true;
 }
 
