@@ -1418,7 +1418,13 @@ initAdmin({
   },
   openAddChild: () => openAddProfileSheet(true),
   // Saving Activities (e.g. deleting the only activity still short) can complete the week.
-  recheckWeeklyGoals: () => checkAndTriggerWeeklySuccess(null, { allowRevoke: false })
+  recheckWeeklyGoals: () => checkAndTriggerWeeklySuccess(),
+  // Would the just-applied Activities change take back this week's badge? Returns
+  // { badgeName, shortTasks: [{ name, needed }] } or null (owner 2026-10-21, D2).
+  describeWeeklyBadgeLoss: () => {
+    if (!state.weeklyClaimed || checkWeeklySuccess()) return null;
+    return { badgeName: getPokemonName(state.activeWeeklyBadgeId), shortTasks: getShortTasksThisWeek().map(({ task, needed }) => ({ name: task.name, needed })) };
+  }
 });
 initRewardsAdmin({
   getProfilesList: () => profilesList,
@@ -2280,7 +2286,13 @@ function stopExceptionMode() {
     layoutContainer.classList.remove('exception-mode');
   }
   // Re-render so Prev/Next get their normal enabled state back.
-  if (wasActive) renderState(false);
+  if (wasActive) {
+    renderState(false);
+    // Exceptions can complete the week (award) or reopen it (take back). Judge
+    // once at Done ✅, not on every tap, so cycling a cell through 🔴 ✨ 💤 never
+    // flashes celebrations mid-edit (owner 2026-10-21, D1).
+    checkAndTriggerWeeklySuccess();
+  }
 }
 
 function handleGridClick(e) {
@@ -2327,10 +2339,6 @@ function handleGridClick(e) {
   
   // Update overall progress
   renderProgress();
-
-  // Marking the last missing day 💤/✨ can complete the week: award the badge now
-  // instead of leaving the week unwon (owner 2026-10-21).
-  checkAndTriggerWeeklySuccess(taskId, { allowRevoke: false });
 }
 
 function updateCellUI(cell, key) {
@@ -4124,19 +4132,22 @@ function revokeWeeklySuccess(changedTaskId = null) {
 
 // Calm, forward-looking notice (UX Rule 11): name the activity that is now short
 // and show the badge greyed out so a pre-reader still gets the message.
-function showBadgeLockedAgainNotice(badgeId, changedTaskId) {
-  const tasks = state.tasks || [];
-  const isShort = task => {
+// Activities still short of their goal this week, with how many checks each needs.
+function getShortTasksThisWeek() {
+  return (state.tasks || []).filter(task => isTaskActiveInWeek(task, state.weekStartDate)).map(task => {
     let checked = 0;
     for (let d = 0; d < 7; d++) {
       if (state.grid[`${getDateOfColumn(state.weekStartDate, d)}-${task.id}`]) checked++;
     }
-    return checked < getTaskRequiredDays(task.id);
-  };
-  const changed = tasks.find(t => t.id === changedTaskId);
-  const shortTask = (changed && isShort(changed)) ? changed : tasks.find(isShort);
+    return { task, needed: getTaskRequiredDays(task.id) - checked };
+  }).filter(x => x.needed > 0);
+}
+
+function showBadgeLockedAgainNotice(badgeId, changedTaskId) {
+  const short = getShortTasksThisWeek();
+  const pick = short.find(x => x.task.id === changedTaskId) || short[0];
   const badgeName = getPokemonName(badgeId);
-  const lead = shortTask ? `${shortTask.name} still needs one more check this week. ` : '';
+  const lead = pick ? `${pick.task.name} still needs ${pick.needed} more check${pick.needed === 1 ? '' : 's'} this week. ` : '';
   showCustomNotification(
     "🔒 BADGE LOCKED AGAIN",
     `${lead}Finish all your goals to win the ${badgeName} Badge and your reward!`,
@@ -4217,13 +4228,13 @@ function getRewardLabel(value, options) {
   return match && match.text ? match.text : value;
 }
 
-// allowRevoke: false for parent edits (Exception Mode, saving Activities). They can
-// complete a week and award its badge, but never take an earned badge back; only
-// unticking a pokeball does that (owner 2026-10-21).
-function checkAndTriggerWeeklySuccess(changedTaskId = null, { allowRevoke = true } = {}) {
+// Called after a pokeball tick, when Exception Mode ends (Done ✅), and after
+// saving Activities. Any of them can award or take back the week's badge
+// (owner 2026-10-21); saving Activities asks the parent first.
+function checkAndTriggerWeeklySuccess(changedTaskId = null) {
   const weeklySuccess = checkWeeklySuccess();
   
-  if (!weeklySuccess && state.weeklyClaimed && allowRevoke) {
+  if (!weeklySuccess && state.weeklyClaimed) {
     revokeWeeklySuccess(changedTaskId);
     return;
   }

@@ -1765,7 +1765,7 @@ const TASK_CONFLICT_MESSAGE = 'This activity was changed on another device.';
  * A row whose task no longer exists / was removed elsewhere is a conflict:
  * the draft is kept, the row is flagged inline, nothing is written.
  */
-function saveAdminTasks() {
+function saveAdminTasks({ confirmedBadgeLoss = false } = {}) {
   const container = document.getElementById('admin-tasks-list');
   if (!container) return false;
 
@@ -1806,6 +1806,9 @@ function saveAdminTasks() {
 
   const today = formatLocalDate(new Date());
   const rowTask = new Map();
+  // Snapshot so a save that would take back this week's badge can be undone until
+  // the parent confirms (owner 2026-10-21, D2).
+  const tasksBefore = JSON.parse(JSON.stringify(tasks));
 
   rows.filter(r => r.removed && !r.isNew).forEach(r => {
     const t = findTask(r.id);
@@ -1855,6 +1858,26 @@ function saveAdminTasks() {
   });
 
   applyDraftOrder(tasks, liveRows.map(r => rowTask.get(r)));
+
+  const loss = (!confirmedBadgeLoss && typeof appCallbacks.describeWeeklyBadgeLoss === 'function')
+    ? appCallbacks.describeWeeklyBadgeLoss() : null;
+  if (loss) {
+    tasks.splice(0, tasks.length, ...tasksBefore);
+    const child = state.childName || 'This child';
+    const detail = loss.shortTasks.map(t => `${t.name} would still need ${t.needed} check${t.needed === 1 ? '' : 's'}`).join('; ');
+    showCustomConfirm(
+      "Take back this week's badge? ⚠️",
+      `Saving takes back ${child}'s ${loss.badgeName} badge for this week.${detail ? ' ' + detail + '.' : ''}`,
+      () => { saveAdminTasks({ confirmedBadgeLoss: true }); },
+      null,
+      "Save anyway",
+      "Cancel",
+      "pixel-btn danger",
+      "pixel-btn greyed-out",
+      ADMIN_SURFACE
+    );
+    return false;
+  }
 
   saveState();
   renderState(true);

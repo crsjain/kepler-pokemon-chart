@@ -10902,7 +10902,7 @@ async function runSuite() {
           const notice = lockedNotices[0];
           assert(notice.textContent.includes('BADGE LOCKED AGAIN') && !notice.textContent.includes('😢'), "The notice is calm: locked-again title, no sad face");
           const lastTask = state.tasks.find(t => weekKeys[weekKeys.length - 1].endsWith(`-${t.id}`));
-          assert(notice.textContent.includes(`${lastTask.name} still needs one more check`), "The notice names the activity that is now short");
+          assert(notice.textContent.includes(`${lastTask.name} still needs 1 more check`), "The notice names the activity that is now short, with the real count");
           assert(notice.textContent.includes("I'll win it back! 💪"), "The notice CTA is motivating, not celebratory");
           const noticeImg = notice.querySelector('.notif-img');
           assert(noticeImg && getComputedStyle(noticeImg).filter.includes('grayscale'), "The badge art is greyed out");
@@ -11283,25 +11283,68 @@ async function runSuite() {
           await sleep(30);
           assert(state.weeklyClaimed === false, "One activity short: the week is not won yet");
 
-          // 1. Exception Mode: marking the missing day ✨ completes the week -> badge awarded now.
+          // 1. Exception Mode: marking the missing day ✨ completes the week. Judged once at Done ✅ (D1).
+          const shortCell = () => document.querySelector('input[data-day="0"][data-task="piano"]').closest('td.checkbox-cell');
           document.getElementById('exceptions-btn').click();
           await sleep(30);
-          document.querySelector('input[data-day="0"][data-task="piano"]').closest('td.checkbox-cell').click();
-          await sleep(40);
+          shortCell().click();
+          await sleep(30);
           assert(state.excused[shortKey] === 'bonus', "The cell became a bonus task");
-          assert(state.weeklyClaimed === true && state.collectedBadges.some(b => b.id === state.activeWeeklyBadgeId), "Completing the week in Exception Mode awards the badge immediately");
+          assert(state.weeklyClaimed === false && !document.querySelector('.notif-modal'), "No award or pop-up mid-edit");
+          document.getElementById('exceptions-done-btn').click();
+          await sleep(40);
+          assert(state.weeklyClaimed === true && state.collectedBadges.some(b => b.id === state.activeWeeklyBadgeId), "Done ✅ awards the badge when the exceptions completed the week");
           document.querySelectorAll('.notif-modal').forEach(el => el.remove());
 
-          // 2. Parent edits never revoke: cycling back to Required (still unticked) keeps the badge.
-          document.querySelector('input[data-day="0"][data-task="piano"]').closest('td.checkbox-cell').click(); // bonus -> rest
-          await sleep(20);
-          document.querySelector('input[data-day="0"][data-task="piano"]').closest('td.checkbox-cell').click(); // rest -> required
+          // 2. Parent edits take badges back too (owner 2026-10-21): cycling to Required (unticked), then Done.
+          document.getElementById('exceptions-btn').click();
           await sleep(30);
-          assert(state.excused[shortKey] === undefined && state.weeklyClaimed === true, "Exception Mode never takes an earned badge back");
-          assert(!document.querySelector('.notif-modal.badge-locked-again'), "No 'BADGE LOCKED AGAIN' from a parent edit");
-          document.getElementById('exceptions-done-btn').click();
+          shortCell().click(); // bonus -> rest
           await sleep(20);
+          shortCell().click(); // rest -> required
+          await sleep(20);
+          assert(state.weeklyClaimed === true && !document.querySelector('.notif-modal'), "Still nothing mid-edit (no flip-flopping)");
+          document.getElementById('exceptions-done-btn').click();
+          await sleep(40);
+          assert(state.excused[shortKey] === undefined && state.weeklyClaimed === false, "Done ✅ takes the badge back when the edits reopened the week");
+          const locked = document.querySelector('.notif-modal.badge-locked-again');
+          assert(locked && locked.textContent.includes('Piano Practice still needs 1 more check'), "The take-back notice names the activity and the real count");
           document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+
+          // 2b. Saving Activities that would take the badge back asks first (D2).
+          state.grid[shortKey] = true;
+          helpers.checkAndTriggerWeeklySuccess();
+          await sleep(30);
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          assert(state.weeklyClaimed === true, "Week won again");
+          document.getElementById('admin-btn').click();
+          await sleep(100);
+          document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+          document.getElementById('password-submit-btn').click();
+          await sleep(100);
+          document.getElementById('admin-tab-tasks').click();
+          await sleep(30);
+          const tasksBefore = state.tasks.length;
+          document.getElementById('admin-add-task-btn').click();
+          const newRow = document.querySelector('#admin-tasks-list .admin-task-item[data-new="1"]');
+          newRow.querySelector('.task-name-input').value = 'TC124 Swimming';
+          document.getElementById('admin-save-tasks-btn').click();
+          await sleep(60);
+          const confirmEl = document.getElementById('confirm-modal');
+          assert(!confirmEl.classList.contains('hidden') && document.getElementById('confirm-title').textContent.includes("Take back this week's badge"),
+            "Saving an activity that would reopen a won week asks first");
+          assert(confirmEl.textContent.includes('TC124 Swimming would still need'), "The warning says what the new activity would still need");
+          assert(state.tasks.length === tasksBefore && state.weeklyClaimed === true, "Nothing is saved or taken back until the parent confirms");
+          document.getElementById('confirm-no-btn').click();
+          await sleep(30);
+          assert(state.tasks.length === tasksBefore && state.weeklyClaimed === true, "Cancel keeps the activities and the badge");
+          document.getElementById('admin-save-tasks-btn').click();
+          await sleep(60);
+          document.getElementById('confirm-yes-btn').click();
+          await sleep(60);
+          assert(state.tasks.some(t => t.name === 'TC124 Swimming') && state.weeklyClaimed === false, "Save anyway saves the activity and takes the badge back");
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          document.getElementById('admin-modal').classList.add('hidden');
 
           // 3. Past week: unwon but every goal met -> star badge + "✅ Goal completed!".
           const lastStart = addDays(cur, -7);
