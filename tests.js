@@ -11031,7 +11031,7 @@ async function runSuite() {
           const completeNotices = document.querySelectorAll('.notif-modal.last-week-complete');
           assert(completeNotices.length === 1, "Completing an unwon week opens one parent dialog (not just the dock note)");
           const cn = completeNotices[0].textContent;
-          assert(cn.includes('LAST WEEK NOW MEETS EVERY GOAL') && cn.includes('give') && cn.includes('in person') && cn.includes('WEEKLY REWARD'),
+          assert(cn.includes('LAST WEEK NOW MEETS EVERY GOAL') && cn.includes('give') && cn.includes('in person') && cn.includes('WEEKLY REWARD') && cn.includes('Mega Milestone'),
             "The dialog says the week is complete, badges don't update, and names the reward to give in person");
           assert(sub.classList.contains('week-complete'), "The dock note switches to its highlighted style");
           completeNotices[0].remove();
@@ -11355,6 +11355,8 @@ async function runSuite() {
           assert(document.getElementById('badge-status').textContent === '✅ Goal completed retroactively!', `Badge status reads "✅ Goal completed retroactively!" (got "${document.getElementById('badge-status').textContent}")`);
           assert(slot.querySelector('.goal-completed-star svg') && slot.classList.contains('badge-theme-2') && !slot.querySelector('img'),
             "The slot shows a generic star on the week's colour theme, not a Pokémon");
+          assert(document.getElementById('badge-status').title.includes("doesn't count toward the Mega Milestone") && slot.title.includes('Mega Milestone'),
+            "Hovering the star or its text says it doesn't count toward the Mega Milestone");
 
           // 4. An all-rest past week never counts as completed.
           for (let d = 0; d < 7; d++) state.tasks.forEach(t => { const k = `${addDays(lastStart, d)}-${t.id}`; state.grid[k] = false; state.excused[k] = 'rest'; });

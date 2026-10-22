@@ -295,7 +295,7 @@ function isLastWeekEditCell(dateStr) {
 }
 
 const LAST_WEEK_SUB_DEFAULT = "Stars & XP update · badges don't change";
-const LAST_WEEK_SUB_COMPLETE = "Last week now meets every goal 🎉 — badges don't update; give the reward in person.";
+const LAST_WEEK_SUB_COMPLETE = "Last week now meets every goal 🎉 — no badge or Mega progress; give the reward in person.";
 
 function setGraceDockMode(lastWeek) {
   const dock = document.getElementById('parent-grace-dock');
@@ -349,7 +349,7 @@ function showLastWeekCompleteNotice(history) {
   rewards += `<div class="reward-box"><div class="reward-box-header">🎁 WEEKLY REWARD 🎁</div><div class="reward-box-name">${weekly || 'Weekly reward'}</div></div></div>`;
   showCustomNotification(
     "🎉 LAST WEEK NOW MEETS EVERY GOAL",
-    `<p class="notif-desc">Every goal for <strong>${range}</strong> is now met. Badges and rewards for past weeks don't update in the app, so give ${child} the reward in person.</p>${rewards}`,
+    `<p class="notif-desc">Every goal for <strong>${range}</strong> is now met. Past weeks don't earn a badge or count toward the Mega Milestone, so give ${child} the reward in person.</p>${rewards}`,
     null,
     false,
     null,
@@ -4452,7 +4452,9 @@ function renderProgress() {
       // (owner 2026-10-21). No badge is awarded retroactively.
       weeklyBadgeSlot.innerHTML = `<div class="goal-completed-star" role="img" aria-label="Goal completed">${EARNED_STAR_HTML}</div>`;
       badgeStatusEl.textContent = '✅ Goal completed retroactively!';
-      badgeStatusEl.title = 'Every goal was met after the week ended. No badge was awarded for this week.';
+      // Parents: say up front that it doesn't fill a Mega Milestone slot (owner 2026-10-22).
+      badgeStatusEl.title = "Every goal was met after the week ended. No badge was awarded, and it doesn't count toward the Mega Milestone.";
+      weeklyBadgeSlot.title = badgeStatusEl.title;
       weeklyBadgeSlot.classList.remove('locked');
       weeklyBadgeSlot.classList.add('unlocked');
       const goalThemeIndex = (historyForTheme && historyForTheme.megaWeeks !== undefined) ? historyForTheme.megaWeeks + 1 : (state.megaWeeks + 1);
