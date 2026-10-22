@@ -66,7 +66,7 @@ The following table is the authoritative reference for all task states, CSS clas
 2. **Counting**: off-plan days are excluded from required days *and* ticks never count on them. The Goal column, the weekly win (`weekMeetsEveryGoal`), and the "still needs N more checks" message all use on-plan days only (e.g. Reading removed on Thursday with Sun–Wed ticked reads **4 / 4 ✅**, never `6 / 4`). Owner decision 3.
 3. **Interaction**: inert in every mode: child mode, past-day approval, Fix last week, and Parent Exception Mode (it can't be cycled to ✨ / 💤).
 4. **Parent tooltip**: `<Activity> was removed on <Thu, Oct 22> — not required from this day` or `<Activity> was added on <date> — not required before this day`.
-5. **History stays accurate**: a removed activity still appears on every week it existed in, ticked or not (`isTaskActiveInWeek`), so removing an activity never changes a past week's chart, Goal counts or "✅ Goal completed!" result. This replaced Checkpoint 35's "hide deleted activities from weeks with zero ticks" rule.
+5. **History stays accurate**: a removed activity still appears on every week it existed in, ticked or not (`isTaskActiveInWeek`), so removing an activity never changes a past week's chart, Goal counts or "✅ Goal completed retroactively!" result. This replaced Checkpoint 35's "hide deleted activities from weeks with zero ticks" rule.
 
 **How it differs from its neighbours.**
 - **Rest day 💤 (State 3)**: same stripes, but 💤 means "a day off for this child"; the dash means "this activity isn't part of the plan".

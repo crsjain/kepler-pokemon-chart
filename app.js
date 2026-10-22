@@ -4451,7 +4451,7 @@ function renderProgress() {
       // a badge-style star on the week's colour instead of "The Pokémon Fled!"
       // (owner 2026-10-21). No badge is awarded retroactively.
       weeklyBadgeSlot.innerHTML = `<div class="goal-completed-star" role="img" aria-label="Goal completed">${EARNED_STAR_HTML}</div>`;
-      badgeStatusEl.textContent = '✅ Goal completed!';
+      badgeStatusEl.textContent = '✅ Goal completed retroactively!';
       badgeStatusEl.title = 'Every goal was met after the week ended. No badge was awarded for this week.';
       weeklyBadgeSlot.classList.remove('locked');
       weeklyBadgeSlot.classList.add('unlocked');

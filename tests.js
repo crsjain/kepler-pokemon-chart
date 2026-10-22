@@ -11259,7 +11259,7 @@ async function runSuite() {
       }
 
       // 124. Parent edits that complete a week award the badge (never revoke), and a
-      //      past week whose goals are met after the fact shows "✅ Goal completed!"
+      //      past week whose goals are met after the fact shows "✅ Goal completed retroactively!"
       //      with a star badge — but never for an all-rest week (owner 2026-10-21).
       {
         console.log("Running Test Case 124: Exception Mode completion awards the badge; past 'Goal completed' star; all-rest weeks excluded...");
@@ -11344,7 +11344,7 @@ async function runSuite() {
           document.querySelectorAll('.notif-modal').forEach(el => el.remove());
           document.getElementById('admin-modal').classList.add('hidden');
 
-          // 3. Past week: unwon but every goal met -> star badge + "✅ Goal completed!".
+          // 3. Past week: unwon but every goal met -> star badge + "✅ Goal completed retroactively!".
           const lastStart = addDays(cur, -7);
           state.weeklyHistory = { [lastStart]: { weekStartDay: state.weekStartDay, weeklyClaimed: false, badgeId: 7, xpEarned: 0, megaWeeks: 1 } };
           for (let d = 0; d < 7; d++) state.tasks.forEach(t => { state.grid[`${addDays(lastStart, d)}-${t.id}`] = true; });
@@ -11352,7 +11352,7 @@ async function runSuite() {
           helpers.renderState(true);
           await sleep(30);
           const slot = document.getElementById('weekly-badge-slot');
-          assert(document.getElementById('badge-status').textContent === '✅ Goal completed!', `Badge status reads "✅ Goal completed!" (got "${document.getElementById('badge-status').textContent}")`);
+          assert(document.getElementById('badge-status').textContent === '✅ Goal completed retroactively!', `Badge status reads "✅ Goal completed retroactively!" (got "${document.getElementById('badge-status').textContent}")`);
           assert(slot.querySelector('.goal-completed-star svg') && slot.classList.contains('badge-theme-2') && !slot.querySelector('img'),
             "The slot shows a generic star on the week's colour theme, not a Pokémon");
 
@@ -11361,7 +11361,7 @@ async function runSuite() {
           assert(helpers.archivedWeekMeetsEveryGoal(lastStart) === false, "An all-rest week is never 'Goal completed'");
           helpers.renderState(true);
           await sleep(30);
-          assert(document.getElementById('badge-status').textContent !== '✅ Goal completed!', "All-rest week keeps its normal badge text");
+          assert(document.getElementById('badge-status').textContent !== '✅ Goal completed retroactively!', "All-rest week keeps its normal badge text");
         } finally {
           if (layout.classList.contains('exception-mode')) document.getElementById('exceptions-done-btn').click();
           document.querySelectorAll('.notif-modal').forEach(el => el.remove());
