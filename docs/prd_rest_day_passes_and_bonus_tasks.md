@@ -1,8 +1,8 @@
 # Product Requirement Document (PRD): Rest Day Passes, Bonus Tasks & Icon State System
 
 **Document**: `docs/prd_rest_day_passes_and_bonus_tasks.md`  
-**Version**: 2.1.0 (Rest Day Click Lock & Exclusive Bonus Task Great Ball Specification)  
-**Schema Compatibility**: Schema V18 (Zero Database Migration Required)  
+**Version**: 2.2.0 (State 7 "Not on the plan" redesign, 2026-10-22; was 2.1.0 Rest Day Click Lock & Great Ball)  
+**Schema Compatibility**: Schema V19 (Zero Database Migration Required)  
 **Status**: Implemented & Approved  
 **Audience**: Product Management, UX Design, Game Design, Engineering (Jetski Assistant)  
 **Target Users**: Kepler (7yo), Lyra, and Parents  
@@ -46,6 +46,34 @@ The following table is the authoritative reference for all task states, CSS clas
 | **5** | **Great Ball (Bonus Completed)** | Child completes an elective bonus task | `.checkbox-cell.excused-cell.bonus-cell` | `input:checked + .pokeball` + `::after` badge | • **Icon**: Authentic **Great Ball** SVG vector (see Section 3)<br>• **Cell Background**: Soft Sky Blue tint (`#f0f9ff`)<br>• **Badge**: Floating `+XP` pill at `top: -6px; right: -2px`<br>• **Glow**: `box-shadow: 0 0 10px rgba(37, 99, 235, 0.45)` | Awards `+10 XP` to active partner Pokémon; unlocks `(Super Trainer! 🚀)` footer |
 | **6** | **Superseded / Forward-Hashed** | Date range forwarded to new week cycle | `.checkbox-cell.superseded-cell.excused-cell` | `.pokeball` (disabled) | • **Cell Background**: Dense diagonal stripes (`-45deg, #f8fafc ... #e2e8f0 12px`)<br>• **Border**: `3px solid #94a3b8`<br>• **Icon**: Muted grey star `★` (`color: #64748b; opacity: 0.45`)<br>• **Badges**: Strictly hidden (`display: none !important;`)<br>• **Cursor**: `not-allowed`, `opacity: 0.55` | Read-only archive; no interaction |
 | **7** | **Not on the plan** (was "Out-of-Range"; redesigned 2026-10-22) | Day before the activity was added, or from the day it was removed. A removal day the child already ticked stays on the plan and counts. | `.checkbox-cell.out-of-range-cell` | `.pokeball-checkbox` hidden; `td::after` dash | • **Cell Background**: rest-day stripes `repeating-linear-gradient(-45deg, #f8fafc, #f8fafc 4px, #e2e8f0 4px, #e2e8f0 8px)`, full opacity<br>• **Icon**: no Pokéball; a centred muted dash (CSS, `16px × 4px`, `#94a3b8`, radius 2px), echoing the Daily Total `➖`<br>• **Tooltip** (parents): `<Activity> was removed on <Thu, Oct 22> — not required from this day` / `… was added on <date> — not required before this day`<br>• **Cursor**: `not-allowed`; inert in every mode, including Exception Mode | Not required; ticks on these days never count toward the Goal column or the weekly win (`isTaskOffPlan` in state.js) |
+
+### 2.1. State 7 "Not on the plan" — rules & decisions (2026-10-22)
+
+**Problem it solved.** State 7 used to be a solid grey cell with a grey, half-faded Pokéball. Next to State 1 (an unticked Pokéball, which also has a grey top dome) a child or parent couldn't tell "not done yet" from "doesn't count today". It showed up most after an activity was removed mid-week.
+
+**When a day is off the plan** (single source: `isTaskOffPlan(task, dateStr)` in `state.js`):
+
+| Case | Off the plan? |
+| :--- | :--- |
+| Day before the activity's `createdAt` | Yes ("added on …") |
+| Day **after** the activity's `deletedAt` | Yes ("removed on …") |
+| The removal day itself, **not** ticked | Yes |
+| The removal day itself, **already ticked** by the child | **No**: keeps its red Pokéball and counts (owner decision 2A) |
+| Any day of a week that starts after the removal day | The whole row is absent from that week |
+
+**Rules.**
+1. **Look**: rest-day stripes + a centred muted CSS dash (`16px × 4px`, `#94a3b8`), no Pokéball, full opacity. A CSS glyph rather than an emoji (UX Rule 3), echoing the Daily Total `➖`. The cell keeps the 36px row rhythm (Invariant 1).
+2. **Counting**: off-plan days are excluded from required days *and* ticks never count on them. The Goal column, the weekly win (`weekMeetsEveryGoal`), and the "still needs N more checks" message all use on-plan days only (e.g. Reading removed on Thursday with Sun–Wed ticked reads **4 / 4 ✅**, never `6 / 4`). Owner decision 3.
+3. **Interaction**: inert in every mode: child mode, past-day approval, Fix last week, and Parent Exception Mode (it can't be cycled to ✨ / 💤).
+4. **Parent tooltip**: `<Activity> was removed on <Thu, Oct 22> — not required from this day` or `<Activity> was added on <date> — not required before this day`.
+5. **History stays accurate**: a removed activity still appears on every week it existed in, ticked or not (`isTaskActiveInWeek`), so removing an activity never changes a past week's chart, Goal counts or "✅ Goal completed!" result. This replaced Checkpoint 35's "hide deleted activities from weeks with zero ticks" rule.
+
+**How it differs from its neighbours.**
+- **Rest day 💤 (State 3)**: same stripes, but 💤 means "a day off for this child"; the dash means "this activity isn't part of the plan".
+- **Superseded (State 6)**: hatches the **whole column** (header + every cell), denser and faded, with the tooltip "These days moved to your new chart!". State 7 affects one activity's cells only.
+- **Future-locked days**: keep a full Pokéball on a soft grey cell ("coming up, not yet").
+
+Covered by TC1 (removed activity stays in earlier weeks), TC125 (removing the only short activity completes the week) and TC126 (look, tooltip, removal-day rule, 4 / 4 count, Exception Mode inertness).
 
 ---
 
@@ -144,12 +172,12 @@ Parents configure task exceptions directly on the weekly grid during Exception M
 
 ## 5. Technical Constraints & Invariants
 
-1. **Strict 36px Footprint**: All icons (Pokéball, borderless `💤`, dashed `✨`, Great Ball) occupy exactly `36px × 36px`.
+1. **Strict 36px Footprint**: All icons (Pokéball, borderless `💤`, dashed `✨`, Great Ball) occupy exactly `36px × 36px`; the State 7 dash sits centred in the same row height.
 2. **Responsive Viewport Policy (Zero Scroll Tablet/Desktop vs. Horizontal Scroll Mobile)**:
    - **Desktop & Tablet Viewports ($\ge 768\text{px}$)**: Strict **Zero Horizontal Scroll** policy. The grid table maintains `table-layout: fixed; width: 100%; min-width: 0; overflow-x: hidden;` with `0px` scroll delta so the entire week fits on screen without horizontal scroll.
    - **Mobile Viewports ($< 768\text{px}$)**: **Horizontal Scrolling Enabled**. To prevent 9-column accordion squeezing and overlapping 36px Pokéball assets on narrow mobile viewports (360px–430px), `.grid-scroll-wrapper` enables horizontal scrolling (`overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;`) with `min-width: 620px`. This guarantees each day cell maintains $\ge 50\text{px}$ width for clear readability and touch ergonomics.
 3. **No Cheating on Daily Stars**: Completing bonus tasks never substitutes for incomplete required chores. (On a zero-required day — every activity excused — completing at least one bonus *is* the day's work and earns the star; see [`prd_star_vault.md` §3.2.1](prd_star_vault.md).)
 4. **XP Deductibility**: Unchecking a bonus task cleanly decrements `10 XP` without corrupting star vault records.
-5. **Regression Verification**: All 74 automated test cases in `run_headless_tests.js` must pass 100% green before any release.
-6. **Child-Friendly Daily Totals (No Number Parsing)**: The Daily Total row displays only the visual status icons (❌ for incomplete past missed days, ☆ for today in-progress and unreached future days, 🌟 for complete days, with glowing pulse for Super Trainer bonus days, 💤 for past rest days, and ➖ for superseded days). Fractional task counts (e.g. `1 / 3 (+1)`, `0 / 0 ⭐`) are omitted from the visual layout so a 7-year-old child can instantly parse their progress without cognitive overload. Full counts remain accessible via hover tooltips for parents. **Zero-required days** (every activity 💤 rest and/or ✨ bonus) follow [`prd_star_vault.md` §3.2.1](prd_star_vault.md) (effective 2026-09-30): completing at least one bonus earns 🌟 immediately; otherwise the day is a **💤 rest day** — no star, the streak is paused (neither incremented nor broken), and the Daily Total shows ghost ☆ until midnight and `💤` afterwards (tooltip `Rest day — streak paused 💤`). Rest-day stars are never awarded in advance or in arrears. Dates before 2026-09-30 keep their legacy free rest star.
+5. **Regression Verification**: The full automated suite in `run_headless_tests.js` must pass 100% green before any release (counts grow; run the §0 audit in `_agents/AGENTS.md`).
+6. **Child-Friendly Daily Totals (No Number Parsing)**: The Daily Total row displays only the visual status icons (❌ for incomplete past missed days, ☆ for today in-progress and unreached future days, 🌟 for complete days, with glowing pulse for Super Trainer bonus days, 💤 for past rest days, and ➖ for superseded days; in the grid, State 7 off-plan cells use the matching muted dash). Fractional task counts (e.g. `1 / 3 (+1)`, `0 / 0 ⭐`) are omitted from the visual layout so a 7-year-old child can instantly parse their progress without cognitive overload. Full counts remain accessible via hover tooltips for parents. **Zero-required days** (every activity 💤 rest and/or ✨ bonus) follow [`prd_star_vault.md` §3.2.1](prd_star_vault.md) (effective 2026-09-30): completing at least one bonus earns 🌟 immediately; otherwise the day is a **💤 rest day** — no star, the streak is paused (neither incremented nor broken), and the Daily Total shows ghost ☆ until midnight and `💤` afterwards (tooltip `Rest day — streak paused 💤`). Rest-day stars are never awarded in advance or in arrears. Dates before 2026-09-30 keep their legacy free rest star.
 7. **Child Dwell Time & XP Float Readability**: Floating XP notifications (`+10 XP`, `+20 XP! 🎉`, `+10 XP Super Trainer! 🚀`) feature an extended 2.5s duration with a 1.5s rock-solid dwell phase, centered `Fredoka One` typography, and viewport edge clamping so early readers can comfortably read the reward feedback.
