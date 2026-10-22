@@ -2067,16 +2067,11 @@ export function isTaskActiveInWeek(task, weekStartStr) {
   const createdDate = task.createdAt || '2000-01-01';
   const deletedDate = task.deletedAt || '9999-12-31';
   
-  const withinDateSpan = createdDate <= wEndStr && deletedDate >= wStartStr;
-  if (!withinDateSpan) return false;
-  
-  // If an activity is deleted, remove it from grids where it has no tasks completed
-  const isDeleted = (task.deletedAt !== null && task.deletedAt !== undefined) || task.active === false;
-  if (isDeleted) {
-    return hasTaskActivityInWeek(task, weekStartStr);
-  }
-  
-  return true;
+  // An activity belongs to every week it existed in, ticked or not, so deleting it
+  // never rewrites a past week's chart, Goal counts or "Goal completed" result
+  // (owner 2026-10-22; replaces Checkpoint 35's hide-if-zero-ticks rule). A week
+  // that starts after the deletion day doesn't show it.
+  return createdDate <= wEndStr && deletedDate > wStartStr;
 }
 
 function renderGridTable() {

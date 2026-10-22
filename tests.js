@@ -330,12 +330,10 @@ async function runSuite() {
           deletedAt: '2026-08-16',
           createdAt: '2026-08-10'
         };
-        assert(window.__test_helpers__.isTaskActiveInWeek(emptyTask, '2026-08-10') === false, "Deleted task with 0 completions should be hidden from grid");
-        
-        // Add completion
-        state.grid['2026-08-11-temp-unused-task'] = true;
-        assert(window.__test_helpers__.isTaskActiveInWeek(emptyTask, '2026-08-10') === true, "Deleted task with completions should be preserved in grid");
-        delete state.grid['2026-08-11-temp-unused-task'];
+        // History-accurate (owner 2026-10-22): a deleted activity stays in every week it existed in, ticked or not.
+        assert(window.__test_helpers__.isTaskActiveInWeek(emptyTask, '2026-08-10') === true, "Deleted task stays in weeks before its deletion, even with 0 completions");
+        assert(window.__test_helpers__.isTaskActiveInWeek(emptyTask, '2026-08-16') === false, "Deleted task is gone from a week that starts on its deletion day");
+        assert(window.__test_helpers__.isTaskActiveInWeek(emptyTask, '2026-08-17') === false, "Deleted task is gone from weeks after its deletion");
       }
 
       // 5. Test State Diagnostics (Auto-Repair)
@@ -11367,6 +11365,74 @@ async function runSuite() {
         } finally {
           if (layout.classList.contains('exception-mode')) document.getElementById('exceptions-done-btn').click();
           document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
+      // 125. Deleting the only activity still short completes the week -> badge + visible
+      //      celebration; the deleted activity stays on past weeks' charts (owner 2026-10-22).
+      {
+        console.log("Running Test Case 125: Deleting the short activity awards the badge; deleted activity stays in past weeks...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const state = window.__app_state__;
+        const fmt = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+        const addDays = (s0, n) => { const d = new Date(s0 + 'T00:00:00'); d.setDate(d.getDate() + n); return fmt(d); };
+        try {
+          state.reward = 'Ice cream';
+          state.megaReward = 'Zoo trip';
+          const cur = state.weekStartDate;
+          const lastStart = addDays(cur, -7);
+          state.weeklyHistory = { [lastStart]: { weekStartDay: state.weekStartDay, weeklyClaimed: false, badgeId: 7, xpEarned: 0, megaWeeks: 0 } };
+          const target = state.tasks.find(t => t.id === 'reading') || state.tasks[state.tasks.length - 1];
+          for (let d = 0; d < 7; d++) state.tasks.forEach(t => { state.grid[`${addDays(cur, d)}-${t.id}`] = true; });
+          state.grid[`${addDays(cur, 6)}-${target.id}`] = false; // last day of the week, short
+          helpers.renderState(true);
+          await sleep(30);
+          assert(state.weeklyClaimed === false, "One activity short: not won");
+
+          document.getElementById('admin-btn').click();
+          await sleep(100);
+          document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+          document.getElementById('password-submit-btn').click();
+          await sleep(100);
+          document.getElementById('admin-tab-tasks').click();
+          await sleep(30);
+          document.querySelector(`#admin-tasks-list .admin-task-item[data-task-id="${target.id}"] .remove-task-btn`).click();
+          await sleep(50);
+          if (!document.getElementById('confirm-modal').classList.contains('hidden')) {
+            document.getElementById('confirm-yes-btn').click();
+            await sleep(50);
+          }
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          document.getElementById('admin-save-tasks-btn').click();
+          await sleep(120);
+          const deleted = state.tasks.find(t => t.id === target.id);
+          assert(deleted && deleted.active === false && !!deleted.deletedAt, "The activity was soft-deleted");
+          const today = fmt(new Date());
+          const lastDayShort = `${addDays(cur, 6)}`;
+          if (lastDayShort >= today) {
+            assert(state.weeklyClaimed === true, "Deleting the only short activity completes the week and awards the badge");
+            const success = [...document.querySelectorAll('.notif-modal')].find(n => n.textContent.includes('WEEKLY SUCCESS'));
+            assert(success, "The weekly-success celebration opens");
+            const btn = success.querySelector('.notif-close-btn');
+            const r = btn.getBoundingClientRect();
+            const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            assert(top && success.contains(top), `The celebration is on top of Admin, not hidden behind it (top: ${top && (top.id || top.className)})`);
+          }
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          document.getElementById('admin-modal').classList.add('hidden');
+
+          // History-accurate: the deleted activity still shows on last week's chart, even with 0 ticks there.
+          helpers.setViewingWeekStartDate(lastStart);
+          helpers.renderState(true);
+          await sleep(30);
+          assert(document.querySelector(`#grid-tbody tr.task-row[data-task="${target.id}"]`), "The deleted activity stays on last week's chart");
+        } finally {
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          document.getElementById('admin-modal').classList.add('hidden');
           helpers.resetState();
           await sleep(30);
         }
