@@ -11438,6 +11438,67 @@ async function runSuite() {
         }
       }
 
+      // 126. State 7 "Not on the plan": striped cell + dash (no Pokéball), parent tooltip,
+      //      a ticked removal day still counts, Goal counts only on-plan days, inert in
+      //      Exception Mode (owner 2026-10-22).
+      {
+        console.log("Running Test Case 126: 'Not on the plan' cells (State 7) look, tooltip, counting and inertness...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const state = window.__app_state__;
+        const fmt = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+        const addDays = (s0, n) => { const d = new Date(s0 + 'T00:00:00'); d.setDate(d.getDate() + n); return fmt(d); };
+        const layout = document.querySelector('.layout-container');
+        try {
+          const cur = state.weekStartDate;
+          const task = state.tasks[0];
+          // Removed on column 3; columns 0..3 ticked (incl. the removal day), 4..6 ticked too (test data only).
+          task.active = false;
+          task.deletedAt = addDays(cur, 3);
+          for (let d = 0; d < 7; d++) state.grid[`${addDays(cur, d)}-${task.id}`] = true;
+          helpers.renderState(true);
+          await sleep(30);
+          const cellAt = d => document.querySelector(`input[data-day="${d}"][data-task="${task.id}"]`).closest('td.checkbox-cell');
+
+          const off = cellAt(5);
+          assert(off.classList.contains('out-of-range-cell'), "A day after removal is off the plan");
+          assert(getComputedStyle(off.querySelector('.pokeball-checkbox')).display === 'none', "Off-plan cells show no Pokéball");
+          const dash = getComputedStyle(off, '::after');
+          assert(dash.width === '16px' && dash.height === '4px', `Off-plan cells show the muted dash (got ${dash.width}×${dash.height})`);
+          assert(getComputedStyle(off).backgroundImage.includes('repeating-linear-gradient'), "Off-plan cells use the striped 'doesn't count' background");
+          assert(off.title.includes('was removed on') && off.title.includes('not required from this day'), `Parent tooltip explains it (got "${off.title}")`);
+
+          const removalDay = cellAt(3);
+          assert(!removalDay.classList.contains('out-of-range-cell') && getComputedStyle(removalDay.querySelector('.pokeball-checkbox')).display !== 'none',
+            "A removal day the child already ticked keeps its Pokéball");
+          state.grid[`${addDays(cur, 3)}-${task.id}`] = false;
+          helpers.renderState(true);
+          await sleep(30);
+          assert(cellAt(3).classList.contains('out-of-range-cell'), "An unticked removal day is off the plan");
+          state.grid[`${addDays(cur, 3)}-${task.id}`] = true;
+          helpers.renderState(true);
+          await sleep(30);
+
+          const goal = document.querySelector(`#grid-tbody td.task-total-cell[data-task="${task.id}"]`).textContent.trim();
+          assert(goal.startsWith('4 / 4'), `Goal counts only on-plan days (expected 4 / 4, got "${goal}")`);
+
+          // Inert in Exception Mode.
+          document.getElementById('exceptions-btn').click();
+          await sleep(30);
+          cellAt(5).click();
+          await sleep(20);
+          assert(state.excused[`${addDays(cur, 5)}-${task.id}`] === undefined, "Exception Mode can't cycle an off-plan cell");
+          document.getElementById('exceptions-done-btn').click();
+          await sleep(30);
+        } finally {
+          if (layout.classList.contains('exception-mode')) document.getElementById('exceptions-done-btn').click();
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

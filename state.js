@@ -830,6 +830,19 @@ function expandBadgePool() {
   saveState();
 }
 
+// Is dateStr off the plan for this activity: before it was added, or from the day
+// it was removed? A removal day the child already ticked stays on the plan and
+// counts (owner 2026-10-22). Off-plan cells render as State 7 "Not on the plan".
+export function isTaskOffPlan(task, dateStr, currentState = state) {
+  if (!task) return false;
+  if (task.createdAt && dateStr < task.createdAt) return true;
+  if (task.deletedAt) {
+    if (dateStr > task.deletedAt) return true;
+    if (dateStr === task.deletedAt) return !(currentState && currentState.grid && currentState.grid[`${dateStr}-${task.id}`]);
+  }
+  return false;
+}
+
 // Required days for a task in a given week (default: the current week). Rest/bonus
 // exceptions and out-of-range days come from THAT week, so past weeks are judged
 // by their own exceptions, not the current week's.
@@ -841,8 +854,7 @@ export function getTaskRequiredDays(taskId, weekStartDate = state.weekStartDate)
   const excusedCount = DAYS.filter(day => {
     const dateStr = getDateOfColumn(weekStartDate, day);
     const isExcused = !!state.excused[`${dateStr}-${taskId}`];
-    const isOutOfRange = (task.createdAt && dateStr < task.createdAt) || (task.deletedAt && dateStr >= task.deletedAt);
-    return isExcused || isOutOfRange;
+    return isExcused || isTaskOffPlan(task, dateStr);
   }).length;
   return Math.max(0, DAYS.length - excusedCount);
 }
@@ -902,9 +914,8 @@ export function setZeroRequiredRuleStartMock(dateStr) {
 
 function getActiveTasksForDate(dateStr, currentState) {
   return (currentState.tasks || []).filter(task => {
-    if (task.createdAt && dateStr < task.createdAt) return false;
-    if (task.deletedAt && dateStr >= task.deletedAt) return false;
-    if (task.active === false && (!task.deletedAt || dateStr >= task.deletedAt)) return false;
+    if (isTaskOffPlan(task, dateStr, currentState)) return false;
+    if (task.active === false && !task.deletedAt) return false;
     return true;
   });
 }

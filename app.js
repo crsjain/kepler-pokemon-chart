@@ -12,6 +12,7 @@ import {
   XP_PER_TASK,
   XP_BONUS_TASK,
   isDayComplete,
+  isTaskOffPlan,
   getDayTaskCounts,
   isRestDay,
   setZeroRequiredRuleStartMock,
@@ -2074,6 +2075,15 @@ export function isTaskActiveInWeek(task, weekStartStr) {
   return createdDate <= wEndStr && deletedDate > wStartStr;
 }
 
+// Parent tooltip for a State 7 "Not on the plan" cell.
+function offPlanTooltip(task, dateStr) {
+  const fmt = ds => new Date(ds + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const name = task.name || 'This activity';
+  if (task.createdAt && dateStr < task.createdAt) return `${name} was added on ${fmt(task.createdAt)} — not required before this day`;
+  if (task.deletedAt) return `${name} was removed on ${fmt(task.deletedAt)} — not required from this day`;
+  return `${name} is not on the plan this day`;
+}
+
 function renderGridTable() {
   gridRebuildCount++;
   if (location.search.includes('runTests=true')) {
@@ -2132,11 +2142,13 @@ function renderGridTable() {
       const isRest = excusedVal === 'rest' || excusedVal === true;
       const checked = !!state.grid[stateKey];
       const excused = isBonus || isRest;
-      const isOutOfRange = (task.createdAt && dateStr < task.createdAt) || (task.deletedAt && dateStr >= task.deletedAt);
+      const isOutOfRange = isTaskOffPlan(task, dateStr);
       const shouldDisable = isOutOfRange || (col.isCellDisabled && !isLastWeekEditCell(dateStr)) || isRest;
       
       let cellTitle = col.tooltip;
-      if (col.state === 'SUPERSEDED') {
+      if (isOutOfRange) {
+        cellTitle = offPlanTooltip(task, dateStr);
+      } else if (col.state === 'SUPERSEDED') {
         cellTitle = col.tooltip;
       } else if (isBonus) {
         cellTitle = 'Bonus Task (+10 XP if completed!)';
@@ -2301,6 +2313,8 @@ function handleGridClick(e) {
   const day = parseInt(input.dataset.day);
   const col = getColumnState(day, state, currentViewingWeekStartDate);
   if (!col || !col.canToggleException) return;
+  // State 7 "Not on the plan" cells can't be cycled to ✨ / 💤.
+  if (cell.classList.contains('out-of-range-cell')) return;
   
   e.preventDefault(); // Prevent default checkbox toggle behavior from label click
   
@@ -4087,7 +4101,9 @@ function weekMeetsEveryGoal(weekStart, tasks) {
   const allMet = tasks.every(task => {
     let checkedDays = 0;
     for (let d = 0; d < 7; d++) {
-      if (state.grid[`${getDateOfColumn(weekStart, d)}-${task.id}`]) checkedDays++;
+      const ds = getDateOfColumn(weekStart, d);
+      // Only on-plan days count toward a goal (State 7, owner 2026-10-22).
+      if (state.grid[`${ds}-${task.id}`] && !isTaskOffPlan(task, ds)) checkedDays++;
     }
     const required = getTaskRequiredDays(task.id, weekStart);
     totalRequired += required;
@@ -4132,7 +4148,8 @@ function getShortTasksThisWeek() {
   return (state.tasks || []).filter(task => isTaskActiveInWeek(task, state.weekStartDate)).map(task => {
     let checked = 0;
     for (let d = 0; d < 7; d++) {
-      if (state.grid[`${getDateOfColumn(state.weekStartDate, d)}-${task.id}`]) checked++;
+      const ds = getDateOfColumn(state.weekStartDate, d);
+      if (state.grid[`${ds}-${task.id}`] && !isTaskOffPlan(task, ds)) checked++;
     }
     return { task, needed: getTaskRequiredDays(task.id) - checked };
   }).filter(x => x.needed > 0);
@@ -4354,7 +4371,7 @@ function renderProgress() {
   tasks.forEach(task => {
     DAYS.forEach(day => {
       const dateStr = getDateOfColumn(currentViewingWeekStartDate, day);
-      if (state.grid[`${dateStr}-${task.id}`]) {
+      if (state.grid[`${dateStr}-${task.id}`] && !isTaskOffPlan(task, dateStr)) {
         taskTotals[task.id]++;
       }
     });

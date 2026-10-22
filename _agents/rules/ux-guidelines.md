@@ -132,6 +132,11 @@ See canonical PRD [`docs/prd_rest_day_passes_and_bonus_tasks.md`](file:///usr/lo
    - Floating Badge: `.pokeball-checkbox:has(input:checked)::after` with text `+XP`, font `Fredoka One`, `font-size: 7px`, background `#1d4ed8`, border `1px solid #1e3a8a`, color `#ffffff`, `top: -6px; right: -2px;`.
    - Awards `+10 XP` to partner Pokémon and unlocks `(Super Trainer! 🚀)` footer.
 
+6. **Not on the plan (`.checkbox-cell.out-of-range-cell`)** — before an activity was added or from the day it was removed:
+   - Rest-day diagonal stripes, full opacity; **no Pokéball** (the `.pokeball-checkbox` is hidden), only a centred muted CSS dash (`16px × 4px`, `#94a3b8`) echoing the Daily Total `➖`. Never a grey or faded Pokéball, which reads as "not done yet".
+   - Parent tooltip names the activity and the added/removed date. Inert in all modes (Exception Mode can't cycle it).
+   - A removal day the child already ticked keeps its Pokéball and counts. Off-plan days never count toward the Goal column.
+
 ## 15. Daily Total Row (Child Readability Invariant)
 - **Only Clean Icons (No Sub-Labels)**: Day cells in the `Daily Total` row (`tr.total-row td.day-total-cell`) must display ONLY the clean status icon (`❌` for incomplete past missed days, `☆` ghost star for today in-progress and unreached future days, `🌟` for completed days, `💤` for past rest days, `➖` for superseded days).
 - **No Fractional Text for 7-Year-Olds**: Never render fractional progress text (e.g. `1 / 3 (+1)`, `0 / 0 ⭐`, `4 / 4`) below the icons in the chart cells. For a 7-year-old child, these numbers create unnecessary cognitive clutter.

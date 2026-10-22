@@ -597,14 +597,29 @@ button:disabled,
   font-size: 0.85rem;
 }
 
+/* State 7 "Not on the plan" (prd_rest_day_passes_and_bonus_tasks.md §2): the
+   activity isn't part of the plan this day (before it was added / after it was
+   removed). Rest-day stripes = "doesn't count"; no Pokéball, just a muted CSS
+   dash echoing the Daily Total ➖, so it can't be mistaken for an unticked ball. */
 .checkbox-cell.out-of-range-cell {
-  background-color: #e2e8f0 !important;
-  opacity: 0.6;
-  cursor: not-allowed;
+  background: repeating-linear-gradient(-45deg, #f8fafc, #f8fafc 4px, #e2e8f0 4px, #e2e8f0 8px) !important;
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+  text-align: center;
 }
 
-.checkbox-cell.out-of-range-cell .pokeball {
-  filter: grayscale(100%) opacity(0.5);
+.checkbox-cell.out-of-range-cell .pokeball-checkbox {
+  display: none !important;
+}
+
+.checkbox-cell.out-of-range-cell::after {
+  content: '';
+  display: block;
+  width: 16px;
+  height: 4px;
+  margin: 16px auto; /* keeps the 36px row rhythm of a Pokéball cell */
+  border-radius: 2px;
+  background: #94a3b8;
 }
 
 .checkbox-cell.future-cell {
