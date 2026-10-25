@@ -14,7 +14,7 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - Daily totals completed are saved as stars in the **Star Vault**.
   - **Star Streak Color Legend**: A simple at-a-glance legend shows what each star color means as streaks grow (🌟 `Day 1-2 Yellow`, 🥈 `Day 3-4 Silver`, 📘 `Day 5-9 Blue`, 🌈 `Day 10+ Prism`).
   - Spend 5, 10, or 15 stars from your vault to purchase and unlock new partners from the **Partner Shop** featuring 100+ different Pokémon (including Legendaries like Galarian Moltres)!
-  - Filter shop items dynamically by type (Fire, Water, Grass, Dark, Flying, etc.) or cost tier, and sort by Dex #, A–Z, Cost, or Type (`Sort: Type ⚡`, with Dex # tiebreaker).
+  - Filter shop items dynamically by type (Grass, Fire, Water, Electric, then Bug–Steel A–Z) or cost tier, and sort by Dex # or A–Z.
   - Clean card layout with a 26px top status rail (`✨` can-evolve marker in the top-left corner, `🔒` in the top-right on locked cards, 64px sprite), full single-line names with zero truncation (including Charmander and `G. Moltres`), interactive "CAUGHT!" / `CAUGHT ×2` ribbons, and vertically aligned star progress bars.
 - 📈 **XP & Evolution System**: 
   - Each task checked adds **5 XP**.

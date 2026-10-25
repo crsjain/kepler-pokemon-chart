@@ -8009,25 +8009,12 @@ async function runSuite() {
         closeBadgesBtn.click();
         await sleep(30);
 
-        // (G) Partner Shop also supports Sort: Type
+        // (G) Partner Shop also omits redundant Sort: Type option
         helpers.openPokemonShop();
         await sleep(50);
         const shopSortSelect = document.getElementById('shop-sort-by');
-        shopSortSelect.value = 'type';
-        shopSortSelect.dispatchEvent(new Event('change'));
-        await sleep(50);
-        const shopIds = Array.from(document.querySelectorAll('#shop-items-grid .shop-item-card')).map(c => Number(c.dataset.id));
-        const expectedShopIds = [...shopIds].sort((a, b) => {
-          const tA = (POKEMON_TYPES[a] || 'Normal').toLowerCase();
-          const tB = (POKEMON_TYPES[b] || 'Normal').toLowerCase();
-          if (tA < tB) return -1;
-          if (tA > tB) return 1;
-          return a - b;
-        });
-        assert(JSON.stringify(shopIds) === JSON.stringify(expectedShopIds), "Partner Shop 'type' sort must order by type A-Z then Dex #");
-        shopSortSelect.value = 'number';
-        shopSortSelect.dispatchEvent(new Event('change'));
-        await sleep(30);
+        assert(shopSortSelect.querySelector('option[value="type"]') === null,
+          "Partner Shop sort dropdown must not include redundant 'Sort: Type' option");
 
         // (H) Zero name truncation across all buyable shop cards (Charmander, Sprigatito, G. Zigzagoon, etc.)
         const allShopCards = Array.from(document.querySelectorAll('#shop-items-grid .shop-item-card'));
