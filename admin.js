@@ -912,6 +912,21 @@ export function initAdmin(callbacks) {
     tasksList.addEventListener('change', refreshActivitiesDirty);
   }
 
+  const chartStyleCard = document.getElementById('admin-chart-style-placeholder');
+  if (chartStyleCard) {
+    chartStyleCard.addEventListener('change', (e) => {
+      const radio = e.target.closest('input[name="admin-chart-style"]');
+      if (!radio) return;
+      const val = radio.value === 'big-buttons' ? 'big-buttons' : 'standard';
+      if (state.chartStyle !== val) {
+        state.chartStyle = val;
+        saveState();
+        renderState(true);
+      }
+      flashAdminSaved(radio);
+    });
+  }
+
   // Parent passcode (Family card): explicit submit, inline errors, success toast.
   const changePasscodeBtn = document.getElementById('admin-change-passcode-btn');
   const newPasscodeInput = document.getElementById('admin-new-passcode-input');
@@ -1255,6 +1270,15 @@ export function refreshAdminScopeChip() {
  * Opens the panel on Today (D6: no remembered section), refreshes the chip,
  * and renders the dynamic lists.
  */
+function refreshChartStyleControl() {
+  const card = document.getElementById('admin-chart-style-placeholder');
+  if (!card) return;
+  const currentStyle = state.chartStyle === 'big-buttons' ? 'big-buttons' : 'standard';
+  card.querySelectorAll('input[name="admin-chart-style"]').forEach(r => {
+    r.checked = (r.value === currentStyle);
+  });
+}
+
 function openAdminPanel() {
   if (!adminModal) return;
   showAdminSection(ADMIN_LANDING_SECTION);
@@ -1262,6 +1286,7 @@ function openAdminPanel() {
   refreshReloadAvailability();
   adminModal.classList.remove('hidden');
   renderAdminTasksList();
+  refreshChartStyleControl();
   renderClaimedRewardsHistory();
   appCallbacks.renderAdminProfilesList();
   refreshPinStatus();

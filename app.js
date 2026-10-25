@@ -97,6 +97,9 @@ import { promptParentPassword, setFamilyPasscode, getParentPasscode, describeAut
 import { initRewardsAdmin, openEditRewardsModal, bindRewardsEditorEvents } from './rewards_admin.js';
 
 let currentViewingWeekStartDate = null;
+let viewingHistoricalDayIndex = 0;
+let lastViewedWeekForSimplified = null;
+let lastJustCheckedKey = null;
 
 const APP_VERSION = 'v1.8.0 (v58)';
 
@@ -1920,6 +1923,19 @@ export function renderState(rebuildGrid = false) {
     adminTimezoneSelect.value = state.timezoneOffset !== undefined ? state.timezoneOffset.toString() : 'default';
   }
 
+  const chartStyleVal = state.chartStyle === 'big-buttons' ? 'big-buttons' : 'standard';
+  const chartContainerEl = document.querySelector('.chart-container');
+  if (chartContainerEl) {
+    chartContainerEl.dataset.chartStyle = chartStyleVal;
+  }
+  document.querySelectorAll('input[name="admin-chart-style"]').forEach(r => {
+    r.checked = (r.value === chartStyleVal);
+  });
+  if (currentViewingWeekStartDate !== lastViewedWeekForSimplified) {
+    lastViewedWeekForSimplified = currentViewingWeekStartDate;
+    viewingHistoricalDayIndex = 0;
+  }
+
   // 5. Render Grid Table (conditional build vs update)
   if (rebuildGrid) {
     renderGridTable();
@@ -2034,6 +2050,200 @@ function updateActiveColumnUI() {
       backToTodayBtn.classList.add('hidden');
     }
   }
+
+  renderSimplifiedView();
+}
+
+function renderSimplifiedView() {
+  const stripEl = document.getElementById('simplified-day-strip');
+  const cardsListEl = document.getElementById('simplified-cards-list');
+  const dayTitleEl = document.getElementById('simplified-day-title');
+  const daySubtitleEl = document.getElementById('simplified-day-subtitle');
+  if (!stripEl || !cardsListEl) return;
+
+  if (state.chartStyle !== 'big-buttons') {
+    stripEl.innerHTML = '';
+    cardsListEl.innerHTML = '';
+    return;
+  }
+
+  const colStates = getWeekColumnStates(state, currentViewingWeekStartDate);
+  const intervals = getHistoricalWeekIntervals(state, currentViewingWeekStartDate);
+  const currentInterval = intervals.find(i => i.startDate === currentViewingWeekStartDate) || null;
+  const viewingStartDay = currentInterval ? currentInterval.weekStartDay : (state.weekStartDay !== undefined ? state.weekStartDay : 0);
+  const isPastWeek = !!(state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate));
+
+  let focusedColIndex = colStates.findIndex(c => c.state.startsWith('ACTIVE'));
+  if (focusedColIndex === -1) {
+    focusedColIndex = isPastWeek ? Math.max(0, Math.min(6, viewingHistoricalDayIndex)) : 0;
+  }
+
+  const dayNamesShort = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const dayNamesFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
+
+  let stripHtml = '';
+  for (let d = 0; d < 7; d++) {
+    const col = colStates[d];
+    if (!col) continue;
+    const dayOfWeek = (viewingStartDay + d) % 7;
+    const dayShort = dayNamesShort[dayOfWeek];
+    const dateStr = col.dateStr;
+    const isSuperseded = col.state === 'SUPERSEDED' || !!(currentInterval && currentInterval.supersededDates && currentInterval.supersededDates.includes(dateStr));
+    const isComplete = isDayComplete(dateStr, state);
+    const counts = getDayTaskCounts(dateStr, state);
+    const isFutureOrToday = dateStr >= todayStr;
+
+    let statusIconHtml = '';
+    let pillTitle = counts.displayString || col.tooltip || '';
+    if (isSuperseded) {
+      pillTitle = col.tooltip || 'These days moved to your new chart! 🚀';
+      statusIconHtml = `<div class="badge-indicator locked" title="${pillTitle}">➖</div>`;
+    } else if (isComplete) {
+      const isSuperTrainer = counts.bonusCompleted > 0;
+      statusIconHtml = `<div class="badge-indicator unlocked ${isSuperTrainer ? 'super-trainer' : ''}" title="${counts.displayString}">${EARNED_STAR_HTML}</div>`;
+    } else if (isFutureOrToday) {
+      statusIconHtml = `<div class="badge-indicator locked future-star" title="${counts.displayString}">${GHOST_STAR_HTML}</div>`;
+    } else if (counts.isRestDay) {
+      statusIconHtml = REST_DAY_HTML;
+    } else {
+      statusIconHtml = `<div class="badge-indicator locked" title="${counts.displayString}">❌</div>`;
+    }
+
+    const isFocused = d === focusedColIndex;
+    stripHtml += `
+      <button type="button"
+              class="simplified-day-pill ${isFocused ? 'is-focused' : ''}"
+              data-day="${d}"
+              data-column-state="${col.state.toLowerCase()}"
+              aria-pressed="${isFocused ? 'true' : 'false'}"
+              title="${pillTitle}">
+        <span class="simplified-pill-day">${dayShort}</span>
+        <span class="simplified-pill-star">${statusIconHtml}</span>
+      </button>
+    `;
+  }
+  stripEl.innerHTML = stripHtml;
+
+  const focusedCol = colStates[focusedColIndex] || colStates[0];
+  if (!focusedCol) return;
+
+  const focusedDayOfWeek = (viewingStartDay + focusedColIndex) % 7;
+  const focusedDayName = dayNamesFull[focusedDayOfWeek];
+  const isFocusedToday = focusedCol.dateStr === todayStr;
+  const focusedComplete = isDayComplete(focusedCol.dateStr, state);
+  const focusedCounts = getDayTaskCounts(focusedCol.dateStr, state);
+
+  if (dayTitleEl) {
+    dayTitleEl.textContent = isFocusedToday ? `Today — ${focusedDayName}` : `${focusedDayName}'s Activities`;
+  }
+  if (daySubtitleEl) {
+    if (focusedCol.state === 'SUPERSEDED') {
+      daySubtitleEl.textContent = 'These days moved to your new chart! 🚀';
+    } else if (focusedComplete) {
+      daySubtitleEl.textContent = '🌟 All done for this day! Amazing job!';
+    } else if (focusedCounts.isRestDay) {
+      daySubtitleEl.textContent = '💤 Rest Day — enjoy your break!';
+    } else {
+      daySubtitleEl.textContent = 'Tap a big button when you finish each activity!';
+    }
+  }
+
+  const tasks = (state.tasks || []).filter(task => isTaskActiveInWeek(task, currentViewingWeekStartDate));
+  if (tasks.length === 0) {
+    cardsListEl.innerHTML = `<div class="simplified-empty-state">No activities configured. Add some in Parent Admin!</div>`;
+    return;
+  }
+
+  let cardsHtml = '';
+  tasks.forEach(task => {
+    const reqDays = getTaskRequiredDays(task.id, currentViewingWeekStartDate);
+    let doneDays = 0;
+    for (let d = 0; d < 7; d++) {
+      const ds = getDateOfColumn(currentViewingWeekStartDate, d);
+      if (state.grid[`${ds}-${task.id}`] && !isTaskOffPlan(task, ds)) {
+        doneDays++;
+      }
+    }
+    const goalCompleted = doneDays >= reqDays;
+
+    let dotsHtml = '';
+    const dotCount = Math.max(1, reqDays);
+    for (let i = 0; i < dotCount; i++) {
+      const isFilled = reqDays === 0 ? (doneDays > 0) : (i < doneDays);
+      dotsHtml += `<span class="goal-dot ${isFilled ? 'filled' : 'empty'}"></span>`;
+    }
+
+    const dateStr = focusedCol.dateStr;
+    const stateKey = `${dateStr}-${task.id}`;
+    const excusedVal = state.excused[stateKey];
+    const isBonus = excusedVal === 'bonus';
+    const isRest = excusedVal === 'rest' || excusedVal === true;
+    const checked = !!state.grid[stateKey];
+    const isOutOfRange = isTaskOffPlan(task, dateStr);
+    const shouldDisable = isOutOfRange || (focusedCol.isCellDisabled && !isLastWeekEditCell(dateStr)) || isRest;
+
+    let cellTitle = focusedCol.tooltip;
+    if (isOutOfRange) {
+      cellTitle = offPlanTooltip(task, dateStr);
+    } else if (focusedCol.state === 'SUPERSEDED') {
+      cellTitle = focusedCol.tooltip;
+    } else if (isBonus) {
+      cellTitle = 'Bonus Task (+10 XP if completed!)';
+    } else if (isRest) {
+      cellTitle = 'Rest Day (Excused chore)';
+    }
+
+    const excusedClasses = isBonus ? 'excused-cell bonus-cell' : (isRest ? 'excused-cell rest-cell' : '');
+    const excusedDataAttr = isBonus ? 'data-excused-type="bonus"' : (isRest ? 'data-excused-type="rest"' : '');
+
+    let statusPillHtml = '';
+    if (isOutOfRange) {
+      statusPillHtml = `<span class="simplified-card-tag offplan-tag">➖ Off-plan today</span>`;
+    } else if (isBonus) {
+      statusPillHtml = `<span class="simplified-card-tag bonus-tag">✨ Bonus +10 XP</span>`;
+    } else if (isRest) {
+      statusPillHtml = `<span class="simplified-card-tag rest-tag">💤 Rest Pass</span>`;
+    }
+
+    const taskName = task.name || 'Unknown';
+    const emoji = task.emoji || '📝';
+    const concept = task.concept || 'Practice!';
+
+    cardsHtml += `
+      <div class="simplified-task-card ${checked ? 'is-checked' : ''} ${isBonus ? 'is-bonus' : ''} ${isRest ? 'is-rest' : ''} ${isOutOfRange ? 'is-out-of-range' : ''} ${goalCompleted ? 'is-goal-met' : ''}"
+           data-task="${task.id}"
+           data-day="${focusedColIndex}">
+        <div class="simplified-card-main">
+          <span class="simplified-card-emoji" aria-hidden="true">${emoji}</span>
+          <div class="simplified-card-info">
+            <div class="simplified-card-title-row">
+              <span class="simplified-card-name">${taskName}</span>
+              ${statusPillHtml}
+            </div>
+            <span class="simplified-card-concept">${concept}</span>
+            <div class="simplified-goal-dots ${goalCompleted ? 'completed' : ''}"
+                 data-task="${task.id}"
+                 title="${doneDays} / ${reqDays} days"
+                 aria-label="Weekly goal: ${doneDays} of ${reqDays} days completed">
+              ${dotsHtml}
+            </div>
+          </div>
+        </div>
+        <div class="checkbox-cell simplified-card-cell ${excusedClasses} ${isOutOfRange ? 'out-of-range-cell' : ''} ${focusedCol.cellClass} ${focusedCol.state.startsWith('ACTIVE') ? 'active-column' : ''}"
+             data-column-state="${focusedCol.state.toLowerCase()}"
+             ${excusedDataAttr}
+             ${cellTitle ? `title="${cellTitle}"` : ''}>
+          <label class="pokeball-checkbox simplified-jumbo-checkbox" ${cellTitle ? `title="${cellTitle}"` : ''}>
+            <input type="checkbox" data-day="${focusedColIndex}" data-task="${task.id}" ${checked ? 'checked' : ''} ${shouldDisable ? 'disabled' : ''}>
+            <span class="pokeball ${lastJustCheckedKey === stateKey ? 'just-checked' : ''}" ${cellTitle ? `title="${cellTitle}"` : ''}></span>
+          </label>
+        </div>
+      </div>
+    `;
+  });
+
+  cardsListEl.innerHTML = cardsHtml;
 }
 
 function updateGridCheckboxes() {
@@ -2438,6 +2648,7 @@ function updateDayTotalUI(day) {
     dayTotalCell.classList.add('locked');
     dayTotalCell.classList.remove('unlocked');
   }
+  renderSimplifiedView();
 }
 
 function handleCheckboxChange(e) {
@@ -2473,6 +2684,7 @@ function handleCheckboxChange(e) {
   // switch straight to the target day rather than stacking a second modal.
   if (requiresParentApproval(dateStr)) {
     const intendedChecked = cb.checked;
+    const fromSimplified = !!cb.closest('#simplified-cards-list');
     e.preventDefault();
     cb.checked = !intendedChecked; // Revert until approved
     withParentApproval(dateStr, () => {
@@ -2482,7 +2694,9 @@ function handleCheckboxChange(e) {
         updateActiveColumnUI();
       }
       // Re-query: updateActiveColumnUI() may have re-rendered the input.
-      const input = document.querySelector(`input[data-day="${day}"][data-task="${taskId}"]`);
+      const scope = fromSimplified ? document.getElementById('simplified-cards-list') : document;
+      const input = (scope && scope.querySelector(`input[data-day="${day}"][data-task="${taskId}"]`))
+        || document.querySelector(`input[data-day="${day}"][data-task="${taskId}"]`);
       if (!input) return;
       input.checked = intendedChecked;
       handleCheckboxChange({ target: input, preventDefault: () => {} });
@@ -2559,6 +2773,10 @@ function handleCheckboxChange(e) {
 
   const pokeballEl = cb.parentElement ? cb.parentElement.querySelector('.pokeball') : null;
   if (isChecked) {
+    lastJustCheckedKey = key;
+    setTimeout(() => {
+      if (lastJustCheckedKey === key) lastJustCheckedKey = null;
+    }, 500);
     playSound('check');
     if (pokeballEl) {
       pokeballEl.classList.remove('just-checked');
@@ -2569,6 +2787,7 @@ function handleCheckboxChange(e) {
       }, { once: true });
     }
   } else {
+    if (lastJustCheckedKey === key) lastJustCheckedKey = null;
     playSound('uncheck');
     if (pokeballEl) {
       pokeballEl.classList.remove('just-checked');
@@ -2581,7 +2800,8 @@ function handleCheckboxChange(e) {
   
   if (isDayFullyChecked && !wasDayFullyChecked) {
     xpGained += XP_DAILY_BONUS;
-    const dayCell = domCache.dayTotals[day];
+    const pillEl = document.querySelector(`#simplified-day-strip .simplified-day-pill[data-day="${day}"]`);
+    const dayCell = (pillEl && pillEl.offsetParent !== null) ? pillEl : domCache.dayTotals[day];
     if (dayCell) {
       const rect = dayCell.getBoundingClientRect();
       const x = rect.left + rect.width / 2;
@@ -2916,6 +3136,45 @@ function bindGridBodyEvents() {
     });
     tbody.addEventListener('click', handleGridClick);
   }
+
+  const simplifiedCardsList = document.getElementById('simplified-cards-list');
+  if (simplifiedCardsList) {
+    simplifiedCardsList.addEventListener('change', (e) => {
+      if (e.target.matches('.pokeball-checkbox input')) {
+        handleCheckboxChange(e);
+      }
+    });
+    simplifiedCardsList.addEventListener('click', (e) => {
+      if (e.target.closest('.pokeball-checkbox')) return;
+      const card = e.target.closest('.simplified-task-card');
+      if (!card) return;
+      const input = card.querySelector('.pokeball-checkbox input');
+      if (input && !input.disabled) {
+        input.click();
+      }
+    });
+  }
+
+  const simplifiedDayStrip = document.getElementById('simplified-day-strip');
+  if (simplifiedDayStrip) {
+    simplifiedDayStrip.addEventListener('click', (e) => {
+      const pill = e.target.closest('.simplified-day-pill');
+      if (!pill) return;
+      const clickedColumn = parseInt(pill.dataset.day, 10);
+      if (Number.isNaN(clickedColumn)) return;
+      handleDayColumnSelect(clickedColumn);
+    });
+  }
+
+  const openVaultSimplifiedBtn = document.getElementById('open-vault-simplified-btn');
+  if (openVaultSimplifiedBtn) {
+    openVaultSimplifiedBtn.addEventListener('click', openVault);
+  }
+
+  const openGuideSimplifiedBtn = document.getElementById('open-guide-simplified-btn');
+  if (openGuideSimplifiedBtn) {
+    openGuideSimplifiedBtn.addEventListener('click', openGuide);
+  }
 }
 
 /**
@@ -3118,73 +3377,86 @@ function bindPartnerShowcaseEvents() {
  * Weekly grid day-header clicks, including the parent approval gate for past
  * days, Back to Today, and the parent grace lock button.
  */
+function handleDayColumnSelect(clickedColumn) {
+  const col = getColumnState(clickedColumn, state, currentViewingWeekStartDate);
+  if (!col) return;
+
+  // In a past week in Simplified mode, allow tapping non-superseded day pills to inspect that day's cards.
+  if (isViewingPastWeek() && !isLastWeekEditActive() && state.chartStyle === 'big-buttons' && col.state !== 'SUPERSEDED') {
+    viewingHistoricalDayIndex = clickedColumn;
+    renderSimplifiedView();
+    return;
+  }
+
+  if (!col.canSelectHeader) return;
+
+  const clickedRealDay = (state.weekStartDay + clickedColumn) % 7;
+  
+  if (state.activeDay !== clickedRealDay) {
+    if (isExceptionMode) {
+      state.activeDay = clickedRealDay;
+      saveState();
+      updateActiveColumnUI();
+      return;
+    }
+
+    // Parent approval gate for previous days. On success the passcode
+    // stands in for the "Switch Day?" confirmation.
+    if (requiresParentApproval(col.dateStr)) {
+      withParentApproval(col.dateStr, () => {
+        state.activeDay = clickedRealDay;
+        saveState();
+        updateActiveColumnUI();
+      });
+      return;
+    }
+    
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const targetDayName = daysOfWeek[clickedRealDay];
+    const todayRealDay = getLocalDate(state?.timezoneOffset).getDay();
+    const isCurrentToday = (state.activeDay === todayRealDay);
+    const currentActiveDayName = (state.activeDay !== undefined && state.activeDay !== -1) ? daysOfWeek[state.activeDay] : "Today";
+    
+    if (col.requiresSwitchConfirmation) {
+      const switchHeaderHtml = `
+        <div class="confirm-detail">
+          <div class="schedule-hero-card">
+            <div class="schedule-hero-label">📅 SWITCH ACTIVE DAY</div>
+            <div class="schedule-hero-main">${targetDayName}</div>
+            <div class="schedule-hero-sub">Switch active column highlight to <strong>${targetDayName}</strong>?</div>
+          </div>
+        </div>
+      `;
+      showCustomConfirm(
+        "Switch Day? 📅",
+        switchHeaderHtml,
+        () => {
+          state.activeDay = clickedRealDay;
+          saveState();
+          updateActiveColumnUI();
+        },
+        null,
+        `Switch to ${targetDayName}`,
+        isCurrentToday ? "Stay on Today" : `Stay on ${currentActiveDayName}`,
+        "pixel-btn info",
+        "pixel-btn greyed-out"
+      );
+    } else {
+      // Direct switch (e.g. jumping back to today with zero modal)
+      state.activeDay = clickedRealDay;
+      saveState();
+      updateActiveColumnUI();
+    }
+  }
+}
+
 function bindDayHeaderEvents() {
   // Header day clicks
   const headers = document.querySelectorAll('.day-header');
   headers.forEach(th => {
     th.addEventListener('click', () => {
       const clickedColumn = parseInt(th.dataset.day);
-      const col = getColumnState(clickedColumn, state, currentViewingWeekStartDate);
-      if (!col || !col.canSelectHeader) return;
-
-      const clickedRealDay = (state.weekStartDay + clickedColumn) % 7;
-      
-      if (state.activeDay !== clickedRealDay) {
-        if (isExceptionMode) {
-          state.activeDay = clickedRealDay;
-          saveState();
-          updateActiveColumnUI();
-          return;
-        }
-
-        // Parent approval gate for previous days. On success the passcode
-        // stands in for the "Switch Day?" confirmation.
-        if (requiresParentApproval(col.dateStr)) {
-          withParentApproval(col.dateStr, () => {
-            state.activeDay = clickedRealDay;
-            saveState();
-            updateActiveColumnUI();
-          });
-          return;
-        }
-        
-        const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const targetDayName = daysOfWeek[clickedRealDay];
-        const todayRealDay = getLocalDate(state?.timezoneOffset).getDay();
-        const isCurrentToday = (state.activeDay === todayRealDay);
-        const currentActiveDayName = (state.activeDay !== undefined && state.activeDay !== -1) ? daysOfWeek[state.activeDay] : "Today";
-        
-        if (col.requiresSwitchConfirmation) {
-          const switchHeaderHtml = `
-            <div class="confirm-detail">
-              <div class="schedule-hero-card">
-                <div class="schedule-hero-label">📅 SWITCH ACTIVE DAY</div>
-                <div class="schedule-hero-main">${targetDayName}</div>
-                <div class="schedule-hero-sub">Switch active column highlight to <strong>${targetDayName}</strong>?</div>
-              </div>
-            </div>
-          `;
-          showCustomConfirm(
-            "Switch Day? 📅",
-            switchHeaderHtml,
-            () => {
-              state.activeDay = clickedRealDay;
-              saveState();
-              updateActiveColumnUI();
-            },
-            null,
-            `Switch to ${targetDayName}`,
-            isCurrentToday ? "Stay on Today" : `Stay on ${currentActiveDayName}`,
-            "pixel-btn info",
-            "pixel-btn greyed-out"
-          );
-        } else {
-          // Direct switch (e.g. jumping back to today with zero modal)
-          state.activeDay = clickedRealDay;
-          saveState();
-          updateActiveColumnUI();
-        }
-      }
+      handleDayColumnSelect(clickedColumn);
     });
   });
 
@@ -4556,6 +4828,8 @@ function renderProgress() {
       slot.classList.remove('unlocked');
     }
   });
+
+  renderSimplifiedView();
 }
 
 function triggerLevelUpAnimation() {

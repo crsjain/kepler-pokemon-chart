@@ -83,6 +83,7 @@ export let state = {
   adminPassword: 'zxcv', // Default parent admin passcode
   lockPastDays: false, // Require parent passcode to edit previous days (per-profile; see docs/prd_parent_past_day_approval.md)
   parentGraceMinutes: 2, // Parent edit window duration in minutes (1 | 2 | 5)
+  chartStyle: 'standard', // Per-child chart layout: 'standard' | 'big-buttons' (see docs/prd_simplified_chart_style.md)
   timezoneOffset: 'default',
   weeklyRewardOptions: [...DEFAULT_WEEKLY_REWARDS],
   megaRewardOptions: [...DEFAULT_MEGA_REWARDS],
@@ -189,6 +190,7 @@ export function getDefaultStateTemplate() {
     adminPassword: 'zxcv',
     lockPastDays: false,
     parentGraceMinutes: 2,
+    chartStyle: 'standard',
     timezoneOffset: 'default',
     weeklyRewardOptions: [...DEFAULT_WEEKLY_REWARDS],
     megaRewardOptions: [...DEFAULT_MEGA_REWARDS],
@@ -273,6 +275,7 @@ export const WIPE_PRESERVED_KEYS = [
   'idleTimeout',
   'parentGraceMinutes',
   'lockPastDays',
+  'chartStyle',
   'adminPassword',
   'volume',
   'debugSidebarEnabled'
@@ -757,6 +760,12 @@ export function runStateDiagnostics() {
     state.parentGraceMinutes = 2;
     issues.push("Missing or invalid parentGraceMinutes.");
     fixed.push("Set parentGraceMinutes to default 2.");
+  }
+
+  if (!['standard', 'big-buttons'].includes(state.chartStyle)) {
+    state.chartStyle = 'standard';
+    issues.push("Missing or invalid chartStyle.");
+    fixed.push("Set chartStyle to default 'standard'.");
   }
 
   const isValidOption = (opt) => opt && typeof opt === 'object' && opt.value !== undefined && opt.text !== undefined;

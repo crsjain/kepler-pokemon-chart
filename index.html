@@ -8,25 +8,25 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=11.03">
+  <link rel="stylesheet" href="style.css?v=11.04">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script type="importmap">
   {
     "imports": {
-      "./app.js": "./app.js?v=11.06",
-      "./state.js": "./state.js?v=11.06",
-      "./firebase.js": "./firebase.js?v=11.06",
-      "./migrations.js": "./migrations.js?v=11.06",
-      "./vault.js": "./vault.js?v=11.06",
-      "./badges.js": "./badges.js?v=11.06",
-      "./shop.js": "./shop.js?v=11.06",
-      "./guide.js": "./guide.js?v=11.06",
-      "./pokemon_data.js": "./pokemon_data.js?v=11.06",
-      "./date_utils.js": "./date_utils.js?v=11.06",
-      "./admin.js": "./admin.js?v=11.06",
-      "./rewards_admin.js": "./rewards_admin.js?v=11.06",
-      "./audio.js": "./audio.js?v=11.06",
-      "./modal_backdrop.js": "./modal_backdrop.js?v=11.06"
+      "./app.js": "./app.js?v=11.07",
+      "./state.js": "./state.js?v=11.07",
+      "./firebase.js": "./firebase.js?v=11.07",
+      "./migrations.js": "./migrations.js?v=11.07",
+      "./vault.js": "./vault.js?v=11.07",
+      "./badges.js": "./badges.js?v=11.07",
+      "./shop.js": "./shop.js?v=11.07",
+      "./guide.js": "./guide.js?v=11.07",
+      "./pokemon_data.js": "./pokemon_data.js?v=11.07",
+      "./date_utils.js": "./date_utils.js?v=11.07",
+      "./admin.js": "./admin.js?v=11.07",
+      "./rewards_admin.js": "./rewards_admin.js?v=11.07",
+      "./audio.js": "./audio.js?v=11.07",
+      "./modal_backdrop.js": "./modal_backdrop.js?v=11.07"
     }
   }
   </script>
@@ -276,6 +276,20 @@
             <!-- Populated dynamically via JS -->
           </tbody>
         </table>
+      </div>
+      <div id="simplified-today-view" class="simplified-today-view" aria-label="Today Focus Chart">
+        <div class="simplified-strip-bar">
+          <div id="simplified-day-strip" class="simplified-day-strip" role="tablist" aria-label="Days of the week"></div>
+          <div class="simplified-strip-actions">
+            <button type="button" id="open-vault-simplified-btn" class="pixel-btn small warning">⭐ Vault</button>
+            <button type="button" id="open-guide-simplified-btn" class="pixel-btn small info">📖 Guide</button>
+          </div>
+        </div>
+        <div class="simplified-day-banner">
+          <span id="simplified-day-title" class="simplified-day-title"></span>
+          <span id="simplified-day-subtitle" class="simplified-day-subtitle"></span>
+        </div>
+        <div id="simplified-cards-list" class="simplified-cards-list"></div>
       </div>
     </main>
 
@@ -927,23 +941,24 @@
             </div>
           </div>
 
-          <!-- Placeholder only: not wired to state. Bottom of Activities per PRD v2.0 Q5 (was D8 top). -->
-          <div id="admin-chart-style-placeholder" class="admin-coming-soon" aria-disabled="true" title="Coming soon: a big-button chart for younger children.">
-            <div class="admin-coming-soon-header">
-              <span>🧸 Chart Style</span>
-              <span class="coming-soon-tag">Coming soon</span>
+          <!-- Per-child Chart Style (docs/prd_simplified_chart_style.md; ID kept for TC93). -->
+          <div id="admin-chart-style-placeholder" class="admin-action-group adm-card admin-chart-style-card">
+            <div class="adm-card-head">
+              <span class="adm-eyebrow" data-admin-scope-eyebrow="child">This child</span>
+              <span class="adm-saved-status" data-admin-saved-status role="status" aria-live="polite"></span>
             </div>
-            <div class="admin-segmented" role="radiogroup" aria-label="Chart style (coming soon)">
+            <h4>🧸 Chart Style</h4>
+            <div class="admin-segmented" role="radiogroup" aria-label="Chart style">
               <label class="admin-segment">
-                <input type="radio" name="admin-chart-style" value="big-buttons" disabled>
-                <span class="admin-segment-text">Big Buttons<span class="subtext">under 5</span></span>
+                <input type="radio" name="admin-chart-style" value="big-buttons">
+                <span class="admin-segment-text">Big Buttons<span class="subtext">Today focus</span></span>
               </label>
               <label class="admin-segment">
-                <input type="radio" name="admin-chart-style" value="standard" checked disabled>
-                <span class="admin-segment-text">Standard<span class="subtext">5+</span></span>
+                <input type="radio" name="admin-chart-style" value="standard" checked>
+                <span class="admin-segment-text">Standard<span class="subtext">Full week grid</span></span>
               </label>
             </div>
-            <div class="admin-option-hint">Fewer, bigger buttons for younger children with just one or two activities.</div>
+            <div class="admin-option-hint">Big, easy-to-tap today cards + a 7-day star strip for younger children with fewer activities.</div>
           </div>
 
           <!-- Draft save bar (PRD v2.0 §11.5): shown only while the draft differs from saved state. -->
@@ -1244,7 +1259,7 @@
   </div>
 
   <script src="particles.js?v=10.4"></script>
-  <script type="module" src="app.js?v=11.06" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=11.07" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 

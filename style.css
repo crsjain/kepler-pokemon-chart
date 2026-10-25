@@ -6977,8 +6977,9 @@ body.has-banner .mini-hud.visible {
   color: #7f1d1d;
 }
 
-/* Admin: "coming soon" feature placeholder — greyed out and inert.
-   Chart Style (under 5 / 5+) is not built yet; see prd_admin_panel_redesign.md D8. */
+/* Admin: Chart Style segmented control (Standard 7-Day Grid vs. Big Buttons Today Focus)
+   Activated per docs/prd_simplified_chart_style.md. Legacy .admin-coming-soon
+   rules kept only if a future card uses them. */
 .admin-coming-soon {
   display: flex;
   flex-direction: column;
@@ -7012,7 +7013,10 @@ body.has-banner .mini-hud.visible {
 .admin-segmented {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 8px;
+}
+
+.admin-coming-soon .admin-segmented {
   opacity: 0.55;
   filter: grayscale(1);
   pointer-events: none;
@@ -7023,23 +7027,36 @@ body.has-banner .mini-hud.visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 6px 8px;
+  min-height: 48px;
+  padding: 8px 10px;
   box-sizing: border-box;
   border: 2px solid #cbd5e1;
-  border-radius: 8px;
-  background: #f1f5f9;
-  color: #475569;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #334155;
   text-align: center;
   font-family: 'Fredoka One', cursive;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-segment:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
 }
 
 .admin-segment:has(input:checked) {
-  background: #ffffff;
-  border-color: #94a3b8;
-  color: #1e293b;
+  background: var(--adm-secondary-fill, #e3edfb);
+  border-color: var(--adm-primary, #2a71d0);
+  color: var(--adm-primary-pressed, #1d4f90);
+  box-shadow: 0 2px 0 var(--adm-primary-pressed, #1d4f90);
+}
+
+.admin-segment:has(input:focus-visible) {
+  outline: 2px solid var(--adm-focus, #1d4f90);
+  outline-offset: 2px;
 }
 
 .admin-segment input {
@@ -7054,8 +7071,13 @@ body.has-banner .mini-hud.visible {
 .admin-segment-text .subtext {
   display: block;
   font-family: 'Quicksand', sans-serif;
-  font-size: 0.72rem;
-  color: #64748b;
+  font-weight: 700;
+  font-size: 0.74rem;
+  color: #475569;
+}
+
+.admin-segment:has(input:checked) .admin-segment-text .subtext {
+  color: var(--adm-primary-pressed, #1d4f90);
 }
 
 /* ==========================================
@@ -7131,6 +7153,7 @@ body.app-booting .weekly-badge-card > *,
 body.app-booting .mega-milestone-card > *,
 body.app-booting .week-navigation-container > *,
 body.app-booting #grid-tbody,
+body.app-booting #simplified-today-view,
 body.app-booting .bottom-section > * {
   visibility: hidden;
 }
@@ -8809,5 +8832,460 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   #admin-modal #admin-pane-today .adm-setting-action #exceptions-btn {
     width: 100%;
     min-width: 0;
+  }
+}
+
+/* ==========================================================================
+   Simplified "Today Focus" Chart Style (Big Buttons — Under 5)
+   Spec: docs/prd_simplified_chart_style.md
+   - Hidden in 'standard' mode, and automatically hidden in Parent Exception Mode
+     (.exception-mode) and Fix Last Week (.last-week-edit) so parents always get
+     the full 7-day grid for multi-day administration.
+   - Zero inline styles (Rule 8), Dark Charcoal #1e293b on Pikachu Yellow #ffcb05
+     active pills (Rule 13B), clean status icons only (Rule 15), 56px × 56px
+     jumbo touch targets.
+   ========================================================================== */
+
+.simplified-today-view {
+  display: none;
+  padding: 14px 16px 18px;
+  background: #f8fafc;
+  box-sizing: border-box;
+}
+
+.layout-container:not(.exception-mode):not(.last-week-edit) .chart-container[data-chart-style="big-buttons"] .grid-scroll-wrapper {
+  display: none;
+}
+
+.layout-container:not(.exception-mode):not(.last-week-edit) .chart-container[data-chart-style="big-buttons"] .simplified-today-view {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.simplified-strip-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.simplified-day-strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  flex: 1 1 420px;
+  min-width: 0;
+}
+
+.simplified-strip-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.simplified-strip-actions .pixel-btn {
+  min-height: 44px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.simplified-day-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 62px;
+  padding: 6px 4px;
+  border: 2.5px solid var(--border-color, #2d3748);
+  border-radius: 10px;
+  font-family: 'Fredoka One', cursive;
+  box-sizing: border-box;
+  background: #cbd5e1;
+  color: #64748b;
+  box-shadow: 0 3px 0 rgba(45, 55, 72, 0.25);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.15s ease;
+}
+
+/* Rule 13A.1 & 13B: Active Day Pill — Pikachu Yellow #ffcb05 with Dark Charcoal #1e293b text */
+.simplified-day-pill[data-column-state="active_today"],
+.simplified-day-pill[data-column-state="active_past"],
+.simplified-day-pill[data-column-state="active_future"] {
+  background-color: var(--poke-yellow, #ffcb05);
+  color: #1e293b;
+  border-color: #1e293b;
+  box-shadow: 0 4px 0 #1e293b;
+  transform: translateY(-2px);
+  cursor: default;
+}
+
+/* Rule 13A.2: Selectable Unselected Day Pill — Poké Blue #2a71d0 with Solid White #ffffff text */
+.simplified-day-pill[data-column-state="selectable_today"],
+.simplified-day-pill[data-column-state="selectable_past"] {
+  background-color: var(--poke-blue, #2a71d0);
+  color: #ffffff;
+  border-color: var(--border-color, #2d3748);
+  box-shadow: 0 3px 0 var(--border-color, #2d3748);
+  cursor: pointer;
+}
+
+.simplified-day-pill[data-column-state="selectable_today"]:hover,
+.simplified-day-pill[data-column-state="selectable_past"]:hover {
+  transform: translateY(-2px);
+  background-color: #1e5bb8;
+}
+
+.simplified-day-pill[data-column-state="selectable_today"]:active,
+.simplified-day-pill[data-column-state="selectable_past"]:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 var(--border-color, #2d3748);
+}
+
+/* Rule 13A.3: Future Locked Day Pill */
+.simplified-day-pill[data-column-state="future_locked"] {
+  background-color: #cbd5e1;
+  color: #64748b;
+  border-color: #94a3b8;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Rule 13A.4: Superseded Day Pill */
+.simplified-day-pill[data-column-state="superseded"] {
+  background: repeating-linear-gradient(
+    -45deg,
+    #cbd5e1,
+    #cbd5e1 6px,
+    #94a3b8 6px,
+    #94a3b8 12px
+  );
+  color: #475569;
+  border-color: #94a3b8;
+  box-shadow: none;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Rule 13A.5: Historical Week Day Pill (tappable in Simplified mode to inspect days) */
+.simplified-day-pill[data-column-state="historical"] {
+  background-color: #e2e8f0;
+  color: #475569;
+  border-color: #94a3b8;
+  box-shadow: 0 2px 0 #94a3b8;
+  cursor: pointer;
+}
+
+.simplified-day-pill[data-column-state="historical"].is-focused {
+  background-color: var(--poke-yellow, #ffcb05);
+  color: #1e293b;
+  border-color: #1e293b;
+  box-shadow: 0 3px 0 #1e293b;
+}
+
+.simplified-pill-day {
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+}
+
+.simplified-pill-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+}
+
+.simplified-pill-star .badge-indicator .earned-star-svg,
+.simplified-pill-star .badge-indicator .ghost-star-svg {
+  width: 24px;
+  height: 24px;
+}
+
+.simplified-day-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 2.5px solid var(--border-color, #2d3748);
+  border-radius: 10px;
+  box-shadow: 0 3px 0 rgba(45, 55, 72, 0.12);
+}
+
+.simplified-day-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.15rem;
+  color: #1e293b;
+}
+
+.simplified-day-subtitle {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #475569;
+}
+
+.simplified-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.simplified-empty-state {
+  padding: 24px 16px;
+  text-align: center;
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #64748b;
+  background: #ffffff;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+}
+
+.simplified-task-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 84px;
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 3px solid var(--border-color, #2d3748);
+  border-radius: 14px;
+  box-shadow: 0 4px 0 var(--border-color, #2d3748);
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.simplified-task-card:hover:not(.is-rest):not(.is-out-of-range) {
+  transform: translateY(-1px);
+}
+
+.simplified-task-card.is-checked {
+  background: #fefce8;
+  border-color: #ca8a04;
+  box-shadow: 0 4px 0 #a16207;
+}
+
+.simplified-task-card.is-bonus {
+  background: #f0f9ff;
+  border-color: #0284c7;
+  box-shadow: 0 4px 0 #0369a1;
+}
+
+.simplified-task-card.is-rest,
+.simplified-task-card.is-out-of-range {
+  background: repeating-linear-gradient(
+    -45deg,
+    #f8fafc,
+    #f8fafc 6px,
+    #e2e8f0 6px,
+    #e2e8f0 12px
+  );
+  border-color: #94a3b8;
+  box-shadow: none;
+  cursor: default;
+}
+
+.simplified-card-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.simplified-card-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  font-size: 2.1rem;
+  background: #f1f5f9;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+}
+
+.simplified-task-card.is-checked .simplified-card-emoji {
+  background: #fef08a;
+  border-color: #eab308;
+}
+
+.simplified-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  text-align: left;
+}
+
+.simplified-card-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.simplified-card-name {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.2rem;
+  color: #1e293b;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.simplified-card-concept {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.25;
+}
+
+.simplified-card-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.simplified-card-tag.bonus-tag {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1.5px solid #0284c7;
+}
+
+.simplified-card-tag.rest-tag,
+.simplified-card-tag.offplan-tag {
+  background: #e2e8f0;
+  color: #475569;
+  border: 1.5px solid #94a3b8;
+}
+
+/* Visual Weekly Goal Dots (UX Rule 15: zero fractional text in child view) */
+.simplified-goal-dots {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.simplified-goal-dots .goal-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  border: 2px solid #94a3b8;
+  background: #f1f5f9;
+  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.simplified-goal-dots .goal-dot.filled {
+  background: var(--poke-yellow, #ffcb05);
+  border-color: #1e293b;
+  box-shadow: 0 1px 0 #b45309;
+}
+
+.simplified-goal-dots.completed .goal-dot.filled {
+  background: #22c55e;
+  border-color: #14532d;
+  box-shadow: 0 1px 0 #14532d;
+}
+
+/* Jumbo 56px × 56px Checkbox Cell on the right side of each card */
+.checkbox-cell.simplified-card-cell {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox,
+.checkbox-cell.simplified-card-cell.excused-cell:not(.superseded-cell) .pokeball-checkbox.simplified-jumbo-checkbox {
+  width: 56px !important;
+  height: 56px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox .pokeball,
+.checkbox-cell.simplified-card-cell.excused-cell:not(.superseded-cell) .pokeball-checkbox.simplified-jumbo-checkbox .pokeball,
+.checkbox-cell.simplified-card-cell.bonus-cell:not(.superseded-cell) input:checked + .pokeball {
+  width: 56px !important;
+  height: 56px !important;
+}
+
+.checkbox-cell.simplified-card-cell:not(.excused-cell) .pokeball-checkbox.simplified-jumbo-checkbox .pokeball::after {
+  width: 16px;
+  height: 16px;
+}
+
+.checkbox-cell.simplified-card-cell.rest-cell:not(.superseded-cell) .pokeball::before {
+  font-size: 28px !important;
+}
+
+.checkbox-cell.simplified-card-cell.bonus-cell:not(.superseded-cell) input:not(:checked) + .pokeball::before {
+  font-size: 24px !important;
+}
+
+.checkbox-cell.simplified-card-cell.out-of-range-cell::after {
+  margin: 26px auto;
+}
+
+@media (max-width: 520px) {
+  .simplified-today-view {
+    padding: 10px 10px 14px;
+  }
+
+  .simplified-day-pill {
+    min-height: 56px;
+    padding: 4px 2px;
+  }
+
+  .simplified-pill-day {
+    font-size: 0.68rem;
+  }
+
+  .simplified-strip-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .simplified-task-card {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .simplified-card-emoji {
+    width: 44px;
+    height: 44px;
+    font-size: 1.75rem;
+  }
+
+  .simplified-card-name {
+    font-size: 1.05rem;
   }
 }

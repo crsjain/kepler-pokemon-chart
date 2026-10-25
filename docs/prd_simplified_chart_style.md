@@ -228,6 +228,6 @@ When `state.chartStyle === 'big-buttons'` and neither Exception Mode nor Fix Las
 
 - [x] Brainstorm & lock owner decisions Q1–Q4 (2026-10-25)
 - [x] Draft PRD & run 5-Stage Feature Review Panel (2026-10-25)
-- [ ] Implement Simplified Chart Style (`state.js`, `index.html`, `admin.js`, `app.js`, `style.css`)
-- [ ] Update **TC89C** and add **TC128** in `tests.js`; verify 100% green `node run_headless_tests.js`
-- [ ] Bump `CACHE_NAME` in `service-worker.js` and `?v=` in `index.html` (TC90)
+- [x] Implement Simplified Chart Style (`state.js`, `index.html`, `admin.js`, `app.js`, `style.css`) (2026-10-25)
+- [x] Update **TC89C** and add **TC128** in `tests.js`; verify 100% green `node run_headless_tests.js` (2026-10-25)
+- [x] Bump `CACHE_NAME` in `service-worker.js` and `?v=` in `index.html` (TC90) (2026-10-25)

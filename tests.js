@@ -2433,20 +2433,18 @@ async function runSuite() {
         if (closeBtn) closeBtn.click();
         await sleep(80);
 
-        // --- C. Chart Style placeholder: visible, greyed out, fully inert ---
+        // --- C. Chart Style control: live, enabled, defaults to 'standard' (see TC128 for full Big Buttons coverage) ---
         const placeholder = document.getElementById('admin-chart-style-placeholder');
-        assert(placeholder !== null, "Chart Style placeholder should exist in the admin panel");
-        assert(placeholder.getAttribute('aria-disabled') === 'true', "Placeholder should declare aria-disabled");
-        assert(placeholder.querySelector('.coming-soon-tag').textContent.trim() === 'Coming soon', "Placeholder should carry a Coming soon tag");
+        assert(placeholder !== null, "Chart Style card should exist in the admin panel");
+        assert(!placeholder.hasAttribute('aria-disabled'), "Chart Style card should no longer be aria-disabled");
+        assert(placeholder.querySelector('.coming-soon-tag') === null, "Coming soon tag should be removed");
         const radios = [...placeholder.querySelectorAll('input[name="admin-chart-style"]')];
-        assert(radios.length === 2 && radios.every(r => r.disabled), "Both chart style options must be disabled");
+        assert(radios.length === 2 && radios.every(r => !r.disabled), "Both chart style options must be enabled");
         const standard = radios.find(r => r.value === 'standard');
         const big = radios.find(r => r.value === 'big-buttons');
-        assert(standard.checked && !big.checked, "Standard (5+) should be shown selected");
-        big.click();
-        assert(standard.checked && !big.checked, "Clicking the disabled option must not change the selection");
-        assert(window.__app_state__.chartStyle === undefined, "Placeholder must not write any state");
-        assert(placeholder.querySelectorAll('[style]').length === 0, "Placeholder must have zero inline styles (UX Rule 8)");
+        assert(standard.checked && !big.checked, "Standard (5+) should be selected by default");
+        assert((window.__app_state__.chartStyle || 'standard') === 'standard', "Default chartStyle must be 'standard'");
+        assert(placeholder.querySelectorAll('[style]').length === 0, "Chart Style card must have zero inline styles (UX Rule 8)");
 
         // Restore the pre-test state
         StateModule.replaceState(snapshot);
@@ -11497,6 +11495,201 @@ async function runSuite() {
         } finally {
           if (layout.classList.contains('exception-mode')) document.getElementById('exceptions-done-btn').click();
           document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
+      // 128. Simplified "Today Focus" Chart Style (Big Buttons — Under 5)
+      //      (docs/prd_simplified_chart_style.md; TC127 reserved for Unicorn Theme).
+      {
+        console.log("Running Test Case 128: Simplified 'Today Focus' Chart Style (Big Buttons)...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const state = window.__app_state__;
+        const fmt = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+        const addDays = (s0, n) => { const d = new Date(s0 + 'T00:00:00'); d.setDate(d.getDate() + n); return fmt(d); };
+        const layout = document.querySelector('.layout-container');
+        const chartContainer = document.querySelector('.chart-container');
+        const gridWrapper = chartContainer.querySelector('.grid-scroll-wrapper');
+        const simplifiedView = document.getElementById('simplified-today-view');
+        const stripEl = document.getElementById('simplified-day-strip');
+        const cardsListEl = document.getElementById('simplified-cards-list');
+        try {
+          state.reward = 'Sticker Pack';
+          state.megaReward = 'Unicorn Plush';
+
+          // 1. Default state & diagnostics fallback + WIPE_PRESERVED_KEYS.
+          assert(state.chartStyle === 'standard', `Default chartStyle should be 'standard' (got ${state.chartStyle})`);
+          assert(chartContainer.dataset.chartStyle === 'standard', "chart-container dataset.chartStyle defaults to 'standard'");
+          assert(getComputedStyle(gridWrapper).display !== 'none', "Standard mode displays .grid-scroll-wrapper");
+          assert(getComputedStyle(simplifiedView).display === 'none', "Standard mode hides #simplified-today-view");
+
+          state.chartStyle = 'invalid-style';
+          StateModule.runStateDiagnostics();
+          assert(state.chartStyle === 'standard', "runStateDiagnostics normalizes invalid chartStyle to 'standard'");
+          assert(StateModule.WIPE_PRESERVED_KEYS.includes('chartStyle'), "WIPE_PRESERVED_KEYS preserves chartStyle across progress resets");
+
+          // 2. Admin Panel -> Activities tab: live segmented radio control auto-saves with 'Saved ✓'.
+          document.getElementById('admin-btn').click();
+          await sleep(80);
+          document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+          document.getElementById('password-submit-btn').click();
+          await sleep(80);
+          document.getElementById('admin-tab-tasks').click();
+          await sleep(30);
+
+          const styleCard = document.getElementById('admin-chart-style-placeholder');
+          const standardRadio = styleCard.querySelector('input[value="standard"]');
+          const bigRadio = styleCard.querySelector('input[value="big-buttons"]');
+          assert(standardRadio.checked && !bigRadio.checked, "Admin opens with Standard selected");
+          bigRadio.click();
+          await sleep(40);
+          assert(state.chartStyle === 'big-buttons' && bigRadio.checked, "Selecting Big Buttons updates state.chartStyle immediately");
+          const savedBadge = styleCard.querySelector('[data-admin-saved-status]');
+          assert(savedBadge && savedBadge.classList.contains('is-visible'), "Selecting a chart style flashes inline 'Saved ✓'");
+          document.getElementById('close-admin-modal-btn').click();
+          await sleep(40);
+
+          // 3. View switching & zero inline styles (UX Rule 8).
+          assert(chartContainer.dataset.chartStyle === 'big-buttons', "chart-container reflects data-chart-style='big-buttons'");
+          assert(getComputedStyle(gridWrapper).display === 'none', "Big Buttons mode hides .grid-scroll-wrapper in normal child view");
+          assert(getComputedStyle(simplifiedView).display === 'flex', "Big Buttons mode displays #simplified-today-view");
+          assert(simplifiedView.querySelectorAll('[style]').length === 0, "#simplified-today-view must have zero inline styles (UX Rule 8)");
+
+          // 4. 7-Day Star Strip & Chromatic Archetypes (UX Rules 13B & 15).
+          const pills = [...stripEl.querySelectorAll('.simplified-day-pill')];
+          assert(pills.length === 7, `7-day star strip renders 7 day pills (got ${pills.length})`);
+          const activePill = pills.find(p => (p.dataset.columnState || '').startsWith('active_'));
+          assert(activePill !== undefined, "Exactly one day pill has an active_* column state");
+          const activeStyles = getComputedStyle(activePill);
+          assert(activeStyles.color === 'rgb(30, 41, 59)', `Active day pill text must be Dark Charcoal #1e293b (UX Rule 13B, got ${activeStyles.color})`);
+          pills.forEach(p => {
+            const visibleText = p.querySelector('.simplified-pill-star').textContent.replace(/[🌟☆❌💤➖]/gu, '').trim();
+            assert(visibleText === '', `Day pill star slot must contain only clean icons, no fractional text (UX Rule 15, got "${visibleText}")`);
+          });
+
+          // 5. Big Task Cards, 56px × 56px Jumbo Checkboxes, & Visual Goal Dots (UX Rule 15).
+          const activeTasks = state.tasks.filter(t => helpers.isTaskActiveInWeek(t, state.weekStartDate));
+          const cards = [...cardsListEl.querySelectorAll('.simplified-task-card')];
+          assert(cards.length === activeTasks.length && cards.length > 0, `Renders one big card per active task (${cards.length})`);
+          const firstCard = cards[0];
+          const firstTask = activeTasks[0];
+          const jumboLabel = firstCard.querySelector('.simplified-jumbo-checkbox');
+          const jumboRect = jumboLabel.getBoundingClientRect();
+          assert(Math.round(jumboRect.width) >= 56 && Math.round(jumboRect.height) >= 56,
+            `Jumbo checkbox touch target must be at least 56x56px (got ${jumboRect.width}x${jumboRect.height})`);
+
+          const dotsEl = firstCard.querySelector('.simplified-goal-dots');
+          const reqDays = firstTask.daysFormat ? firstTask.daysFormat.length : 7;
+          assert(dotsEl.querySelectorAll('.goal-dot').length === reqDays, `Visual goal dots match required days (${reqDays})`);
+          assert(dotsEl.querySelectorAll('.goal-dot.filled').length === 0, "0 filled dots before checking");
+          assert(dotsEl.textContent.trim() === '', "Goal dots container has zero fractional text in child view (UX Rule 15)");
+          assert(/^\d+ \/ \d+ days$/.test(dotsEl.title), `Parent tooltip on goal dots holds fractional count (got "${dotsEl.title}")`);
+
+          // 6. Ticking a big card updates state.grid, awards XP, fills a goal dot, and syncs hidden table.
+          const activeColIdx = parseInt(activePill.dataset.day, 10);
+          const activeDateStr = addDays(state.weekStartDate, activeColIdx);
+          const partner = state.partnersData[state.activePartnerInstanceId];
+          const xpBefore = partner.level * 100 + partner.xp;
+          const cardInput = firstCard.querySelector('input[type="checkbox"]');
+          cardInput.click();
+          await sleep(40);
+          const xpAfter = partner.level * 100 + partner.xp;
+          assert(state.grid[`${activeDateStr}-${firstTask.id}`] === true, "Ticking big card sets state.grid[date-task] = true");
+          assert(xpAfter > xpBefore, "Ticking big card awards partner XP");
+          const updatedDots = cardsListEl.querySelector(`.simplified-goal-dots[data-task="${firstTask.id}"]`);
+          assert(updatedDots.querySelectorAll('.goal-dot.filled').length === 1, "Ticking big card fills 1 visual goal dot");
+          const tableInput = document.querySelector(`#grid-tbody input[data-day="${activeColIdx}"][data-task="${firstTask.id}"]`);
+          assert(tableInput && tableInput.checked === true, "Hidden 7-day table checkbox stays synchronized");
+
+          // 7. Bonus ✨ (+10 XP) & Rest Day 💤 states on big cards.
+          const secondTask = activeTasks[1];
+          state.excused[`${activeDateStr}-${secondTask.id}`] = 'bonus';
+          const thirdTask = activeTasks[2];
+          state.excused[`${activeDateStr}-${thirdTask.id}`] = 'rest';
+          helpers.renderState(false);
+          await sleep(30);
+          const bonusCard = cardsListEl.querySelector(`.simplified-task-card[data-task="${secondTask.id}"]`);
+          const restCard = cardsListEl.querySelector(`.simplified-task-card[data-task="${thirdTask.id}"]`);
+          assert(bonusCard.classList.contains('is-bonus') && bonusCard.querySelector('.bonus-cell'), "Bonus task card has .is-bonus and .bonus-cell");
+          assert(restCard.classList.contains('is-rest') && restCard.querySelector('input[type="checkbox"]').disabled, "Rest Pass card is disabled in child mode");
+
+          // 8. Day switching via 7-day star strip & Past-Day PIN lock (state.lockPastDays).
+          // Anchor weekStartDate 2 days before today so column 0 is always a past day and column 2 is today.
+          const origWeekStart = state.weekStartDate;
+          const origWeekStartDay = state.weekStartDay;
+          const twoDaysAgoStr = addDays(fmt(new Date()), -2);
+          state.weekStartDate = twoDaysAgoStr;
+          state.weekStartDay = new Date(twoDaysAgoStr + 'T00:00:00').getDay();
+          state.activeDay = (state.weekStartDay + 2) % 7;
+          state.lockPastDays = false;
+          helpers.setViewingWeekStartDate(twoDaysAgoStr);
+          helpers.renderState(true);
+          await sleep(30);
+
+          const pill0 = stripEl.querySelector('.simplified-day-pill[data-day="0"]');
+          assert(pill0 && pill0.dataset.columnState === 'selectable_past', `Column 0 pill should be selectable_past (got ${pill0 && pill0.dataset.columnState})`);
+          pill0.click();
+          await sleep(40);
+          const confirmModal = document.getElementById('confirm-modal');
+          assert(!confirmModal.classList.contains('hidden'), "Tapping a selectable_past day pill opens 'Switch Day?' confirm");
+          document.getElementById('confirm-yes-btn').click();
+          await sleep(40);
+          assert(state.activeDay === state.weekStartDay % 7, "Confirming switches activeDay to the tapped pill's day");
+
+          // Now switch back to column 2 (today) and enable state.lockPastDays = true.
+          state.activeDay = (state.weekStartDay + 2) % 7;
+          state.lockPastDays = true;
+          helpers.clearParentGrace();
+          helpers.renderState(false);
+          await sleep(30);
+          stripEl.querySelector('.simplified-day-pill[data-day="0"]').click();
+          await sleep(40);
+          const pwModal = document.getElementById('password-modal');
+          assert(!pwModal.classList.contains('hidden'), "With lockPastDays=true, tapping a past day pill prompts for Parent PIN");
+          document.getElementById('password-cancel-btn').click();
+          await sleep(30);
+
+          // Restore original weekStartDate before step 9.
+          state.lockPastDays = false;
+          state.weekStartDate = origWeekStart;
+          state.weekStartDay = origWeekStartDay;
+          helpers.setViewingWeekStartDate(origWeekStart);
+          helpers.renderState(true);
+          await sleep(30);
+
+          // 9. Parent Exception Mode & Fix Last Week auto-reveal the full 7-day grid.
+          document.getElementById('exceptions-btn').click();
+          await sleep(40);
+          assert(layout.classList.contains('exception-mode'), "Entered Exception Mode");
+          assert(getComputedStyle(gridWrapper).display !== 'none', "Exception Mode automatically reveals full 7-day .grid-scroll-wrapper");
+          assert(getComputedStyle(simplifiedView).display === 'none', "Exception Mode hides #simplified-today-view");
+          document.getElementById('exceptions-done-btn').click();
+          await sleep(40);
+          assert(getComputedStyle(gridWrapper).display === 'none' && getComputedStyle(simplifiedView).display === 'flex',
+            "Exiting Exception Mode returns to Simplified 'Today Focus' view");
+
+          // Fix Last Week auto-reveals full 7-day grid too.
+          const lastStart = addDays(state.weekStartDate, -7);
+          state.weeklyHistory = { [lastStart]: { weekStartDay: state.weekStartDay, weeklyClaimed: false, badgeId: 7, xpEarned: 0, megaWeeks: 0 } };
+          helpers.renderState(true);
+          await sleep(30);
+          document.getElementById('admin-fix-last-week-btn').click();
+          await sleep(40);
+          assert(layout.classList.contains('last-week-edit'), "Entered Fix Last Week mode");
+          assert(getComputedStyle(gridWrapper).display !== 'none' && getComputedStyle(simplifiedView).display === 'none',
+            "Fix Last Week automatically reveals full 7-day .grid-scroll-wrapper");
+          document.getElementById('parent-grace-lock-btn').click();
+          await sleep(40);
+          assert(!layout.classList.contains('last-week-edit') && getComputedStyle(simplifiedView).display === 'flex',
+            "Exiting Fix Last Week returns to Simplified 'Today Focus' view");
+        } finally {
+          if (layout.classList.contains('exception-mode')) document.getElementById('exceptions-done-btn').click();
+          helpers.clearParentGrace();
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          ['confirm-modal', 'admin-modal', 'password-modal'].forEach(id => document.getElementById(id).classList.add('hidden'));
           helpers.resetState();
           await sleep(30);
         }
