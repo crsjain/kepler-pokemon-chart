@@ -123,6 +123,8 @@ decisions that are expensive to rediscover.
 | `prd_alternating_activity_pairs.md` | Alternating activity pairs & dynamic schedule swapping |
 | `prd_kindness_quests.md` | Kindness Quests & partner berry feeding |
 | `prd_admin_panel_redesign.md` | Parent admin shell and the v2.0 UX revamp (§11: admin design system, 5-tab IA, draft/save bar + unsaved guard, hold-to-confirm, owner decisions Q1–Q14) |
+| `prd_unicorn_princess_theme.md` | Per-child Unicorn & Princess Sparkle theme (`state.theme`: pink/lavender palette, Heart & Royal Crown checkboxes, princess/magic copy reskin); reserves TC127 |
+| `prd_simplified_chart_style.md` | Per-child Simplified "Today Focus" Chart Style (`state.chartStyle`: 7-day star strip + big tactile task cards with visual weekly goal pills, auto full-week grid in Exception/Fix Last Week modes); reserves TC128 |
 | `refactoring_assessment_2026_09_12.md` | Why the codebase is deliberately *not* being refactored |
 
 Manual/verification guides: `test_plan_pokemon_shop_evolutions.md`,
