@@ -7964,9 +7964,19 @@ async function runSuite() {
         assert(JSON.stringify(getRenderedBadgeIds()) === JSON.stringify([155, 94, 135, 179, 8]),
           `A-Z sort should order alphabetically, got ${JSON.stringify(getRenderedBadgeIds())}`);
 
-        // (D) Sort by Type is absent in Badge Case (redundant with Type filter)
+        // (D) Sort by Type is absent in Badge Case (redundant with Type filter),
+        // and Type filter options keep starter elements first followed by remaining 14 types A-Z
         assert(sortSelect.querySelector('option[value="type"]') === null,
           "Badge Case sort dropdown must not include redundant 'Sort: Type' option");
+        const typeOptionValues = Array.from(filterSelect.options).map(o => o.value);
+        const expectedTypeOrder = [
+          'all',
+          'Grass', 'Fire', 'Water', 'Electric',
+          'Bug', 'Dark', 'Dragon', 'Fairy', 'Fighting', 'Flying', 'Ghost',
+          'Ground', 'Ice', 'Normal', 'Poison', 'Psychic', 'Rock', 'Steel'
+        ];
+        assert(JSON.stringify(typeOptionValues) === JSON.stringify(expectedTypeOrder),
+          `Badge Case type filter must list starter types first then remaining 14 types A-Z, got ${JSON.stringify(typeOptionValues)}`);
 
         // (E) Filter by Type: Electric -> only Jolteon & Mareep
         filterSelect.value = 'Electric';

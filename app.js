@@ -2071,8 +2071,10 @@ export function isTaskActiveInWeek(task, weekStartStr) {
   // An activity belongs to every week it existed in, ticked or not, so deleting it
   // never rewrites a past week's chart, Goal counts or "Goal completed" result
   // (owner 2026-10-22; replaces Checkpoint 35's hide-if-zero-ticks rule). A week
-  // that starts after the deletion day doesn't show it.
-  return createdDate <= wEndStr && deletedDate > wStartStr;
+  // that starts after the deletion day doesn't show it, unless the removal day
+  // is the week start itself and the child already ticked it (owner decision 2A).
+  const tickedOnRemovalWeekStart = deletedDate === wStartStr && !isTaskOffPlan(task, wStartStr);
+  return createdDate <= wEndStr && (deletedDate > wStartStr || tickedOnRemovalWeekStart);
 }
 
 // Parent tooltip for a State 7 "Not on the plan" cell.
