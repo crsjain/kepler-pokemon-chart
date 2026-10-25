@@ -7977,6 +7977,10 @@ async function runSuite() {
         ];
         assert(JSON.stringify(typeOptionValues) === JSON.stringify(expectedTypeOrder),
           `Badge Case type filter must list starter types first then remaining 14 types A-Z, got ${JSON.stringify(typeOptionValues)}`);
+        const shopTypeSelect = document.getElementById('shop-filter-type');
+        const shopTypeOptionValues = Array.from(shopTypeSelect.options).map(o => o.value);
+        assert(JSON.stringify(shopTypeOptionValues) === JSON.stringify(expectedTypeOrder),
+          `Partner Shop type filter must list starter types first then remaining 14 types A-Z, got ${JSON.stringify(shopTypeOptionValues)}`);
 
         // (E) Filter by Type: Electric -> only Jolteon & Mareep
         filterSelect.value = 'Electric';
