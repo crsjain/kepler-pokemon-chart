@@ -2135,17 +2135,18 @@ function renderSimplifiedView() {
   const focusedCounts = getDayTaskCounts(focusedCol.dateStr, state);
 
   if (dayTitleEl) {
-    dayTitleEl.textContent = isFocusedToday ? `Today — ${focusedDayName}` : `${focusedDayName}'s Activities`;
+    dayTitleEl.textContent = isFocusedToday ? `⚡ Today — ${focusedDayName}` : `⚡ ${focusedDayName}'s Quests`;
   }
   if (daySubtitleEl) {
+    daySubtitleEl.classList.toggle('is-complete', focusedComplete && focusedCol.state !== 'SUPERSEDED');
     if (focusedCol.state === 'SUPERSEDED') {
-      daySubtitleEl.textContent = 'These days moved to your new chart! 🚀';
+      daySubtitleEl.textContent = 'Moved to new chart 🚀';
     } else if (focusedComplete) {
-      daySubtitleEl.textContent = '🌟 All done for this day! Amazing job!';
+      daySubtitleEl.textContent = '🌟 Star Earned!';
     } else if (focusedCounts.isRestDay) {
-      daySubtitleEl.textContent = '💤 Rest Day — enjoy your break!';
+      daySubtitleEl.textContent = '💤 Rest Day';
     } else {
-      daySubtitleEl.textContent = 'Tap a big button when you finish each activity!';
+      daySubtitleEl.textContent = `${focusedCounts.requiredCompleted} of ${focusedCounts.requiredTotal} done`;
     }
   }
 
@@ -2157,23 +2158,6 @@ function renderSimplifiedView() {
 
   let cardsHtml = '';
   tasks.forEach(task => {
-    const reqDays = getTaskRequiredDays(task.id, currentViewingWeekStartDate);
-    let doneDays = 0;
-    for (let d = 0; d < 7; d++) {
-      const ds = getDateOfColumn(currentViewingWeekStartDate, d);
-      if (state.grid[`${ds}-${task.id}`] && !isTaskOffPlan(task, ds)) {
-        doneDays++;
-      }
-    }
-    const goalCompleted = doneDays >= reqDays;
-
-    let dotsHtml = '';
-    const dotCount = Math.max(1, reqDays);
-    for (let i = 0; i < dotCount; i++) {
-      const isFilled = reqDays === 0 ? (doneDays > 0) : (i < doneDays);
-      dotsHtml += `<span class="goal-dot ${isFilled ? 'filled' : 'empty'}"></span>`;
-    }
-
     const dateStr = focusedCol.dateStr;
     const stateKey = `${dateStr}-${task.id}`;
     const excusedVal = state.excused[stateKey];
@@ -2206,12 +2190,21 @@ function renderSimplifiedView() {
       statusPillHtml = `<span class="simplified-card-tag rest-tag">💤 Rest Pass</span>`;
     }
 
+    let actionPillText = checked ? '⭐ Done!' : 'Complete';
+    if (isOutOfRange) {
+      actionPillText = '➖';
+    } else if (isRest) {
+      actionPillText = '💤 Rest';
+    } else if (isBonus) {
+      actionPillText = checked ? '🌟 +10 XP!' : '✨ Bonus';
+    }
+
     const taskName = task.name || 'Unknown';
     const emoji = task.emoji || '📝';
     const concept = task.concept || 'Practice!';
 
     cardsHtml += `
-      <div class="simplified-task-card ${checked ? 'is-checked' : ''} ${isBonus ? 'is-bonus' : ''} ${isRest ? 'is-rest' : ''} ${isOutOfRange ? 'is-out-of-range' : ''} ${goalCompleted ? 'is-goal-met' : ''}"
+      <div class="simplified-task-card ${checked ? 'is-checked' : ''} ${isBonus ? 'is-bonus' : ''} ${isRest ? 'is-rest' : ''} ${isOutOfRange ? 'is-out-of-range' : ''}"
            data-task="${task.id}"
            data-day="${focusedColIndex}">
         <div class="simplified-card-main">
@@ -2222,12 +2215,6 @@ function renderSimplifiedView() {
               ${statusPillHtml}
             </div>
             <span class="simplified-card-concept">${concept}</span>
-            <div class="simplified-goal-dots ${goalCompleted ? 'completed' : ''}"
-                 data-task="${task.id}"
-                 title="${doneDays} / ${reqDays} days"
-                 aria-label="Weekly goal: ${doneDays} of ${reqDays} days completed">
-              ${dotsHtml}
-            </div>
           </div>
         </div>
         <div class="checkbox-cell simplified-card-cell ${excusedClasses} ${isOutOfRange ? 'out-of-range-cell' : ''} ${focusedCol.cellClass} ${focusedCol.state.startsWith('ACTIVE') ? 'active-column' : ''}"
@@ -2236,7 +2223,7 @@ function renderSimplifiedView() {
              ${cellTitle ? `title="${cellTitle}"` : ''}>
           <label class="pokeball-checkbox simplified-jumbo-checkbox" ${cellTitle ? `title="${cellTitle}"` : ''}>
             <input type="checkbox" data-day="${focusedColIndex}" data-task="${task.id}" ${checked ? 'checked' : ''} ${shouldDisable ? 'disabled' : ''}>
-            <span class="pokeball ${lastJustCheckedKey === stateKey ? 'just-checked' : ''}" ${cellTitle ? `title="${cellTitle}"` : ''}></span>
+            <span class="simplified-action-pill ${lastJustCheckedKey === stateKey ? 'just-checked' : ''}" ${cellTitle ? `title="${cellTitle}"` : ''}>${actionPillText}</span>
           </label>
         </div>
       </div>

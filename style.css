@@ -8848,8 +8848,8 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 
 .simplified-today-view {
   display: none;
-  padding: 14px 16px 18px;
-  background: #f8fafc;
+  padding: 16px 18px 20px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
   box-sizing: border-box;
 }
 
@@ -8863,20 +8863,50 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   gap: 14px;
 }
 
-.simplified-strip-bar {
+.simplified-day-banner {
   display: flex;
   flex-wrap: wrap;
-  align-items: stretch;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 10px 14px;
+  padding: 2px 2px 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
-.simplified-day-strip {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
-  flex: 1 1 420px;
+.simplified-banner-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
+}
+
+.simplified-day-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.22rem;
+  color: #1e293b;
+  letter-spacing: 0.01em;
+}
+
+.simplified-day-subtitle {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 700;
+  font-size: 0.84rem;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1e40af;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+.simplified-day-subtitle.is-complete {
+  background: linear-gradient(135deg, #fef08a 0%, #fde047 100%);
+  color: #1e293b;
+  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.25);
 }
 
 .simplified-strip-actions {
@@ -8886,14 +8916,43 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   flex-shrink: 0;
 }
 
-.simplified-strip-actions .pixel-btn {
-  min-height: 44px;
-  padding: 6px 12px;
-  font-size: 0.85rem;
-  margin: 0;
+.simplified-header-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-height: 38px;
+  padding: 6px 14px;
+  margin: 0;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1e3a8a;
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.82rem;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.simplified-header-chip:hover {
+  transform: translateY(-1px);
+  background: #ffffff;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.11);
+}
+
+.simplified-header-chip:active {
+  transform: translateY(1px);
+}
+
+.simplified-day-strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  padding: 6px;
+  border-radius: 18px;
+  background: rgba(59, 130, 246, 0.10);
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .simplified-day-pill {
@@ -8902,57 +8961,56 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  min-height: 62px;
+  min-height: 58px;
   padding: 6px 4px;
-  border: 2.5px solid var(--border-color, #2d3748);
-  border-radius: 10px;
+  border: none;
+  border-radius: 14px;
   font-family: 'Fredoka One', cursive;
   box-sizing: border-box;
-  background: #cbd5e1;
+  background: transparent;
   color: #64748b;
-  box-shadow: 0 3px 0 rgba(45, 55, 72, 0.25);
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.15s ease;
+  box-shadow: none;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
 }
 
-/* Rule 13A.1 & 13B: Active Day Pill — Pikachu Yellow #ffcb05 with Dark Charcoal #1e293b text */
+/* Rule 13A.1 & 13B: Active Day Pill — Golden Yellow with Dark Charcoal #1e293b text */
 .simplified-day-pill[data-column-state="active_today"],
 .simplified-day-pill[data-column-state="active_past"],
 .simplified-day-pill[data-column-state="active_future"] {
+  background: linear-gradient(135deg, #fde047 0%, #fbbf24 100%);
   background-color: var(--poke-yellow, #ffcb05);
   color: #1e293b;
-  border-color: #1e293b;
-  box-shadow: 0 4px 0 #1e293b;
-  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+  transform: translateY(-1px);
   cursor: default;
 }
 
-/* Rule 13A.2: Selectable Unselected Day Pill — Poké Blue #2a71d0 with Solid White #ffffff text */
+/* Rule 13A.2: Selectable Unselected Day Pill — Translucent White Card in Ribbon Track */
 .simplified-day-pill[data-column-state="selectable_today"],
 .simplified-day-pill[data-column-state="selectable_past"] {
-  background-color: var(--poke-blue, #2a71d0);
-  color: #ffffff;
-  border-color: var(--border-color, #2d3748);
-  box-shadow: 0 3px 0 var(--border-color, #2d3748);
+  background: rgba(255, 255, 255, 0.88);
+  color: #1e3a8a;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
   cursor: pointer;
 }
 
 .simplified-day-pill[data-column-state="selectable_today"]:hover,
 .simplified-day-pill[data-column-state="selectable_past"]:hover {
-  transform: translateY(-2px);
-  background-color: #1e5bb8;
+  transform: translateY(-1px);
+  background: #ffffff;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.15);
 }
 
 .simplified-day-pill[data-column-state="selectable_today"]:active,
 .simplified-day-pill[data-column-state="selectable_past"]:active {
   transform: translateY(1px);
-  box-shadow: 0 1px 0 var(--border-color, #2d3748);
 }
 
 /* Rule 13A.3: Future Locked Day Pill */
 .simplified-day-pill[data-column-state="future_locked"] {
-  background-color: #cbd5e1;
-  color: #64748b;
-  border-color: #94a3b8;
+  background: transparent;
+  color: #94a3b8;
+  opacity: 0.55;
   box-shadow: none;
   cursor: not-allowed;
 }
@@ -8961,13 +9019,12 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 .simplified-day-pill[data-column-state="superseded"] {
   background: repeating-linear-gradient(
     -45deg,
-    #cbd5e1,
-    #cbd5e1 6px,
-    #94a3b8 6px,
-    #94a3b8 12px
+    rgba(203, 213, 225, 0.65),
+    rgba(203, 213, 225, 0.65) 6px,
+    rgba(148, 163, 184, 0.55) 6px,
+    rgba(148, 163, 184, 0.55) 12px
   );
   color: #475569;
-  border-color: #94a3b8;
   box-shadow: none;
   opacity: 0.7;
   cursor: not-allowed;
@@ -8975,18 +9032,17 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 
 /* Rule 13A.5: Historical Week Day Pill (tappable in Simplified mode to inspect days) */
 .simplified-day-pill[data-column-state="historical"] {
-  background-color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.65);
   color: #475569;
-  border-color: #94a3b8;
-  box-shadow: 0 2px 0 #94a3b8;
+  box-shadow: none;
   cursor: pointer;
 }
 
 .simplified-day-pill[data-column-state="historical"].is-focused {
+  background: linear-gradient(135deg, #fde047 0%, #fbbf24 100%);
   background-color: var(--poke-yellow, #ffcb05);
   color: #1e293b;
-  border-color: #1e293b;
-  box-shadow: 0 3px 0 #1e293b;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.30);
 }
 
 .simplified-pill-day {
@@ -9008,32 +9064,6 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   height: 24px;
 }
 
-.simplified-day-banner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px 12px;
-  padding: 10px 14px;
-  background: #ffffff;
-  border: 2.5px solid var(--border-color, #2d3748);
-  border-radius: 10px;
-  box-shadow: 0 3px 0 rgba(45, 55, 72, 0.12);
-}
-
-.simplified-day-title {
-  font-family: 'Fredoka One', cursive;
-  font-size: 1.15rem;
-  color: #1e293b;
-}
-
-.simplified-day-subtitle {
-  font-family: 'Quicksand', sans-serif;
-  font-weight: 700;
-  font-size: 0.92rem;
-  color: #475569;
-}
-
 .simplified-cards-list {
   display: flex;
   flex-direction: column;
@@ -9047,53 +9077,50 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   font-weight: 700;
   font-size: 1rem;
   color: #64748b;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.85);
   border: 2px dashed #cbd5e1;
-  border-radius: 12px;
+  border-radius: 24px;
 }
 
+/* Floating Stadium Pill Task Card (Zero Black Borders) */
 .simplified-task-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  min-height: 84px;
-  padding: 12px 16px;
+  min-height: 76px;
+  padding: 10px 14px 10px 12px;
   background: #ffffff;
-  border: 3px solid var(--border-color, #2d3748);
-  border-radius: 14px;
-  box-shadow: 0 4px 0 var(--border-color, #2d3748);
+  border: none;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
   box-sizing: border-box;
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .simplified-task-card:hover:not(.is-rest):not(.is-out-of-range) {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.12), 0 4px 8px -1px rgba(15, 23, 42, 0.06);
 }
 
 .simplified-task-card.is-checked {
-  background: #fefce8;
-  border-color: #ca8a04;
-  box-shadow: 0 4px 0 #a16207;
+  background: linear-gradient(90deg, #f0fdf4 0%, #dcfce7 100%);
+  box-shadow: 0 8px 22px -4px rgba(16, 185, 129, 0.20), 0 2px 6px -1px rgba(16, 185, 129, 0.08);
 }
 
 .simplified-task-card.is-bonus {
-  background: #f0f9ff;
-  border-color: #0284c7;
-  box-shadow: 0 4px 0 #0369a1;
+  background: linear-gradient(90deg, #f0f9ff 0%, #e0f2fe 100%);
+}
+
+.simplified-task-card.is-bonus.is-checked {
+  background: linear-gradient(90deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: 0 8px 22px -4px rgba(37, 99, 235, 0.22);
 }
 
 .simplified-task-card.is-rest,
 .simplified-task-card.is-out-of-range {
-  background: repeating-linear-gradient(
-    -45deg,
-    #f8fafc,
-    #f8fafc 6px,
-    #e2e8f0 6px,
-    #e2e8f0 12px
-  );
-  border-color: #94a3b8;
+  background: rgba(241, 245, 249, 0.85);
   box-shadow: none;
   cursor: default;
 }
@@ -9113,21 +9140,32 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   width: 52px;
   height: 52px;
   flex-shrink: 0;
-  font-size: 2.1rem;
-  background: #f1f5f9;
-  border: 2px solid #cbd5e1;
-  border-radius: 12px;
+  font-size: 1.9rem;
+  background: #eff6ff;
+  border: none;
+  border-radius: 50%;
+  transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
 .simplified-task-card.is-checked .simplified-card-emoji {
-  background: #fef08a;
-  border-color: #eab308;
+  background: #bbf7d0;
+  transform: scale(1.04);
+}
+
+.simplified-task-card.is-bonus .simplified-card-emoji {
+  background: #e0f2fe;
+}
+
+.simplified-task-card.is-rest .simplified-card-emoji,
+.simplified-task-card.is-out-of-range .simplified-card-emoji {
+  background: #e2e8f0;
+  opacity: 0.75;
 }
 
 .simplified-card-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
   text-align: left;
 }
@@ -9141,7 +9179,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 
 .simplified-card-name {
   font-family: 'Fredoka One', cursive;
-  font-size: 1.2rem;
+  font-size: 1.18rem;
   color: #1e293b;
   line-height: 1.15;
   overflow-wrap: anywhere;
@@ -9150,15 +9188,15 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 .simplified-card-concept {
   font-family: 'Quicksand', sans-serif;
   font-weight: 700;
-  font-size: 0.9rem;
-  color: #475569;
+  font-size: 0.88rem;
+  color: #64748b;
   line-height: 1.25;
 }
 
 .simplified-card-tag {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  padding: 2px 10px;
   border-radius: 999px;
   font-family: 'Fredoka One', cursive;
   font-size: 0.72rem;
@@ -9168,100 +9206,114 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 .simplified-card-tag.bonus-tag {
   background: #e0f2fe;
   color: #0369a1;
-  border: 1.5px solid #0284c7;
 }
 
 .simplified-card-tag.rest-tag,
 .simplified-card-tag.offplan-tag {
   background: #e2e8f0;
   color: #475569;
-  border: 1.5px solid #94a3b8;
 }
 
-/* Visual Weekly Goal Dots (UX Rule 15: zero fractional text in child view) */
-.simplified-goal-dots {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin-top: 2px;
-}
-
-.simplified-goal-dots .goal-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  box-sizing: border-box;
-  border: 2px solid #94a3b8;
-  background: #f1f5f9;
-  transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.simplified-goal-dots .goal-dot.filled {
-  background: var(--poke-yellow, #ffcb05);
-  border-color: #1e293b;
-  box-shadow: 0 1px 0 #b45309;
-}
-
-.simplified-goal-dots.completed .goal-dot.filled {
-  background: #22c55e;
-  border-color: #14532d;
-  box-shadow: 0 1px 0 #14532d;
-}
-
-/* Jumbo 56px × 56px Checkbox Cell on the right side of each card */
+/* Tactile Stadium Action Pill on the right side of each card (>= 56px touch zone) */
 .checkbox-cell.simplified-card-cell {
-  flex: 0 0 56px;
-  width: 56px;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 112px;
   height: 56px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   background: transparent !important;
   padding: 0 !important;
   border: none !important;
-}
-
-.checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox,
-.checkbox-cell.simplified-card-cell.excused-cell:not(.superseded-cell) .pokeball-checkbox.simplified-jumbo-checkbox {
-  width: 56px !important;
-  height: 56px !important;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox .pokeball,
-.checkbox-cell.simplified-card-cell.excused-cell:not(.superseded-cell) .pokeball-checkbox.simplified-jumbo-checkbox .pokeball,
-.checkbox-cell.simplified-card-cell.bonus-cell:not(.superseded-cell) input:checked + .pokeball {
-  width: 56px !important;
-  height: 56px !important;
-}
-
-.checkbox-cell.simplified-card-cell:not(.excused-cell) .pokeball-checkbox.simplified-jumbo-checkbox .pokeball::after {
-  width: 16px;
-  height: 16px;
-}
-
-.checkbox-cell.simplified-card-cell.rest-cell:not(.superseded-cell) .pokeball::before {
-  font-size: 28px !important;
-}
-
-.checkbox-cell.simplified-card-cell.bonus-cell:not(.superseded-cell) input:not(:checked) + .pokeball::before {
-  font-size: 24px !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
 .checkbox-cell.simplified-card-cell.out-of-range-cell::after {
-  margin: 26px auto;
+  display: none !important;
+}
+
+.checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox,
+.checkbox-cell.simplified-card-cell.excused-cell:not(.superseded-cell) .pokeball-checkbox.simplified-jumbo-checkbox,
+.checkbox-cell.simplified-card-cell.out-of-range-cell .pokeball-checkbox.simplified-jumbo-checkbox {
+  position: relative;
+  width: auto !important;
+  min-width: 112px !important;
+  height: 56px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox::after {
+  display: none !important;
+}
+
+.checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox input[type="checkbox"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox input[type="checkbox"]:disabled {
+  cursor: default;
+}
+
+.simplified-action-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 108px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+  background: #eff6ff;
+  color: #2563eb;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.simplified-task-card.is-checked .simplified-action-pill {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.30);
+}
+
+.simplified-task-card.is-bonus:not(.is-checked) .simplified-action-pill {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.simplified-task-card.is-bonus.is-checked .simplified-action-pill {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.32);
+}
+
+.simplified-task-card.is-rest .simplified-action-pill,
+.simplified-task-card.is-out-of-range .simplified-action-pill {
+  background: #e2e8f0;
+  color: #64748b;
+  box-shadow: none;
 }
 
 @media (max-width: 520px) {
   .simplified-today-view {
-    padding: 10px 10px 14px;
+    padding: 12px 12px 16px;
   }
 
   .simplified-day-pill {
-    min-height: 56px;
+    min-height: 52px;
     padding: 4px 2px;
   }
 
@@ -9269,23 +9321,30 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
     font-size: 0.68rem;
   }
 
-  .simplified-strip-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-
   .simplified-task-card {
-    padding: 10px 12px;
+    padding: 8px 10px 8px 10px;
     gap: 10px;
+    min-height: 68px;
   }
 
   .simplified-card-emoji {
     width: 44px;
     height: 44px;
-    font-size: 1.75rem;
+    font-size: 1.65rem;
   }
 
   .simplified-card-name {
     font-size: 1.05rem;
+  }
+
+  .checkbox-cell.simplified-card-cell,
+  .checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox {
+    min-width: 96px !important;
+  }
+
+  .simplified-action-pill {
+    min-width: 92px;
+    padding: 6px 14px;
+    font-size: 0.84rem;
   }
 }

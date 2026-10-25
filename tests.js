@@ -11570,25 +11570,25 @@ async function runSuite() {
             assert(visibleText === '', `Day pill star slot must contain only clean icons, no fractional text (UX Rule 15, got "${visibleText}")`);
           });
 
-          // 5. Big Task Cards, 56px × 56px Jumbo Checkboxes, & Visual Goal Dots (UX Rule 15).
+          // 5. Floating Stadium Pill Task Cards (Zero Black Borders & Zero Task-Specific Week Counters).
           const activeTasks = state.tasks.filter(t => helpers.isTaskActiveInWeek(t, state.weekStartDate));
           const cards = [...cardsListEl.querySelectorAll('.simplified-task-card')];
-          assert(cards.length === activeTasks.length && cards.length > 0, `Renders one big card per active task (${cards.length})`);
+          assert(cards.length === activeTasks.length && cards.length > 0, `Renders one stadium pill card per active task (${cards.length})`);
           const firstCard = cards[0];
           const firstTask = activeTasks[0];
+          const cardStyles = getComputedStyle(firstCard);
+          assert(parseFloat(cardStyles.borderTopLeftRadius) >= 500 && cardStyles.borderTopWidth === '0px',
+            `Floating Stadium Pill must be borderless with stadium radius (got radius=${cardStyles.borderTopLeftRadius}, border=${cardStyles.borderTopWidth})`);
           const jumboLabel = firstCard.querySelector('.simplified-jumbo-checkbox');
           const jumboRect = jumboLabel.getBoundingClientRect();
-          assert(Math.round(jumboRect.width) >= 56 && Math.round(jumboRect.height) >= 56,
-            `Jumbo checkbox touch target must be at least 56x56px (got ${jumboRect.width}x${jumboRect.height})`);
+          assert(Math.round(jumboRect.width) >= 96 && Math.round(jumboRect.height) >= 56,
+            `Stadium action pill touch zone must be at least 96x56px (got ${jumboRect.width}x${jumboRect.height})`);
+          const actionPill = firstCard.querySelector('.simplified-action-pill');
+          assert(actionPill && actionPill.textContent.trim() === 'Complete', `Unchecked card action pill shows 'Complete' (got "${actionPill && actionPill.textContent}")`);
+          assert(firstCard.querySelector('.simplified-goal-dots') === null && !/\d+\s*(?:of|\/)\s*\d+\s*days/i.test(firstCard.textContent),
+            "Big Buttons card omits task-specific weekly goal counters/dots so younger children focus on today's tasks");
 
-          const dotsEl = firstCard.querySelector('.simplified-goal-dots');
-          const reqDays = firstTask.daysFormat ? firstTask.daysFormat.length : 7;
-          assert(dotsEl.querySelectorAll('.goal-dot').length === reqDays, `Visual goal dots match required days (${reqDays})`);
-          assert(dotsEl.querySelectorAll('.goal-dot.filled').length === 0, "0 filled dots before checking");
-          assert(dotsEl.textContent.trim() === '', "Goal dots container has zero fractional text in child view (UX Rule 15)");
-          assert(/^\d+ \/ \d+ days$/.test(dotsEl.title), `Parent tooltip on goal dots holds fractional count (got "${dotsEl.title}")`);
-
-          // 6. Ticking a big card updates state.grid, awards XP, fills a goal dot, and syncs hidden table.
+          // 6. Ticking a stadium pill card updates state.grid, awards XP, updates action pill to '⭐ Done!', and syncs hidden table.
           const activeColIdx = parseInt(activePill.dataset.day, 10);
           const activeDateStr = addDays(state.weekStartDate, activeColIdx);
           const partner = state.partnersData[state.activePartnerInstanceId];
@@ -11597,14 +11597,15 @@ async function runSuite() {
           cardInput.click();
           await sleep(40);
           const xpAfter = partner.level * 100 + partner.xp;
-          assert(state.grid[`${activeDateStr}-${firstTask.id}`] === true, "Ticking big card sets state.grid[date-task] = true");
-          assert(xpAfter > xpBefore, "Ticking big card awards partner XP");
-          const updatedDots = cardsListEl.querySelector(`.simplified-goal-dots[data-task="${firstTask.id}"]`);
-          assert(updatedDots.querySelectorAll('.goal-dot.filled').length === 1, "Ticking big card fills 1 visual goal dot");
+          assert(state.grid[`${activeDateStr}-${firstTask.id}`] === true, "Ticking stadium pill card sets state.grid[date-task] = true");
+          assert(xpAfter > xpBefore, "Ticking stadium pill card awards partner XP");
+          const updatedCard = cardsListEl.querySelector(`.simplified-task-card[data-task="${firstTask.id}"]`);
+          assert(updatedCard.classList.contains('is-checked') && updatedCard.querySelector('.simplified-action-pill').textContent.trim() === '⭐ Done!',
+            "Checked stadium pill card shows '⭐ Done!'");
           const tableInput = document.querySelector(`#grid-tbody input[data-day="${activeColIdx}"][data-task="${firstTask.id}"]`);
           assert(tableInput && tableInput.checked === true, "Hidden 7-day table checkbox stays synchronized");
 
-          // 7. Bonus ✨ (+10 XP) & Rest Day 💤 states on big cards.
+          // 7. Bonus ✨ (+10 XP) & Rest Day 💤 states on stadium pill cards.
           const secondTask = activeTasks[1];
           state.excused[`${activeDateStr}-${secondTask.id}`] = 'bonus';
           const thirdTask = activeTasks[2];
@@ -11613,8 +11614,10 @@ async function runSuite() {
           await sleep(30);
           const bonusCard = cardsListEl.querySelector(`.simplified-task-card[data-task="${secondTask.id}"]`);
           const restCard = cardsListEl.querySelector(`.simplified-task-card[data-task="${thirdTask.id}"]`);
-          assert(bonusCard.classList.contains('is-bonus') && bonusCard.querySelector('.bonus-cell'), "Bonus task card has .is-bonus and .bonus-cell");
-          assert(restCard.classList.contains('is-rest') && restCard.querySelector('input[type="checkbox"]').disabled, "Rest Pass card is disabled in child mode");
+          assert(bonusCard.classList.contains('is-bonus') && bonusCard.querySelector('.bonus-cell') && bonusCard.querySelector('.simplified-action-pill').textContent.trim() === '✨ Bonus',
+            "Bonus task card has .is-bonus, .bonus-cell, and '✨ Bonus' action pill");
+          assert(restCard.classList.contains('is-rest') && restCard.querySelector('input[type="checkbox"]').disabled && restCard.querySelector('.simplified-action-pill').textContent.trim() === '💤 Rest',
+            "Rest Pass card is disabled in child mode with '💤 Rest' action pill");
 
           // 8. Day switching via 7-day star strip & Past-Day PIN lock (state.lockPastDays).
           // Anchor weekStartDate 2 days before today so column 0 is always a past day and column 2 is today.

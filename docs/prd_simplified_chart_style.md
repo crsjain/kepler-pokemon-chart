@@ -25,9 +25,9 @@ For a younger child like Lyra (5yo) who only has **1–3 activities**:
 ### Goals
 - **Activate `#admin-chart-style-placeholder` (`state.chartStyle`)**: Promote the inert segmented control at the bottom of **Admin › ✅ Activities** into a live per-child setting (`'standard'` default vs. `'big-buttons'`).
 - **Orthogonal to Theme**: Keep `state.chartStyle` completely independent of `state.theme` (`'pokemon' | 'unicorn'`) so any child can mix-and-match either theme with either chart style.
-- **"Today Focus" Simplified Layout**:
-  1. **Top 7-Day Star Strip (`#simplified-day-strip`)**: Shows all 7 days of the week (`SUN`–`SAT`) with their clean Daily Total status icons (`🌟`, `☆`, `❌`, `💤`, `➖`) plus quick access to `⭐ Vault` and `📖 Guide`.
-  2. **Big Tactile Task Cards (`#simplified-cards-list`)**: Displays the active day's 1–3 tasks as large, full-width horizontal cards with a **Jumbo 56px × 56px** tactile Pokéball / Sparkle Heart checkbox and a **Visual Weekly Goal Pill** (e.g., 5 mini hearts/balls for a 5-day goal, with zero fractional text clutter per UX Rule 15).
+- **"Today Focus" Simplified Layout (Floating Stadium Pills)**:
+  1. **Unified Header & Borderless 7-Day Star Ribbon (`#simplified-day-strip`)**: Shows the active day title + completion status chip (`1 of 3 done` / `🌟 Star Earned!`), floating `⭐ Vault` and `📖 Guide` chips, and a soft borderless 7-day ribbon (`SUN`–`SAT`) with clean Daily Total status icons (`🌟`, `☆`, `❌`, `💤`, `➖`).
+  2. **Floating Stadium Pill Task Cards (`#simplified-cards-list`)**: Displays the active day's tasks as borderless, elevated stadium pills (`border-radius: 999px`, zero heavy black outlines) with a circular emoji badge on the left, bold activity name + subtitle in the center, and a tactile **Stadium Action Pill** (`Complete` ➔ `⭐ Done!`) on the right. **No task-specific weekly counters (`4 of 5 days` or goal dots)** — younger children simply focus on finishing today's tasks to earn each day's star/crown toward their weekly badge.
 - **Day Switching & Parent PIN Gate**: Tapping a day pill on the 7-Day Star Strip switches the active day for the big cards below, honoring `state.lockPastDays` (Parent PIN required for past days when enabled) and `"Switch Day? 📅"`.
 - **Automatic Full-Week Grid for Parent Modes**: Entering **Parent Exception Mode** (`#exceptions-btn`) or **Fix Last Week** (`#admin-fix-last-week-btn`) automatically displays the full 7-day table so parents can manage multi-day exceptions and fixes without friction.
 - **Keep Core Reward Loops Active**: Companion leveling & evolving (`.trainer-card`), Daily Stars & Star Vault streak, and Weekly Badge + 4-week Mega Milestone reward remain 100% active.
@@ -49,56 +49,57 @@ In [`index.html`](../index.html) inside `#admin-pane-tasks`:
   - `Big Buttons` — subtext: `Today focus`
   - `Standard` — subtext: `Full week grid`
 
-### 3.2 "Today Focus" Layout (`#simplified-today-view`)
+### 3.2 "Today Focus" Layout (`#simplified-today-view` — Floating Stadium Pills)
 When `state.chartStyle === 'big-buttons'` and neither Exception Mode nor Fix Last Week is active:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │  ◀ Prev                     Oct 25 - Oct 31                    Next ▶  │
 ├────────────────────────────────────────────────────────────────────────┤
-│  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐  ┌─────────┐ │
-│  │ SUN │ │ MON │ │ TUE │ │ WED │ │ THU │ │ FRI │ │ SAT │  │ ⭐ Vault│ │
-│  │ 🌟  │ │  ☆  │ │  ☆  │ │  ☆  │ │  ☆  │ │  ☆  │ │  ☆  │  │ 📖 Guide│ │
-│  └─────┘ └─────┘ └─────┘ └─────┘ └─────┘ └─────┘ └─────┘  └─────────┘ │
-├────────────────────────────────────────────────────────────────────────┤
-│  🌟 TODAY'S QUESTS — SUNDAY                       [⚡ Back to Today]   │
+│  ⚡ Sunday's Quests  ( 1 of 2 done )               (⭐ Vault) (📖 Guide)│
+│  ╭──────────────────────────────────────────────────────────────────╮  │
+│  │  SUN      MON      TUE      WED      THU      FRI      SAT      │  │
+│  │  🌟       ☆        ☆        ☆        ☆        ☆        ☆       │  │
+│  ╰──────────────────────────────────────────────────────────────────╯  │
 │                                                                        │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │  🎹  Piano Practice                                    ╭──────╮  │  │
-│  │      Play all pieces 3x!                               │  💖  │  │  │
-│  │      Weekly Goal: 💖 💖 💖 🤍 🤍                       ╰──────╯  │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │  📚  Reading Time                                      ╭──────╮  │  │
-│  │      15min reading out loud                            │  🤍  │  │  │
-│  │      Weekly Goal: 💖 💖 🤍 🤍 🤍                       ╰──────╯  │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
+│  ╭──────────────────────────────────────────────────────────────────╮  │
+│  │ ( 🎹 )  Piano Practice                             ( ⭐ Done! )  │  │
+│  │         Play all pieces 3x!                                      │  │
+│  ╰──────────────────────────────────────────────────────────────────╯  │
+│  ╭──────────────────────────────────────────────────────────────────╮  │
+│  │ ( 📚 )  Reading Time                               ( Complete )  │  │
+│  │         15min reading out loud                                   │  │
+│  ╰──────────────────────────────────────────────────────────────────╯  │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-#### A. Top 7-Day Star Strip (`#simplified-day-strip`)
-- Renders 7 interactive day pills (`.simplified-day-pill[data-day="0..6"]`) driven by the **exact same 8-state column state machine** (`getWeekColumnStates(state, currentViewingWeekStartDate)`) and `data-column-state` attributes (UX Rule 13):
-  - **Active Day Pill (`active_today`, `active_past`, `active_future`)**: Highlighted in Pikachu Yellow (`#ffcb05`) or Unicorn Sparkle Gold (`#fde047`) with **Dark Charcoal text (`#1e293b`, ≥ 9.8:1 AAA contrast)** and an elevated border.
-  - **Selectable Day Pill (`selectable_today`, `selectable_past`)**: Poké Blue (`#2a71d0`) or Royal Amethyst (`#7e22ce`) with solid white text (`#ffffff`) and `cursor: pointer`.
-  - **Future Locked / Historical / Superseded Pill**: Slate grey or diagonal hatched, `cursor: not-allowed`.
-- Each pill displays:
-  - Top row: 3-letter day name (`SUN`–`SAT`).
-  - Bottom row: Clean Daily Total icon (`EARNED_STAR_HTML` `🌟`, `GHOST_STAR_HTML` `☆`, `❌`, `REST_DAY_HTML` `💤`, or `➖`) — **zero fractional numbers** (UX Rule 15), with full count string in `title` for parents.
-- Alongside the strip sit the compact `⭐ Vault` (`#open-vault-simplified-btn`) and `📖 Guide` (`#open-guide-simplified-btn`) buttons so neither modal is ever unreachable when the table is hidden.
+#### A. Unified Header & Borderless 7-Day Star Ribbon (`#simplified-day-strip`)
+- **Top Header Row (`.simplified-day-banner`)**:
+  - Left: Active day title (`#simplified-day-title`, e.g., `⚡ Today — Sunday` or `⚡ Wednesday's Quests`) + rounded completion status pill (`#simplified-day-subtitle`, e.g., `1 of 3 done`, `🌟 Star Earned!`, or `💤 Rest Day`).
+  - Right: Compact borderless pill chips for `⭐ Vault` (`#open-vault-simplified-btn`) and `📖 Guide` (`#open-guide-simplified-btn`).
+- **Borderless 7-Day Star Ribbon (`#simplified-day-strip`)**:
+  - Sits inside a single soft tinted track (`border-radius: 18px`) with **zero heavy black borders**.
+  - Renders 7 interactive day pills (`.simplified-day-pill[data-day="0..6"]`) driven by the **exact same 8-state column state machine** (`getWeekColumnStates(state, currentViewingWeekStartDate)`) and `data-column-state` attributes (UX Rule 13):
+    - **Active Day Pill (`active_today`, `active_past`, `active_future`)**: Elevated golden gradient pill (`#fde047` → `#fbbf24`, `#ffcb05` fallback) with **Dark Charcoal text (`#1e293b`, ≥ 9.8:1 AAA contrast)** and soft warm glow.
+    - **Selectable Day Pill (`selectable_today`, `selectable_past`)**: Translucent white card (`rgba(255, 255, 255, 0.88)`) with deep navy/berry text and `cursor: pointer`.
+    - **Future Locked / Historical / Superseded Pill**: Soft muted or diagonal hatched, `cursor: not-allowed` (or `cursor: pointer` on `historical` to inspect past days).
+  - Each pill displays:
+    - Top row: 3-letter day name (`SUN`–`SAT`).
+    - Bottom row: Clean Daily Total icon (`EARNED_STAR_HTML` `🌟`, `GHOST_STAR_HTML` `☆`, `❌`, `REST_DAY_HTML` `💤`, or `➖`) — **zero fractional numbers** (UX Rule 15), with full count string in `title` for parents.
 
-#### B. Big Tactile Task Cards (`#simplified-cards-list`)
-- Renders one `.simplified-task-card` per active task in the viewed week (`isTaskActiveInWeek(task, currentViewingWeekStartDate)`), displaying the state for the **currently active day column** (`activeColIndex`, or `0` when viewing a historical week):
+#### B. Floating Stadium Pill Task Cards (`#simplified-cards-list`)
+- Renders one `.simplified-task-card` per active task in the viewed week (`isTaskActiveInWeek(task, currentViewingWeekStartDate)`), displaying the state for the **currently active day column** (`activeColIndex`, or `viewingHistoricalDayIndex` when viewing an archived week):
+  - **Borderless Stadium Pill Geometry**: Fully rounded stadium card (`border-radius: 999px`, `border: none`, soft ambient shadow `0 8px 24px -4px rgba(15, 23, 42, 0.08)`), eliminating the nested black comic-book boxes.
+  - **No Task-Specific Weekly Counters**: Per owner UX review (2026-10-25), task cards do **not** display per-task weekly counters (`4 of 5 days` or `.simplified-goal-dots`). Younger children focus purely on completing the day's tasks to earn each day's star/crown in the 7-day strip toward the weekly badge.
   1. **Task Identity (Left)**:
-     - Large emoji tile (`2.2rem` in a `52px × 52px` rounded badge).
-     - Bold task name (`1.15rem`, `Fredoka One`) + encouraging concept/instruction line.
-     - **Visual Weekly Goal Pill (`.simplified-goal-dots`)**: Renders `N` mini icons (`14px`) corresponding to `reqDays = getTaskRequiredDays(task.id, currentViewingWeekStartDate)` (up to 7 dots: filled `🔴`/`💖` for completed days this week, hollow `⚪`/`🤍` for remaining days, plus `+✨` if bonus days were completed beyond `reqDays`). If `reqDays === 0` (all rest/bonus week), displays `💤 Rest Week`. Full count (`"3 / 5 days"`) is attached to `title` for parent hover inspection (UX Rule 15).
-  2. **Jumbo Tactile Checkbox (Right — `56px × 56px`)**:
-     - Reuses `<label class="pokeball-checkbox simplified-jumbo-checkbox"><input type="checkbox" ...><span class="pokeball"></span></label>` scaled cleanly to `56px × 56px` in `style.css` (`transform: scale(1.5)` or explicit `56px` box with `background-size: contain`).
-     - Supports all 6 cell states from UX Rule 14:
-       - **Normal Unchecked / Checked**: Dormant → Red Pokéball (or Dormant Heart → Glowing Pink Royal Heart in `unicorn` theme).
-       - **Bonus Unchecked / Checked**: `✨` dashed circle → Great Ball (or Royal Crown/Gem in `unicorn` theme) + `+XP` badge, with a `"✨ Bonus! +10 XP"` chip on the card.
-       - **Rest Day (`💤`)**: Card carries `.rest-cell` diagonal stripes and a calm `"💤 Rest Day today"` pill; checkbox is disabled (`pointer-events: none`).
-       - **Not on the Plan (`.out-of-range-cell`)**: Card carries diagonal stripes, muted dash `➖`, and parent tooltip (`offPlanTooltip`).
+     - Circular `52px × 52px` pastel icon badge (`.simplified-card-emoji`, `border-radius: 50%`, zero border) holding the task emoji (`1.9rem`).
+     - Bold task name (`1.18rem`, `Fredoka One`) + encouraging concept/instruction line.
+  2. **Tactile Stadium Action Pill (Right — `min-height: 48px`, `min-width: 112px` inside a `>= 56px` touch zone)**:
+     - Wraps `<input type="checkbox" data-day="..." data-task="..." ...>` inside `<label class="pokeball-checkbox simplified-jumbo-checkbox">` with a borderless `<span class="simplified-action-pill">`:
+       - **Normal Unchecked / Checked**: `Complete` (soft blue pill `#eff6ff`, text `#2563eb`) → `⭐ Done!` (emerald `#10b981`, text `#ffffff`), and the entire stadium card washes with a soft mint gradient (`.is-checked`).
+       - **Bonus Unchecked / Checked**: `✨ Bonus` → `🌟 +10 XP!` with a `"✨ Bonus +10 XP"` chip on the card.
+       - **Rest Day (`💤`)**: Card carries `.is-rest` muted styling and `"💤 Rest Pass"` chip; action pill shows `💤 Rest` and checkbox is disabled (`pointer-events: none`).
+       - **Not on the Plan (`.out-of-range-cell`)**: Card carries `.is-out-of-range`, muted dash `➖`, and parent tooltip (`offPlanTooltip`).
 
 ### 3.3 Day Switching & Past-Day PIN Lock
 - Clicking a `.simplified-day-pill[data-day]` delegates to the exact same header-click handler used by `.day-header[data-day]`:
@@ -155,12 +156,12 @@ When `state.chartStyle === 'big-buttons'` and neither Exception Mode nor Fix Las
    - Update TC89C to reflect that `#admin-chart-style-placeholder` is now an active control (both radios enabled, default `'standard'`, no `.coming-soon-tag`, zero inline styles).
 2. **Add Test Case 128: Simplified "Today Focus" Chart Style (`Big Buttons`)**:
    - **Admin Toggle & Persistence**: In Admin › Activities, select `input[name="admin-chart-style"][value="big-buttons"]`. Assert `state.chartStyle === 'big-buttons'`, `.chart-container.dataset.chartStyle === 'big-buttons'`, `#simplified-today-view` is visible (`getComputedStyle().display !== 'none'`), and `.grid-scroll-wrapper` is hidden.
-   - **7-Day Star Strip & Big Task Cards**: Assert `#simplified-day-strip` renders 7 `.simplified-day-pill` items with clean status icons (no fractional text, UX Rule 15) and `#simplified-cards-list` renders one `.simplified-task-card` per active task with a visual `.simplified-goal-dots` row and a jumbo checkbox (`>= 48px × 48px` touch target).
+   - **7-Day Star Strip & Floating Stadium Pill Task Cards**: Assert `#simplified-day-strip` renders 7 `.simplified-day-pill` items with clean status icons (no fractional text, UX Rule 15) and `#simplified-cards-list` renders one borderless `.simplified-task-card` stadium pill per active task (`border-radius >= 900px`) with a `.simplified-action-pill` CTA (`>= 56px` touch zone) and **zero task-specific weekly goal counters/dots** (`.simplified-goal-dots` absent).
    - **Task Completion & Economy Parity**: Select Weekly & Mega rewards, tick all active tasks for Today via `.simplified-task-card input[type="checkbox"]`, and assert:
      - `state.grid["YYYY-MM-DD-taskId"] === true`
      - Partner XP increases by `tasks.length * 5 + 15` (Daily Bonus)
      - Today's `.simplified-day-pill` updates from `☆` (`.future-star`) to `🌟` (`.unlocked`)
-     - `.simplified-goal-dots` increments its filled count by 1.
+     - Card action pill updates from `Complete` to `⭐ Done!`.
    - **Day Strip Navigation & Past-Day PIN Lock**:
      - Enable `state.lockPastDays = true` and clear parent grace. Click a past day pill on `#simplified-day-strip` → assert `#password-modal` opens (`Parent PIN 🔑`).
      - Unlock with PIN → assert `state.activeDay` switches to that past day and `#simplified-cards-list` renders that day's task states.
@@ -180,7 +181,7 @@ When `state.chartStyle === 'big-buttons'` and neither Exception Mode nor Fix Las
 | **Q1** | Should Theme and Chart Style be independent per-child settings? | **Yes, two independent settings** (2026-10-25) and two separate PRDs (`docs/prd_unicorn_princess_theme.md` and `docs/prd_simplified_chart_style.md`). |
 | **Q2** | How should Simplified View present tasks for a 5yo with 1–3 activities? | **"Today Focus" view** (2026-10-25): big, tactile task cards for the active day + a simple 7-day star strip at the top. |
 | **Q3** | Which reward loops stay active in Simplified View? | **Companion leveling & evolving, Daily Stars & Star Vault streak, and Weekly Badge & 4-week Mega Milestone** (2026-10-25). (Kindness Quests ignored as unshipped.) |
-| **Q4** | How should day switching, weekly goal progress, and parent full-week editing work? | **Tap a day in the 7-day star strip to switch days** (respecting the Past-Day PIN lock), show a **visual progress pill** (e.g., 5 mini hearts/balls for a 5-day goal) on each big task card, and **automatically show the full 7-day grid during Parent Exception Mode or "Fix Last Week"** (2026-10-25). |
+| **Q4** | How should day switching, weekly goal progress, and parent full-week editing work? | **Tap a day in the 7-day star strip to switch days** (respecting the Past-Day PIN lock), **omit task-specific weekly counters (`4 of 5 days` / goal dots) on the Floating Stadium Pill cards** so younger children focus purely on finishing today's tasks and earning all 7 daily stars/crowns for the week, and **automatically show the full 7-day grid during Parent Exception Mode or "Fix Last Week"** (2026-10-25). |
 
 ---
 
