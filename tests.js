@@ -11625,11 +11625,17 @@ async function runSuite() {
           assert(updatedCard.classList.contains('is-checked') && updatedCard.querySelector('.simplified-action-pill').textContent.trim() === 'Caught!',
             "Checked stadium pill card is 'Caught!'");
           assert(updatedCard.querySelector('.simplified-catch-ball.just-caught'), "Freshly caught ball gets the wobble-wobble-click animation class");
-          assert(updatedCard.querySelector('.simplified-catch-star .earned-star-svg'), "Caught card shows the earned-star sticker");
+          assert(updatedCard.querySelector('.simplified-catch-star .earned-star-svg'), "A fresh catch pops an earned-star animation");
           const caughtBallTop = getComputedStyle(updatedCard.querySelector('.simplified-catch-ball'), '::before').backgroundColor;
           assert(caughtBallTop === 'rgb(255, 60, 60)', `Caught ball top turns Pokémon red (Rule 14, got ${caughtBallTop})`);
           const doneBg = getComputedStyle(updatedCard).backgroundColor;
           assert(doneBg === 'rgb(254, 243, 199)', `Done card uses the warm #fef3c7 tile, not green (got ${doneBg})`);
+          await sleep(520, true); // lastJustCheckedKey expires after 500ms (forced: not headless-scaled)
+          helpers.renderState(false);
+          await sleep(20);
+          const settledCard = cardsListEl.querySelector(`.simplified-task-card[data-task="${firstTask.id}"]`);
+          assert(settledCard.classList.contains('is-checked') && settledCard.querySelector('.simplified-catch-star') === null,
+            "The catch star is a one-shot animation, not a persistent sticker on caught cards");
           const tableInput = document.querySelector(`#grid-tbody input[data-day="${activeColIdx}"][data-task="${firstTask.id}"]`);
           assert(tableInput && tableInput.checked === true, "Hidden 7-day table checkbox stays synchronized");
 

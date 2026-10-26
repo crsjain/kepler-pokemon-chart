@@ -2191,7 +2191,8 @@ function renderSimplifiedView() {
     const guideText = task.instructions || '';
     const ringIndex = taskIndex % 6;
     const isJustCaught = lastJustCheckedKey === stateKey;
-    const showStarSticker = checked && !isBonus && !isRest && !isOutOfRange;
+    // The star is a one-shot catch animation (pops in, floats up, fades), never a persistent badge.
+    const showStarSticker = isJustCaught && checked && !isBonus && !isRest && !isOutOfRange;
 
     cardsHtml += `
       <div class="simplified-task-card ${checked ? 'is-checked' : ''} ${isBonus ? 'is-bonus' : ''} ${isRest ? 'is-rest' : ''} ${isOutOfRange ? 'is-out-of-range' : ''}"

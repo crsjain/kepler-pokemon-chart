@@ -9346,7 +9346,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   height: var(--sv-ball-size) !important;
 }
 
-/* Earned-star sticker pinned to a caught ball */
+/* Earned star that pops off a freshly caught ball, floats up and fades (one-shot, not persistent) */
 .simplified-catch-star {
   position: absolute;
   top: -8px;
@@ -9367,8 +9367,8 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   animation: sv-catch-wobble 0.9s ease-in-out, sv-catch-pop 0.35s ease-out 0.9s;
 }
 
-.simplified-task-card:has(.just-caught) .simplified-catch-star {
-  animation: sv-star-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.9s both;
+.simplified-catch-star {
+  animation: sv-star-pop 1.3s ease-out 0.9s both;
 }
 
 @keyframes sv-catch-wobble {
@@ -9389,7 +9389,9 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 
 @keyframes sv-star-pop {
   0% { transform: scale(0) rotate(-30deg); opacity: 0; }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  25% { transform: scale(1.15) rotate(0deg); opacity: 1; }
+  60% { transform: translateY(-8px) scale(1); opacity: 1; }
+  100% { transform: translateY(-22px) scale(0.8); opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -9397,8 +9399,13 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
     animation: sv-catch-pop 0.35s ease-out;
   }
 
-  .simplified-task-card:has(.just-caught) .simplified-catch-star {
-    animation: none;
+  .simplified-catch-star {
+    animation: sv-star-fade 0.8s ease-out both;
+  }
+
+  @keyframes sv-star-fade {
+    0%, 60% { opacity: 1; }
+    100% { opacity: 0; }
   }
 }
 
