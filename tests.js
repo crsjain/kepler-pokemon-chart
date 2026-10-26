@@ -11606,8 +11606,7 @@ async function runSuite() {
           assert(firstCard.getAttribute('title') === (firstTask.instructions || null), `Card hover shows the Task Guide instructions (got "${firstCard.getAttribute('title')}")`);
           const emojiBadge = firstCard.querySelector('.simplified-card-emoji');
           assert(emojiBadge.getBoundingClientRect().width >= 52 && emojiBadge.dataset.ring !== undefined, "Emoji badge is the hero cue with a type-colour ring");
-          const partnerSprite = document.getElementById('simplified-partner-sprite');
-          assert(partnerSprite && /sprites\/pokemon\/\d+\.png$/.test(partnerSprite.getAttribute('src') || ''), "Active partner sprite shows in the Big Buttons banner");
+          assert(document.getElementById('simplified-partner') === null, "Big Buttons banner has no partner sprite (redundant with the trainer card)");
           assert(firstCard.querySelector('.simplified-goal-dots') === null && !/\d+\s*(?:of|\/)\s*\d+\s*days/i.test(firstCard.textContent),
             "Big Buttons card omits task-specific weekly goal counters/dots so younger children focus on today's tasks");
 
@@ -11631,7 +11630,6 @@ async function runSuite() {
           assert(caughtBallTop === 'rgb(255, 60, 60)', `Caught ball top turns Pokémon red (Rule 14, got ${caughtBallTop})`);
           const doneBg = getComputedStyle(updatedCard).backgroundColor;
           assert(doneBg === 'rgb(254, 243, 199)', `Done card uses the warm #fef3c7 tile, not green (got ${doneBg})`);
-          assert(document.getElementById('simplified-partner').classList.contains('cheer'), "Partner hops (cheer) on a catch");
           const tableInput = document.querySelector(`#grid-tbody input[data-day="${activeColIdx}"][data-task="${firstTask.id}"]`);
           assert(tableInput && tableInput.checked === true, "Hidden 7-day table checkbox stays synchronized");
 

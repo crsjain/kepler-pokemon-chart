@@ -100,7 +100,6 @@ let currentViewingWeekStartDate = null;
 let viewingHistoricalDayIndex = 0;
 let lastViewedWeekForSimplified = null;
 let lastJustCheckedKey = null;
-let lastCheeredKey = null;
 
 const APP_VERSION = 'v1.8.0 (v58)';
 
@@ -2225,27 +2224,6 @@ function renderSimplifiedView() {
 
   cardsListEl.innerHTML = cardsHtml;
 
-  // Partner cheer (UX review #2 rec #5): the active partner sits in the banner, hops on each catch,
-  // and shows a "Yay!" bubble once the focused day is complete.
-  const partnerWrap = document.getElementById('simplified-partner');
-  const partnerImg = document.getElementById('simplified-partner-sprite');
-  if (partnerWrap && partnerImg) {
-    const instanceId = state.activePartnerInstanceId || '25';
-    const stats = (state.partnersData && state.partnersData[instanceId]) || { familyId: '25', stageId: '25' };
-    const family = stats.familyId || '25';
-    const activePokemon = getStageInfo(family, stats.stageId || family).currentStage;
-    const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${activePokemon.id}.png`;
-    if (partnerImg.getAttribute('src') !== spriteUrl) partnerImg.setAttribute('src', spriteUrl);
-    partnerImg.alt = activePokemon.name;
-    partnerWrap.classList.toggle('is-celebrating', isDayComplete(focusedCol.dateStr, state));
-    if (lastJustCheckedKey && lastJustCheckedKey.startsWith(`${focusedCol.dateStr}-`) && lastCheeredKey !== lastJustCheckedKey) {
-      lastCheeredKey = lastJustCheckedKey;
-      partnerWrap.classList.remove('cheer');
-      void partnerWrap.offsetWidth; // restart the hop animation
-      partnerWrap.classList.add('cheer');
-      setTimeout(() => partnerWrap.classList.remove('cheer'), 1200);
-    }
-  }
 }
 
 function updateGridCheckboxes() {
