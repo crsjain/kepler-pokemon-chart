@@ -11602,7 +11602,8 @@ async function runSuite() {
           const actionPill = firstCard.querySelector('.simplified-action-pill');
           assert(actionPill && actionPill.classList.contains('sr-only') && actionPill.textContent.trim() === 'Catch', `Action text is screen-reader only (got "${actionPill && actionPill.textContent}")`);
           assert(firstCard.querySelector('.simplified-card-concept') === null && !firstCard.querySelector('.simplified-card-info').textContent.includes(firstTask.concept || '@@none@@'),
-            "Subtitle concept text is hidden from the card (kept in title for parents)");
+            "Subtitle concept text is hidden from the card");
+          assert(firstCard.getAttribute('title') === (firstTask.instructions || null), `Card hover shows the Task Guide instructions (got "${firstCard.getAttribute('title')}")`);
           const emojiBadge = firstCard.querySelector('.simplified-card-emoji');
           assert(emojiBadge.getBoundingClientRect().width >= 52 && emojiBadge.dataset.ring !== undefined, "Emoji badge is the hero cue with a type-colour ring");
           const partnerSprite = document.getElementById('simplified-partner-sprite');

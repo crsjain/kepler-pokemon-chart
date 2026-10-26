@@ -2188,7 +2188,8 @@ function renderSimplifiedView() {
 
     const taskName = task.name || 'Unknown';
     const emoji = task.emoji || '📝';
-    const concept = task.concept || '';
+    // Hover shows the Task Guide instructions (the Big Buttons view has no Guide button).
+    const guideText = task.instructions || '';
     const ringIndex = taskIndex % 6;
     const isJustCaught = lastJustCheckedKey === stateKey;
     const showStarSticker = checked && !isBonus && !isRest && !isOutOfRange;
@@ -2197,7 +2198,7 @@ function renderSimplifiedView() {
       <div class="simplified-task-card ${checked ? 'is-checked' : ''} ${isBonus ? 'is-bonus' : ''} ${isRest ? 'is-rest' : ''} ${isOutOfRange ? 'is-out-of-range' : ''}"
            data-task="${task.id}"
            data-day="${focusedColIndex}"
-           ${concept ? `title="${concept}"` : ''}>
+           ${guideText ? `title="${guideText.replace(/"/g, '&quot;')}"` : ''}>
         <div class="simplified-card-main">
           <span class="simplified-card-emoji" data-ring="${ringIndex}" aria-hidden="true">${emoji}</span>
           <div class="simplified-card-info">
