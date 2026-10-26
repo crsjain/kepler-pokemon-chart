@@ -3142,11 +3142,6 @@ function bindGridBodyEvents() {
   if (openVaultSimplifiedBtn) {
     openVaultSimplifiedBtn.addEventListener('click', openVault);
   }
-
-  const openGuideSimplifiedBtn = document.getElementById('open-guide-simplified-btn');
-  if (openGuideSimplifiedBtn) {
-    openGuideSimplifiedBtn.addEventListener('click', openGuide);
-  }
 }
 
 /**

@@ -8882,50 +8882,64 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   letter-spacing: 0.01em;
 }
 
-.simplified-strip-actions {
-  display: flex;
-  align-items: center;
+/* Week ribbon: 7-day star strip + Vault treasure tile at the end (stars flow into the Vault) */
+.simplified-week-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(72px, 96px);
   gap: 8px;
-  flex-shrink: 0;
-}
-
-.simplified-header-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 38px;
-  padding: 6px 14px;
-  margin: 0;
-  border-radius: 999px;
-  border: none;
-  background: rgba(255, 255, 255, 0.92);
-  color: #1e3a8a;
-  font-family: 'Fredoka One', cursive;
-  font-size: 0.82rem;
-  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07);
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
-}
-
-.simplified-header-chip:hover {
-  transform: translateY(-1px);
-  background: #ffffff;
-  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.11);
-}
-
-.simplified-header-chip:active {
-  transform: translateY(1px);
+  padding: 6px 6px 10px;
+  border-radius: 18px;
+  background: rgba(59, 130, 246, 0.10);
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .simplified-day-strip {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 6px;
-  padding: 6px;
-  border-radius: 18px;
-  background: rgba(59, 130, 246, 0.10);
   min-width: 0;
   box-sizing: border-box;
+}
+
+/* Rule 13B: dark charcoal text on gold, never white. Rule 12: 0 4px 0 tactile shadow. */
+.simplified-vault-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 58px;
+  width: 100%;
+  margin: 0;
+  padding: 6px 4px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fde047 0%, #fbbf24 100%);
+  background-color: var(--poke-yellow, #ffcb05);
+  color: #1e293b;
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  box-shadow: 0 4px 0 #d97706;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.simplified-vault-tile:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0 #d97706, 0 8px 16px rgba(245, 158, 11, 0.3);
+}
+
+.simplified-vault-tile:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #d97706;
+}
+
+.simplified-vault-icon {
+  font-size: 28px;
+  line-height: 1;
 }
 
 .simplified-day-pill {
@@ -9292,6 +9306,25 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 
   .simplified-pill-day {
     font-size: 0.68rem;
+  }
+
+  .simplified-week-row {
+    grid-template-columns: minmax(0, 1fr) 56px;
+    gap: 4px;
+    padding: 4px 4px 8px;
+  }
+
+  .simplified-day-strip {
+    gap: 3px;
+  }
+
+  .simplified-vault-tile {
+    min-height: 52px;
+    font-size: 0.66rem;
+  }
+
+  .simplified-vault-icon {
+    font-size: 24px;
   }
 
   .simplified-task-card {

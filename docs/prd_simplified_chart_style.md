@@ -76,7 +76,9 @@ When `state.chartStyle === 'big-buttons'` and neither Exception Mode nor Fix Las
 #### A. Unified Header & Borderless 7-Day Star Ribbon (`#simplified-day-strip`)
 - **Top Header Row (`.simplified-day-banner`)**:
   - Left: Active day title (`#simplified-day-title`, e.g., `⚡ Today — Sunday` or `⚡ Wednesday's Quests`) with zero fractional completion count next to it (`0 of 4 done` omitted so younger children aren't distracted by numbers).
-  - Right: Compact borderless pill chips for `⭐ Vault` (`#open-vault-simplified-btn`) and `📖 Guide` (`#open-guide-simplified-btn`).
+  - Right: *(empty)*. The `⭐ Vault` / `📖 Guide` header chips were removed (owner decision 2026-10-26, Vault/Guide UX studio Option B).
+- **Vault Treasure Tile (`#open-vault-simplified-btn.simplified-vault-tile`)**: A gold `💰 Vault` tile at the end of the star ribbon inside a shared `.simplified-week-row` track, so the week's stars visibly flow into the Vault. It sits *outside* the `role="tablist"` strip to keep tab semantics clean. Gold gradient (`#fde047` → `#fbbf24`) with Dark Charcoal `#1e293b` text (Rule 13B), `0 4px 0 #d97706` tactile shadow, 28px icon, ≥ 58px tall and 72–96px wide (52px × 56px at ≤ 520px; the app is optimized for tablet/desktop). **No star count** on the tile (owner decision).
+- **Guide**: No Guide button in the Big Buttons view (owner decision 2026-10-26). **Known follow-up (deferred by owner):** move each activity's Task Guide description into the subtitle beneath its stadium card, replacing the standalone Guide.
 - **Borderless 7-Day Star Ribbon (`#simplified-day-strip`)**:
   - Sits inside a single soft tinted track (`border-radius: 18px`) with **zero heavy black borders**.
   - Renders 7 interactive day pills (`.simplified-day-pill[data-day="0..6"]`) driven by the **exact same 8-state column state machine** (`getWeekColumnStates(state, currentViewingWeekStartDate)`) and `data-column-state` attributes (UX Rule 13):

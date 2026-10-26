@@ -11573,6 +11573,16 @@ async function runSuite() {
           // 5. Floating Stadium Pill Task Cards (Zero Black Borders & Zero Task-Specific Week Counters).
           assert(document.getElementById('simplified-day-subtitle') === null && !/\d+\s+of\s+\d+\s+done/i.test(simplifiedView.querySelector('.simplified-day-banner').textContent),
             "Big Buttons header omits 'X of Y done' counter next to day title");
+          // 4b. Vault treasure tile at the end of the star ribbon (Option B); no Guide button, no star count.
+          const vaultTile = document.getElementById('open-vault-simplified-btn');
+          assert(vaultTile && vaultTile.classList.contains('simplified-vault-tile') && vaultTile.parentElement.classList.contains('simplified-week-row'),
+            "Vault tile sits in .simplified-week-row next to the star strip");
+          assert(vaultTile.previousElementSibling === stripEl && !stripEl.contains(vaultTile), "Vault tile follows the strip, outside the day tablist");
+          assert(!/\d/.test(vaultTile.textContent), `Vault tile shows no star count (got "${vaultTile.textContent.trim()}")`);
+          assert(getComputedStyle(vaultTile).color === 'rgb(30, 41, 59)', "Vault tile uses Dark Charcoal text on gold (Rule 13B)");
+          assert(vaultTile.getBoundingClientRect().height >= 52, `Vault tile is a kid-sized target (h=${vaultTile.getBoundingClientRect().height})`);
+          assert(document.getElementById('open-guide-simplified-btn') === null && simplifiedView.querySelector('.simplified-header-chip') === null,
+            "Big Buttons view has no Guide button or header chips");
           const activeTasks = state.tasks.filter(t => helpers.isTaskActiveInWeek(t, state.weekStartDate));
           const cards = [...cardsListEl.querySelectorAll('.simplified-task-card')];
           assert(cards.length === activeTasks.length && cards.length > 0, `Renders one stadium pill card per active task (${cards.length})`);
