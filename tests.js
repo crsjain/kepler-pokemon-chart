@@ -11580,8 +11580,10 @@ async function runSuite() {
           assert(vaultTile.previousElementSibling === stripEl && !stripEl.contains(vaultTile), "Vault tile follows the strip, outside the day tablist");
           assert(!/\d/.test(vaultTile.textContent), `Vault tile shows no star count (got "${vaultTile.textContent.trim()}")`);
           const vaultStyles = getComputedStyle(vaultTile);
-          assert(vaultTile.textContent.includes('⭐') && vaultStyles.backgroundColor === 'rgb(245, 158, 11)' && vaultStyles.borderTopColor === 'rgb(180, 83, 9)' && vaultStyles.textShadow !== 'none',
-            `Vault tile matches the standard amber ⭐ Vault button, with an outlined label (bg=${vaultStyles.backgroundColor}, border=${vaultStyles.borderTopColor})`);
+          assert(vaultTile.querySelector('.simplified-vault-icon svg') && !vaultTile.textContent.includes('⭐') && !vaultTile.textContent.includes('💰'),
+            "Vault tile uses the Nebula Sparkle SVG icon (no emoji)");
+          assert(vaultStyles.borderTopWidth === '0px' && !/\b0px 4px 0px\b/.test(vaultStyles.boxShadow),
+            `Vault tile is borderless with no hard dark bottom edge (border=${vaultStyles.borderTopWidth}, shadow=${vaultStyles.boxShadow})`);
           assert(vaultTile.getBoundingClientRect().height >= 52, `Vault tile is a kid-sized target (h=${vaultTile.getBoundingClientRect().height})`);
           assert(document.getElementById('open-guide-simplified-btn') === null && simplifiedView.querySelector('.simplified-header-chip') === null,
             "Big Buttons view has no Guide button or header chips");

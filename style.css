@@ -8902,49 +8902,76 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   box-sizing: border-box;
 }
 
-/* Vault tile: same amber "⭐ Vault" pixel button as the standard grid (#open-vault-btn), scaled up for
-   little hands. Amber + hard charcoal-brown edge keeps it distinct from the yellow active-day pill;
-   the white label gets a dark outline so it stays legible on amber. */
+/* Vault tile — "Nebula Sparkle" (Master-Ball purple): a tiny window into the Cosmic Nebula Star Vault.
+   Borderless with soft shadows only (no hard dark edge), matching the rest of the Big Buttons view.
+   Colours are --vault-* vars so a theme (e.g. Unicorn/Princess) can re-skin it. */
 .simplified-vault-tile {
+  --vault-bg-top: #7c3aed;
+  --vault-bg-bottom: #312e81;
+  --vault-ink: #ffffff;
+  --vault-spark: #f5f3ff;
+  --vault-spark-2: #f9a8d4;
+  --vault-glow: rgba(196, 181, 253, 0.9);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   min-height: 58px;
   width: 100%;
   margin: 0;
   padding: 6px 4px;
-  border: 3px solid #b45309;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
-  background-color: #f59e0b;
-  color: #ffffff;
-  font-family: 'Fredoka One', cursive;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  text-shadow: -1px -1px 0 #92400e, 1px -1px 0 #92400e, -1px 1px 0 #92400e, 1px 1px 0 #92400e, 0 2px 0 #92400e;
-  box-shadow: 0 4px 0 #92400e;
   box-sizing: border-box;
+  border: none;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 18% 28%, rgba(255, 255, 255, 0.75) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 82% 22%, rgba(255, 255, 255, 0.6) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 90% 58%, rgba(249, 168, 212, 0.7) 0 1.2px, transparent 2px),
+    radial-gradient(circle at 10% 60%, rgba(255, 255, 255, 0.45) 0 0.8px, transparent 1.4px),
+    radial-gradient(120% 100% at 50% 0%, var(--vault-bg-top) 0%, var(--vault-bg-bottom) 100%);
+  color: var(--vault-ink);
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.85rem;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  box-shadow: 0 6px 14px rgba(76, 29, 149, 0.28);
   cursor: pointer;
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .simplified-vault-tile:hover {
   transform: translateY(-1px);
-  box-shadow: 0 5px 0 #92400e, 0 8px 16px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 10px 20px rgba(124, 58, 237, 0.35);
+}
+
+.simplified-vault-tile:hover .simplified-vault-icon {
+  transform: rotate(12deg) scale(1.08);
 }
 
 .simplified-vault-tile:active {
-  transform: translateY(4px);
-  box-shadow: none;
+  transform: translateY(2px) scale(0.97);
+  box-shadow: 0 3px 8px rgba(76, 29, 149, 0.25);
+}
+
+.simplified-vault-tile:focus-visible {
+  outline: 3px solid #a78bfa;
+  outline-offset: 2px;
 }
 
 .simplified-vault-icon {
-  font-size: 28px;
-  line-height: 1;
-  text-shadow: none;
-  filter: drop-shadow(0 2px 0 rgba(146, 64, 14, 0.55));
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  color: var(--vault-spark);
+  filter: drop-shadow(0 0 5px var(--vault-glow));
+  transition: transform 0.2s ease;
+}
+
+.simplified-vault-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .simplified-day-pill {
@@ -9439,7 +9466,8 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   }
 
   .simplified-vault-icon {
-    font-size: 24px;
+    width: 26px;
+    height: 26px;
   }
 
   .simplified-today-view {
