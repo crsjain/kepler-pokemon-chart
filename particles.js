@@ -15,6 +15,12 @@
     ['#9c27b0', '#6a1b9a', '#e1bee7']  // Saturn (Purple)
   ];
 
+  // Unicorn & Princess theme sparkle palette (docs/prd_unicorn_princess_theme.md §4.4).
+  const UNICORN_COLORS = ['#ec4899', '#f472b6', '#a855f7', '#c084fc', '#fde047', '#ffffff'];
+  function isUnicornTheme() {
+    return document.body && document.body.dataset.theme === 'unicorn';
+  }
+
   function init() {
     canvas = document.getElementById('celebration-canvas');
     if (!canvas) return;
@@ -33,7 +39,7 @@
   }
 
   function triggerDailyCelebration(dayIndex, startX, startY) {
-    const colors = DAY_COLORS[dayIndex] || ['#ffcb05', '#ffffff'];
+    const colors = isUnicornTheme() ? UNICORN_COLORS : (DAY_COLORS[dayIndex] || ['#ffcb05', '#ffffff']);
     const count = 30;
     
     for (let i = 0; i < count; i++) {
@@ -76,9 +82,11 @@
     }
     
     const count = isMega ? 300 : 120;
-    const colors = isMega 
-      ? ['#7c3aed', '#ff3c3c', '#ffcb05', '#2a71d0', '#4caf50', '#ffffff'] 
-      : ['#ffcb05', '#fde68a', '#fbbf24', '#ffffff', '#cbd5e0'];
+    const colors = isUnicornTheme()
+      ? UNICORN_COLORS
+      : isMega
+        ? ['#7c3aed', '#ff3c3c', '#ffcb05', '#2a71d0', '#4caf50', '#ffffff']
+        : ['#ffcb05', '#fde68a', '#fbbf24', '#ffffff', '#cbd5e0'];
       
     for (let i = 0; i < count; i++) {
       particles.push(createParticle(isMega, colors));

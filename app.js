@@ -1340,7 +1340,7 @@ function selectProfile(profileId) {
       document.querySelectorAll('.trainer-name-label').forEach(el => {
         el.textContent = name;
       });
-      document.title = `${name}'s Pokémon Training Chart`;
+      document.title = `${name}'s ${getThemeCopy(cloudState.theme).docTitleSuffix}`;
       
       // Re-initialize lists that depend on state
       initVault();
@@ -1741,6 +1741,62 @@ export function canStartNextWeek(state, viewingDateStr = null, forceCheck = fals
   return todayStr >= nextWeekStartStr;
 }
 
+// Per-child visual theme copy (docs/prd_unicorn_princess_theme.md §3.4). Only
+// child-facing text changes; XP / star / badge math is shared by both themes.
+// Each entry targets a dedicated element so .trainer-name-label is never wiped.
+// A function (not a module-level const): renderState runs during module init,
+// before a const declared here would leave the TDZ.
+function getThemeCopy(theme) {
+  const THEME_COPY = {
+  pokemon: {
+    '#game-title-suffix': 'Pokémon Training',
+    '.game-header .subtitle': '"Gotta Catch \'Em All!"',
+    '#trainer-title-prefix': 'TRAINER',
+    '#change-partner-btn': 'Change Partner',
+    '.badge-title': 'POKEMON BADGE',
+    '.mega-title': '🔮 MEGA MILESTONE PROGRESS',
+    '#task-col-header-label': 'TRAINING TASK',
+    '.shop-title': 'Pokémon Partner Shop! 🏪',
+    '#badges-title-suffix': "'s Badge Case 🏆",
+    '#guide-title': 'Pokémon Training Guide 📖',
+    '#guide-subtitle-tail': ' needs to do to earn a pokeball for each task!',
+    '.motivational-quote': '"True Trainers never give up! Keep practicing and leveling up your skills!"',
+    docTitleSuffix: 'Pokémon Training Chart'
+  },
+  unicorn: {
+    '#game-title-suffix': 'Royal Unicorn Chart',
+    '.game-header .subtitle': '"Sparkle, Practice & Shine! 💖"',
+    '#trainer-title-prefix': 'PRINCESS',
+    '#change-partner-btn': 'Change Companion 🦄',
+    '.badge-title': 'ROYAL GEM BADGE',
+    '.mega-title': '👑 ROYAL CROWN PROGRESS',
+    '#task-col-header-label': 'ROYAL QUEST',
+    '.shop-title': 'Magical Companion Shop! 🦄',
+    '#badges-title-suffix': "'s Royal Gem Case 👑",
+    '#guide-title': 'Royal Practice Guide 📖',
+    '#guide-subtitle-tail': ' needs to do to earn a sparkle heart for each quest!',
+    '.motivational-quote': '"True Princesses & Unicorn Riders never give up! Keep sparkling and learning every day! 💖✨"',
+    docTitleSuffix: 'Royal Unicorn Chart'
+  }
+  };
+  return THEME_COPY[theme === 'unicorn' ? 'unicorn' : 'pokemon'];
+}
+
+function applyThemeUI() {
+  const theme = state.theme === 'unicorn' ? 'unicorn' : 'pokemon';
+  document.body.dataset.theme = theme;
+  const themeSelect = document.getElementById('admin-theme-select');
+  if (themeSelect) themeSelect.value = theme;
+  const copy = getThemeCopy(theme);
+  Object.entries(copy).forEach(([selector, text]) => {
+    if (selector === 'docTitleSuffix') return;
+    document.querySelectorAll(selector).forEach(el => {
+      if (el.textContent !== text) el.textContent = text;
+    });
+  });
+  document.title = document.title.replace(/(Pokémon Training|Royal Unicorn) Chart$/, copy.docTitleSuffix);
+}
+
 export function renderState(rebuildGrid = false) {
   if (debugAllowFutureEditsCheckbox) {
     debugAllowFutureEditsCheckbox.checked = areFutureEditsAllowed();
@@ -1922,6 +1978,8 @@ export function renderState(rebuildGrid = false) {
   if (adminTimezoneSelect) {
     adminTimezoneSelect.value = state.timezoneOffset !== undefined ? state.timezoneOffset.toString() : 'default';
   }
+
+  applyThemeUI();
 
   const chartStyleVal = state.chartStyle === 'big-buttons' ? 'big-buttons' : 'standard';
   const chartContainerEl = document.querySelector('.chart-container');

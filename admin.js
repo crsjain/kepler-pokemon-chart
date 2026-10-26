@@ -927,6 +927,21 @@ export function initAdmin(callbacks) {
     });
   }
 
+  // Per-child visual theme (docs/prd_unicorn_princess_theme.md): auto-saves on
+  // change like the other Settings selects; renderState applies body[data-theme].
+  const themeSelect = document.getElementById('admin-theme-select');
+  if (themeSelect) {
+    themeSelect.addEventListener('change', () => {
+      const val = themeSelect.value === 'unicorn' ? 'unicorn' : 'pokemon';
+      if (state.theme !== val) {
+        state.theme = val;
+        saveState();
+        renderState(true);
+      }
+      flashAdminSaved(themeSelect);
+    });
+  }
+
   // Parent passcode (Family card): explicit submit, inline errors, success toast.
   const changePasscodeBtn = document.getElementById('admin-change-passcode-btn');
   const newPasscodeInput = document.getElementById('admin-new-passcode-input');

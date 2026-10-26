@@ -11500,6 +11500,128 @@ async function runSuite() {
         }
       }
 
+      // 127. Unicorn & Princess Sparkle Theme (docs/prd_unicorn_princess_theme.md §6)
+      {
+        console.log("Running Test Case 127: Unicorn & Princess Sparkle Theme (state.theme, Heart/Crown checkboxes, copy reskin)...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const state = window.__app_state__;
+        const fmt = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+        const addDays = (s0, n) => { const d = new Date(s0 + 'T00:00:00'); d.setDate(d.getDate() + n); return fmt(d); };
+        const ballBg = el => getComputedStyle(el).backgroundImage;
+        try {
+          state.reward = 'Sticker Pack'; // ticks are blocked until both rewards are chosen
+          state.megaReward = 'Unicorn Plush';
+          // 1. Default & diagnostics self-heal.
+          assert(state.theme === 'pokemon', `Default theme should be 'pokemon' (got ${state.theme})`);
+          assert(document.body.dataset.theme === 'pokemon', "body[data-theme] defaults to 'pokemon'");
+          assert(document.querySelector('.game-header .title').textContent.includes('Pokémon Training'), "Pokémon title by default");
+          state.theme = 'invalid';
+          StateModule.runStateDiagnostics();
+          assert(state.theme === 'pokemon', "runStateDiagnostics heals an invalid theme to 'pokemon'");
+
+          // 2. Admin › Settings select auto-saves with inline 'Saved ✓'.
+          document.getElementById('admin-btn').click();
+          await sleep(80);
+          document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+          document.getElementById('password-submit-btn').click();
+          await sleep(80);
+          const themeSelect = document.getElementById('admin-theme-select');
+          assert(themeSelect && themeSelect.closest('#admin-pane-today'), "#admin-theme-select lives in Admin › Settings");
+          assert(themeSelect.value === 'pokemon', "Theme select opens on Pokémon Training");
+          themeSelect.value = 'unicorn';
+          themeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+          await sleep(40);
+          assert(state.theme === 'unicorn', "Selecting Unicorn & Princess updates state.theme");
+          assert(document.body.dataset.theme === 'unicorn', "body[data-theme] switches to 'unicorn'");
+          const savedBadge = themeSelect.closest('.adm-card').querySelector('[data-admin-saved-status]');
+          assert(savedBadge && savedBadge.classList.contains('is-visible'), "Theme change flashes inline 'Saved ✓'");
+
+          // 5b. Parent quarantine: Admin primary stays Poké Blue.
+          const exceptionsBtn = document.getElementById('exceptions-btn');
+          const adminPrimaryBg = getComputedStyle(exceptionsBtn).backgroundColor;
+          assert(adminPrimaryBg === 'rgb(42, 113, 208)', `Admin primary keeps Poké Blue in the unicorn theme (got ${adminPrimaryBg})`);
+          document.getElementById('close-admin-modal-btn').click();
+          await sleep(40);
+
+          // 3. Copy reskin keeps the child's name.
+          const title = document.querySelector('.game-header .title');
+          assert(title.textContent.includes('Royal Unicorn Chart'), `Title reskinned (got "${title.textContent}")`);
+          assert(title.querySelector('.trainer-name-label') && title.querySelector('.trainer-name-label').textContent.length > 0, "Title keeps .trainer-name-label");
+          assert(document.querySelector('.trainer-title').textContent.includes('PRINCESS'), "Trainer eyebrow reads PRINCESS");
+          assert(document.querySelector('.trainer-title .trainer-name-label').textContent.length > 0, "Trainer eyebrow keeps the child's name");
+          assert(document.querySelector('.badge-title').textContent === 'ROYAL GEM BADGE', "Badge card title reskinned");
+          assert(document.querySelector('.mega-title').textContent.includes('ROYAL CROWN PROGRESS'), "Mega title reskinned");
+          assert(document.getElementById('task-col-header-label').textContent === 'ROYAL QUEST', "Task column header reskinned");
+          assert(document.getElementById('change-partner-btn').textContent.includes('Companion'), "Change Partner button reskinned");
+          assert(document.querySelector('.shop-title').textContent.includes('Magical Companion Shop'), "Shop title reskinned");
+          assert(document.getElementById('guide-subtitle-tail').textContent.includes('sparkle heart'), "Guide subtitle reskinned");
+
+          // 4. Heart & Royal Crown checkboxes keep the 36×36 footprint.
+          const normalInput = document.querySelector('#grid-tbody td.checkbox-cell.active-column:not(.excused-cell) input[data-day][data-task]:not(:disabled)');
+          assert(normalInput, "Found an enabled normal cell in the active column");
+          const day = parseInt(normalInput.dataset.day, 10);
+          const dateStr = getDateOfColumn(state.weekStartDate, day);
+          const ball = () => document.querySelector(`#grid-tbody input[data-day="${day}"][data-task="${normalInput.dataset.task}"] + .pokeball`);
+          const uncheckedBg = ballBg(ball());
+          assert(uncheckedBg.includes('svg'), "Unchecked cell shows the dormant heart SVG");
+          const r1 = ball().getBoundingClientRect();
+          assert(Math.round(r1.width) === 36 && Math.round(r1.height) === 36, `Heart keeps the 36×36 footprint (got ${r1.width}×${r1.height})`);
+          assert(getComputedStyle(ball(), '::before').display === 'none', "Pokéball hemispheres are hidden in the unicorn theme");
+          const inst = state.activePartnerInstanceId;
+          const xpBefore = state.partnersData[inst].xp;
+          normalInput.click();
+          await sleep(100);
+          assert(state.grid[`${dateStr}-${normalInput.dataset.task}`] === true, `Ticking a heart records the check (${dateStr}-${normalInput.dataset.task})`);
+          const checkedBg = ballBg(ball());
+          assert(checkedBg.includes('svg') && checkedBg !== uncheckedBg, "Checked cell swaps to the glowing royal heart SVG");
+          const xpAfter = state.partnersData[inst].xp;
+          assert(xpAfter === (xpBefore + helpers.XP_PER_TASK) % 100 || xpAfter > xpBefore, `Shared XP math: +${helpers.XP_PER_TASK} XP (from ${xpBefore} to ${xpAfter})`);
+
+          const otherTask = state.tasks.find(t => t.id !== normalInput.dataset.task && document.querySelector(`#grid-tbody input[data-day="${day}"][data-task="${t.id}"]`));
+          assert(otherTask, "Found a second task to mark as bonus");
+          state.excused[`${dateStr}-${otherTask.id}`] = 'bonus';
+          saveState();
+          helpers.renderState(true);
+          await sleep(50);
+          const bonusInput = document.querySelector(`#grid-tbody input[data-day="${day}"][data-task="${otherTask.id}"]`);
+          const bonusBall = () => document.querySelector(`#grid-tbody input[data-day="${day}"][data-task="${otherTask.id}"] + .pokeball`);
+          assert(getComputedStyle(bonusBall()).borderTopColor === 'rgb(147, 51, 234)', `Unchecked bonus uses the Royal Purple dashed ring (got ${getComputedStyle(bonusBall()).borderTopColor})`);
+          bonusInput.click();
+          await sleep(100);
+          const crownBg = ballBg(bonusBall());
+          assert(crownBg.includes('svg') && crownBg.includes('facc15'), "Checked bonus renders the Royal Crown medallion, not the Great Ball");
+          assert(!crownBg.includes('ef4444'), "Great Ball artwork (scarlet capsules) is not shown in the unicorn theme");
+          const r2 = bonusBall().getBoundingClientRect();
+          assert(Math.round(r2.width) === 36 && Math.round(r2.height) === 36, `Crown keeps the 36×36 footprint (got ${r2.width}×${r2.height})`);
+
+          // 5. Contrast: active day header keeps dark text (Rule 13B).
+          const activeHeader = document.querySelector('.day-header[data-column-state^="active_"]');
+          assert(activeHeader, "An active day header exists");
+          activeHeader.getAnimations().forEach(an => an.finish()); // .day-header has a 0.2s color transition
+          assert(getComputedStyle(activeHeader).color === 'rgb(30, 41, 59)', `Active header text stays Dark Charcoal (got ${getComputedStyle(activeHeader).color})`);
+
+          // 6. Theme survives a progress reset; switching back is lossless.
+          const wiped = StateModule.buildWipedChildState(state);
+          assert(wiped.theme === 'unicorn', "buildWipedChildState preserves theme");
+          assert(StateModule.WIPE_PRESERVED_KEYS.includes('theme'), "WIPE_PRESERVED_KEYS includes theme");
+          const gridSnapshot = JSON.stringify(state.grid);
+          const xpSnapshot = state.partnersData[inst].xp;
+          state.theme = 'pokemon';
+          helpers.renderState(true);
+          await sleep(30);
+          assert(document.body.dataset.theme === 'pokemon' && document.querySelector('.game-header .title').textContent.includes('Pokémon Training'), "Switching back restores Pokémon copy");
+          assert(document.querySelector('.trainer-title').textContent.includes('TRAINER'), "Trainer eyebrow restored");
+          assert(JSON.stringify(state.grid) === gridSnapshot && state.partnersData[inst].xp === xpSnapshot, "Theme switch never alters grid or XP");
+        } finally {
+          state.theme = 'pokemon';
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       // 128. Simplified "Today Focus" Chart Style (Big Buttons — Under 5)
       //      (docs/prd_simplified_chart_style.md; TC127 reserved for Unicorn Theme).
       {

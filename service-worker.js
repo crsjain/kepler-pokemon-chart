@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poke-chart-cache-v247';
+const CACHE_NAME = 'poke-chart-cache-v248';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

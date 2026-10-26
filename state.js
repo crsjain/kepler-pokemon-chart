@@ -84,6 +84,7 @@ export let state = {
   lockPastDays: false, // Require parent passcode to edit previous days (per-profile; see docs/prd_parent_past_day_approval.md)
   parentGraceMinutes: 2, // Parent edit window duration in minutes (1 | 2 | 5)
   chartStyle: 'standard', // Per-child chart layout: 'standard' | 'big-buttons' (see docs/prd_simplified_chart_style.md)
+  theme: 'pokemon', // Per-child visual theme: 'pokemon' | 'unicorn' (see docs/prd_unicorn_princess_theme.md)
   timezoneOffset: 'default',
   weeklyRewardOptions: [...DEFAULT_WEEKLY_REWARDS],
   megaRewardOptions: [...DEFAULT_MEGA_REWARDS],
@@ -191,6 +192,7 @@ export function getDefaultStateTemplate() {
     lockPastDays: false,
     parentGraceMinutes: 2,
     chartStyle: 'standard',
+    theme: 'pokemon',
     timezoneOffset: 'default',
     weeklyRewardOptions: [...DEFAULT_WEEKLY_REWARDS],
     megaRewardOptions: [...DEFAULT_MEGA_REWARDS],
@@ -276,6 +278,7 @@ export const WIPE_PRESERVED_KEYS = [
   'parentGraceMinutes',
   'lockPastDays',
   'chartStyle',
+  'theme',
   'adminPassword',
   'volume',
   'debugSidebarEnabled'
@@ -766,6 +769,12 @@ export function runStateDiagnostics() {
     state.chartStyle = 'standard';
     issues.push("Missing or invalid chartStyle.");
     fixed.push("Set chartStyle to default 'standard'.");
+  }
+
+  if (!['pokemon', 'unicorn'].includes(state.theme)) {
+    state.theme = 'pokemon';
+    issues.push("Missing or invalid theme.");
+    fixed.push("Set theme to default 'pokemon'.");
   }
 
   const isValidOption = (opt) => opt && typeof opt === 'object' && opt.value !== undefined && opt.text !== undefined;

@@ -9458,3 +9458,179 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
     font-size: 1.05rem;
   }
 }
+
+
+/* ==========================================================================
+   UNICORN & PRINCESS SPARKLE THEME (per-child, body[data-theme="unicorn"])
+   docs/prd_unicorn_princess_theme.md. Child-facing surfaces only: Admin,
+   the Parent PIN prompt and the floating parent docks keep the neutral
+   Poké-Blue / Slate palette (UX Rule 17). Graphics are inline data-URI SVGs
+   so the PWA needs no network fetch. Checkbox footprint stays 36×36 (Rule 14).
+   ========================================================================== */
+body[data-theme="unicorn"] {
+  --unicorn-plum: #4a1d66;
+  --unicorn-magenta: #db2777;
+  --unicorn-amethyst: #7e22ce;
+  --unicorn-gold: #fde047;
+  background: linear-gradient(160deg, #fce7f3 0%, #e9d5ff 55%, #f5d0fe 100%) fixed;
+}
+
+body[data-theme="unicorn"] .app-container {
+  background: #fffbfd;
+  border-color: var(--unicorn-plum);
+}
+
+body[data-theme="unicorn"] .game-header {
+  border-bottom-color: var(--unicorn-magenta);
+}
+
+body[data-theme="unicorn"] .game-header .title {
+  color: var(--unicorn-magenta);
+  text-shadow: 2px 2px 0px var(--unicorn-gold), -2px -2px 0px var(--unicorn-amethyst);
+}
+
+body[data-theme="unicorn"] .game-header .subtitle {
+  color: var(--unicorn-amethyst);
+}
+
+body[data-theme="unicorn"] .trainer-card {
+  background: #fdf4ff;
+  border-color: var(--unicorn-plum);
+}
+
+body[data-theme="unicorn"] .trainer-title {
+  color: #86198f;
+}
+
+body[data-theme="unicorn"] .partner-name,
+body[data-theme="unicorn"] .evolution-helper strong {
+  color: var(--unicorn-amethyst);
+}
+
+body[data-theme="unicorn"] .level-badge {
+  background: #fbcfe8;
+  border-color: var(--unicorn-plum);
+  color: #1e293b;
+}
+
+body[data-theme="unicorn"] .xp-bar-inner {
+  background: linear-gradient(90deg, #ec4899 0%, #a855f7 60%, #facc15 100%);
+}
+
+body[data-theme="unicorn"] .weekly-badge-card {
+  background: #faf5ff;
+  border-color: #c084fc;
+}
+
+body[data-theme="unicorn"] .badge-title,
+body[data-theme="unicorn"] .mega-title {
+  color: var(--unicorn-amethyst);
+}
+
+body[data-theme="unicorn"] .mega-milestone-card {
+  background: #fdf2f8;
+  border-color: #a855f7;
+}
+
+body[data-theme="unicorn"] .mega-counter-label {
+  color: var(--unicorn-magenta);
+}
+
+body[data-theme="unicorn"] .motivational-quote {
+  color: #6b21a8;
+  background: #fdf2f8;
+  border-color: #f5d0fe;
+}
+
+/* Grid headers: Royal Amethyst selectable (white text, 6.4:1); Sparkle Rose-Gold active
+   with Dark Charcoal text (Rule 13B: never white on yellow). Superseded / historical /
+   future keep their neutral slate treatments (higher-precedence !important rules). */
+body[data-theme="unicorn"] .weekly-grid th {
+  background-color: var(--unicorn-amethyst);
+}
+
+body[data-theme="unicorn"] .day-header {
+  background-color: var(--unicorn-amethyst);
+}
+
+body[data-theme="unicorn"] .day-header.active-day,
+body[data-theme="unicorn"] .day-header[data-column-state="active_today"],
+body[data-theme="unicorn"] .day-header[data-column-state="active_past"],
+body[data-theme="unicorn"] .day-header[data-column-state="active_future"] {
+  background: linear-gradient(135deg, #fde047 0%, #fbcfe8 100%) !important;
+  color: #1e293b !important;
+}
+
+body[data-theme="unicorn"] .day-header.active-day:hover,
+body[data-theme="unicorn"] .day-header[data-column-state="active_today"]:hover,
+body[data-theme="unicorn"] .day-header[data-column-state="active_past"]:hover,
+body[data-theme="unicorn"] .day-header[data-column-state="active_future"]:hover {
+  background: linear-gradient(135deg, #facc15 0%, #f9a8d4 100%) !important;
+}
+
+/* Big Buttons ribbon follows the same archetypes. */
+body[data-theme="unicorn"] .simplified-day-pill[data-column-state="active_today"],
+body[data-theme="unicorn"] .simplified-day-pill[data-column-state="active_past"],
+body[data-theme="unicorn"] .simplified-day-pill[data-column-state="active_future"] {
+  background: linear-gradient(135deg, #fde047 0%, #fbcfe8 100%);
+  color: #1e293b;
+  box-shadow: 0 4px 12px rgba(219, 39, 119, 0.3);
+}
+
+body[data-theme="unicorn"] .simplified-day-pill[data-column-state="selectable_today"],
+body[data-theme="unicorn"] .simplified-day-pill[data-column-state="selectable_past"] {
+  color: #6b21a8;
+}
+
+/* ---- Checkbox matrix (Rule 14) ------------------------------------------ */
+/* 1. Normal unchecked: dormant crystal heart (Pokéball hemispheres hidden). */
+body[data-theme="unicorn"] .checkbox-cell:not(.excused-cell) .pokeball {
+  border-color: var(--unicorn-plum);
+  background-color: #fdf2f8 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cpath d='M18 29 C 6.5 21.5 5 14 9.2 10.4 C 12.6 7.6 16.4 9.2 18 12.4 C 19.6 9.2 23.4 7.6 26.8 10.4 C 31 14 29.5 21.5 18 29 Z' fill='%23f3e8ff' stroke='%239333ea' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M11.5 13.2 C 12.4 11.6 14 11.2 15.2 11.9' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") !important;
+  background-size: 78% 78% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+body[data-theme="unicorn"] .checkbox-cell:not(.excused-cell) .pokeball::before,
+body[data-theme="unicorn"] .checkbox-cell:not(.excused-cell) .pokeball::after {
+  display: none !important;
+}
+
+/* 2. Normal checked: glowing magenta royal heart with gold sparkles. */
+body[data-theme="unicorn"] .checkbox-cell:not(.excused-cell) .pokeball-checkbox input:checked + .pokeball {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cdefs%3E%3ClinearGradient id='h' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23f472b6'/%3E%3Cstop offset='1' stop-color='%23db2777'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M18 29 C 6.5 21.5 5 14 9.2 10.4 C 12.6 7.6 16.4 9.2 18 12.4 C 19.6 9.2 23.4 7.6 26.8 10.4 C 31 14 29.5 21.5 18 29 Z' fill='url(%23h)' stroke='%239d174d' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cellipse cx='13.4' cy='13.6' rx='2.6' ry='1.6' transform='rotate(-35 13.4 13.6)' fill='%23ffffff' fill-opacity='0.75'/%3E%3Cpath d='M8.5 5.3 L9.46 7.54 L11.7 8.5 L9.46 9.46 L8.5 11.7 L7.54 9.46 L5.3 8.5 L7.54 7.54 Z' fill='%23fde047'/%3E%3Cpath d='M28 5.4 L28.78 7.22 L30.6 8 L28.78 8.78 L28 10.6 L27.22 8.78 L25.4 8 L27.22 7.22 Z' fill='%23fde047'/%3E%3Cpath d='M28.5 24.3 L29.16 25.84 L30.7 26.5 L29.16 27.16 L28.5 28.7 L27.84 27.16 L26.3 26.5 L27.84 25.84 Z' fill='%23facc15'/%3E%3C/svg%3E"), radial-gradient(circle, #fdf2f8 0%, #fbcfe8 100%) !important;
+  background-size: 92% 92%, 100% 100% !important;
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.45);
+}
+
+/* 4. Bonus unchecked: Royal Purple dashed ring on a lavender cell. */
+body[data-theme="unicorn"] .checkbox-cell.excused-cell.bonus-cell:not(.superseded-cell):not(.simplified-card-cell) {
+  background: #faf5ff !important;
+}
+
+body[data-theme="unicorn"] .checkbox-cell.bonus-cell:not(.superseded-cell) input:not(:checked) + .pokeball {
+  border: 3px dashed #9333ea !important;
+  box-shadow: 0 2px 4px rgba(147, 51, 234, 0.2) !important;
+}
+
+body[data-theme="unicorn"] .checkbox-cell.bonus-cell:not(.superseded-cell):hover .pokeball {
+  box-shadow: 0 4px 8px rgba(147, 51, 234, 0.4) !important;
+}
+
+/* 5. Bonus checked: Royal Crown & Unicorn Gem medallion replaces the Great Ball. */
+body[data-theme="unicorn"] .checkbox-cell.bonus-cell:not(.superseded-cell) input:checked + .pokeball {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36' width='36' height='36'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23a855f7'/%3E%3Cstop offset='0.55' stop-color='%237e22ce'/%3E%3Cstop offset='1' stop-color='%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='18' cy='18' r='16.5' fill='url(%23g)' stroke='%234a1d66' stroke-width='3'/%3E%3Cpath d='M4 21 L18 32 L32 21 Z' fill='%23ec4899' fill-opacity='0.35'/%3E%3Cpath d='M9 25 L9 14 L13.5 19 L18 10.5 L22.5 19 L27 14 L27 25 Z' fill='%23facc15' stroke='%23ca8a04' stroke-width='1.3' stroke-linejoin='round'/%3E%3Crect x='9' y='24' width='18' height='3.6' rx='1' fill='%23eab308' stroke='%23ca8a04' stroke-width='1.1'/%3E%3Ccircle cx='9' cy='13.6' r='1.5' fill='%23fde047' stroke='%23ca8a04' stroke-width='0.8'/%3E%3Ccircle cx='18' cy='10.2' r='1.6' fill='%23fde047' stroke='%23ca8a04' stroke-width='0.8'/%3E%3Ccircle cx='27' cy='13.6' r='1.5' fill='%23fde047' stroke='%23ca8a04' stroke-width='0.8'/%3E%3Ccircle cx='18' cy='21' r='1.8' fill='%23e11d48'/%3E%3Ccircle cx='13.2' cy='22.2' r='1.2' fill='%232563eb'/%3E%3Ccircle cx='22.8' cy='22.2' r='1.2' fill='%232563eb'/%3E%3Cpath d='M27.5 5.1 L28.22 6.78 L29.9 7.5 L28.22 8.22 L27.5 9.9 L26.78 8.22 L25.1 7.5 L26.78 6.78 Z' fill='%23ffffff'/%3E%3C/svg%3E") !important;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.5) !important;
+}
+
+body[data-theme="unicorn"] .checkbox-cell.bonus-cell:not(.superseded-cell):hover input:checked + .pokeball {
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.7) !important;
+}
+
+body[data-theme="unicorn"] .checkbox-cell.bonus-cell:not(.superseded-cell) .pokeball-checkbox:has(input:checked)::after {
+  background: #7e22ce !important;
+  border-color: #3b0764 !important;
+}
+/* 3. Rest 💤 and 6. Not-on-the-plan dash are unchanged across themes. */

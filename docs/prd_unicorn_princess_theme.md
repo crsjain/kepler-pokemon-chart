@@ -2,7 +2,7 @@
 
 **Document**: `docs/prd_unicorn_princess_theme.md`
 **Version**: 1.0.0
-**Status**: Reviewed by 5-Stage Feature Review Panel (`APPROVED WITH MITIGATIONS`) — Ready for Phase 1 Implementation (Reserves **TC127**).
+**Status**: Phase 1 implemented locally (2026-10-26; cache v248, modules 11.17, style 11.13, particles 10.5; **TC127**). Not yet deployed.
 **Authors**: crsjain & Jetski
 **Target Systems**: `state.js`, `app.js`, `admin.js`, `index.html`, `style.css`, `tests.js`. **No schema version bump** (stays V19; V20 remains reserved for `prd_parent_pin_and_family_signin.md` §7 Phase 3).
 **Companion docs**: [`prd_simplified_chart_style.md`](prd_simplified_chart_style.md) (independent per-child `chartStyle` setting), [`prd_rest_day_passes_and_bonus_tasks.md`](prd_rest_day_passes_and_bonus_tasks.md) (checkbox state matrix), [`prd_column_state_machine.md`](prd_column_state_machine.md) (8-state column visual hierarchy), [`prd_admin_panel_redesign.md`](prd_admin_panel_redesign.md) (§11 Admin design system), [`_agents/rules/ux-guidelines.md`](../_agents/rules/ux-guidelines.md).
@@ -213,6 +213,13 @@ Add **Test Case 127: Unicorn & Princess Sparkle Theme (`state.theme`, CSS tokens
 
 - [x] Brainstorm & lock owner decisions Q1–Q4 (2026-10-25)
 - [x] Draft PRD & run 5-Stage Feature Review Panel (2026-10-25)
-- [ ] Implement Phase 1 (`state.js`, `index.html`, `admin.js`, `app.js`, `particles.js`, `style.css`)
-- [ ] Add automated regression test **TC127** in `tests.js` and verify 100% green `node run_headless_tests.js`
-- [ ] Bump `CACHE_NAME` in `service-worker.js` and `?v=` in `index.html` (TC90)
+- [x] Implement Phase 1 (`state.js`, `index.html`, `admin.js`, `app.js`, `particles.js`, `style.css`) (2026-10-26)
+- [x] Add automated regression test **TC127** in `tests.js` and verify 100% green `node run_headless_tests.js` (2026-10-26)
+- [x] Bump `CACHE_NAME` in `service-worker.js` and `?v=` in `index.html` (TC90) (v248 / 11.17)
+- [ ] Owner visual QA on the tablet (Lyra's profile, both chart styles)
+
+### Implementation notes (2026-10-26)
+- Admin control sits in a new **Look & Feel** card at the bottom of Settings (`#admin-theme-select`), auto-saving like the other selects.
+- Copy swaps target dedicated elements (`#game-title-suffix`, `#trainer-title-prefix`, `#badges-title-suffix`, `#guide-title`, `#guide-subtitle-tail`, `#task-col-header-label`) so `.trainer-name-label` is never touched. `getThemeCopy()` is a function, not a module-level const, because `renderState` runs during module init (TDZ). `document.title` follows the theme too.
+- Big Buttons: hearts and the crown reuse the grid selectors and scale to the existing 64px catch ball (58px at <= 520px), not the 56px noted in §3.3.
+- Superseded cells show a greyscale heart; rest 💤 and the off-plan dash are unchanged. Kid-facing modals (Shop, Badge Case, Guide) get the copy reskin only; their palettes stay as-is in Phase 1.
