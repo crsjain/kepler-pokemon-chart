@@ -9373,29 +9373,9 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   height: var(--sv-ball-size) !important;
 }
 
-/* Earned star that pops off a freshly caught ball, floats up and fades (one-shot, not persistent) */
-.simplified-catch-star {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  z-index: 15;
-  pointer-events: none;
-  line-height: 0;
-}
-
-.simplified-catch-star .earned-star-svg {
-  width: 26px;
-  height: 26px;
-  filter: drop-shadow(0 2px 0 rgba(180, 83, 9, 0.35));
-}
-
 /* Catch moment (UX review #2 rec #5): wobble-wobble-click, then a sparkle pop. */
 .checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox .pokeball.simplified-catch-ball.just-caught {
   animation: sv-catch-wobble 0.9s ease-in-out, sv-catch-pop 0.35s ease-out 0.9s;
-}
-
-.simplified-catch-star {
-  animation: sv-star-pop 1.3s ease-out 0.9s both;
 }
 
 @keyframes sv-catch-wobble {
@@ -9414,25 +9394,9 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   100% { transform: scale(1); box-shadow: 0 0 0 16px rgba(255, 203, 5, 0); }
 }
 
-@keyframes sv-star-pop {
-  0% { transform: scale(0) rotate(-30deg); opacity: 0; }
-  25% { transform: scale(1.15) rotate(0deg); opacity: 1; }
-  60% { transform: translateY(-8px) scale(1); opacity: 1; }
-  100% { transform: translateY(-22px) scale(0.8); opacity: 0; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox .pokeball.simplified-catch-ball.just-caught {
     animation: sv-catch-pop 0.35s ease-out;
-  }
-
-  .simplified-catch-star {
-    animation: sv-star-fade 0.8s ease-out both;
-  }
-
-  @keyframes sv-star-fade {
-    0%, 60% { opacity: 1; }
-    100% { opacity: 0; }
   }
 }
 

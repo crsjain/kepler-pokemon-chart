@@ -2191,8 +2191,6 @@ function renderSimplifiedView() {
     const guideText = task.instructions || '';
     const ringIndex = taskIndex % 6;
     const isJustCaught = lastJustCheckedKey === stateKey;
-    // The star is a one-shot catch animation (pops in, floats up, fades), never a persistent badge.
-    const showStarSticker = isJustCaught && checked && !isBonus && !isRest && !isOutOfRange;
 
     cardsHtml += `
       <div class="simplified-task-card ${checked ? 'is-checked' : ''} ${isBonus ? 'is-bonus' : ''} ${isRest ? 'is-rest' : ''} ${isOutOfRange ? 'is-out-of-range' : ''}"
@@ -2215,7 +2213,6 @@ function renderSimplifiedView() {
           <label class="pokeball-checkbox simplified-jumbo-checkbox" ${cellTitle ? `title="${cellTitle}"` : ''}>
             <input type="checkbox" data-day="${focusedColIndex}" data-task="${task.id}" aria-label="${taskName}: ${actionPillText}" ${checked ? 'checked' : ''} ${shouldDisable ? 'disabled' : ''}>
             <span class="pokeball simplified-catch-ball ${isJustCaught ? 'just-caught' : ''}" aria-hidden="true"></span>
-            ${showStarSticker ? `<span class="simplified-catch-star" aria-hidden="true">${EARNED_STAR_HTML}</span>` : ''}
             <span class="simplified-action-pill sr-only">${actionPillText}</span>
           </label>
         </div>
@@ -2761,6 +2758,17 @@ function handleCheckboxChange(e) {
     // Big Buttons view plays a wobble-wobble-click "catch" sound timed to the Pokéball wobble animation.
     const isBigButtonsCatch = state.chartStyle === 'big-buttons' && !!cb.closest('.simplified-card-cell');
     playSound(isBigButtonsCatch ? 'catch' : 'check');
+    if (isBigButtonsCatch && window.CelebrationEngine && window.CelebrationEngine.triggerDailyCelebration) {
+      // Star shower (same canvas burst as the grid's day-complete celebration) bursts from the ball once the wobble lands.
+      const { day: catchDay, task: catchTask } = cb.dataset;
+      setTimeout(() => {
+        if (!state.grid[key]) return; // unticked during the wobble
+        const ball = document.querySelector(`#simplified-cards-list input[data-day="${catchDay}"][data-task="${catchTask}"] + .pokeball`);
+        if (!ball || ball.offsetParent === null) return;
+        const rect = ball.getBoundingClientRect();
+        window.CelebrationEngine.triggerDailyCelebration(parseInt(catchDay, 10), rect.left + rect.width / 2, rect.top + rect.height / 2);
+      }, 900);
+    }
     if (pokeballEl) {
       pokeballEl.classList.remove('just-checked');
       void pokeballEl.offsetWidth; // Force reflow to retrigger animation if rapidly toggled

@@ -11617,6 +11617,9 @@ async function runSuite() {
           const activeDateStr = addDays(state.weekStartDate, activeColIdx);
           const partner = state.partnersData[state.activePartnerInstanceId];
           const xpBefore = partner.level * 100 + partner.xp;
+          const showerCalls = [];
+          const origDailyCelebration = window.CelebrationEngine.triggerDailyCelebration;
+          window.CelebrationEngine.triggerDailyCelebration = (...args) => { showerCalls.push(args); };
           const cardInput = firstCard.querySelector('input[type="checkbox"]');
           cardInput.click();
           await sleep(40);
@@ -11627,7 +11630,6 @@ async function runSuite() {
           assert(updatedCard.classList.contains('is-checked') && updatedCard.querySelector('.simplified-action-pill').textContent.trim() === 'Caught!',
             "Checked stadium pill card is 'Caught!'");
           assert(updatedCard.querySelector('.simplified-catch-ball.just-caught'), "Freshly caught ball gets the wobble-wobble-click animation class");
-          assert(updatedCard.querySelector('.simplified-catch-star .earned-star-svg'), "A fresh catch pops an earned-star animation");
           const caughtBallTop = getComputedStyle(updatedCard.querySelector('.simplified-catch-ball'), '::before').backgroundColor;
           assert(caughtBallTop === 'rgb(255, 60, 60)', `Caught ball top turns Pokémon red (Rule 14, got ${caughtBallTop})`);
           const doneBg = getComputedStyle(updatedCard).backgroundColor;
@@ -11637,7 +11639,11 @@ async function runSuite() {
           await sleep(20);
           const settledCard = cardsListEl.querySelector(`.simplified-task-card[data-task="${firstTask.id}"]`);
           assert(settledCard.classList.contains('is-checked') && settledCard.querySelector('.simplified-catch-star') === null,
-            "The catch star is a one-shot animation, not a persistent sticker on caught cards");
+            "Caught cards carry no persistent star sticker (the catch uses a canvas star shower instead)");
+          await sleep(450, true); // star shower fires once the 0.9s wobble lands
+          window.CelebrationEngine.triggerDailyCelebration = origDailyCelebration;
+          assert(showerCalls.some(args => args[0] === activeColIdx && args[1] > 0 && args[2] > 0),
+            `A catch fires the canvas star shower from the ball (calls: ${JSON.stringify(showerCalls)})`);
           const tableInput = document.querySelector(`#grid-tbody input[data-day="${activeColIdx}"][data-task="${firstTask.id}"]`);
           assert(tableInput && tableInput.checked === true, "Hidden 7-day table checkbox stays synchronized");
 
