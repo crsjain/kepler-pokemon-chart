@@ -8875,38 +8875,11 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   box-shadow: none;
 }
 
-.simplified-banner-main {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
 .simplified-day-title {
   font-family: 'Fredoka One', cursive;
   font-size: 1.22rem;
   color: #1e293b;
   letter-spacing: 0.01em;
-}
-
-.simplified-day-subtitle {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-family: 'Quicksand', sans-serif;
-  font-weight: 700;
-  font-size: 0.84rem;
-  background: rgba(255, 255, 255, 0.92);
-  color: #1e40af;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
-}
-
-.simplified-day-subtitle.is-complete {
-  background: linear-gradient(135deg, #fef08a 0%, #fde047 100%);
-  color: #1e293b;
-  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.25);
 }
 
 .simplified-strip-actions {

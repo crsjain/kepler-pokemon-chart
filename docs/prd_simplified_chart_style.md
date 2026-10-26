@@ -26,7 +26,7 @@ For a younger child like Lyra (5yo) who only has **1–3 activities**:
 - **Activate `#admin-chart-style-placeholder` (`state.chartStyle`)**: Promote the inert segmented control at the bottom of **Admin › ✅ Activities** into a live per-child setting (`'standard'` default vs. `'big-buttons'`).
 - **Orthogonal to Theme**: Keep `state.chartStyle` completely independent of `state.theme` (`'pokemon' | 'unicorn'`) so any child can mix-and-match either theme with either chart style.
 - **"Today Focus" Simplified Layout (Floating Stadium Pills)**:
-  1. **Unified Header & Borderless 7-Day Star Ribbon (`#simplified-day-strip`)**: Shows the active day title + completion status chip (`1 of 3 done` / `🌟 Star Earned!`), floating `⭐ Vault` and `📖 Guide` chips, and a soft borderless 7-day ribbon (`SUN`–`SAT`) with clean Daily Total status icons (`🌟`, `☆`, `❌`, `💤`, `➖`).
+  1. **Unified Header & Borderless 7-Day Star Ribbon (`#simplified-day-strip`)**: Shows the active day title (`⚡ Today — Sunday`), floating `⭐ Vault` and `📖 Guide` chips, and a soft borderless 7-day ribbon (`SUN`–`SAT`) with clean Daily Total status icons (`🌟`, `☆`, `❌`, `💤`, `➖`).
   2. **Floating Stadium Pill Task Cards (`#simplified-cards-list`)**: Displays the active day's tasks as borderless, elevated stadium pills (`border-radius: 999px`, zero heavy black outlines) with a circular emoji badge on the left, bold activity name + subtitle in the center, and a tactile **Stadium Action Pill** (`Complete` ➔ `⭐ Done!`) on the right. **No task-specific weekly counters (`4 of 5 days` or goal dots)** — younger children simply focus on finishing today's tasks to earn each day's star/crown toward their weekly badge.
 - **Day Switching & Parent PIN Gate**: Tapping a day pill on the 7-Day Star Strip switches the active day for the big cards below, honoring `state.lockPastDays` (Parent PIN required for past days when enabled) and `"Switch Day? 📅"`.
 - **Automatic Full-Week Grid for Parent Modes**: Entering **Parent Exception Mode** (`#exceptions-btn`) or **Fix Last Week** (`#admin-fix-last-week-btn`) automatically displays the full 7-day table so parents can manage multi-day exceptions and fixes without friction.
@@ -56,7 +56,7 @@ When `state.chartStyle === 'big-buttons'` and neither Exception Mode nor Fix Las
 ┌────────────────────────────────────────────────────────────────────────┐
 │  ◀ Prev                     Oct 25 - Oct 31                    Next ▶  │
 ├────────────────────────────────────────────────────────────────────────┤
-│  ⚡ Sunday's Quests  ( 1 of 2 done )               (⭐ Vault) (📖 Guide)│
+│  ⚡ Sunday's Quests                                (⭐ Vault) (📖 Guide)│
 │  ╭──────────────────────────────────────────────────────────────────╮  │
 │  │  SUN      MON      TUE      WED      THU      FRI      SAT      │  │
 │  │  🌟       ☆        ☆        ☆        ☆        ☆        ☆       │  │
@@ -75,7 +75,7 @@ When `state.chartStyle === 'big-buttons'` and neither Exception Mode nor Fix Las
 
 #### A. Unified Header & Borderless 7-Day Star Ribbon (`#simplified-day-strip`)
 - **Top Header Row (`.simplified-day-banner`)**:
-  - Left: Active day title (`#simplified-day-title`, e.g., `⚡ Today — Sunday` or `⚡ Wednesday's Quests`) + rounded completion status pill (`#simplified-day-subtitle`, e.g., `1 of 3 done`, `🌟 Star Earned!`, or `💤 Rest Day`).
+  - Left: Active day title (`#simplified-day-title`, e.g., `⚡ Today — Sunday` or `⚡ Wednesday's Quests`) with zero fractional completion count next to it (`0 of 4 done` omitted so younger children aren't distracted by numbers).
   - Right: Compact borderless pill chips for `⭐ Vault` (`#open-vault-simplified-btn`) and `📖 Guide` (`#open-guide-simplified-btn`).
 - **Borderless 7-Day Star Ribbon (`#simplified-day-strip`)**:
   - Sits inside a single soft tinted track (`border-radius: 18px`) with **zero heavy black borders**.

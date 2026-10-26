@@ -11571,6 +11571,8 @@ async function runSuite() {
           });
 
           // 5. Floating Stadium Pill Task Cards (Zero Black Borders & Zero Task-Specific Week Counters).
+          assert(document.getElementById('simplified-day-subtitle') === null && !/\d+\s+of\s+\d+\s+done/i.test(simplifiedView.querySelector('.simplified-day-banner').textContent),
+            "Big Buttons header omits 'X of Y done' counter next to day title");
           const activeTasks = state.tasks.filter(t => helpers.isTaskActiveInWeek(t, state.weekStartDate));
           const cards = [...cardsListEl.querySelectorAll('.simplified-task-card')];
           assert(cards.length === activeTasks.length && cards.length > 0, `Renders one stadium pill card per active task (${cards.length})`);

@@ -2058,7 +2058,6 @@ function renderSimplifiedView() {
   const stripEl = document.getElementById('simplified-day-strip');
   const cardsListEl = document.getElementById('simplified-cards-list');
   const dayTitleEl = document.getElementById('simplified-day-title');
-  const daySubtitleEl = document.getElementById('simplified-day-subtitle');
   if (!stripEl || !cardsListEl) return;
 
   if (state.chartStyle !== 'big-buttons') {
@@ -2131,23 +2130,9 @@ function renderSimplifiedView() {
   const focusedDayOfWeek = (viewingStartDay + focusedColIndex) % 7;
   const focusedDayName = dayNamesFull[focusedDayOfWeek];
   const isFocusedToday = focusedCol.dateStr === todayStr;
-  const focusedComplete = isDayComplete(focusedCol.dateStr, state);
-  const focusedCounts = getDayTaskCounts(focusedCol.dateStr, state);
 
   if (dayTitleEl) {
     dayTitleEl.textContent = isFocusedToday ? `⚡ Today — ${focusedDayName}` : `⚡ ${focusedDayName}'s Quests`;
-  }
-  if (daySubtitleEl) {
-    daySubtitleEl.classList.toggle('is-complete', focusedComplete && focusedCol.state !== 'SUPERSEDED');
-    if (focusedCol.state === 'SUPERSEDED') {
-      daySubtitleEl.textContent = 'Moved to new chart 🚀';
-    } else if (focusedComplete) {
-      daySubtitleEl.textContent = '🌟 Star Earned!';
-    } else if (focusedCounts.isRestDay) {
-      daySubtitleEl.textContent = '💤 Rest Day';
-    } else {
-      daySubtitleEl.textContent = `${focusedCounts.requiredCompleted} of ${focusedCounts.requiredTotal} done`;
-    }
   }
 
   const tasks = (state.tasks || []).filter(task => isTaskActiveInWeek(task, currentViewingWeekStartDate));
