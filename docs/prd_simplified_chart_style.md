@@ -77,7 +77,8 @@ When `state.chartStyle === 'big-buttons'` and neither Exception Mode nor Fix Las
 - **Top Header Row (`.simplified-day-banner`)**:
   - Left: Active day title (`#simplified-day-title`, e.g., `⚡ Today — Sunday` or `⚡ Wednesday's Quests`) with zero fractional completion count next to it (`0 of 4 done` omitted so younger children aren't distracted by numbers).
   - Right: *(empty)*. The `⭐ Vault` / `📖 Guide` header chips were removed (owner decision 2026-10-26, Vault/Guide UX studio Option B).
-- **Vault Treasure Tile (`#open-vault-simplified-btn.simplified-vault-tile`)**: A gold `💰 Vault` tile at the end of the star ribbon inside a shared `.simplified-week-row` track, so the week's stars visibly flow into the Vault. It sits *outside* the `role="tablist"` strip to keep tab semantics clean. Gold gradient (`#fde047` → `#fbbf24`) with Dark Charcoal `#1e293b` text (Rule 13B), `0 4px 0 #d97706` tactile shadow, 28px icon, ≥ 58px tall and 72–96px wide (52px × 56px at ≤ 520px; the app is optimized for tablet/desktop). **No star count** on the tile (owner decision).
+- **Vault Tile (`#open-vault-simplified-btn.simplified-vault-tile`)**: A `⭐ Vault` tile at the end of the star ribbon inside a shared `.simplified-week-row` track, so the week's stars visibly flow into the Vault. It sits *outside* the `role="tablist"` strip to keep tab semantics clean. Styled like the standard grid's amber `⭐ Vault` pixel button (`#open-vault-btn`), scaled up for little hands (owner decision 2026-10-26): amber gradient (`#fbbf24` → `#f59e0b`), `3px solid #b45309` edge, hard `0 4px 0 #92400e` shadow, white label with a dark amber outline for legibility, 28px ⭐ icon, ≥ 58px tall and 72–96px wide (52px × 56px at ≤ 520px; the app is optimized for tablet/desktop). Amber + hard edge keeps it distinct from the yellow active-day pill. **No star count** on the tile (owner decision).
+- **Partner Cheer (`#simplified-partner`)**: The active partner's sprite (56px circle, Poké Blue `#2a71d0` ring) sits left of the day title. It hops (`.cheer`, 1.2s) on every catch and shows a `🎉 Yay!` bubble (`.is-celebrating`) once the focused day is complete. Hops are disabled under `prefers-reduced-motion`.
 - **Guide**: No Guide button in the Big Buttons view (owner decision 2026-10-26). **Known follow-up (deferred by owner):** move each activity's Task Guide description into the subtitle beneath its stadium card, replacing the standalone Guide.
 - **Borderless 7-Day Star Ribbon (`#simplified-day-strip`)**:
   - Sits inside a single soft tinted track (`border-radius: 18px`) with **zero heavy black borders**.
@@ -94,14 +95,16 @@ When `state.chartStyle === 'big-buttons'` and neither Exception Mode nor Fix Las
   - **Borderless Stadium Pill Geometry**: Fully rounded stadium card (`border-radius: 999px`, `border: none`, soft ambient shadow `0 8px 24px -4px rgba(15, 23, 42, 0.08)`), eliminating the nested black comic-book boxes.
   - **No Task-Specific Weekly Counters**: Per owner UX review (2026-10-25), task cards do **not** display per-task weekly counters (`4 of 5 days` or `.simplified-goal-dots`). Younger children focus purely on completing the day's tasks to earn each day's star/crown in the 7-day strip toward the weekly badge.
   1. **Task Identity (Left)**:
-     - Circular `52px × 52px` pastel icon badge (`.simplified-card-emoji`, `border-radius: 50%`, zero border) holding the task emoji (`1.9rem`).
-     - Bold task name (`1.18rem`, `Fredoka One`) + encouraging concept/instruction line.
-  2. **Tactile Stadium Action Pill (Right — `min-height: 48px`, `min-width: 112px` inside a `>= 56px` touch zone)**:
-     - Wraps `<input type="checkbox" data-day="..." data-task="..." ...>` inside `<label class="pokeball-checkbox simplified-jumbo-checkbox">` with a borderless `<span class="simplified-action-pill">`:
-       - **Normal Unchecked / Checked**: `Complete` (soft blue pill `#eff6ff`, text `#2563eb`) → `⭐ Done!` (emerald `#10b981`, text `#ffffff`), and the entire stadium card washes with a soft mint gradient (`.is-checked`).
-       - **Bonus Unchecked / Checked**: `✨ Bonus` → `🌟 +10 XP!` with a `"✨ Bonus +10 XP"` chip on the card.
-       - **Rest Day (`💤`)**: Card carries `.is-rest` muted styling and `"💤 Rest Pass"` chip; action pill shows `💤 Rest` and checkbox is disabled (`pointer-events: none`).
-       - **Not on the Plan (`.out-of-range-cell`)**: Card carries `.is-out-of-range`, muted dash `➖`, and parent tooltip (`offPlanTooltip`).
+     - The emoji is the pre-reader's main cue: a `62px` white circle (`.simplified-card-emoji`, `2.15rem` emoji, `54px` at ≤ 520px) with a `3px` Pokémon type-colour ring assigned by activity order (`data-ring="0..5"`: Electric, Water, Grass, Fire, Psychic, Flying).
+     - Bold task name (`1.18rem`, `Fredoka One`). **No subtitle line** (owner decision 2026-10-26, UX review #2): `task.concept` moves to the card `title` for parents. Deferred follow-up: show the Task Guide description here instead.
+  2. **Catch Pokéball (Right, `64px`, `58px` at ≤ 520px, whole card still clickable)**:
+     - Wraps `<input type="checkbox" data-day="..." data-task="..." aria-label="<task>: <state>">` inside `<label class="pokeball-checkbox simplified-jumbo-checkbox">`, followed by `<span class="pokeball simplified-catch-ball">`. This means it uses the **same UX Rule 14 state matrix** as the grid. The state words (`Catch` / `Caught!` / `Bonus` / `Bonus caught! +10 XP` / `Rest day` / `Not on the plan`) live in a `.simplified-action-pill.sr-only` span and the `aria-label`:
+       - **Normal Unchecked / Caught**: grey top → Pokémon red top + yellow centre. A caught card turns a warm earned-star tile (`#fef3c7`, charcoal text; replaces the low-contrast emerald/white "Done!") and an `EARNED_STAR_HTML` sticker pops onto the ball.
+       - **Catch moment**: a fresh catch (`lastJustCheckedKey` → `.just-caught`) wobbles 3× over 0.9s and plays a matching `playSound('catch')` wobble-wobble-click (`audio.js`). Then a yellow sparkle pops and the star sticker springs in. Under `prefers-reduced-motion` only the pop plays.
+       - **Bonus Unchecked / Caught**: dashed sky-blue ✨ ring → Great Ball with the `+XP` badge, plus a `"✨ Bonus +10 XP"` chip on the card.
+       - **Rest Day (`💤`)**: Card carries `.is-rest` muted styling and a `"💤 Rest Pass"` chip; a floating 💤 replaces the ball and the checkbox is disabled.
+       - **Not on the Plan (`.out-of-range-cell`)**: Card carries `.is-out-of-range`; a muted dash replaces the ball, with the parent tooltip (`offPlanTooltip`).
+  3. **Star ribbon legibility**: day labels use `#475569` (≈ 6.8:1) instead of the faint inherited slate; the active pill keeps `#1e293b`.
 
 ### 3.3 Day Switching & Past-Day PIN Lock
 - Clicking a `.simplified-day-pill[data-day]` delegates to the exact same header-click handler used by `.day-header[data-day]`:

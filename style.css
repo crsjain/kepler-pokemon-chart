@@ -8867,9 +8867,9 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px 14px;
-  padding: 2px 2px 0;
+  padding: 8px 2px 0;
   background: transparent;
   border: none;
   box-shadow: none;
@@ -8902,7 +8902,9 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   box-sizing: border-box;
 }
 
-/* Rule 13B: dark charcoal text on gold, never white. Rule 12: 0 4px 0 tactile shadow. */
+/* Vault tile: same amber "⭐ Vault" pixel button as the standard grid (#open-vault-btn), scaled up for
+   little hands. Amber + hard charcoal-brown edge keeps it distinct from the yellow active-day pill;
+   the white label gets a dark outline so it stays legible on amber. */
 .simplified-vault-tile {
   display: flex;
   flex-direction: column;
@@ -8913,33 +8915,36 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   width: 100%;
   margin: 0;
   padding: 6px 4px;
-  border: none;
+  border: 3px solid #b45309;
   border-radius: 14px;
-  background: linear-gradient(135deg, #fde047 0%, #fbbf24 100%);
-  background-color: var(--poke-yellow, #ffcb05);
-  color: #1e293b;
+  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+  background-color: #f59e0b;
+  color: #ffffff;
   font-family: 'Fredoka One', cursive;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   white-space: nowrap;
-  box-shadow: 0 4px 0 #d97706;
+  text-shadow: -1px -1px 0 #92400e, 1px -1px 0 #92400e, -1px 1px 0 #92400e, 1px 1px 0 #92400e, 0 2px 0 #92400e;
+  box-shadow: 0 4px 0 #92400e;
   box-sizing: border-box;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .simplified-vault-tile:hover {
   transform: translateY(-1px);
-  box-shadow: 0 5px 0 #d97706, 0 8px 16px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 5px 0 #92400e, 0 8px 16px rgba(245, 158, 11, 0.3);
 }
 
 .simplified-vault-tile:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 #d97706;
+  transform: translateY(4px);
+  box-shadow: none;
 }
 
 .simplified-vault-icon {
   font-size: 28px;
   line-height: 1;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 0 rgba(146, 64, 14, 0.55));
 }
 
 .simplified-day-pill {
@@ -9036,6 +9041,11 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   font-size: 0.76rem;
   letter-spacing: 0.04em;
   line-height: 1.1;
+  color: #475569; /* ≈ 6.8:1 on the strip tint (was inheriting #94a3b8/#64748b) */
+}
+
+.simplified-day-pill[data-column-state^="active"] .simplified-pill-day {
+  color: #1e293b; /* Rule 13B */
 }
 
 .simplified-pill-star {
@@ -9091,9 +9101,10 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.12), 0 4px 8px -1px rgba(15, 23, 42, 0.06);
 }
 
+/* Done state (UX review #2 rec #2): warm earned-star tile with charcoal text instead of green/white. */
 .simplified-task-card.is-checked {
-  background: linear-gradient(90deg, #f0fdf4 0%, #dcfce7 100%);
-  box-shadow: 0 8px 22px -4px rgba(16, 185, 129, 0.20), 0 2px 6px -1px rgba(16, 185, 129, 0.08);
+  background: #fef3c7;
+  box-shadow: 0 8px 22px -4px rgba(217, 119, 6, 0.22), 0 2px 6px -1px rgba(217, 119, 6, 0.10);
 }
 
 .simplified-task-card.is-bonus {
@@ -9115,37 +9126,49 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 .simplified-card-main {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   flex: 1 1 auto;
   min-width: 0;
 }
 
+/* Emoji is the pre-reader's primary cue (UX review #2 rec #3): 62px hero with a type-colour ring. */
 .simplified-card-emoji {
+  --task-ring: #f8d030;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
+  width: 62px;
+  height: 62px;
   flex-shrink: 0;
-  font-size: 1.9rem;
-  background: #eff6ff;
-  border: none;
+  font-size: 2.15rem;
+  background: #ffffff;
+  border: 3px solid var(--task-ring);
   border-radius: 50%;
+  box-sizing: border-box;
   transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
+/* Pokémon type colours, assigned by activity order */
+.simplified-card-emoji[data-ring="0"] { --task-ring: #f8d030; } /* Electric */
+.simplified-card-emoji[data-ring="1"] { --task-ring: #6890f0; } /* Water */
+.simplified-card-emoji[data-ring="2"] { --task-ring: #78c850; } /* Grass */
+.simplified-card-emoji[data-ring="3"] { --task-ring: #f08030; } /* Fire */
+.simplified-card-emoji[data-ring="4"] { --task-ring: #f85888; } /* Psychic */
+.simplified-card-emoji[data-ring="5"] { --task-ring: #a890f0; } /* Flying */
+
 .simplified-task-card.is-checked .simplified-card-emoji {
-  background: #bbf7d0;
+  background: #fffbeb;
   transform: scale(1.04);
 }
 
 .simplified-task-card.is-bonus .simplified-card-emoji {
-  background: #e0f2fe;
+  background: #f0f9ff;
 }
 
 .simplified-task-card.is-rest .simplified-card-emoji,
 .simplified-task-card.is-out-of-range .simplified-card-emoji {
-  background: #e2e8f0;
+  --task-ring: #cbd5e1;
+  background: #f1f5f9;
   opacity: 0.75;
 }
 
@@ -9172,14 +9195,6 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   overflow-wrap: anywhere;
 }
 
-.simplified-card-concept {
-  font-family: 'Quicksand', sans-serif;
-  font-weight: 700;
-  font-size: 0.88rem;
-  color: #64748b;
-  line-height: 1.25;
-}
-
 .simplified-card-tag {
   display: inline-flex;
   align-items: center;
@@ -9201,12 +9216,19 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   color: #475569;
 }
 
-/* Tactile Stadium Action Pill on the right side of each card (>= 56px touch zone) */
+/* Catch Pokéball (UX review #2 rec #1): the card's tap target is a 64px Pokéball that follows the
+   Rule 14 state matrix — grey top (unchecked) → red top + yellow centre (caught); bonus = dashed ✨ ring
+   → Great Ball when caught; rest = floating 💤; off-plan = muted dash. The whole card stays clickable. */
+.simplified-today-view {
+  --sv-ball-size: 64px;
+  --sv-ball-border: 4px;
+}
+
 .checkbox-cell.simplified-card-cell {
   flex: 0 0 auto;
   width: auto;
-  min-width: 112px;
-  height: 56px;
+  min-width: var(--sv-ball-size);
+  height: var(--sv-ball-size);
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -9217,17 +9239,19 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   pointer-events: auto !important;
 }
 
-.checkbox-cell.simplified-card-cell.out-of-range-cell::after {
-  display: none !important;
+/* The grid's bonus tint / rest stripes are cell backgrounds; on a stadium card the card itself carries that state */
+.checkbox-cell.simplified-card-cell.excused-cell.bonus-cell:not(.superseded-cell),
+.checkbox-cell.simplified-card-cell.excused-cell:not(.bonus-cell):not(.superseded-cell) {
+  background: transparent !important;
 }
 
 .checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox,
 .checkbox-cell.simplified-card-cell.excused-cell:not(.superseded-cell) .pokeball-checkbox.simplified-jumbo-checkbox,
 .checkbox-cell.simplified-card-cell.out-of-range-cell .pokeball-checkbox.simplified-jumbo-checkbox {
   position: relative;
-  width: auto !important;
-  min-width: 112px !important;
-  height: 56px !important;
+  width: var(--sv-ball-size) !important;
+  min-width: var(--sv-ball-size) !important;
+  height: var(--sv-ball-size) !important;
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
@@ -9236,8 +9260,34 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   box-shadow: none !important;
 }
 
-.checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox::after {
+/* Off-plan: keep the label visible (the grid hides it) and show the muted Rule 14 dash instead of a ball */
+.checkbox-cell.simplified-card-cell.out-of-range-cell::after {
   display: none !important;
+}
+
+.checkbox-cell.simplified-card-cell.out-of-range-cell .pokeball.simplified-catch-ball {
+  display: none !important;
+}
+
+.checkbox-cell.simplified-card-cell.out-of-range-cell .pokeball-checkbox.simplified-jumbo-checkbox::before {
+  content: '';
+  width: 24px;
+  height: 5px;
+  border-radius: 3px;
+  background: #94a3b8;
+}
+
+/* The grid's ::after on the label is hidden here, except the Rule 14 "+XP" badge on a caught bonus */
+.checkbox-cell.simplified-card-cell:not(.bonus-cell) .pokeball-checkbox.simplified-jumbo-checkbox::after {
+  display: none !important;
+}
+
+.checkbox-cell.simplified-card-cell.bonus-cell:not(.superseded-cell) .pokeball-checkbox.simplified-jumbo-checkbox:has(input:checked)::after {
+  top: -4px !important;
+  right: -6px !important;
+  font-size: 11px !important;
+  padding: 2px 5px !important;
+  border-radius: 6px !important;
 }
 
 .checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox input[type="checkbox"] {
@@ -9248,50 +9298,171 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   opacity: 0;
   margin: 0;
   cursor: pointer;
+  z-index: 20;
 }
 
 .checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox input[type="checkbox"]:disabled {
   cursor: default;
 }
 
-.simplified-action-pill {
+.checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox .pokeball.simplified-catch-ball {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  width: var(--sv-ball-size) !important;
+  height: var(--sv-ball-size) !important;
+  border-width: var(--sv-ball-border);
+  box-sizing: border-box;
+  box-shadow: 0 4px 0 rgba(45, 55, 72, 0.25);
+  transform-origin: 50% 85%;
+}
+
+.checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox .pokeball.simplified-catch-ball::before {
+  border-bottom-width: var(--sv-ball-border);
+}
+
+.checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox .pokeball.simplified-catch-ball::after {
+  width: 18px;
+  height: 18px;
+  border-width: var(--sv-ball-border);
+}
+
+.simplified-task-card:hover:not(.is-rest):not(.is-out-of-range) .pokeball.simplified-catch-ball {
+  transform: translateY(-2px);
+}
+
+/* Bonus ✨ ring & rest 💤 scale up with the ball */
+.checkbox-cell.simplified-card-cell.bonus-cell:not(.superseded-cell) input:not(:checked) + .pokeball.simplified-catch-ball::before {
+  font-size: 30px !important;
+}
+
+.checkbox-cell.simplified-card-cell.rest-cell:not(.superseded-cell) .pokeball.simplified-catch-ball::before {
+  font-size: 34px !important;
+}
+
+.checkbox-cell.simplified-card-cell.bonus-cell:not(.superseded-cell) input:checked + .pokeball.simplified-catch-ball {
+  position: relative !important;
+  width: var(--sv-ball-size) !important;
+  height: var(--sv-ball-size) !important;
+}
+
+/* Earned-star sticker pinned to a caught ball */
+.simplified-catch-star {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  z-index: 15;
+  pointer-events: none;
+  line-height: 0;
+}
+
+.simplified-catch-star .earned-star-svg {
+  width: 26px;
+  height: 26px;
+  filter: drop-shadow(0 2px 0 rgba(180, 83, 9, 0.35));
+}
+
+/* Catch moment (UX review #2 rec #5): wobble-wobble-click, then a sparkle pop. */
+.checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox .pokeball.simplified-catch-ball.just-caught {
+  animation: sv-catch-wobble 0.9s ease-in-out, sv-catch-pop 0.35s ease-out 0.9s;
+}
+
+.simplified-task-card:has(.just-caught) .simplified-catch-star {
+  animation: sv-star-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.9s both;
+}
+
+@keyframes sv-catch-wobble {
+  0%, 100% { transform: rotate(0deg); }
+  10% { transform: rotate(-14deg); }
+  20% { transform: rotate(0deg); }
+  40% { transform: rotate(12deg); }
+  50% { transform: rotate(0deg); }
+  70% { transform: rotate(-8deg); }
+  80% { transform: rotate(4deg); }
+}
+
+@keyframes sv-catch-pop {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 203, 5, 0.75); }
+  50% { transform: scale(1.12); box-shadow: 0 0 0 10px rgba(255, 203, 5, 0.35); }
+  100% { transform: scale(1); box-shadow: 0 0 0 16px rgba(255, 203, 5, 0); }
+}
+
+@keyframes sv-star-pop {
+  0% { transform: scale(0) rotate(-30deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* Partner cheer (UX review #2 rec #5): active partner in the banner hops on every catch */
+.simplified-partner {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  min-width: 108px;
-  padding: 8px 18px;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #2a71d0;
+  box-shadow: 0 3px 0 rgba(42, 113, 208, 0.3);
+  box-sizing: border-box;
+}
+
+.simplified-partner-sprite {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.simplified-partner.cheer .simplified-partner-sprite {
+  animation: sv-partner-hop 0.6s ease-out 2;
+}
+
+.simplified-partner-bubble {
+  position: absolute;
+  left: calc(100% - 6px);
+  top: -14px;
+  padding: 2px 8px;
   border-radius: 999px;
+  background: #ffcb05;
+  border: 2px solid #1e293b;
+  color: #1e293b;
   font-family: 'Fredoka One', cursive;
-  font-size: 0.92rem;
-  letter-spacing: 0.01em;
-  background: #eff6ff;
-  color: #2563eb;
-  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  z-index: 5;
 }
 
-.simplified-task-card.is-checked .simplified-action-pill {
-  background: #10b981;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.30);
+.simplified-partner.is-celebrating .simplified-partner-bubble {
+  opacity: 1;
+  transform: scale(1);
 }
 
-.simplified-task-card.is-bonus:not(.is-checked) .simplified-action-pill {
-  background: #e0f2fe;
-  color: #0284c7;
+@keyframes sv-partner-hop {
+  0%, 100% { transform: translateY(0); }
+  35% { transform: translateY(-12px) rotate(-6deg); }
+  60% { transform: translateY(0) rotate(0deg); }
+  80% { transform: translateY(-4px); }
 }
 
-.simplified-task-card.is-bonus.is-checked .simplified-action-pill {
-  background: #2563eb;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.32);
-}
+@media (prefers-reduced-motion: reduce) {
+  .checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox .pokeball.simplified-catch-ball.just-caught {
+    animation: sv-catch-pop 0.35s ease-out;
+  }
 
-.simplified-task-card.is-rest .simplified-action-pill,
-.simplified-task-card.is-out-of-range .simplified-action-pill {
-  background: #e2e8f0;
-  color: #64748b;
-  box-shadow: none;
+  .simplified-task-card:has(.just-caught) .simplified-catch-star {
+    animation: none;
+  }
+
+  .simplified-partner.cheer .simplified-partner-sprite {
+    animation: none;
+  }
 }
 
 @media (max-width: 520px) {
@@ -9327,30 +9498,37 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
     font-size: 24px;
   }
 
+  .simplified-today-view {
+    --sv-ball-size: 58px;
+  }
+
   .simplified-task-card {
     padding: 8px 10px 8px 10px;
     gap: 10px;
-    min-height: 68px;
+    min-height: 70px;
+  }
+
+  .simplified-card-main {
+    gap: 12px;
   }
 
   .simplified-card-emoji {
-    width: 44px;
-    height: 44px;
-    font-size: 1.65rem;
+    width: 54px;
+    height: 54px;
+    font-size: 1.85rem;
   }
 
   .simplified-card-name {
     font-size: 1.05rem;
   }
 
-  .checkbox-cell.simplified-card-cell,
-  .checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox {
-    min-width: 96px !important;
+  .simplified-partner {
+    width: 48px;
+    height: 48px;
   }
 
-  .simplified-action-pill {
-    min-width: 92px;
-    padding: 6px 14px;
-    font-size: 0.84rem;
+  .simplified-partner-sprite {
+    width: 44px;
+    height: 44px;
   }
 }

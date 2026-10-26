@@ -11579,7 +11579,9 @@ async function runSuite() {
             "Vault tile sits in .simplified-week-row next to the star strip");
           assert(vaultTile.previousElementSibling === stripEl && !stripEl.contains(vaultTile), "Vault tile follows the strip, outside the day tablist");
           assert(!/\d/.test(vaultTile.textContent), `Vault tile shows no star count (got "${vaultTile.textContent.trim()}")`);
-          assert(getComputedStyle(vaultTile).color === 'rgb(30, 41, 59)', "Vault tile uses Dark Charcoal text on gold (Rule 13B)");
+          const vaultStyles = getComputedStyle(vaultTile);
+          assert(vaultTile.textContent.includes('⭐') && vaultStyles.backgroundColor === 'rgb(245, 158, 11)' && vaultStyles.borderTopColor === 'rgb(180, 83, 9)' && vaultStyles.textShadow !== 'none',
+            `Vault tile matches the standard amber ⭐ Vault button, with an outlined label (bg=${vaultStyles.backgroundColor}, border=${vaultStyles.borderTopColor})`);
           assert(vaultTile.getBoundingClientRect().height >= 52, `Vault tile is a kid-sized target (h=${vaultTile.getBoundingClientRect().height})`);
           assert(document.getElementById('open-guide-simplified-btn') === null && simplifiedView.querySelector('.simplified-header-chip') === null,
             "Big Buttons view has no Guide button or header chips");
@@ -11593,10 +11595,18 @@ async function runSuite() {
             `Floating Stadium Pill must be borderless with stadium radius (got radius=${cardStyles.borderTopLeftRadius}, border=${cardStyles.borderTopWidth})`);
           const jumboLabel = firstCard.querySelector('.simplified-jumbo-checkbox');
           const jumboRect = jumboLabel.getBoundingClientRect();
-          assert(Math.round(jumboRect.width) >= 96 && Math.round(jumboRect.height) >= 56,
-            `Stadium action pill touch zone must be at least 96x56px (got ${jumboRect.width}x${jumboRect.height})`);
+          assert(Math.round(jumboRect.width) >= 56 && Math.round(jumboRect.height) >= 56,
+            `Catch Pokéball touch zone must be at least 56x56px (got ${jumboRect.width}x${jumboRect.height})`);
+          const catchBall = firstCard.querySelector('input[type="checkbox"] + .pokeball.simplified-catch-ball');
+          assert(catchBall && catchBall.getBoundingClientRect().width >= 56, "Unchecked card shows a jumbo catch Pokéball (Rule 14 matrix) instead of a text pill");
           const actionPill = firstCard.querySelector('.simplified-action-pill');
-          assert(actionPill && actionPill.textContent.trim() === 'Complete', `Unchecked card action pill shows 'Complete' (got "${actionPill && actionPill.textContent}")`);
+          assert(actionPill && actionPill.classList.contains('sr-only') && actionPill.textContent.trim() === 'Catch', `Action text is screen-reader only (got "${actionPill && actionPill.textContent}")`);
+          assert(firstCard.querySelector('.simplified-card-concept') === null && !firstCard.querySelector('.simplified-card-info').textContent.includes(firstTask.concept || '@@none@@'),
+            "Subtitle concept text is hidden from the card (kept in title for parents)");
+          const emojiBadge = firstCard.querySelector('.simplified-card-emoji');
+          assert(emojiBadge.getBoundingClientRect().width >= 52 && emojiBadge.dataset.ring !== undefined, "Emoji badge is the hero cue with a type-colour ring");
+          const partnerSprite = document.getElementById('simplified-partner-sprite');
+          assert(partnerSprite && /sprites\/pokemon\/\d+\.png$/.test(partnerSprite.getAttribute('src') || ''), "Active partner sprite shows in the Big Buttons banner");
           assert(firstCard.querySelector('.simplified-goal-dots') === null && !/\d+\s*(?:of|\/)\s*\d+\s*days/i.test(firstCard.textContent),
             "Big Buttons card omits task-specific weekly goal counters/dots so younger children focus on today's tasks");
 
@@ -11612,8 +11622,15 @@ async function runSuite() {
           assert(state.grid[`${activeDateStr}-${firstTask.id}`] === true, "Ticking stadium pill card sets state.grid[date-task] = true");
           assert(xpAfter > xpBefore, "Ticking stadium pill card awards partner XP");
           const updatedCard = cardsListEl.querySelector(`.simplified-task-card[data-task="${firstTask.id}"]`);
-          assert(updatedCard.classList.contains('is-checked') && updatedCard.querySelector('.simplified-action-pill').textContent.trim() === '⭐ Done!',
-            "Checked stadium pill card shows '⭐ Done!'");
+          assert(updatedCard.classList.contains('is-checked') && updatedCard.querySelector('.simplified-action-pill').textContent.trim() === 'Caught!',
+            "Checked stadium pill card is 'Caught!'");
+          assert(updatedCard.querySelector('.simplified-catch-ball.just-caught'), "Freshly caught ball gets the wobble-wobble-click animation class");
+          assert(updatedCard.querySelector('.simplified-catch-star .earned-star-svg'), "Caught card shows the earned-star sticker");
+          const caughtBallTop = getComputedStyle(updatedCard.querySelector('.simplified-catch-ball'), '::before').backgroundColor;
+          assert(caughtBallTop === 'rgb(255, 60, 60)', `Caught ball top turns Pokémon red (Rule 14, got ${caughtBallTop})`);
+          const doneBg = getComputedStyle(updatedCard).backgroundColor;
+          assert(doneBg === 'rgb(254, 243, 199)', `Done card uses the warm #fef3c7 tile, not green (got ${doneBg})`);
+          assert(document.getElementById('simplified-partner').classList.contains('cheer'), "Partner hops (cheer) on a catch");
           const tableInput = document.querySelector(`#grid-tbody input[data-day="${activeColIdx}"][data-task="${firstTask.id}"]`);
           assert(tableInput && tableInput.checked === true, "Hidden 7-day table checkbox stays synchronized");
 
@@ -11626,10 +11643,10 @@ async function runSuite() {
           await sleep(30);
           const bonusCard = cardsListEl.querySelector(`.simplified-task-card[data-task="${secondTask.id}"]`);
           const restCard = cardsListEl.querySelector(`.simplified-task-card[data-task="${thirdTask.id}"]`);
-          assert(bonusCard.classList.contains('is-bonus') && bonusCard.querySelector('.bonus-cell') && bonusCard.querySelector('.simplified-action-pill').textContent.trim() === '✨ Bonus',
-            "Bonus task card has .is-bonus, .bonus-cell, and '✨ Bonus' action pill");
-          assert(restCard.classList.contains('is-rest') && restCard.querySelector('input[type="checkbox"]').disabled && restCard.querySelector('.simplified-action-pill').textContent.trim() === '💤 Rest',
-            "Rest Pass card is disabled in child mode with '💤 Rest' action pill");
+          assert(bonusCard.classList.contains('is-bonus') && bonusCard.querySelector('.bonus-cell') && bonusCard.querySelector('.simplified-action-pill').textContent.trim() === 'Bonus',
+            "Bonus task card has .is-bonus, .bonus-cell, and 'Bonus' action label");
+          assert(restCard.classList.contains('is-rest') && restCard.querySelector('input[type="checkbox"]').disabled && restCard.querySelector('.simplified-action-pill').textContent.trim() === 'Rest day',
+            "Rest Pass card is disabled in child mode with 'Rest day' action label");
 
           // 8. Day switching via 7-day star strip & Past-Day PIN lock (state.lockPastDays).
           // Anchor weekStartDate 2 days before today so column 0 is always a past day and column 2 is today.

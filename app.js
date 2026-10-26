@@ -100,6 +100,7 @@ let currentViewingWeekStartDate = null;
 let viewingHistoricalDayIndex = 0;
 let lastViewedWeekForSimplified = null;
 let lastJustCheckedKey = null;
+let lastCheeredKey = null;
 
 const APP_VERSION = 'v1.8.0 (v58)';
 
@@ -2142,7 +2143,7 @@ function renderSimplifiedView() {
   }
 
   let cardsHtml = '';
-  tasks.forEach(task => {
+  tasks.forEach((task, taskIndex) => {
     const dateStr = focusedCol.dateStr;
     const stateKey = `${dateStr}-${task.id}`;
     const excusedVal = state.excused[stateKey];
@@ -2175,31 +2176,35 @@ function renderSimplifiedView() {
       statusPillHtml = `<span class="simplified-card-tag rest-tag">💤 Rest Pass</span>`;
     }
 
-    let actionPillText = checked ? '⭐ Done!' : 'Complete';
+    // Visible state is the catch Pokéball (UX review #2 rec #1); the words live in aria-label / sr-only for parents & screen readers.
+    let actionPillText = checked ? 'Caught!' : 'Catch';
     if (isOutOfRange) {
-      actionPillText = '➖';
+      actionPillText = 'Not on the plan';
     } else if (isRest) {
-      actionPillText = '💤 Rest';
+      actionPillText = 'Rest day';
     } else if (isBonus) {
-      actionPillText = checked ? '🌟 +10 XP!' : '✨ Bonus';
+      actionPillText = checked ? 'Bonus caught! +10 XP' : 'Bonus';
     }
 
     const taskName = task.name || 'Unknown';
     const emoji = task.emoji || '📝';
-    const concept = task.concept || 'Practice!';
+    const concept = task.concept || '';
+    const ringIndex = taskIndex % 6;
+    const isJustCaught = lastJustCheckedKey === stateKey;
+    const showStarSticker = checked && !isBonus && !isRest && !isOutOfRange;
 
     cardsHtml += `
       <div class="simplified-task-card ${checked ? 'is-checked' : ''} ${isBonus ? 'is-bonus' : ''} ${isRest ? 'is-rest' : ''} ${isOutOfRange ? 'is-out-of-range' : ''}"
            data-task="${task.id}"
-           data-day="${focusedColIndex}">
+           data-day="${focusedColIndex}"
+           ${concept ? `title="${concept}"` : ''}>
         <div class="simplified-card-main">
-          <span class="simplified-card-emoji" aria-hidden="true">${emoji}</span>
+          <span class="simplified-card-emoji" data-ring="${ringIndex}" aria-hidden="true">${emoji}</span>
           <div class="simplified-card-info">
             <div class="simplified-card-title-row">
               <span class="simplified-card-name">${taskName}</span>
               ${statusPillHtml}
             </div>
-            <span class="simplified-card-concept">${concept}</span>
           </div>
         </div>
         <div class="checkbox-cell simplified-card-cell ${excusedClasses} ${isOutOfRange ? 'out-of-range-cell' : ''} ${focusedCol.cellClass} ${focusedCol.state.startsWith('ACTIVE') ? 'active-column' : ''}"
@@ -2207,8 +2212,10 @@ function renderSimplifiedView() {
              ${excusedDataAttr}
              ${cellTitle ? `title="${cellTitle}"` : ''}>
           <label class="pokeball-checkbox simplified-jumbo-checkbox" ${cellTitle ? `title="${cellTitle}"` : ''}>
-            <input type="checkbox" data-day="${focusedColIndex}" data-task="${task.id}" ${checked ? 'checked' : ''} ${shouldDisable ? 'disabled' : ''}>
-            <span class="simplified-action-pill ${lastJustCheckedKey === stateKey ? 'just-checked' : ''}" ${cellTitle ? `title="${cellTitle}"` : ''}>${actionPillText}</span>
+            <input type="checkbox" data-day="${focusedColIndex}" data-task="${task.id}" aria-label="${taskName}: ${actionPillText}" ${checked ? 'checked' : ''} ${shouldDisable ? 'disabled' : ''}>
+            <span class="pokeball simplified-catch-ball ${isJustCaught ? 'just-caught' : ''}" aria-hidden="true"></span>
+            ${showStarSticker ? `<span class="simplified-catch-star" aria-hidden="true">${EARNED_STAR_HTML}</span>` : ''}
+            <span class="simplified-action-pill sr-only">${actionPillText}</span>
           </label>
         </div>
       </div>
@@ -2216,6 +2223,28 @@ function renderSimplifiedView() {
   });
 
   cardsListEl.innerHTML = cardsHtml;
+
+  // Partner cheer (UX review #2 rec #5): the active partner sits in the banner, hops on each catch,
+  // and shows a "Yay!" bubble once the focused day is complete.
+  const partnerWrap = document.getElementById('simplified-partner');
+  const partnerImg = document.getElementById('simplified-partner-sprite');
+  if (partnerWrap && partnerImg) {
+    const instanceId = state.activePartnerInstanceId || '25';
+    const stats = (state.partnersData && state.partnersData[instanceId]) || { familyId: '25', stageId: '25' };
+    const family = stats.familyId || '25';
+    const activePokemon = getStageInfo(family, stats.stageId || family).currentStage;
+    const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${activePokemon.id}.png`;
+    if (partnerImg.getAttribute('src') !== spriteUrl) partnerImg.setAttribute('src', spriteUrl);
+    partnerImg.alt = activePokemon.name;
+    partnerWrap.classList.toggle('is-celebrating', isDayComplete(focusedCol.dateStr, state));
+    if (lastJustCheckedKey && lastJustCheckedKey.startsWith(`${focusedCol.dateStr}-`) && lastCheeredKey !== lastJustCheckedKey) {
+      lastCheeredKey = lastJustCheckedKey;
+      partnerWrap.classList.remove('cheer');
+      void partnerWrap.offsetWidth; // restart the hop animation
+      partnerWrap.classList.add('cheer');
+      setTimeout(() => partnerWrap.classList.remove('cheer'), 1200);
+    }
+  }
 }
 
 function updateGridCheckboxes() {
@@ -2749,7 +2778,9 @@ function handleCheckboxChange(e) {
     setTimeout(() => {
       if (lastJustCheckedKey === key) lastJustCheckedKey = null;
     }, 500);
-    playSound('check');
+    // Big Buttons view plays a wobble-wobble-click "catch" sound timed to the Pokéball wobble animation.
+    const isBigButtonsCatch = state.chartStyle === 'big-buttons' && !!cb.closest('.simplified-card-cell');
+    playSound(isBigButtonsCatch ? 'catch' : 'check');
     if (pokeballEl) {
       pokeballEl.classList.remove('just-checked');
       void pokeballEl.offsetWidth; // Force reflow to retrigger animation if rapidly toggled

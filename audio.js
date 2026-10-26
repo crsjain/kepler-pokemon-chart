@@ -19,7 +19,22 @@ export function playSound(type) {
     const now = audioCtx.currentTime;
     const volumeMultiplier = 0.5; // Fixed comfortable volume
 
-    if (type === 'check') {
+    if (type === 'catch') {
+      // Pokéball catch: three soft wobble ticks, then a bright "click" (matches the 0.9s .just-caught wobble).
+      osc.type = 'square';
+      gain.gain.setValueAtTime(0.0001, now);
+      [0, 0.3, 0.6].forEach(t => {
+        osc.frequency.setValueAtTime(330, now + t);
+        gain.gain.setValueAtTime(0.03 * volumeMultiplier, now + t);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.06);
+      });
+      osc.frequency.setValueAtTime(587.33, now + 0.9); // D5
+      osc.frequency.setValueAtTime(880, now + 0.98); // A5
+      gain.gain.setValueAtTime(0.05 * volumeMultiplier, now + 0.9);
+      gain.gain.exponentialRampToValueAtTime(0.01 * volumeMultiplier, now + 1.1);
+      osc.start(now);
+      osc.stop(now + 1.1);
+    } else if (type === 'check') {
       osc.type = 'square';
       osc.frequency.setValueAtTime(587.33, now); // D5
       osc.frequency.setValueAtTime(880, now + 0.08); // A5
