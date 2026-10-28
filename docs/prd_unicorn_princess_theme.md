@@ -280,6 +280,41 @@ Add **Test Case 127: Unicorn & Princess Sparkle Theme (`state.theme`, CSS tokens
 
 ### 10.6 Status
 - [ ] Owner tests theme switching on the local site (Phase 1 look)
-- [ ] Design thread picks the final Pokémon + Unicorn directions
+- [x] Design thread picks the final Pokémon + Unicorn directions (2026-10-28; see §10.7)
 - [ ] Shared token skin implemented, both themes, tests green, cache bumped
 - [ ] Owner visual QA on the tablet, then wrap-up / deploy
+
+### 10.7 Chosen directions (owner, 2026-10-28)
+
+**Pokémon look → Direction B "Pokémon Center"** (mockup + token block + markup: `/usr/local/google/home/crsjain/.gemini/jetski/brain/f05c83c6-d9f7-4f31-9401-99005d0fc562/app_visual_directions.html`):
+- Sky-blue backdrop (`--sky #4FB3FF→#1F6FE0`) with no outer charcoal frame. Chunky white panels (26px radius) with soft blue-tinted shadows.
+- Stadium task cards: white `--card` with a blue "candy lip" (`--lip #9CC2F2`) instead of black outlines, on a `--tray #D6E8FF`.
+- Accent `--accent #1D4ED8`; today pill `--today #FFCB05` with `#1e293b` text (Rule 13B).
+- Vault: a **deep-blue gem tile** that replaces the purple Nebula Sparkle tile (owner disliked the purple and leaned blue).
+- Type: Fredoka 700 headings, Nunito 800 labels. The pixel title font is dropped.
+- Applies to Kepler's Standard grid too: day cells stay white inside the panel.
+
+**Unicorn & Princess look → Direction U1 "Pastel Castle"** (`/usr/local/google/home/crsjain/.gemini/jetski/brain/f05c83c6-d9f7-4f31-9401-99005d0fc562/unicorn_theme_directions.html`). It uses the same markup and token names as B:
+- Blush→lavender sky (`--sky #F9A8D4→#C4B5FD`), white 26px panels, `--tray #EFD3FB`, orchid `--lip #E0A6F2`.
+- Accent `--accent #7E22CE`, plum `--ink #4A1D66`, `--heart #DB2777`. Today pill gold→blush (`#FEF08A→#FBCFE8`) with `#1e293b` text.
+- **Jewel Box** Vault (rose→amethyst tile with a lidded box + pink gem).
+- Sylveon shown in a round blush sparkle frame (the Phase 1 partner stays a Pokémon).
+- Plum outlines only on the hearts.
+
+**Card state tints (both themes).** A card's tint must never match its tray. A **completed bonus uses the same "done" tile** as a regular task; the Great Ball / Royal Crown + `+XP` marks it as a bonus.
+
+| State | Icon (unchanged) | B tile | U1 tile |
+|---|---|---|---|
+| To do | Pokéball / dormant heart | white + blue lip; ball shadow tinted blue | white + orchid lip |
+| Done | caught Pokéball / glowing heart | warm cream `#fef3c7` (gold = earned) | soft blush |
+| Bonus to do | dashed ✨ ring | white | white |
+| Bonus done | Great Ball / Royal Crown + `+XP` | warm cream (same as Done; was sky blue) | soft blush (same as Done; not lavender) |
+| Rest | 💤 (same in every theme) | slate stripes | lavender-grey stripes |
+| Not on plan | muted dash | stripes, as today | stripes, as today |
+
+**Build order:**
+1. Shared token skin + B for both kids (§10.2).
+2. U1 tokens + heart/crown re-tint + Jewel Box Vault on `body[data-theme="unicorn"]`.
+3. Delete the Phase 1 unicorn palette block.
+
+Update the colour-pinned tests in §10.4 deliberately, including TC128's Vault assertions: it becomes a blue gem in B and a Jewel Box in U1. Add the UX-guidelines clauses the design review listed: a new card/background contrast rule, R12 lip shadows, R13 cells stay white inside panels, R5 transparent scroll tracks on sky backdrops, a parallel heart/crown matrix under R14, R15 day icons identical across themes, and "a theme = tokens + checkbox skin + copy only".
