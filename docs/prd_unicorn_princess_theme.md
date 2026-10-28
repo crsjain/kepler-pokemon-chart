@@ -223,3 +223,63 @@ Add **Test Case 127: Unicorn & Princess Sparkle Theme (`state.theme`, CSS tokens
 - Copy swaps target dedicated elements (`#game-title-suffix`, `#trainer-title-prefix`, `#badges-title-suffix`, `#guide-title`, `#guide-subtitle-tail`, `#task-col-header-label`) so `.trainer-name-label` is never touched. `getThemeCopy()` is a function, not a module-level const, because `renderState` runs during module init (TDZ). `document.title` follows the theme too.
 - Big Buttons: hearts and the crown reuse the grid selectors and scale to the existing 64px catch ball (58px at <= 520px), not the 56px noted in §3.3.
 - Superseded cells show a greyscale heart; rest 💤 and the off-plan dash are unchanged. Kid-facing modals (Shop, Badge Case, Guide) get the copy reskin only; their palettes stay as-is in Phase 1.
+
+---
+
+## 10. Phase 1b: Visual Polish Handoff (2026-10-28)
+
+**Owner decision (2026-10-28):** the theme *plumbing* is done (this PRD, commit `235796b`). The final **look** for both the Pokémon and the Unicorn & Princess themes comes from the design thread that produced `app_visual_directions.html` (Pokémon) and `unicorn_theme_directions.html` (Unicorn) in conversation `f05c83c6-d9f7-4f31-9401-99005d0fc562`. That thread does the color coding. Only one thread edits the repo at a time.
+
+### 10.1 What exists (don't rebuild)
+| Piece | Where | Notes |
+|---|---|---|
+| Per-child setting | `state.theme` (`'pokemon'` \| `'unicorn'`) in `state.js` | Default, `WIPE_PRESERVED_KEYS`, diagnostics self-heal. No schema bump (V19). |
+| Admin control | `#admin-theme-select` in the **Look & Feel** card at the bottom of Admin › Settings (`index.html`, wired in `admin.js`) | Auto-saves with `flashAdminSaved`. |
+| Theme switch | `applyThemeUI()` in `app.js`, called from `renderState()` | Sets `document.body.dataset.theme`, syncs the select, applies copy. |
+| Copy swaps | `getThemeCopy(theme)` in `app.js` (selector → text map) | Merge the design thread's §4 copy table here. Keep it a **function**: a module-level const hits the TDZ because `renderState` runs during module init. |
+| Confetti | `UNICORN_COLORS` / `isUnicornTheme()` in `particles.js` | Swap colors freely. |
+| Hearts & crown | Data-URI SVGs in the `body[data-theme="unicorn"]` block of `style.css` | Rule 14 states. Recolor if the direction specifies `--ck-*` tokens, but keep the 36×36 footprint. |
+| **The look** | The `UNICORN & PRINCESS SPARKLE THEME` block at the **end of `style.css`** | **This is the part to replace.** |
+
+### 10.2 Recommended build
+1. Write one **shared, token-driven skin** (frames, card radius, candy lips, pill buttons, sky background, fonts). Every color comes from CSS variables.
+2. Put the Pokémon direction's tokens on `body[data-theme="pokemon"]` and the Unicorn direction's tokens on `body[data-theme="unicorn"]`.
+3. Delete the Phase 1 unicorn palette rules, which the skin replaces. Keep the checkbox SVG rules.
+4. If the direction uses **Nunito**, add it to the Google Fonts `<link>` in `index.html` (only Press Start 2P, Fredoka One and Quicksand are loaded today) and cache it via the service worker.
+
+### 10.3 Guardrails
+- **Parent quarantine (UX Rule 17):** every modal, including `#admin-modal` and `#password-modal`, lives **inside** `.app-container`. Never restyle `.pixel-btn` or CSS variables at `.app-container` or `body` level in a way that reaches Admin. Scope button rules to kid containers: `.trainer-card`, `.week-navigation-container`, `.task-col-header`, `.weekly-badge-card`, `.mega-milestone-card`, `.actions`.
+- **Rule 13B:** the active/today column header keeps dark text `#1e293b` on yellow (never white).
+- **Rule 14:** the only dark outlines left are on the checkboxes.
+- **Cache busting (AGENTS.md §6.1):** bump `CACHE_NAME` and every `?v=` (style, particles, all importmap modules) on any CSS/JS change.
+- The Pokémon skin changes **Kepler's** chart too. Expect to update color-pinned tests deliberately, not loosen them.
+
+### 10.4 Tests that pin colors today
+- **TC127** (unicorn):
+  - Dormant and glowing heart backgrounds contain `svg` and differ from each other.
+  - Crown background contains `facc15` and not `ef4444`.
+  - Unchecked bonus ring border is `rgb(147, 51, 234)`.
+  - Active header text is `rgb(30, 41, 59)`.
+  - Admin `#exceptions-btn` is `rgb(42, 113, 208)`.
+  - Both checkboxes are 36×36.
+  - Copy strings.
+- **TC128** (Big Buttons):
+  - Caught ball top is `#ff3c3c`; Done tile is `#fef3c7`.
+  - Vault tile is borderless with no `0px 4px 0px` shadow.
+  - Active day pill text is `rgb(30, 41, 59)`.
+- **TC97**: every Admin `.pixel-btn` has an `adm-*` variant.
+- **TC90**: importmap `?v=` matches `app.js`.
+
+### 10.5 Verify before reporting done
+- `node run_headless_tests.js`: 100% green (≈40 s; rerun once if the 60 s watchdog trips under load, then `git checkout -- screenshot_timeout.png`).
+- **Real-app screenshots:** the rig is at `~/.gemini/jetski/brain/ef7248c9-680b-4262-8e1e-8f882733a6a6/scratch/shots/`.
+  - Serve `site/` on `:8010`.
+  - Run `node shoot.js <variants.json> 1366 1200`; keep it landscape, because a taller-than-wide viewport switches the app to its portrait layout.
+  - It renders Lyra in both chart styles with injected CSS. After the CSS is in `style.css`, pass `[{"name":"final","css":""}]`.
+- Commit locally with explicit paths. Deploy only through the `pokemon-session-wrapup` skill.
+
+### 10.6 Status
+- [ ] Owner tests theme switching on the local site (Phase 1 look)
+- [ ] Design thread picks the final Pokémon + Unicorn directions
+- [ ] Shared token skin implemented, both themes, tests green, cache bumped
+- [ ] Owner visual QA on the tablet, then wrap-up / deploy
