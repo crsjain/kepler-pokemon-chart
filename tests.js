@@ -11542,6 +11542,8 @@ async function runSuite() {
           const exceptionsBtn = document.getElementById('exceptions-btn');
           const adminPrimaryBg = getComputedStyle(exceptionsBtn).backgroundColor;
           assert(adminPrimaryBg === 'rgb(42, 113, 208)', `Admin primary keeps Poké Blue in the unicorn theme (got ${adminPrimaryBg})`);
+          const adminContent = document.querySelector('#admin-modal .modal-content');
+          assert(adminContent && getComputedStyle(adminContent).borderRadius !== '26px', "Admin modal is not reskinned by the kid panel tokens");
           document.getElementById('close-admin-modal-btn').click();
           await sleep(40);
 
@@ -11557,6 +11559,16 @@ async function runSuite() {
           assert(document.getElementById('change-partner-btn').textContent.includes('Companion'), "Change Partner button reskinned");
           assert(document.querySelector('.shop-title').textContent.includes('Magical Companion Shop'), "Shop title reskinned");
           assert(document.getElementById('guide-subtitle-tail').textContent.includes('sparkle heart'), "Guide subtitle reskinned");
+          assert(document.getElementById('open-badges-btn').textContent === '👑 Gem Case', "Badge case button reskinned");
+
+          // 3b. Shared token skin (PRD §10): Pastel Castle sky, borderless 26px panels, plum title, amethyst kid buttons.
+          assert(getComputedStyle(document.body).backgroundImage.includes('rgb(249, 168, 212)'), "Unicorn sky gradient starts at blush #f9a8d4");
+          const panel = getComputedStyle(document.querySelector('.chart-container'));
+          assert(panel.borderTopWidth === '0px' && panel.borderTopLeftRadius === '26px' && panel.backgroundColor === 'rgb(255, 255, 255)',
+            `Chart sits in a borderless white 26px panel (border=${panel.borderTopWidth}, radius=${panel.borderTopLeftRadius})`);
+          assert(getComputedStyle(document.querySelector('.app-container')).borderTopWidth === '0px', "No outer charcoal frame");
+          assert(getComputedStyle(document.querySelector('.game-header .title')).color === 'rgb(74, 29, 102)', "Unicorn title is plum #4a1d66");
+          assert(getComputedStyle(document.getElementById('switch-profile-btn')).backgroundColor === 'rgb(126, 34, 206)', "Kid info buttons use the amethyst accent");
 
           // 4. Heart & Royal Crown checkboxes keep the 36×36 footprint.
           const normalInput = document.querySelector('#grid-tbody td.checkbox-cell.active-column:not(.excused-cell) input[data-day][data-task]:not(:disabled)');
@@ -11613,6 +11625,12 @@ async function runSuite() {
           await sleep(30);
           assert(document.body.dataset.theme === 'pokemon' && document.querySelector('.game-header .title').textContent.includes('Pokémon Training'), "Switching back restores Pokémon copy");
           assert(document.querySelector('.trainer-title').textContent.includes('TRAINER'), "Trainer eyebrow restored");
+          // Pokémon Center skin (both kids' default): sky-blue backdrop, white title, readable kid buttons.
+          assert(getComputedStyle(document.body).backgroundImage.includes('rgb(79, 179, 255)'), "Pokémon sky gradient starts at #4fb3ff");
+          assert(getComputedStyle(document.querySelector('.game-header .title')).color === 'rgb(255, 255, 255)', "Pokémon title is white on the sky");
+          assert(getComputedStyle(document.getElementById('switch-profile-btn')).backgroundColor === 'rgb(29, 78, 216)', "Kid info buttons use #1d4ed8 (white text ≥ 4.5:1)");
+          const resetBtn = getComputedStyle(document.getElementById('reset-btn'));
+          assert(resetBtn.color === 'rgb(124, 45, 18)' && resetBtn.backgroundColor === 'rgb(253, 186, 116)', `Reset Week Grid uses dark text on amber (got ${resetBtn.color} on ${resetBtn.backgroundColor})`);
           assert(JSON.stringify(state.grid) === gridSnapshot && state.partnersData[inst].xp === xpSnapshot, "Theme switch never alters grid or XP");
         } finally {
           state.theme = 'pokemon';
@@ -11703,9 +11721,14 @@ async function runSuite() {
           assert(!/\d/.test(vaultTile.textContent), `Vault tile shows no star count (got "${vaultTile.textContent.trim()}")`);
           const vaultStyles = getComputedStyle(vaultTile);
           assert(vaultTile.querySelector('.simplified-vault-icon svg') && !vaultTile.textContent.includes('⭐') && !vaultTile.textContent.includes('💰'),
-            "Vault tile uses the Nebula Sparkle SVG icon (no emoji)");
-          assert(vaultStyles.borderTopWidth === '0px' && !/\b0px 4px 0px\b/.test(vaultStyles.boxShadow),
-            `Vault tile is borderless with no hard dark bottom edge (border=${vaultStyles.borderTopWidth}, shadow=${vaultStyles.boxShadow})`);
+            "Vault tile uses an SVG icon (no emoji)");
+          // Pokémon Center skin (PRD §10.7): deep-blue gem tile with a blue lip, never a charcoal edge.
+          assert(vaultStyles.borderTopWidth === '0px' && vaultStyles.backgroundImage.includes('rgb(29, 78, 216)'),
+            `Vault tile is a borderless deep-blue gem (border=${vaultStyles.borderTopWidth}, bg=${vaultStyles.backgroundImage.slice(0, 120)})`);
+          assert(/rgb\(30, 58, 138\) 0px 4px 0px/.test(vaultStyles.boxShadow) && !vaultStyles.boxShadow.includes('rgb(45, 55, 72)'),
+            `Vault lip is navy, not a charcoal edge (shadow=${vaultStyles.boxShadow})`);
+          assert(getComputedStyle(vaultTile.querySelector('.simplified-vault-icon')).backgroundImage.includes('svg'), "Vault icon is the theme's gem SVG");
+          assert(vaultTile.querySelector('.simplified-vault-label').textContent === 'Vault', "Pokémon Vault label");
           assert(vaultTile.getBoundingClientRect().height >= 52, `Vault tile is a kid-sized target (h=${vaultTile.getBoundingClientRect().height})`);
           assert(document.getElementById('open-guide-simplified-btn') === null && simplifiedView.querySelector('.simplified-header-chip') === null,
             "Big Buttons view has no Guide button or header chips");
@@ -11717,6 +11740,8 @@ async function runSuite() {
           const cardStyles = getComputedStyle(firstCard);
           assert(parseFloat(cardStyles.borderTopLeftRadius) >= 500 && cardStyles.borderTopWidth === '0px',
             `Floating Stadium Pill must be borderless with stadium radius (got radius=${cardStyles.borderTopLeftRadius}, border=${cardStyles.borderTopWidth})`);
+          assert(cardStyles.backgroundColor === 'rgb(255, 255, 255)' && /rgb\(156, 194, 242\) 0px 5px 0px/.test(cardStyles.boxShadow),
+            `To-do card is white with the blue candy lip (bg=${cardStyles.backgroundColor}, shadow=${cardStyles.boxShadow})`);
           const jumboLabel = firstCard.querySelector('.simplified-jumbo-checkbox');
           const jumboRect = jumboLabel.getBoundingClientRect();
           assert(Math.round(jumboRect.width) >= 56 && Math.round(jumboRect.height) >= 56,
@@ -11782,6 +11807,25 @@ async function runSuite() {
             "Bonus task card has .is-bonus, .bonus-cell, and 'Bonus' action label");
           assert(restCard.classList.contains('is-rest') && restCard.querySelector('input[type="checkbox"]').disabled && restCard.querySelector('.simplified-action-pill').textContent.trim() === 'Rest day',
             "Rest Pass card is disabled in child mode with 'Rest day' action label");
+          // Card tints never match the tray (PRD §10.7): bonus to-do stays white, rest is striped.
+          assert(getComputedStyle(bonusCard).backgroundColor === 'rgb(255, 255, 255)', `Bonus to-do card is white, not sky blue (got ${getComputedStyle(bonusCard).backgroundColor})`);
+          assert(getComputedStyle(restCard).backgroundImage.includes('repeating-linear-gradient'), "Rest card uses diagonal stripes");
+
+          // 7b. Pastel Castle (U1) swaps only tokens: Jewel Box Vault, blush done tile, gold→blush today pill.
+          state.theme = 'unicorn';
+          helpers.renderState(false);
+          await sleep(30);
+          const u1Vault = getComputedStyle(vaultTile);
+          assert(u1Vault.backgroundImage.includes('rgb(168, 85, 247)') && /rgb\(88, 28, 135\) 0px 4px 0px/.test(u1Vault.boxShadow),
+            `Unicorn Vault is the rose→amethyst Jewel Box (bg=${u1Vault.backgroundImage.slice(0, 120)})`);
+          assert(vaultTile.querySelector('.simplified-vault-label').textContent === 'Jewel Box', "Unicorn Vault label reads Jewel Box");
+          const u1Done = cardsListEl.querySelector(`.simplified-task-card[data-task="${firstTask.id}"]`);
+          assert(getComputedStyle(u1Done).backgroundColor === 'rgb(253, 242, 248)', `Unicorn done card is soft blush (got ${getComputedStyle(u1Done).backgroundColor})`);
+          const u1Active = stripEl.querySelector('.simplified-day-pill[data-column-state^="active_"]');
+          assert(getComputedStyle(u1Active).color === 'rgb(30, 41, 59)', "Unicorn today pill keeps #1e293b text (Rule 13B)");
+          state.theme = 'pokemon';
+          helpers.renderState(false);
+          await sleep(30);
 
           // 8. Day switching via 7-day star strip & Past-Day PIN lock (state.lockPastDays).
           // Anchor weekStartDate 2 days before today so column 0 is always a past day and column 2 is today.

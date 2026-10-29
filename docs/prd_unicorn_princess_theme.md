@@ -281,7 +281,7 @@ Add **Test Case 127: Unicorn & Princess Sparkle Theme (`state.theme`, CSS tokens
 ### 10.6 Status
 - [ ] Owner tests theme switching on the local site (Phase 1 look)
 - [x] Design thread picks the final Pokémon + Unicorn directions (2026-10-28; see §10.7)
-- [ ] Shared token skin implemented, both themes, tests green, cache bumped
+- [x] Shared token skin implemented, both themes, tests green, cache bumped (2026-10-29; v249 / style 11.14 / modules 11.18; owner approved screenshots)
 - [ ] Owner visual QA on the tablet, then wrap-up / deploy
 
 ### 10.7 Chosen directions (owner, 2026-10-28)

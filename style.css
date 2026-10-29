@@ -9461,131 +9461,17 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 
 
 /* ==========================================================================
-   UNICORN & PRINCESS SPARKLE THEME (per-child, body[data-theme="unicorn"])
-   docs/prd_unicorn_princess_theme.md. Child-facing surfaces only: Admin,
-   the Parent PIN prompt and the floating parent docks keep the neutral
-   Poké-Blue / Slate palette (UX Rule 17). Graphics are inline data-URI SVGs
-   so the PWA needs no network fetch. Checkbox footprint stays 36×36 (Rule 14).
+   UNICORN & PRINCESS SPARKLE THEME — checkbox skin (body[data-theme="unicorn"])
+   docs/prd_unicorn_princess_theme.md §3.3. Hearts and the Royal Crown replace
+   the Pokéball states (Rule 14); the surfaces/colours live in the SHARED THEME
+   SKIN tokens below. Graphics are inline data-URI SVGs so the PWA needs no
+   network fetch. Checkbox footprint stays 36×36. Admin, the Parent PIN prompt
+   and the floating parent docks are never restyled (UX Rule 17).
    ========================================================================== */
-body[data-theme="unicorn"] {
-  --unicorn-plum: #4a1d66;
-  --unicorn-magenta: #db2777;
-  --unicorn-amethyst: #7e22ce;
-  --unicorn-gold: #fde047;
-  background: linear-gradient(160deg, #fce7f3 0%, #e9d5ff 55%, #f5d0fe 100%) fixed;
-}
-
-body[data-theme="unicorn"] .app-container {
-  background: #fffbfd;
-  border-color: var(--unicorn-plum);
-}
-
-body[data-theme="unicorn"] .game-header {
-  border-bottom-color: var(--unicorn-magenta);
-}
-
-body[data-theme="unicorn"] .game-header .title {
-  color: var(--unicorn-magenta);
-  text-shadow: 2px 2px 0px var(--unicorn-gold), -2px -2px 0px var(--unicorn-amethyst);
-}
-
-body[data-theme="unicorn"] .game-header .subtitle {
-  color: var(--unicorn-amethyst);
-}
-
-body[data-theme="unicorn"] .trainer-card {
-  background: #fdf4ff;
-  border-color: var(--unicorn-plum);
-}
-
-body[data-theme="unicorn"] .trainer-title {
-  color: #86198f;
-}
-
-body[data-theme="unicorn"] .partner-name,
-body[data-theme="unicorn"] .evolution-helper strong {
-  color: var(--unicorn-amethyst);
-}
-
-body[data-theme="unicorn"] .level-badge {
-  background: #fbcfe8;
-  border-color: var(--unicorn-plum);
-  color: #1e293b;
-}
-
-body[data-theme="unicorn"] .xp-bar-inner {
-  background: linear-gradient(90deg, #ec4899 0%, #a855f7 60%, #facc15 100%);
-}
-
-body[data-theme="unicorn"] .weekly-badge-card {
-  background: #faf5ff;
-  border-color: #c084fc;
-}
-
-body[data-theme="unicorn"] .badge-title,
-body[data-theme="unicorn"] .mega-title {
-  color: var(--unicorn-amethyst);
-}
-
-body[data-theme="unicorn"] .mega-milestone-card {
-  background: #fdf2f8;
-  border-color: #a855f7;
-}
-
-body[data-theme="unicorn"] .mega-counter-label {
-  color: var(--unicorn-magenta);
-}
-
-body[data-theme="unicorn"] .motivational-quote {
-  color: #6b21a8;
-  background: #fdf2f8;
-  border-color: #f5d0fe;
-}
-
-/* Grid headers: Royal Amethyst selectable (white text, 6.4:1); Sparkle Rose-Gold active
-   with Dark Charcoal text (Rule 13B: never white on yellow). Superseded / historical /
-   future keep their neutral slate treatments (higher-precedence !important rules). */
-body[data-theme="unicorn"] .weekly-grid th {
-  background-color: var(--unicorn-amethyst);
-}
-
-body[data-theme="unicorn"] .day-header {
-  background-color: var(--unicorn-amethyst);
-}
-
-body[data-theme="unicorn"] .day-header.active-day,
-body[data-theme="unicorn"] .day-header[data-column-state="active_today"],
-body[data-theme="unicorn"] .day-header[data-column-state="active_past"],
-body[data-theme="unicorn"] .day-header[data-column-state="active_future"] {
-  background: linear-gradient(135deg, #fde047 0%, #fbcfe8 100%) !important;
-  color: #1e293b !important;
-}
-
-body[data-theme="unicorn"] .day-header.active-day:hover,
-body[data-theme="unicorn"] .day-header[data-column-state="active_today"]:hover,
-body[data-theme="unicorn"] .day-header[data-column-state="active_past"]:hover,
-body[data-theme="unicorn"] .day-header[data-column-state="active_future"]:hover {
-  background: linear-gradient(135deg, #facc15 0%, #f9a8d4 100%) !important;
-}
-
-/* Big Buttons ribbon follows the same archetypes. */
-body[data-theme="unicorn"] .simplified-day-pill[data-column-state="active_today"],
-body[data-theme="unicorn"] .simplified-day-pill[data-column-state="active_past"],
-body[data-theme="unicorn"] .simplified-day-pill[data-column-state="active_future"] {
-  background: linear-gradient(135deg, #fde047 0%, #fbcfe8 100%);
-  color: #1e293b;
-  box-shadow: 0 4px 12px rgba(219, 39, 119, 0.3);
-}
-
-body[data-theme="unicorn"] .simplified-day-pill[data-column-state="selectable_today"],
-body[data-theme="unicorn"] .simplified-day-pill[data-column-state="selectable_past"] {
-  color: #6b21a8;
-}
-
 /* ---- Checkbox matrix (Rule 14) ------------------------------------------ */
 /* 1. Normal unchecked: dormant crystal heart (Pokéball hemispheres hidden). */
 body[data-theme="unicorn"] .checkbox-cell:not(.excused-cell) .pokeball {
-  border-color: var(--unicorn-plum);
+  border-color: #4a1d66;
   background-color: #fdf2f8 !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cpath d='M18 29 C 6.5 21.5 5 14 9.2 10.4 C 12.6 7.6 16.4 9.2 18 12.4 C 19.6 9.2 23.4 7.6 26.8 10.4 C 31 14 29.5 21.5 18 29 Z' fill='%23f3e8ff' stroke='%239333ea' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M11.5 13.2 C 12.4 11.6 14 11.2 15.2 11.9' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") !important;
   background-size: 78% 78% !important;
@@ -9634,3 +9520,634 @@ body[data-theme="unicorn"] .checkbox-cell.bonus-cell:not(.superseded-cell) .poke
   border-color: #3b0764 !important;
 }
 /* 3. Rest 💤 and 6. Not-on-the-plan dash are unchanged across themes. */
+
+
+/* ==========================================================================
+   SHARED THEME SKIN — Pokémon Center (B) + Pastel Castle (U1)
+   docs/prd_unicorn_princess_theme.md §10. One token-driven skin for both
+   kids; each body[data-theme] only swaps the --sk-* tokens below.
+   Guardrails (§10.3):
+   - Parent quarantine (UX Rule 17): modals live inside .app-container, so no
+     rule here targets .modal / .pixel-btn globally or redefines an existing
+     variable. Buttons are restyled only inside kid containers.
+   - Rule 13B: active/today headers and pills keep #1e293b text on yellow.
+   - Rule 14: the only dark outlines left are on the checkboxes.
+   ========================================================================== */
+body[data-theme] {
+  /* ---- Direction B "Pokémon Center" tokens (default) ---- */
+  --sk-page-bg:
+    radial-gradient(circle at 85% 0%, rgba(255, 255, 255, 0.35) 0 120px, transparent 121px),
+    radial-gradient(circle at 8% 100%, rgba(255, 255, 255, 0.18) 0 160px, transparent 161px),
+    linear-gradient(180deg, #4fb3ff 0%, #2b86f0 55%, #1f6fe0 100%);
+  --sk-title-fg: #ffffff;
+  --sk-title-shadow: 0 3px 0 #1e4fae, 0 6px 14px rgba(15, 40, 110, 0.35);
+  --sk-sub-fg: #dbeafe;
+  --sk-text: #1e293b;
+  --sk-muted: #64748b;
+  --sk-panel-bg: #ffffff;
+  --sk-panel-radius: 26px;
+  --sk-panel-shadow: 0 6px 0 rgba(20, 60, 150, 0.25), 0 14px 28px rgba(12, 40, 110, 0.25);
+  --sk-accent: #1d4ed8;
+  --sk-accent-deep: #1e3a8a;
+  --sk-accent-ink: #1d4ed8;
+  --sk-sprite-bg: linear-gradient(180deg, #e0f2fe, #bae6fd);
+  --sk-sprite-radius: 20px;
+  --sk-sprite-ring: none;
+  --sk-sprite-spark: none;
+  --sk-lv-bg: #ffcb05;
+  --sk-xp-track: #e2e8f0;
+  --sk-xp-fill: linear-gradient(90deg, #4ade80, #22c55e);
+  --sk-btn1-bg: #ffcb05;
+  --sk-btn1-fg: #1e293b;
+  --sk-btn1-lip: #c99a00;
+  --sk-warn-bg: #fdba74;
+  --sk-warn-fg: #7c2d12;
+  --sk-warn-lip: #ea8a3c;
+  --sk-sock-bg: #eef4ff;
+  --sk-orb-off: #e2e8f0;
+  --sk-chart-top-fg: #0f172a;
+  --sk-ghost-bg: #f1f5f9;
+  --sk-ghost-fg: #94a3b8;
+  --sk-tray: #d6e8ff;
+  --sk-today-fg: #0f2f73;
+  --sk-ribbon: #bcd8fb;
+  --sk-pill-lip: #9cc2f2;
+  --sk-pill-fut-bg: rgba(255, 255, 255, 0.5);
+  --sk-now-bg: linear-gradient(180deg, #ffd84a, #ffcb05);
+  --sk-now-lip: #d9a800;
+  --sk-vault-bg: linear-gradient(160deg, #3b82f6 0%, #1d4ed8 70%, #1e3a8a 100%);
+  --sk-vault-lip: #1e3a8a;
+  --sk-vault-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M9.5 5h13l6 7.5L16 28 3.5 12.5z' fill='%23e0f2fe' stroke='%23ffffff' stroke-width='1.6' stroke-linejoin='round'/><path d='M3.5 12.5h25M9.5 5l3.5 7.5L16 28l3-15.5L22.5 5M13 12.5 16 5l3 7.5' fill='none' stroke='%2393c5fd' stroke-width='1.2' stroke-linejoin='round'/><path d='M8.5 11l2.5-3.5' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round'/></svg>");
+  --sk-task-lip: #9cc2f2;
+  --sk-task-glow: rgba(30, 64, 175, 0.14);
+  --sk-done-bg: #fef3c7;
+  --sk-done-lip: #f2cf6b;
+  --sk-done-glow: rgba(217, 119, 6, 0.16);
+  --sk-stripe-a: #f8fafc;
+  --sk-stripe-b: #e2e8f0;
+  --sk-ball-shadow: rgba(29, 78, 216, 0.28);
+  --sk-grid-head: #2a71d0; /* Rule 13 selectable header (Poké Blue) */
+  --sk-grid-ink: #1d4f90;
+  --sk-tag-bg: #e0f2fe;
+  --sk-tag-fg: #0369a1;
+  --sk-grid-line: #e2e8f0;
+  --sk-ring-0: #f8d030;
+  --sk-ring-1: #6890f0;
+  --sk-ring-2: #78c850;
+  --sk-ring-3: #f08030;
+  --sk-ring-4: #f85888;
+  --sk-ring-5: #a890f0;
+  background: var(--sk-page-bg);
+  background-attachment: fixed;
+}
+
+/* ---- Frame: no outer charcoal frame; panels float on the sky ---- */
+body[data-theme] .app-container {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+body[data-theme] .game-header {
+  border-bottom: none;
+  padding-bottom: 4px;
+}
+
+body[data-theme] .game-header .title {
+  font-family: 'Fredoka', 'Fredoka One', sans-serif;
+  font-weight: 700;
+  font-size: 2.1rem;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  color: var(--sk-title-fg);
+  text-shadow: var(--sk-title-shadow);
+  margin-bottom: 4px;
+}
+
+body[data-theme] .game-header .subtitle {
+  font-family: 'Nunito', 'Quicksand', sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0;
+  color: var(--sk-sub-fg);
+}
+
+/* ---- Panels: chunky white, 26px radius, soft tinted shadow (no borders) ---- */
+body[data-theme] .trainer-card {
+  background: transparent;
+  border: none;
+  padding: 0;
+  gap: 16px;
+}
+
+body[data-theme] .trainer-info,
+body[data-theme] .weekly-badge-card,
+body[data-theme] .mega-milestone-card,
+body[data-theme] .chart-container,
+body[data-theme] .bottom-section {
+  background: var(--sk-panel-bg);
+  border: none;
+  border-radius: var(--sk-panel-radius);
+  box-shadow: var(--sk-panel-shadow);
+}
+
+body[data-theme] .trainer-info {
+  padding: 16px;
+  align-items: flex-start;
+}
+
+body[data-theme] .weekly-badge-card {
+  padding: 14px 16px;
+}
+
+body[data-theme] .mega-milestone-card {
+  padding: 16px;
+}
+
+body[data-theme] .bottom-section {
+  padding: 18px 20px;
+  border-top: none;
+}
+
+body[data-theme] .trainer-card,
+body[data-theme] .mega-milestone-card,
+body[data-theme] .chart-container,
+body[data-theme] .bottom-section {
+  font-family: 'Nunito', 'Quicksand', sans-serif;
+  color: var(--sk-text);
+}
+
+/* ---- Trainer card ---- */
+body[data-theme] .trainer-card .pokemon-sprite-wrapper {
+  background: var(--sk-sprite-bg);
+  border-radius: var(--sk-sprite-radius);
+  box-shadow: var(--sk-sprite-ring);
+}
+
+body[data-theme] .trainer-card .pokemon-sprite-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  background: var(--sk-sprite-spark) center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+body[data-theme] .trainer-card .trainer-title {
+  font-family: 'Nunito', 'Quicksand', sans-serif;
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sk-muted);
+}
+
+body[data-theme] .trainer-card .partner-name {
+  font-family: 'Fredoka', 'Fredoka One', sans-serif;
+  font-weight: 700;
+  color: var(--sk-accent-ink);
+  line-height: 1.1;
+}
+
+body[data-theme] .trainer-card .level-badge {
+  background: var(--sk-lv-bg);
+  border: none;
+  border-radius: 999px;
+  color: #1e293b;
+  font-family: 'Nunito', 'Quicksand', sans-serif;
+  font-weight: 900;
+  font-size: 0.72rem;
+  padding: 2px 10px;
+}
+
+body[data-theme] .trainer-card .xp-label {
+  font-weight: 800;
+  font-size: 0.75rem;
+  color: var(--sk-muted);
+}
+
+body[data-theme] .trainer-card .xp-bar-outer {
+  height: 10px;
+  border: none;
+  border-radius: 999px;
+  background: var(--sk-xp-track);
+}
+
+body[data-theme] .trainer-card .xp-bar-inner {
+  background: var(--sk-xp-fill);
+  border-radius: 999px;
+}
+
+body[data-theme] .trainer-card .evolution-helper {
+  font-family: 'Nunito', 'Quicksand', sans-serif;
+  color: var(--sk-muted);
+}
+
+body[data-theme] .trainer-card .evolution-helper strong {
+  color: var(--sk-accent-ink);
+}
+
+/* ---- Section headings (Fredoka replaces the tiny pixel font) ---- */
+body[data-theme] .weekly-badge-card .badge-title,
+body[data-theme] .mega-milestone-card .mega-title {
+  font-family: 'Fredoka', 'Fredoka One', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sk-accent-ink);
+}
+
+body[data-theme] .mega-milestone-card .mega-counter-label {
+  font-family: 'Nunito', 'Quicksand', sans-serif;
+  font-weight: 900;
+  font-size: 0.78rem;
+  color: var(--sk-accent-ink);
+  opacity: 0.8;
+}
+
+body[data-theme] .weekly-badge-card .badge-slot.locked {
+  border: none;
+  background: var(--sk-sock-bg);
+  box-shadow: inset 0 3px 0 rgba(15, 23, 42, 0.08);
+}
+
+body[data-theme] .weekly-badge-card .badge-status {
+  font-weight: 800;
+  color: var(--sk-muted);
+}
+
+body[data-theme] .mega-milestone-card .mega-slots {
+  background: var(--sk-tray);
+  border: none;
+  border-radius: 16px;
+}
+
+body[data-theme] .mega-milestone-card .mega-slot:not(.unlocked) {
+  border: none;
+  background: var(--sk-orb-off);
+  box-shadow: inset 0 2px 0 rgba(15, 23, 42, 0.08);
+}
+
+body[data-theme] .mega-milestone-card .mega-slot.unlocked {
+  border: none;
+  box-shadow: 0 0 0 3px #ffffff, 0 3px 8px rgba(15, 23, 42, 0.25);
+}
+
+/* ---- Kid buttons: solid pills with a colored lip (scoped to kid containers) ---- */
+body[data-theme] .trainer-card .pixel-btn,
+body[data-theme] .mega-milestone-card .pixel-btn,
+body[data-theme] .week-navigation-container .pixel-btn,
+body[data-theme] .task-col-header .pixel-btn,
+body[data-theme] .actions .pixel-btn {
+  font-family: 'Fredoka', 'Fredoka One', sans-serif;
+  font-weight: 700;
+  border: none;
+  border-radius: 999px;
+  background: var(--sk-btn1-bg);
+  color: var(--sk-btn1-fg);
+  box-shadow: 0 3px 0 var(--sk-btn1-lip);
+}
+
+body[data-theme] .trainer-card .pixel-btn.info,
+body[data-theme] .mega-milestone-card .pixel-btn.info,
+body[data-theme] .week-navigation-container .pixel-btn.info,
+body[data-theme] .task-col-header .pixel-btn.info,
+body[data-theme] .actions .pixel-btn.info {
+  background: var(--sk-accent);
+  color: #ffffff;
+  box-shadow: 0 3px 0 var(--sk-accent-deep);
+}
+
+/* Reset Week Grid: dark text on soft amber (was white on #f6ad55, 1.9:1). */
+body[data-theme] .actions .pixel-btn.warning {
+  background: var(--sk-warn-bg);
+  color: var(--sk-warn-fg);
+  box-shadow: 0 3px 0 var(--sk-warn-lip);
+}
+
+/* Back to Today: the yellow "today" pill. */
+body[data-theme] .week-navigation-container .pixel-btn.back-to-today-pill {
+  background: var(--sk-now-bg);
+  color: #1e293b;
+  box-shadow: 0 3px 0 var(--sk-now-lip);
+}
+
+body[data-theme] .trainer-card .pixel-btn:active,
+body[data-theme] .mega-milestone-card .pixel-btn:active,
+body[data-theme] .week-navigation-container .pixel-btn:active,
+body[data-theme] .task-col-header .pixel-btn:active,
+body[data-theme] .actions .pixel-btn:active {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+
+body[data-theme] .week-navigation-container .pixel-btn:disabled,
+body[data-theme] .actions .pixel-btn:disabled {
+  background: var(--sk-ghost-bg) !important;
+  color: var(--sk-ghost-fg) !important;
+  opacity: 1;
+}
+
+/* ---- Chart panel ---- */
+body[data-theme] .week-navigation-container {
+  background: var(--sk-panel-bg);
+  border-bottom: none;
+  padding: 12px 16px;
+}
+
+body[data-theme] .week-navigation-container .week-range-text {
+  font-family: 'Fredoka', 'Fredoka One', sans-serif;
+  font-weight: 700;
+  color: var(--sk-chart-top-fg);
+  text-shadow: none;
+}
+
+/* Standard grid (Rule 13): cells stay white inside the panel. */
+body[data-theme] .weekly-grid thead tr,
+body[data-theme] .weekly-grid th,
+body[data-theme] .weekly-grid .day-header {
+  background-color: var(--sk-grid-head);
+}
+
+body[data-theme] .weekly-grid th,
+body[data-theme] .weekly-grid td {
+  border-color: var(--sk-grid-line);
+}
+
+body[data-theme] .day-header.active-day,
+body[data-theme] .day-header[data-column-state="active_today"],
+body[data-theme] .day-header[data-column-state="active_past"],
+body[data-theme] .day-header[data-column-state="active_future"] {
+  background: var(--sk-now-bg) !important;
+  color: #1e293b !important; /* Rule 13B */
+}
+
+/* ---- Big Buttons (Today Focus) ---- */
+body[data-theme] .simplified-today-view {
+  background: var(--sk-tray);
+  padding: 16px;
+}
+
+body[data-theme] .simplified-day-title {
+  font-family: 'Fredoka', 'Fredoka One', sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--sk-today-fg);
+}
+
+body[data-theme] .simplified-week-row {
+  background: var(--sk-ribbon);
+  border-radius: 20px;
+  padding: 7px;
+  gap: 7px;
+}
+
+body[data-theme] .simplified-day-strip {
+  gap: 7px;
+}
+
+body[data-theme] .simplified-day-pill {
+  font-family: 'Nunito', 'Quicksand', sans-serif;
+  font-weight: 900;
+  border-radius: 15px;
+  min-height: 62px;
+}
+
+body[data-theme] .simplified-pill-day {
+  font-weight: 900;
+  color: var(--sk-muted);
+}
+
+body[data-theme] .simplified-day-pill[data-column-state="selectable_today"],
+body[data-theme] .simplified-day-pill[data-column-state="selectable_past"],
+body[data-theme] .simplified-day-pill[data-column-state="historical"] {
+  background: var(--sk-panel-bg);
+  box-shadow: 0 3px 0 var(--sk-pill-lip);
+}
+
+body[data-theme] .simplified-day-pill[data-column-state="future_locked"] {
+  background: var(--sk-pill-fut-bg);
+  box-shadow: none;
+  opacity: 1;
+}
+
+body[data-theme] .simplified-day-pill[data-column-state="active_today"],
+body[data-theme] .simplified-day-pill[data-column-state="active_past"],
+body[data-theme] .simplified-day-pill[data-column-state="active_future"],
+body[data-theme] .simplified-day-pill[data-column-state="historical"].is-focused {
+  background: var(--sk-now-bg);
+  color: #1e293b; /* Rule 13B */
+  box-shadow: 0 4px 0 var(--sk-now-lip);
+}
+
+body[data-theme] .simplified-day-pill[data-column-state^="active"] .simplified-pill-day,
+body[data-theme] .simplified-day-pill.is-focused .simplified-pill-day {
+  color: #1e293b;
+}
+
+/* Vault: blue gem tile (B) / Jewel Box (U1). Icon comes from --sk-vault-icon. */
+body[data-theme] .simplified-vault-tile {
+  min-height: 62px;
+  border-radius: 15px;
+  background:
+    radial-gradient(circle at 18% 25%, rgba(255, 255, 255, 0.7) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 82% 70%, rgba(255, 255, 255, 0.6) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 74% 16%, rgba(255, 255, 255, 0.55) 0 1px, transparent 1.5px),
+    var(--sk-vault-bg);
+  box-shadow: 0 4px 0 var(--sk-vault-lip);
+  font-family: 'Fredoka', 'Fredoka One', sans-serif;
+  font-weight: 700;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+
+body[data-theme] .simplified-vault-tile:hover {
+  box-shadow: 0 5px 0 var(--sk-vault-lip);
+}
+
+body[data-theme] .simplified-vault-tile:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--sk-vault-lip);
+}
+
+body[data-theme] .simplified-vault-icon {
+  width: 34px;
+  height: 28px;
+  background: var(--sk-vault-icon) center / contain no-repeat;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
+
+body[data-theme] .simplified-vault-icon svg {
+  visibility: hidden;
+}
+
+/* Stadium task cards: white with a candy lip; a card's tint never matches its tray. */
+body[data-theme] .simplified-task-card {
+  background: var(--sk-panel-bg);
+  box-shadow: 0 5px 0 var(--sk-task-lip), 0 10px 18px var(--sk-task-glow);
+}
+
+body[data-theme] .simplified-task-card:hover:not(.is-rest):not(.is-out-of-range) {
+  box-shadow: 0 7px 0 var(--sk-task-lip), 0 14px 22px var(--sk-task-glow);
+}
+
+body[data-theme] .simplified-task-card.is-bonus {
+  background: var(--sk-panel-bg);
+}
+
+/* Done (regular or bonus) shares one tile; the Great Ball / Crown + "+XP" marks a bonus. */
+body[data-theme] .simplified-task-card.is-checked,
+body[data-theme] .simplified-task-card.is-bonus.is-checked {
+  background: var(--sk-done-bg);
+  box-shadow: 0 5px 0 var(--sk-done-lip), 0 10px 18px var(--sk-done-glow);
+}
+
+body[data-theme] .simplified-task-card.is-rest,
+body[data-theme] .simplified-task-card.is-out-of-range {
+  background: repeating-linear-gradient(-45deg, var(--sk-stripe-a), var(--sk-stripe-a) 6px, var(--sk-stripe-b) 6px, var(--sk-stripe-b) 12px);
+  box-shadow: none;
+}
+
+body[data-theme] .simplified-card-name {
+  font-family: 'Fredoka', 'Fredoka One', sans-serif;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+body[data-theme] .simplified-card-emoji,
+body[data-theme] .simplified-task-card.is-checked .simplified-card-emoji,
+body[data-theme] .simplified-task-card.is-bonus .simplified-card-emoji {
+  background: #ffffff;
+}
+
+body[data-theme] .simplified-card-emoji[data-ring="0"] { --task-ring: var(--sk-ring-0); }
+body[data-theme] .simplified-card-emoji[data-ring="1"] { --task-ring: var(--sk-ring-1); }
+body[data-theme] .simplified-card-emoji[data-ring="2"] { --task-ring: var(--sk-ring-2); }
+body[data-theme] .simplified-card-emoji[data-ring="3"] { --task-ring: var(--sk-ring-3); }
+body[data-theme] .simplified-card-emoji[data-ring="4"] { --task-ring: var(--sk-ring-4); }
+body[data-theme] .simplified-card-emoji[data-ring="5"] { --task-ring: var(--sk-ring-5); }
+
+body[data-theme] .checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox .pokeball.simplified-catch-ball {
+  box-shadow: 0 4px 0 var(--sk-ball-shadow);
+}
+
+/* ---- Bottom panel: reward pickers, quote, actions ---- */
+body[data-theme] .bottom-section .reward-label {
+  font-family: 'Fredoka', 'Fredoka One', sans-serif;
+  font-weight: 700;
+  color: var(--sk-accent-ink);
+}
+
+body[data-theme] .bottom-section .reward-select-container:not(.earned):not(.mega-earned) .pixel-select {
+  font-family: 'Nunito', 'Quicksand', sans-serif;
+  font-weight: 800;
+  border: 2px solid var(--sk-pill-lip);
+  border-radius: 16px;
+  box-shadow: 0 3px 0 var(--sk-pill-lip);
+}
+
+body[data-theme] .bottom-section .motivational-quote {
+  font-family: 'Nunito', 'Quicksand', sans-serif;
+  font-weight: 800;
+  color: var(--sk-today-fg);
+  background: var(--sk-tray);
+  border: none;
+  border-radius: 16px;
+}
+
+/* Standard grid: soft divider above Daily Total (no charcoal rule) + gem Vault button. */
+body[data-theme] .weekly-grid .total-row {
+  border-top: 3px solid var(--sk-tray);
+}
+
+body[data-theme] #open-vault-btn {
+  font-family: 'Fredoka', 'Fredoka One', sans-serif;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  background: var(--sk-vault-bg);
+  color: #ffffff;
+  box-shadow: 0 3px 0 var(--sk-vault-lip);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+
+body[data-theme] #open-vault-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+/* Grid ink (Daily Total label, Goal counts) and the Big Buttons bonus tag follow the theme. */
+body[data-theme] .weekly-grid .total-desc .task-name,
+body[data-theme] .weekly-grid .task-total-cell:not(.completed) {
+  color: var(--sk-grid-ink);
+}
+
+body[data-theme] .simplified-card-tag.bonus-tag {
+  background: var(--sk-tag-bg);
+  color: var(--sk-tag-fg);
+}
+
+/* ---- Direction U1 "Pastel Castle" tokens (Lyra) ---- */
+body[data-theme="unicorn"] {
+  --sk-page-bg:
+    radial-gradient(circle at 86% 4%, rgba(255, 255, 255, 0.55) 0 110px, transparent 111px),
+    radial-gradient(circle at 6% 96%, rgba(255, 255, 255, 0.3) 0 150px, transparent 151px),
+    radial-gradient(circle at 30% 12%, #ffffff 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 64% 30%, #ffffff 0 1.5px, transparent 2.5px),
+    radial-gradient(circle at 12% 46%, #ffffff 0 1px, transparent 2px),
+    linear-gradient(180deg, #f9a8d4 0%, #e9a6f5 50%, #c4b5fd 100%);
+  --sk-title-fg: #4a1d66;
+  --sk-title-shadow: 0 3px 0 #ffffff, 0 6px 14px rgba(74, 29, 102, 0.25);
+  --sk-sub-fg: #6b21a8;
+  --sk-muted: #7a6a8a;
+  --sk-panel-shadow: 0 6px 0 rgba(147, 51, 234, 0.22), 0 14px 28px rgba(112, 26, 117, 0.2);
+  --sk-accent: #7e22ce;
+  --sk-accent-deep: #581c87;
+  --sk-accent-ink: #6b21a8;
+  --sk-sprite-bg: radial-gradient(circle at 50% 40%, #ffffff 0 30%, #fce7f3 31% 60%, #f5d0fe 61%);
+  --sk-sprite-radius: 50%;
+  --sk-sprite-ring: 0 0 0 3px #ffffff, 0 0 0 6px #f9a8d4;
+  --sk-sprite-spark: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' overflow='visible'><path d='M94 3Q94 10 101 10Q94 10 94 17Q94 10 87 10Q94 10 94 3Z' fill='%23facc15'/><path d='M8 25.5Q8 30 12.5 30Q8 30 8 34.5Q8 30 3.5 30Q8 30 8 25.5Z' fill='%23ffffff'/><path d='M90 86Q90 90 94 90Q90 90 90 94Q90 90 86 90Q90 90 90 86Z' fill='%23f472b6'/><path d='M20 93Q20 96 23 96Q20 96 20 99Q20 96 17 96Q20 96 20 93Z' fill='%23facc15'/></svg>");
+  --sk-lv-bg: linear-gradient(90deg, #fde68a, #fbcfe8);
+  --sk-xp-track: #f3e8ff;
+  --sk-xp-fill: linear-gradient(90deg, #ec4899, #a855f7 70%, #facc15);
+  --sk-btn1-bg: linear-gradient(180deg, #fde68a, #fbcfe8);
+  --sk-btn1-fg: #1e293b;
+  --sk-btn1-lip: #e3a1c6;
+  --sk-warn-bg: #fbcfe8;
+  --sk-warn-fg: #831843;
+  --sk-warn-lip: #e3a1c6;
+  --sk-sock-bg: #fdf2f8;
+  --sk-orb-off: #f3e8ff;
+  --sk-chart-top-fg: #3b0764;
+  --sk-ghost-bg: #faf5ff;
+  --sk-ghost-fg: #b9a3cf;
+  --sk-tray: #efd3fb;
+  --sk-today-fg: #4a1d66;
+  --sk-ribbon: #e2bdf5;
+  --sk-pill-lip: #d7a3ef;
+  --sk-pill-fut-bg: rgba(255, 255, 255, 0.55);
+  --sk-now-bg: linear-gradient(180deg, #fef08a, #fbcfe8);
+  --sk-now-lip: #e3a1c6;
+  --sk-vault-bg: linear-gradient(160deg, #f472b6 0%, #a855f7 65%, #6b21a8 100%);
+  --sk-vault-lip: #581c87;
+  --sk-vault-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 32'><path d='M7 15h26v11a3 3 0 0 1-3 3H10a3 3 0 0 1-3-3z' fill='%23fdf2f8' stroke='%23ffffff' stroke-width='1.5'/><path d='M5 15c2-6 8-9 15-9s13 3 15 9z' fill='%23fbcfe8' stroke='%23ffffff' stroke-width='1.5'/><rect x='7' y='17.5' width='26' height='2.2' fill='%23f0abfc'/><circle cx='20' cy='22.5' r='2.3' fill='%23fde047' stroke='%23ca8a04' stroke-width='.8'/><path d='M20 1l4 4.5-4 4.5-4-4.5z' fill='%23f472b6' stroke='%23ffffff' stroke-width='1'/></svg>");
+  --sk-task-lip: #e0a6f2;
+  --sk-task-glow: rgba(126, 34, 206, 0.14);
+  --sk-done-bg: #fdf2f8;
+  --sk-done-lip: #f5b5d8;
+  --sk-done-glow: rgba(219, 39, 119, 0.14);
+  --sk-stripe-a: #faf5ff;
+  --sk-stripe-b: #e9e1f3;
+  --sk-ball-shadow: rgba(74, 29, 102, 0.18);
+  --sk-grid-head: #7e22ce; /* Royal Amethyst selectable header, white text 6.4:1 */
+  --sk-grid-ink: #6b21a8;
+  --sk-tag-bg: #f3e8ff;
+  --sk-tag-fg: #6b21a8;
+  --sk-grid-line: #f3e8ff;
+  --sk-ring-0: #f9a8d4;
+  --sk-ring-1: #c4b5fd;
+  --sk-ring-2: #99f6e4;
+  --sk-ring-3: #fdba74;
+  --sk-ring-4: #f0abfc;
+  --sk-ring-5: #a5b4fc;
+}
