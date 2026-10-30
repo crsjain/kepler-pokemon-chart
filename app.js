@@ -1752,6 +1752,8 @@ function getThemeCopy(theme) {
     '#game-title-suffix': 'Pokémon Training',
     '.game-header .subtitle': '"Gotta Catch \'Em All!"',
     '#trainer-title-prefix': 'TRAINER',
+    '#showcase-role-label': 'TRAINER',
+    '#showcase-ok-btn': "Let's Go Train! 🚀",
     '#change-partner-btn': 'Change Partner',
     '.badge-title': 'POKEMON BADGE',
     '.mega-title': '🔮 MEGA MILESTONE PROGRESS',
@@ -1759,15 +1761,19 @@ function getThemeCopy(theme) {
     '#open-badges-btn': '🏆 Case',
     '.shop-title': 'Pokémon Partner Shop! 🏪',
     '#badges-title-suffix': "'s Badge Case 🏆",
+    '#badges-collected-word': 'Gym Badges',
     '#guide-title': 'Pokémon Training Guide 📖',
     '#guide-subtitle-tail': ' needs to do to earn a pokeball for each task!',
     '.motivational-quote': '"True Trainers never give up! Keep practicing and leveling up your skills!"',
-    docTitleSuffix: 'Pokémon Training Chart'
+    docTitleSuffix: 'Pokémon Training Chart',
+    dayTitleEmoji: '⚡'
   },
   unicorn: {
     '#game-title-suffix': 'Royal Unicorn Chart',
     '.game-header .subtitle': '"Sparkle, Practice & Shine! 💖"',
     '#trainer-title-prefix': 'PRINCESS',
+    '#showcase-role-label': 'PRINCESS',
+    '#showcase-ok-btn': "Let's Go Sparkle! ✨",
     '#change-partner-btn': 'Change Partner',
     '.badge-title': 'ROYAL GEM BADGE',
     '.mega-title': '👑 ROYAL CROWN PROGRESS',
@@ -1775,10 +1781,12 @@ function getThemeCopy(theme) {
     '#open-badges-btn': '👑 Gem Case',
     '.shop-title': 'Magical Companion Shop! 🦄',
     '#badges-title-suffix': "'s Royal Gem Case 👑",
+    '#badges-collected-word': 'Royal Gems',
     '#guide-title': 'Royal Practice Guide 📖',
     '#guide-subtitle-tail': ' needs to do to earn a sparkle heart for each quest!',
     '.motivational-quote': '"True Princesses & Unicorn Riders never give up! Keep sparkling and learning every day! 💖✨"',
-    docTitleSuffix: 'Royal Unicorn Chart'
+    docTitleSuffix: 'Royal Unicorn Chart',
+    dayTitleEmoji: '✨'
   }
   };
   return THEME_COPY[theme === 'unicorn' ? 'unicorn' : 'pokemon'];
@@ -1791,11 +1799,18 @@ function applyThemeUI() {
   if (themeSelect) themeSelect.value = theme;
   const copy = getThemeCopy(theme);
   Object.entries(copy).forEach(([selector, text]) => {
-    if (selector === 'docTitleSuffix') return;
+    if (selector === 'docTitleSuffix' || selector === 'dayTitleEmoji') return;
     document.querySelectorAll(selector).forEach(el => {
       if (el.textContent !== text) el.textContent = text;
     });
   });
+  const badgeWordEl = document.getElementById('badges-collected-word');
+  if (badgeWordEl) {
+    const badgeCount = (state.collectedBadges || []).length;
+    badgeWordEl.textContent = theme === 'unicorn'
+      ? (badgeCount === 1 ? 'Royal Gem' : 'Royal Gems')
+      : (badgeCount === 1 ? 'Gym Badge' : 'Gym Badges');
+  }
   document.title = document.title.replace(/(Pokémon Training|Royal Unicorn) Chart$/, copy.docTitleSuffix);
 }
 
@@ -2198,7 +2213,8 @@ function renderSimplifiedView() {
   const isFocusedToday = focusedCol.dateStr === todayStr;
 
   if (dayTitleEl) {
-    dayTitleEl.textContent = isFocusedToday ? `⚡ Today — ${focusedDayName}` : `⚡ ${focusedDayName}'s Quests`;
+    const dayEmoji = getThemeCopy(state.theme).dayTitleEmoji;
+    dayTitleEl.textContent = isFocusedToday ? `${dayEmoji} Today — ${focusedDayName}` : `${dayEmoji} ${focusedDayName}'s Quests`;
   }
 
   const tasks = (state.tasks || []).filter(task => isTaskActiveInWeek(task, currentViewingWeekStartDate));

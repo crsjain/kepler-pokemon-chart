@@ -6214,12 +6214,12 @@ async function runSuite() {
         assert(showcaseXp.textContent === '0', `Showcase XP should be 0, got '${showcaseXp.textContent}'`);
         assert(showcaseHelper.textContent.includes('Pikachu') || showcaseHelper.textContent.includes('Raichu') || showcaseHelper.textContent.includes('Evolution'), `Showcase evolution helper should be populated, got '${showcaseHelper.textContent}'`);
 
-        // Verify showcase level badge styling matches main app screen (pixel font, compact radius, no extra shadow)
+        // Verify showcase level badge styling matches main app screen (Nunito pill, 999px radius, no extra shadow)
         const showcaseLevelBadge = showcaseLevel.closest('.level-badge');
         assert(showcaseLevelBadge !== null, "Showcase level badge should exist");
         const levelBadgeStyle = window.getComputedStyle(showcaseLevelBadge);
-        assert(levelBadgeStyle.fontFamily.includes('Press Start 2P'), `Showcase level badge should use 'Press Start 2P' font, got '${levelBadgeStyle.fontFamily}'`);
-        assert(levelBadgeStyle.borderRadius === '4px', `Showcase level badge border-radius should be '4px', got '${levelBadgeStyle.borderRadius}'`);
+        assert(levelBadgeStyle.fontFamily.includes('Nunito'), `Showcase level badge should use 'Nunito' font matching Trainer Card, got '${levelBadgeStyle.fontFamily}'`);
+        assert(levelBadgeStyle.borderRadius === '999px', `Showcase level badge border-radius should be '999px', got '${levelBadgeStyle.borderRadius}'`);
         assert(levelBadgeStyle.boxShadow === 'none' || levelBadgeStyle.boxShadow === 'none, none', `Showcase level badge should have no box-shadow, got '${levelBadgeStyle.boxShadow}'`);
 
         // Verify enlarged partner sprite dimensions and tap highlight suppression
@@ -8758,7 +8758,7 @@ async function runSuite() {
         const kidNo = document.getElementById('confirm-no-btn');
         assert(kidNo.classList.contains('greyed-out'), "Kid confirm keeps the .greyed-out No button (tests.js:505 contract)");
         assert(rgb(kidNo) === 'rgb(203, 213, 225)', `Kid No button must render exactly as before (#cbd5e1), got ${rgb(kidNo)}`);
-        assert(rgb(document.getElementById('confirm-yes-btn')) === 'rgb(66, 153, 225)', "Kid Yes button keeps the kid .info blue (#4299e1)");
+        assert(rgb(document.getElementById('confirm-yes-btn')) === 'rgb(37, 99, 235)', `Kid Yes button uses theme primary blue (#2563eb), got ${rgb(document.getElementById('confirm-yes-btn'))}`);
         confirmModal.click();
         await sleep(20);
         assert(live.activeDay === todayDow, "Backdrop on the kid confirm leaves the active day unchanged");
@@ -10166,13 +10166,13 @@ async function runSuite() {
           assert(getComputedStyle(modalContent).overflowY === 'hidden',
             "Badge Case modal content must have overflow: hidden so scroll is isolated to grid container");
 
-          // Both selects must share the warm Badge Case border color in resting state
+          // Both selects must share the theme pill border color and 999px radius in resting state
           filterSelect.blur();
           sortSelect.blur();
           const filterBorder = getComputedStyle(filterSelect).borderColor;
           const sortBorder = getComputedStyle(sortSelect).borderColor;
-          assert(filterBorder === 'rgb(196, 164, 124)' && sortBorder === 'rgb(196, 164, 124)',
-            `Badge Case dropdowns must share warm tan border rgb(196, 164, 124), got filter=${filterBorder}, sort=${sortBorder}`);
+          assert(filterBorder === sortBorder && getComputedStyle(filterSelect).borderRadius === '999px',
+            `Badge Case dropdowns must share theme pill border and 999px radius, got filter=${filterBorder}, sort=${sortBorder}, radius=${getComputedStyle(filterSelect).borderRadius}`);
 
           // (B) Standard mobile width (350px modal): the 2 dropdowns sit side-by-side on 1 row
           modalContent.style.width = '350px';
@@ -11619,6 +11619,37 @@ async function runSuite() {
           const wiped = StateModule.buildWipedChildState(state);
           assert(wiped.theme === 'unicorn', "buildWipedChildState preserves theme");
           assert(StateModule.WIPE_PRESERVED_KEYS.includes('theme'), "WIPE_PRESERVED_KEYS includes theme");
+
+          // 6b. Modal Theme Alignment (Q1–Q4): kid modals use 26px borderless panels & theme copy;
+          //     Star Vault keeps Cosmic Nebula; Profile Switcher & Add Profile carry zero inline styles.
+          const kidModalShells = [
+            '#partner-modal .modal-content',
+            '#partner-showcase-modal .partner-showcase-content',
+            '#vault-modal .vault-modal-content',
+            '#pokemon-shop-modal .modal-content',
+            '#badges-modal .badges-modal-content',
+            '#guide-modal .guide-modal-content',
+            '#level-up-modal .modal-content'
+          ];
+          kidModalShells.forEach(sel => {
+            const el = document.querySelector(sel);
+            const cs = getComputedStyle(el);
+            assert(cs.borderTopLeftRadius === '26px' && cs.borderTopWidth === '0px',
+              `${sel} must use 26px borderless panel in Unicorn theme (got radius=${cs.borderTopLeftRadius}, border=${cs.borderTopWidth})`);
+          });
+          assert(document.getElementById('showcase-role-label').textContent === 'PRINCESS', "Showcase eyebrow switches to PRINCESS in Unicorn theme");
+          assert(document.getElementById('showcase-ok-btn').textContent === "Let's Go Sparkle! ✨", "Showcase CTA switches to Let's Go Sparkle! ✨ in Unicorn theme");
+          assert(document.getElementById('badges-collected-word').textContent.includes('Royal Gem'), "Badge Case count word switches to Royal Gem(s) in Unicorn theme");
+          const vaultCabUni = getComputedStyle(document.querySelector('#vault-modal .vault-grid-container')).backgroundImage;
+          assert(vaultCabUni.includes('rgb(30, 27, 75)') && vaultCabUni.includes('rgb(15, 23, 42)'), "Star Vault inner cabinet keeps Cosmic Nebula in Unicorn theme (Q2)");
+
+          const profileSelectModalEl = document.getElementById('profile-select-modal');
+          const addProfileModalEl = document.getElementById('add-profile-modal');
+          assert(profileSelectModalEl.querySelectorAll('[style]').length === 0 && !profileSelectModalEl.hasAttribute('style'),
+            "#profile-select-modal must have zero inline styles (UX Rule 8)");
+          assert(addProfileModalEl.querySelectorAll('[style]').length === 0 && !addProfileModalEl.hasAttribute('style'),
+            "#add-profile-modal must have zero inline styles (UX Rule 8)");
+
           const gridSnapshot = JSON.stringify(state.grid);
           const xpSnapshot = state.partnersData[inst].xp;
           state.theme = 'pokemon';
@@ -11626,6 +11657,9 @@ async function runSuite() {
           await sleep(30);
           assert(document.body.dataset.theme === 'pokemon' && document.querySelector('.game-header .title').textContent.includes('Pokémon Training'), "Switching back restores Pokémon copy");
           assert(document.querySelector('.trainer-title').textContent.includes('TRAINER'), "Trainer eyebrow restored");
+          assert(document.getElementById('showcase-role-label').textContent === 'TRAINER', "Showcase eyebrow restored to TRAINER");
+          assert(document.getElementById('showcase-ok-btn').textContent === "Let's Go Train! 🚀", "Showcase CTA restored to Let's Go Train! 🚀");
+          assert(document.getElementById('badges-collected-word').textContent.includes('Gym Badge'), "Badge Case count word restored to Gym Badge(s)");
           // Pokémon Center skin (both kids' default): sky-blue backdrop, white title, readable kid buttons.
           assert(getComputedStyle(document.body).backgroundImage.includes('rgb(79, 179, 255)'), "Pokémon sky gradient starts at #4fb3ff");
           assert(getComputedStyle(document.querySelector('.game-header .title')).color === 'rgb(255, 255, 255)', "Pokémon title is white on the sky");
@@ -11812,10 +11846,12 @@ async function runSuite() {
           assert(getComputedStyle(bonusCard).backgroundColor === 'rgb(255, 255, 255)', `Bonus to-do card is white, not sky blue (got ${getComputedStyle(bonusCard).backgroundColor})`);
           assert(getComputedStyle(restCard).backgroundImage.includes('repeating-linear-gradient'), "Rest card uses diagonal stripes");
 
-          // 7b. Pastel Castle (U1) swaps only tokens: Jewel Box Vault, blush done tile, gold→blush today pill.
+          // 7b. Pastel Castle (U1) swaps only tokens: Jewel Box Vault, blush done tile, gold→blush today pill, ✨ day title.
+          assert(document.getElementById('simplified-day-title').textContent.startsWith('⚡ '), "Pokémon Big Buttons day title starts with ⚡");
           state.theme = 'unicorn';
           helpers.renderState(false);
           await sleep(30);
+          assert(document.getElementById('simplified-day-title').textContent.startsWith('✨ '), `Unicorn Big Buttons day title starts with ✨ (got "${document.getElementById('simplified-day-title').textContent}")`);
           const u1Vault = getComputedStyle(vaultTile);
           assert(u1Vault.backgroundImage.includes('rgb(168, 85, 247)') && /rgb\(88, 28, 135\) 0px 4px 0px/.test(u1Vault.boxShadow),
             `Unicorn Vault is the rose→amethyst Jewel Box (bg=${u1Vault.backgroundImage.slice(0, 120)})`);
