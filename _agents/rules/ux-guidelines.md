@@ -59,6 +59,7 @@ For modal notifications or alert dialogs, the primary action or confirmation but
 When using tactile 3D elements with physical drop shadows (e.g., `.pixel-btn` with `box-shadow: 0 4px 0`), always design layouts using pure CSS flex/grid `gap` rather than child `margin`:
 - **Never Mix Margin with Flex Gap**: Do not add inline `margin-top` or `margin-bottom` to child elements inside containers that declare a `gap`. This causes compounding double-margin bugs.
 - **Shadow Compensation**: Because a `0 4px 0` box-shadow renders outside the element's layout flow, stacked buttons require a container `gap: 10px` to `12px` to preserve a comfortable `6px` to `8px` perceived optical whitespace.
+- **One Panel Rhythm (owner, 2026-10-30)**: on the main screen every gap *between* panels is **16px**: header → panels, between the left cards, and panels → bottom panel. Rows *inside* the bottom panel are **12px** apart. Don't add per-panel margins that break this. Set the gaps on the layout grid / flex container.
 - **Zero Inline Dimensions on Form Elements**: Form inputs and buttons inside action groups must use `width: 100%; margin: 0;` declaratively in `style.css` instead of inline `style="..."` attributes.
 
 
@@ -85,6 +86,7 @@ The Weekly Training Grid uses a centralized state machine with 4 distinct chroma
 5. **Historical Completed Week (`HISTORICAL`)**:
    - **Header**: Neutral Slate Grey (`#cbd5e1`), Slate Text (`#64748b`), `cursor: not-allowed`.
    - **Cells**: Dimmed (0.45 Opacity), read-only historical record honoring past earned badges and stars.
+   - **Big Buttons (`.chart-container.is-past-week`)**: same recipe, never a tint. Cards stay solid white with readable names and full-colour emoji, lose the candy lip and hover lift, and only the catch ball / heart fades to 0.45 with a small slate padlock badge (SVG, not emoji). The focused day pill gets a grey `#94a3b8` ring, never today-yellow. Rest 💤 / off-plan cards keep their stripes and get no padlock. No "Back to Today" banner (owner, 2026-10-30).
 
 ### B. Contrast & Accessibility Invariants
 - **Yellow Active Headers MUST Use Dark Text**: Never use white text on yellow headers. Always use Dark Charcoal (`#1e293b`) for an outstanding 9.8:1 contrast ratio that exceeds WCAG 2.1 AAA standards.
@@ -143,6 +145,7 @@ See canonical PRD [`docs/prd_rest_day_passes_and_bonus_tasks.md`](file:///usr/lo
 - **Parent Tooltip Support**: Full count strings (e.g. `1 / 3 (+1)` or `5 / 4 ⭐ (Super Trainer! 🚀)`) must be preserved in the cell and badge `title` attributes for optional hover inspection by parents.
 - **Visual Hierarchy & Cohesion Invariant (Pokémon Gym Badge Vector Assets)**: 
   - **Shared Art Style**: To achieve visual harmony with the 2.5px dark charcoal-outlined Pokéballs in the grid, the daily total row employs custom vector SVG assets rather than disparate, platform-dependent system emojis.
+  - **Size hierarchy (owner, 2026-10-30)**: celebrate stars, don't shout the miss. In the Standard grid's Daily Total row the earned star is **30px**, the ghost star **26px**, and the ❌ about **21px** of ink in a 26px box (≈ 1.4 : 1.2 : 1). Stars are aligned **optically**, not by box: a point-up star's visual centre (its inner pentagon) sits about 1.3/32 of its size below its box centre, so each star wrapper is lifted with `transform: translateY(...)` until star and ❌ centres match within about 0.5px.
   - **Earned Star Badge (27px × 27px, `.badge-indicator.unlocked`)**: Rendered with Pikachu Yellow fill (`#ffcb05`), a 2.6px charcoal border (`#2d3748`), faceted warm amber 3D shading (`#d97706`, 32% opacity), a specular cartoon glint at the apex, and crisp 2px retro elevation (`drop-shadow(0 2px 0 rgba(180, 83, 9, 0.35))`). Unlocked cells use a subtle warm tile background (`rgba(254, 243, 199, 0.45)`, `border-radius: 6px`) eliminating fuzzy Gaussian blur smudges. Star badges remain clean, crisp, and static to eliminate re-render jumpiness and unprompted pulsing.
   - **Row Header Star (22px × 22px, `.total-desc .task-emoji`)**: Perfectly matches the Gym Badge star geometry and stroke weight, unifying the description header with the day cells.
   - **Unearned Ghost Star Socket (27px × 27px, `.badge-indicator.future-star`)**: Forms the exact geometric recessed socket for the Gym Badge star (`#f1f5f9` fill with 2.2px `#94a3b8` stroke, 0.65 opacity). When Kepler completes a day, the socket fills in seamlessly into the Gym Badge star.

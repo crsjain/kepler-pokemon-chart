@@ -1757,7 +1757,6 @@ function getThemeCopy(theme) {
     '.mega-title': '🔮 MEGA MILESTONE PROGRESS',
     '#task-col-header-label': 'TRAINING TASK',
     '#open-badges-btn': '🏆 Case',
-    '.simplified-vault-label': 'Vault',
     '.shop-title': 'Pokémon Partner Shop! 🏪',
     '#badges-title-suffix': "'s Badge Case 🏆",
     '#guide-title': 'Pokémon Training Guide 📖',
@@ -1769,12 +1768,11 @@ function getThemeCopy(theme) {
     '#game-title-suffix': 'Royal Unicorn Chart',
     '.game-header .subtitle': '"Sparkle, Practice & Shine! 💖"',
     '#trainer-title-prefix': 'PRINCESS',
-    '#change-partner-btn': 'Change Companion 🦄',
+    '#change-partner-btn': 'Change Partner',
     '.badge-title': 'ROYAL GEM BADGE',
     '.mega-title': '👑 ROYAL CROWN PROGRESS',
     '#task-col-header-label': 'ROYAL QUEST',
     '#open-badges-btn': '👑 Gem Case',
-    '.simplified-vault-label': 'Jewel Box',
     '.shop-title': 'Magical Companion Shop! 🦄',
     '#badges-title-suffix': "'s Royal Gem Case 👑",
     '#guide-title': 'Royal Practice Guide 📖',
@@ -2122,6 +2120,12 @@ function renderSimplifiedView() {
   const dayTitleEl = document.getElementById('simplified-day-title');
   if (!stripEl || !cardsListEl) return;
 
+  // Past weeks are read-only: .is-past-week gives the Big Buttons cards the
+  // Standard grid's look (faded balls + 🔒, no candy lip). prd_simplified_chart_style.md §6.
+  const chartContainerEl = document.querySelector('.chart-container');
+  const viewingPastWeek = !!(state.weekStartDate && currentViewingWeekStartDate && currentViewingWeekStartDate < state.weekStartDate);
+  if (chartContainerEl) chartContainerEl.classList.toggle('is-past-week', viewingPastWeek);
+
   if (state.chartStyle !== 'big-buttons') {
     stripEl.innerHTML = '';
     cardsListEl.innerHTML = '';
@@ -2458,7 +2462,7 @@ function renderGridTable() {
     }
   }
   
-  totalHtml += `<td class="vault-cell"><button id="open-vault-btn" class="pixel-btn small warning">⭐ Vault</button></td>`;
+  totalHtml += `<td class="vault-cell"><button id="open-vault-btn" type="button" class="pixel-btn small warning grid-vault-tile" aria-label="Open Star Vault" title="Star Vault"><span class="grid-vault-icon" aria-hidden="true"></span><span class="grid-vault-label">Vault</span></button></td>`;
   totalRow.innerHTML = totalHtml;
   tbody.appendChild(totalRow);
   

@@ -95,7 +95,7 @@ Applied declaratively via `applyThemeUI()` in `app.js` whenever `renderState()` 
 | Main Title (`.game-header .title`) | `<Name>'s Pokémon Training` | `<Name>'s Royal Unicorn Chart` |
 | Main Subtitle (`.game-header .subtitle`) | `"Gotta Catch 'Em All!"` | `"Sparkle, Practice & Shine! 💖"` |
 | Trainer Card Eyebrow (`.trainer-title`) | `TRAINER <NAME>` | `PRINCESS <NAME>` |
-| Change Partner Button (`#change-partner-btn`) | `Change Partner` | `Change Companion 🦄` |
+| Change Partner Button (`#change-partner-btn`) | `Change Partner` | `Change Partner` (owner 2026-10-30: "Partner" is used app-wide, e.g. "Choose your Partner!", "Get Partner") |
 | Weekly Badge Card Title (`.badge-title`) | `POKEMON BADGE` | `ROYAL GEM BADGE` |
 | Mega Milestone Title (`.mega-title`) | `🔮 MEGA MILESTONE PROGRESS` | `👑 ROYAL CROWN PROGRESS` |
 | Table Task Column Header (`.task-col-header span`) | `TRAINING TASK` | `ROYAL QUEST` |
@@ -297,7 +297,7 @@ Add **Test Case 127: Unicorn & Princess Sparkle Theme (`state.theme`, CSS tokens
 **Unicorn & Princess look → Direction U1 "Pastel Castle"** (`/usr/local/google/home/crsjain/.gemini/jetski/brain/f05c83c6-d9f7-4f31-9401-99005d0fc562/unicorn_theme_directions.html`). It uses the same markup and token names as B:
 - Blush→lavender sky (`--sky #F9A8D4→#C4B5FD`), white 26px panels, `--tray #EFD3FB`, orchid `--lip #E0A6F2`.
 - Accent `--accent #7E22CE`, plum `--ink #4A1D66`, `--heart #DB2777`. Today pill gold→blush (`#FEF08A→#FBCFE8`) with `#1e293b` text.
-- **Jewel Box** Vault (rose→amethyst tile with a lidded box + pink gem).
+- **Jewel Box** Vault (rose→amethyst tile with a lidded box + pink gem). The label stays **"Vault"** to match the Star Vault modal (owner 2026-10-30).
 - Sylveon shown in a round blush sparkle frame (the Phase 1 partner stays a Pokémon).
 - Plum outlines only on the hearts.
 

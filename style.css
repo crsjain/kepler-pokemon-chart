@@ -8805,6 +8805,12 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   white-space: normal;
 }
 
+/* Chart style segmented control sits in the Look & Feel card, same width as the selects. */
+#admin-modal #admin-pane-today .admin-chart-style-row .admin-segmented {
+  width: 236px;
+  margin: 0;
+}
+
 #admin-modal #admin-pane-today .adm-setting-row select.pixel-select {
   width: 236px;
   min-width: 0;
@@ -9471,10 +9477,15 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 /* ---- Checkbox matrix (Rule 14) ------------------------------------------ */
 /* 1. Normal unchecked: dormant crystal heart (Pokéball hemispheres hidden). */
 body[data-theme="unicorn"] .checkbox-cell:not(.excused-cell) .pokeball {
-  border-color: #4a1d66;
-  background-color: #fdf2f8 !important;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cpath d='M18 29 C 6.5 21.5 5 14 9.2 10.4 C 12.6 7.6 16.4 9.2 18 12.4 C 19.6 9.2 23.4 7.6 26.8 10.4 C 31 14 29.5 21.5 18 29 Z' fill='%23f3e8ff' stroke='%239333ea' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M11.5 13.2 C 12.4 11.6 14 11.2 15.2 11.9' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") !important;
-  background-size: 78% 78% !important;
+  /* The plum ring is drawn inside the SVG (not as a CSS border) so ring and heart
+     rasterize together and stay concentric on fractional grid columns. The 3px
+     transparent border keeps the 36×36 footprint (Rule 14). */
+  border-color: transparent;
+  background-color: transparent !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Ccircle cx='18' cy='18' r='16.5' fill='%23fdf2f8' stroke='%234a1d66' stroke-width='3'/%3E%3Cg transform='translate(18 18) scale(0.65) translate(-18 -18)'%3E%3Cpath d='M18 29 C 6.5 21.5 5 14 9.2 10.4 C 12.6 7.6 16.4 9.2 18 12.4 C 19.6 9.2 23.4 7.6 26.8 10.4 C 31 14 29.5 21.5 18 29 Z' fill='%23f3e8ff' stroke='%239333ea' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M11.5 13.2 C 12.4 11.6 14 11.2 15.2 11.9' fill='none' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E") !important;
+  background-origin: border-box !important;
+  background-clip: border-box !important;
+  background-size: 100% 100% !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
 }
@@ -9486,8 +9497,8 @@ body[data-theme="unicorn"] .checkbox-cell:not(.excused-cell) .pokeball::after {
 
 /* 2. Normal checked: glowing magenta royal heart with gold sparkles. */
 body[data-theme="unicorn"] .checkbox-cell:not(.excused-cell) .pokeball-checkbox input:checked + .pokeball {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cdefs%3E%3ClinearGradient id='h' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23f472b6'/%3E%3Cstop offset='1' stop-color='%23db2777'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M18 29 C 6.5 21.5 5 14 9.2 10.4 C 12.6 7.6 16.4 9.2 18 12.4 C 19.6 9.2 23.4 7.6 26.8 10.4 C 31 14 29.5 21.5 18 29 Z' fill='url(%23h)' stroke='%239d174d' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cellipse cx='13.4' cy='13.6' rx='2.6' ry='1.6' transform='rotate(-35 13.4 13.6)' fill='%23ffffff' fill-opacity='0.75'/%3E%3Cpath d='M8.5 5.3 L9.46 7.54 L11.7 8.5 L9.46 9.46 L8.5 11.7 L7.54 9.46 L5.3 8.5 L7.54 7.54 Z' fill='%23fde047'/%3E%3Cpath d='M28 5.4 L28.78 7.22 L30.6 8 L28.78 8.78 L28 10.6 L27.22 8.78 L25.4 8 L27.22 7.22 Z' fill='%23fde047'/%3E%3Cpath d='M28.5 24.3 L29.16 25.84 L30.7 26.5 L29.16 27.16 L28.5 28.7 L27.84 27.16 L26.3 26.5 L27.84 25.84 Z' fill='%23facc15'/%3E%3C/svg%3E"), radial-gradient(circle, #fdf2f8 0%, #fbcfe8 100%) !important;
-  background-size: 92% 92%, 100% 100% !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cdefs%3E%3ClinearGradient id='h' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23f472b6'/%3E%3Cstop offset='1' stop-color='%23db2777'/%3E%3C/linearGradient%3E%3CradialGradient id='b'%3E%3Cstop offset='0' stop-color='%23fdf2f8'/%3E%3Cstop offset='1' stop-color='%23fbcfe8'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='18' cy='18' r='16.5' fill='url(%23b)' stroke='%234a1d66' stroke-width='3'/%3E%3Cg transform='translate(18 18) scale(0.7667) translate(-18 -18)'%3E%3Cpath d='M18 29 C 6.5 21.5 5 14 9.2 10.4 C 12.6 7.6 16.4 9.2 18 12.4 C 19.6 9.2 23.4 7.6 26.8 10.4 C 31 14 29.5 21.5 18 29 Z' fill='url(%23h)' stroke='%239d174d' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cellipse cx='13.4' cy='13.6' rx='2.6' ry='1.6' transform='rotate(-35 13.4 13.6)' fill='%23ffffff' fill-opacity='0.75'/%3E%3Cpath d='M8.5 5.3 L9.46 7.54 L11.7 8.5 L9.46 9.46 L8.5 11.7 L7.54 9.46 L5.3 8.5 L7.54 7.54 Z' fill='%23fde047'/%3E%3Cpath d='M28 5.4 L28.78 7.22 L30.6 8 L28.78 8.78 L28 10.6 L27.22 8.78 L25.4 8 L27.22 7.22 Z' fill='%23fde047'/%3E%3Cpath d='M28.5 24.3 L29.16 25.84 L30.7 26.5 L29.16 27.16 L28.5 28.7 L27.84 27.16 L26.3 26.5 L27.84 25.84 Z' fill='%23facc15'/%3E%3C/g%3E%3C/svg%3E") !important;
+  background-size: 100% 100% !important;
   box-shadow: 0 0 10px rgba(236, 72, 153, 0.45);
 }
 
@@ -9507,7 +9518,7 @@ body[data-theme="unicorn"] .checkbox-cell.bonus-cell:not(.superseded-cell):hover
 
 /* 5. Bonus checked: Royal Crown & Unicorn Gem medallion replaces the Great Ball. */
 body[data-theme="unicorn"] .checkbox-cell.bonus-cell:not(.superseded-cell) input:checked + .pokeball {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36' width='36' height='36'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23a855f7'/%3E%3Cstop offset='0.55' stop-color='%237e22ce'/%3E%3Cstop offset='1' stop-color='%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='18' cy='18' r='16.5' fill='url(%23g)' stroke='%234a1d66' stroke-width='3'/%3E%3Cpath d='M4 21 L18 32 L32 21 Z' fill='%23ec4899' fill-opacity='0.35'/%3E%3Cpath d='M9 25 L9 14 L13.5 19 L18 10.5 L22.5 19 L27 14 L27 25 Z' fill='%23facc15' stroke='%23ca8a04' stroke-width='1.3' stroke-linejoin='round'/%3E%3Crect x='9' y='24' width='18' height='3.6' rx='1' fill='%23eab308' stroke='%23ca8a04' stroke-width='1.1'/%3E%3Ccircle cx='9' cy='13.6' r='1.5' fill='%23fde047' stroke='%23ca8a04' stroke-width='0.8'/%3E%3Ccircle cx='18' cy='10.2' r='1.6' fill='%23fde047' stroke='%23ca8a04' stroke-width='0.8'/%3E%3Ccircle cx='27' cy='13.6' r='1.5' fill='%23fde047' stroke='%23ca8a04' stroke-width='0.8'/%3E%3Ccircle cx='18' cy='21' r='1.8' fill='%23e11d48'/%3E%3Ccircle cx='13.2' cy='22.2' r='1.2' fill='%232563eb'/%3E%3Ccircle cx='22.8' cy='22.2' r='1.2' fill='%232563eb'/%3E%3Cpath d='M27.5 5.1 L28.22 6.78 L29.9 7.5 L28.22 8.22 L27.5 9.9 L26.78 8.22 L25.1 7.5 L26.78 6.78 Z' fill='%23ffffff'/%3E%3C/svg%3E") !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36' width='36' height='36'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23a855f7'/%3E%3Cstop offset='0.55' stop-color='%237e22ce'/%3E%3Cstop offset='1' stop-color='%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='18' cy='18' r='16.5' fill='url(%23g)' stroke='%234a1d66' stroke-width='3'/%3E%3Cpath d='M4 21 L18 32 L32 21 Z' fill='%23ec4899' fill-opacity='0.35'/%3E%3Cpath d='M9 25 L9 14 L13.5 19 L18 10.5 L22.5 19 L27 14 L27 25 Z' fill='%23facc15' stroke='%23ca8a04' stroke-width='1.3' stroke-linejoin='round'/%3E%3Crect x='9' y='24' width='18' height='3.6' rx='1' fill='%23eab308' stroke='%23ca8a04' stroke-width='1.1'/%3E%3Ccircle cx='9' cy='13.6' r='1.5' fill='%23fde047' stroke='%23ca8a04' stroke-width='0.8'/%3E%3Ccircle cx='18' cy='10.2' r='1.6' fill='%23fde047' stroke='%23ca8a04' stroke-width='0.8'/%3E%3Ccircle cx='27' cy='13.6' r='1.5' fill='%23fde047' stroke='%23ca8a04' stroke-width='0.8'/%3E%3Ccircle cx='18' cy='21' r='1.8' fill='%23e11d48'/%3E%3Ccircle cx='13.2' cy='22.2' r='1.2' fill='%232563eb'/%3E%3Ccircle cx='22.8' cy='22.2' r='1.2' fill='%232563eb'/%3E%3Cpath d='M8.5 5.1 L9.22 6.78 L10.9 7.5 L9.22 8.22 L8.5 9.9 L7.78 8.22 L6.1 7.5 L7.78 6.78 Z' fill='%23ffffff'/%3E%3C/svg%3E") !important;
   box-shadow: 0 0 10px rgba(168, 85, 247, 0.5) !important;
 }
 
@@ -10059,20 +10070,91 @@ body[data-theme] .weekly-grid .total-row {
   border-top: 3px solid var(--sk-tray);
 }
 
-body[data-theme] #open-vault-btn {
+/* Grid Vault = a mini version of the Big Buttons gem tile (same icon token).
+   Sized to the 27px day stars so the row reads as one set: clearly a button,
+   but calm (no glow / pulse) so it never out-shouts the Pokéballs. */
+body[data-theme] #open-vault-btn.grid-vault-tile {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  max-width: 60px;
+  min-height: 48px;
+  padding: 5px 4px 4px;
   font-family: 'Fredoka', 'Fredoka One', sans-serif;
   font-weight: 700;
+  font-size: 0.72rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
   border: none;
-  border-radius: 12px;
-  background: var(--sk-vault-bg);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 16% 26%, rgba(255, 255, 255, 0.7) 0 1.2px, transparent 1.8px),
+    radial-gradient(circle at 86% 30%, rgba(255, 255, 255, 0.6) 0 1.2px, transparent 1.8px),
+    var(--sk-vault-bg);
   color: #ffffff;
-  box-shadow: 0 3px 0 var(--sk-vault-lip);
+  box-shadow: 0 4px 0 var(--sk-vault-lip);
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-body[data-theme] #open-vault-btn:active {
-  transform: translateY(2px);
-  box-shadow: none;
+body[data-theme] #open-vault-btn.grid-vault-tile:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0 var(--sk-vault-lip);
+}
+
+body[data-theme] #open-vault-btn.grid-vault-tile:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--sk-vault-lip);
+}
+
+body[data-theme] .grid-vault-icon {
+  display: block;
+  width: 26px;
+  height: 22px;
+  background: var(--sk-vault-icon) center / contain no-repeat;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
+
+/* Daily Total ❌ / ➖: a fixed centred box like the SVG stars (the bare emoji sat
+   ~2px higher than its cell centre). */
+body[data-theme] .total-row .badge-indicator.locked:not(.future-star):not(.rest-day),
+body[data-theme] .simplified-pill-star .badge-indicator.locked:not(.future-star):not(.rest-day) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  font-size: 19px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+/* Daily Total size hierarchy (owner + UX, 2026-10-30): celebrate stars, don't shout
+   the miss. Earned star 30px > ghost star 26px > ❌ ~21px ink (≈ 1.4 : 1.2 : 1).
+   Optical alignment: a point-up star's visual centre (its inner pentagon, y≈17.3 of
+   the 32 viewBox) sits 1.3/32 of its size below its box centre, so each star is
+   lifted by that amount (plus the earned star's 2px drop shadow, tuned by pixel
+   measurement); the ❌ stays box-centred. All icons then share one line. */
+body[data-theme] .total-row .badge-indicator.unlocked .earned-star-svg {
+  width: 30px;
+  height: 30px;
+}
+
+/* Sub-pixel lift via transform on the wrapper (the SVG's own transform is the hover pop). */
+body[data-theme] .total-row .badge-indicator.unlocked {
+  transform: translateY(-2px);
+}
+
+body[data-theme] .total-row .badge-indicator.future-star .ghost-star-svg {
+  width: 26px;
+  height: 26px;
+}
+
+body[data-theme] .total-row .badge-indicator.future-star {
+  transform: translateY(-1.6px);
 }
 
 /* Grid ink (Daily Total label, Goal counts) and the Big Buttons bonus tag follow the theme. */
@@ -10084,6 +10166,183 @@ body[data-theme] .weekly-grid .task-total-cell:not(.completed) {
 body[data-theme] .simplified-card-tag.bonus-tag {
   background: var(--sk-tag-bg);
   color: var(--sk-tag-fg);
+}
+
+/* Standard grid: the first column gets the same 16px inset as the Prev button,
+   so emojis and labels don't hug the panel's rounded left edge (was 4-10px). */
+body[data-theme] .weekly-grid th.task-col-header {
+  padding-left: 16px !important;
+}
+
+body[data-theme] .weekly-grid td:first-child {
+  padding-left: 16px;
+}
+
+/* ---- Past weeks in Big Buttons (owner pick "B3", 2026-10-30) ----
+   Same recipe as the Standard grid's past weeks: cards stay white and readable,
+   only the check-off icons fade to 45%; no candy lip / hover lift (nothing to
+   press); a small padlock badge on each ball; the selected day gets a grey ring,
+   never today-yellow (Rule 13). Rest 💤 and off-plan cards keep their stripes. */
+body[data-theme] .chart-container.is-past-week .simplified-day-pill[data-column-state="historical"] {
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: none;
+}
+
+body[data-theme] .chart-container.is-past-week .simplified-day-pill[data-column-state="historical"] .simplified-pill-day {
+  color: #64748b;
+}
+
+body[data-theme] .chart-container.is-past-week .simplified-day-pill[data-column-state="historical"].is-focused {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 3px #94a3b8;
+  transform: none;
+}
+
+body[data-theme] .chart-container.is-past-week .simplified-task-card:not(.is-rest):not(.is-out-of-range),
+body[data-theme] .chart-container.is-past-week .simplified-task-card:not(.is-rest):not(.is-out-of-range):hover {
+  background: #ffffff;
+  box-shadow: none;
+  transform: none;
+  cursor: default;
+}
+
+body[data-theme] .chart-container.is-past-week .simplified-card-name {
+  color: #334155;
+}
+
+body[data-theme] .chart-container.is-past-week .checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox .pokeball.simplified-catch-ball {
+  opacity: 0.45;
+  box-shadow: none;
+  transform: none;
+}
+
+body[data-theme] .chart-container.is-past-week .simplified-task-card:not(.is-rest):not(.is-out-of-range) .checkbox-cell.simplified-card-cell {
+  position: relative;
+}
+
+body[data-theme] .chart-container.is-past-week .simplified-task-card:not(.is-rest):not(.is-out-of-range) .checkbox-cell.simplified-card-cell::before {
+  content: '';
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  z-index: 30;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M8 10.5V8a4 4 0 0 1 8 0v2.5' fill='none' stroke='%23475569' stroke-width='2.4' stroke-linecap='round'/><rect x='5.5' y='10' width='13' height='10' rx='2.5' fill='%23475569'/><circle cx='12' cy='14.6' r='1.6' fill='%23ffffff'/></svg>") center / 16px 16px no-repeat;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+  pointer-events: none;
+}
+
+/* ---- Big Buttons compact rhythm (owner, 2026-10-30) ----
+   The chart panel used to be ~50–150px taller than the left column, which stretched
+   the trainer / Mega cards with empty space. A tighter rhythm makes the panel the same
+   height as the Standard grid (the left column's natural height) for 4–5 activities.
+   Cards flex between 64px and 84px to fill the tray, so short lists stay roomy; long
+   lists simply grow. Tap targets stay large: 56px catch ball, 52px day pills. */
+body[data-theme] .simplified-today-view {
+  --sv-ball-size: 56px;
+  --sv-ball-border: 4px;
+  padding: 10px 14px 12px;
+}
+
+body[data-theme] .layout-container:not(.exception-mode):not(.last-week-edit) .chart-container[data-chart-style="big-buttons"] .simplified-today-view {
+  gap: 10px;
+  flex: 1 1 auto;
+}
+
+body[data-theme] .simplified-day-banner {
+  padding: 2px 2px 0;
+}
+
+body[data-theme] .simplified-week-row {
+  padding: 5px;
+  gap: 6px;
+}
+
+body[data-theme] .simplified-day-strip {
+  gap: 6px;
+}
+
+body[data-theme] .simplified-day-pill {
+  min-height: 52px;
+  gap: 2px;
+}
+
+body[data-theme] .simplified-vault-tile {
+  min-height: 52px;
+}
+
+body[data-theme] .simplified-cards-list {
+  flex: 1 1 auto;
+  gap: 8px;
+}
+
+body[data-theme] .simplified-task-card {
+  flex: 1 1 64px;
+  min-height: 64px;
+  max-height: 84px;
+  padding: 4px 12px 4px 8px;
+}
+
+body[data-theme] .simplified-card-emoji {
+  width: 52px;
+  height: 52px;
+  font-size: 1.8rem;
+}
+
+/* ---- One spacing rhythm (owner, 2026-10-30) ----
+   Every gap between panels is 16px (header → panels, between left cards, panels →
+   bottom panel). Inside the bottom panel, rows are 12px apart. Page and frame padding
+   are trimmed so the whole app fits a landscape tablet with less scrolling. */
+body[data-theme] {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+body[data-theme] .app-container {
+  padding-top: 8px;
+  padding-bottom: 12px;
+}
+
+body[data-theme] .game-header {
+  margin-bottom: 16px;
+  padding-bottom: 0;
+}
+
+body[data-theme] .game-header .title {
+  margin-bottom: 2px;
+}
+
+body[data-theme] .trainer-card,
+body[data-theme] .mega-milestone-card,
+body[data-theme] .chart-container {
+  margin-bottom: 16px;
+}
+
+body[data-theme] .bottom-section {
+  gap: 12px;
+  padding: 14px 20px;
+}
+
+body[data-theme] .bottom-section .motivational-quote {
+  margin-top: 0;
+  padding: 8px 10px;
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+  body[data-theme] .game-header,
+  body[data-theme] .trainer-card,
+  body[data-theme] .mega-milestone-card,
+  body[data-theme] .chart-container {
+    margin-bottom: 0;
+  }
+
+  body[data-theme] .bottom-section {
+    margin-top: 0;
+    row-gap: 12px;
+    column-gap: 20px;
+  }
 }
 
 /* ---- Direction U1 "Pastel Castle" tokens (Lyra) ---- */

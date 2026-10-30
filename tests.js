@@ -8141,8 +8141,9 @@ async function runSuite() {
         // 3. Home map: each existing control lives in its PRD §3.1 section; shell IDs sit outside every pane.
         const HOME = {
           today: ['exceptions-btn', 'admin-parent-grace-select', 'admin-lock-past-days-toggle',
-                  'admin-week-start-select', 'admin-week-start-status', 'admin-timezone-select', 'admin-idle-timeout-select'],
-          tasks: ['admin-tasks-list', 'admin-add-task-btn', 'admin-save-tasks-btn', 'admin-chart-style-placeholder'],
+                  'admin-week-start-select', 'admin-week-start-status', 'admin-timezone-select', 'admin-idle-timeout-select',
+                  'admin-theme-select', 'admin-chart-style-placeholder'],
+          tasks: ['admin-tasks-list', 'admin-add-task-btn', 'admin-save-tasks-btn'],
           rewards: ['admin-rewards-editor-host', 'claimed-rewards-history-list'],
           children: ['admin-profiles-list', 'admin-add-child-btn', 'admin-new-passcode-input', 'admin-new-passcode-confirm', 'admin-change-passcode-btn'],
           data: ['admin-export-btn', 'admin-import-btn', 'admin-cloud-export-btn', 'admin-cloud-import-btn',
@@ -8242,14 +8243,14 @@ async function runSuite() {
         await sleep(30);
         assert(document.querySelectorAll('#weekly-rewards-list .reward-list-item').length > 0, "Discard should restore the saved rewards inline");
 
-        // 9. Chart Style placeholder: bottom of the Activities pane (PRD v2.0 Q5; was D8 top).
-        const tasksPane = document.getElementById('admin-pane-tasks');
+        // 9. Chart Style lives in Settings › Look & Feel, right below Chart theme (owner, 2026-10-30; was bottom of Activities).
+        const settingsPane = document.getElementById('admin-pane-today');
         const placeholder = document.getElementById('admin-chart-style-placeholder');
-        assert(placeholder.closest('.admin-pane') === tasksPane, "Chart Style placeholder should live in the Tasks pane");
-        assert(placeholder.compareDocumentPosition(document.getElementById('admin-tasks-list')) & Node.DOCUMENT_POSITION_PRECEDING,
-          "Chart Style placeholder should sit below the task list");
-        assert(placeholder.compareDocumentPosition(document.getElementById('admin-add-task-btn')) & Node.DOCUMENT_POSITION_PRECEDING,
-          "Chart Style placeholder should sit below Add Activity");
+        const themeSel = document.getElementById('admin-theme-select');
+        assert(placeholder.closest('.admin-pane') === settingsPane, "Chart Style should live in the Settings pane");
+        assert(placeholder.closest('.adm-card') === themeSel.closest('.adm-card'), "Chart Style shares the Look & Feel card with Chart theme");
+        assert(placeholder.compareDocumentPosition(themeSel) & Node.DOCUMENT_POSITION_PRECEDING, "Chart Style sits below Chart theme");
+        assert(document.querySelector('#admin-pane-tasks input[name="admin-chart-style"]') === null, "Activities no longer has a Chart Style control");
 
         // Clean up
         document.getElementById('close-admin-modal-btn').click();
@@ -11556,7 +11557,7 @@ async function runSuite() {
           assert(document.querySelector('.badge-title').textContent === 'ROYAL GEM BADGE', "Badge card title reskinned");
           assert(document.querySelector('.mega-title').textContent.includes('ROYAL CROWN PROGRESS'), "Mega title reskinned");
           assert(document.getElementById('task-col-header-label').textContent === 'ROYAL QUEST', "Task column header reskinned");
-          assert(document.getElementById('change-partner-btn').textContent.includes('Companion'), "Change Partner button reskinned");
+          assert(document.getElementById('change-partner-btn').textContent === 'Change Partner', "Change Partner keeps the app-wide 'Partner' wording in every theme");
           assert(document.querySelector('.shop-title').textContent.includes('Magical Companion Shop'), "Shop title reskinned");
           assert(document.getElementById('guide-subtitle-tail').textContent.includes('sparkle heart'), "Guide subtitle reskinned");
           assert(document.getElementById('open-badges-btn').textContent === '👑 Gem Case', "Badge case button reskinned");
@@ -11677,7 +11678,7 @@ async function runSuite() {
           document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
           document.getElementById('password-submit-btn').click();
           await sleep(80);
-          document.getElementById('admin-tab-tasks').click();
+          document.getElementById('admin-tab-today').click();
           await sleep(30);
 
           const styleCard = document.getElementById('admin-chart-style-placeholder');
@@ -11687,7 +11688,7 @@ async function runSuite() {
           bigRadio.click();
           await sleep(40);
           assert(state.chartStyle === 'big-buttons' && bigRadio.checked, "Selecting Big Buttons updates state.chartStyle immediately");
-          const savedBadge = styleCard.querySelector('[data-admin-saved-status]');
+          const savedBadge = styleCard.closest('.adm-card').querySelector('[data-admin-saved-status]');
           assert(savedBadge && savedBadge.classList.contains('is-visible'), "Selecting a chart style flashes inline 'Saved ✓'");
           document.getElementById('close-admin-modal-btn').click();
           await sleep(40);
@@ -11818,7 +11819,7 @@ async function runSuite() {
           const u1Vault = getComputedStyle(vaultTile);
           assert(u1Vault.backgroundImage.includes('rgb(168, 85, 247)') && /rgb\(88, 28, 135\) 0px 4px 0px/.test(u1Vault.boxShadow),
             `Unicorn Vault is the rose→amethyst Jewel Box (bg=${u1Vault.backgroundImage.slice(0, 120)})`);
-          assert(vaultTile.querySelector('.simplified-vault-label').textContent === 'Jewel Box', "Unicorn Vault label reads Jewel Box");
+          assert(vaultTile.querySelector('.simplified-vault-label').textContent === 'Vault', "Unicorn Vault label stays 'Vault' (matches the Star Vault modal)");
           const u1Done = cardsListEl.querySelector(`.simplified-task-card[data-task="${firstTask.id}"]`);
           assert(getComputedStyle(u1Done).backgroundColor === 'rgb(253, 242, 248)', `Unicorn done card is soft blush (got ${getComputedStyle(u1Done).backgroundColor})`);
           const u1Active = stripEl.querySelector('.simplified-day-pill[data-column-state^="active_"]');
@@ -11901,6 +11902,86 @@ async function runSuite() {
           helpers.clearParentGrace();
           document.querySelectorAll('.notif-modal').forEach(el => el.remove());
           ['confirm-modal', 'admin-modal', 'password-modal'].forEach(id => document.getElementById(id).classList.add('hidden'));
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
+      // 129. Past weeks in Big Buttons look read-only like the Standard grid (owner pick "B3").
+      console.log("Running Test Case 129: Big Buttons past week — faded balls, padlock, no candy lip, no today-yellow...");
+      {
+        const helpers = window.__test_helpers__;
+        const state = window.__app_state__;
+        const chart = document.querySelector('.chart-container');
+        const cardsListEl = document.getElementById('simplified-cards-list');
+        const stripEl = document.getElementById('simplified-day-strip');
+        const fmt = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+        const addDays = (s0, n) => { const d = new Date(s0 + 'T00:00:00'); d.setDate(d.getDate() + n); return fmt(d); };
+        try {
+          state.chartStyle = 'big-buttons';
+          state.reward = 'Sticker Pack';
+          state.megaReward = 'Unicorn Plush';
+          const lastStart = addDays(state.weekStartDate, -7);
+          state.weeklyHistory = { [lastStart]: { weekStartDay: state.weekStartDay, weeklyClaimed: false, badgeId: 7, xpEarned: 0, megaWeeks: 0 } };
+          const tasks = state.tasks.filter(t => helpers.isTaskActiveInWeek(t, lastStart));
+          assert(tasks.length >= 2, `Need two activities in last week (got ${tasks.length})`);
+          state.grid[`${lastStart}-${tasks[0].id}`] = true; // one caught, one missed on the first day
+          helpers.renderState(true);
+          await sleep(30);
+
+          // Current week: candy lip present, no past-week class.
+          assert(!chart.classList.contains('is-past-week'), "Current week is not marked .is-past-week");
+          const liveCard = cardsListEl.querySelector('.simplified-task-card:not(.is-rest):not(.is-out-of-range)');
+          assert(liveCard && getComputedStyle(liveCard).boxShadow !== 'none', "Current-week cards keep the candy lip");
+
+          // Past week.
+          helpers.setViewingWeekStartDate(lastStart);
+          helpers.renderState(true);
+          await sleep(30);
+          assert(chart.classList.contains('is-past-week'), "Viewing last week adds .is-past-week to .chart-container");
+          const caughtCard = cardsListEl.querySelector(`.simplified-task-card[data-task="${tasks[0].id}"]`);
+          const missedCard = cardsListEl.querySelector(`.simplified-task-card[data-task="${tasks[1].id}"]`);
+          assert(caughtCard && missedCard, "Past-week cards rendered");
+          [caughtCard, missedCard].forEach(card => {
+            const cs = getComputedStyle(card);
+            assert(cs.backgroundColor === 'rgb(255, 255, 255)' && cs.boxShadow === 'none', `Past card is flat white with no lip (bg=${cs.backgroundColor}, shadow=${cs.boxShadow})`);
+            assert(cs.opacity === '1', "Past card itself is not dimmed (names stay readable)");
+            const ball = card.querySelector('.simplified-catch-ball');
+            assert(getComputedStyle(ball).opacity === '0.45', `Past ball fades to 45% like the grid (got ${getComputedStyle(ball).opacity})`);
+            const lock = getComputedStyle(card.querySelector('.simplified-card-cell'), '::before');
+            assert(lock.backgroundImage.includes('svg') && lock.width === '28px', "Past card shows the padlock badge");
+            assert(card.querySelector('input[type="checkbox"]').disabled, "Past card checkbox is disabled");
+          });
+          assert(getComputedStyle(caughtCard.querySelector('.simplified-catch-ball'), '::before').backgroundColor === 'rgb(255, 60, 60)', "Caught ball keeps its red top (successes stay visible)");
+          const focusedPill = stripEl.querySelector('.simplified-day-pill.is-focused');
+          assert(focusedPill && !getComputedStyle(focusedPill).backgroundImage.includes('gradient'), `Focused past day is not today-yellow (bg=${getComputedStyle(focusedPill).backgroundImage})`);
+          assert(/rgb\(148, 163, 184\)/.test(getComputedStyle(focusedPill).boxShadow), "Focused past day uses the grey ring");
+          assert(document.getElementById('past-week-banner') === null, "No Back-to-Today banner (owner decision)");
+
+          // Rest cards keep stripes and get no padlock.
+          state.excused[`${lastStart}-${tasks[1].id}`] = 'rest';
+          helpers.renderState(true);
+          await sleep(30);
+          const restCard = cardsListEl.querySelector(`.simplified-task-card[data-task="${tasks[1].id}"]`);
+          assert(restCard.classList.contains('is-rest') && getComputedStyle(restCard).backgroundImage.includes('repeating-linear-gradient'), "Past rest card keeps its stripes");
+          assert(getComputedStyle(restCard.querySelector('.simplified-card-cell'), '::before').content === 'none', "Past rest card has no padlock");
+
+          // Same treatment in the unicorn theme.
+          state.theme = 'unicorn';
+          helpers.renderState(true);
+          await sleep(30);
+          const u1Card = cardsListEl.querySelector(`.simplified-task-card[data-task="${tasks[0].id}"]`);
+          assert(getComputedStyle(u1Card).backgroundColor === 'rgb(255, 255, 255)' && getComputedStyle(u1Card.querySelector('.simplified-catch-ball')).opacity === '0.45', "Unicorn past week uses the same white card + 45% heart");
+
+          // Back to the current week removes it.
+          state.theme = 'pokemon';
+          helpers.setViewingWeekStartDate(state.weekStartDate);
+          helpers.renderState(true);
+          await sleep(30);
+          assert(!chart.classList.contains('is-past-week'), "Returning to the current week clears .is-past-week");
+        } finally {
+          state.theme = 'pokemon';
+          helpers.setViewingWeekStartDate(state.weekStartDate);
           helpers.resetState();
           await sleep(30);
         }

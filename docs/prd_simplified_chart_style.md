@@ -40,8 +40,10 @@ For a younger child like Lyra (5yo) who only has **1–3 activities**:
 
 ## 3. User Experience & Visual Design System
 
-### 3.1 Activating `#admin-chart-style-placeholder` (`Admin › ✅ Activities`)
-In [`index.html`](../index.html) inside `#admin-pane-tasks`:
+### 3.1 Activating `#admin-chart-style-placeholder` (`Admin › 🗓️ Settings › Look & Feel`)
+> **Moved 2026-10-30 (owner):** the control now sits in **Settings › Look & Feel**, as a `🧸 Chart style` row below `🎨 Chart theme` (same `.adm-card`, shared `Saved ✓`), because both settings control the child's look. Activities no longer has it. The ID, radios and auto-save behaviour are unchanged. TC93 §9 and TC128 were updated.
+
+Originally, in [`index.html`](../index.html) inside `#admin-pane-tasks`:
 - Keep the container ID `#admin-chart-style-placeholder` so existing section-home queries in **TC93** remain 100% compatible.
 - Remove `.admin-coming-soon`, `aria-disabled="true"`, the `Coming soon` badge (`.coming-soon-tag`), and `disabled` attributes on the two radio inputs (`input[name="admin-chart-style"][value="big-buttons"]` and `value="standard"`).
 - Replace `.coming-soon-tag` with an inline `<span class="adm-saved-status" data-admin-saved-status role="status" aria-live="polite"></span>` so toggling between **Big Buttons (`Today Focus`)** and **Standard (`Full Week`)** auto-saves immediately and flashes `Saved ✓` (`flashAdminSaved`), without dirtying the task-list draft save bar (`#admin-activities-savebar`).
@@ -120,6 +122,25 @@ When `state.chartStyle === 'big-buttons'` and neither Exception Mode nor Fix Las
   - When the parent taps **Done ✅** (or the timer expires), the view automatically returns to `#simplified-today-view`.
 
 ---
+
+### 3.5 Past Weeks Are Read-Only (`.is-past-week`, owner pick "B3", 2026-10-30)
+Problem: after ◀ Prev, the Big Buttons view looked identical to the current week (candy-lipped cards, today-yellow focused pill), so a 5-year-old couldn't tell past days can't be changed.
+
+- `renderSimplifiedView()` toggles `.is-past-week` on `.chart-container` when `currentViewingWeekStartDate < state.weekStartDate`.
+- It looks like the Standard grid's past weeks: cards stay solid white and readable, with no candy lip or hover lift. Only the ball / heart fades to 45%, with a small slate padlock badge (SVG). Caught balls keep their red top.
+- The focused day pill gets a grey ring instead of today-yellow (Rule 13). Rest 💤 and off-plan cards keep their stripes and get no padlock.
+- Owner decisions: chose B3 over the "Memory Book" option and over the blue-washed "Locked Glass" option. **No "Back to Today" banner.** The design review (round 1 + 2 screenshots) lives in conversation `2aa9b995-140c-49bf-8838-721f541b2a85` (`past_week_ux_review.md`).
+- Tests: **TC129**.
+
+### 3.6 Compact Rhythm: Same Height as the Standard Grid (owner, 2026-10-30)
+The Big Buttons panel used to be 55–150px taller than the left column. That stretched the trainer and Mega cards and left empty space inside them. With a tighter rhythm, the panel matches the Standard grid's height (the left column's natural height, 537px at 1366px landscape) for 4 activities exactly, and for 5 within 2px:
+- Catch ball 64 → **56px** (TC128 still asserts ≥ 56).
+- Emoji 62 → 52px.
+- Day pills and Vault tile 62 → **52px**.
+- Card gaps 12 → 8px.
+- Tray padding 16 → 10–14px.
+
+Cards flex between **64px and 84px**, so short lists fill the tray with roomy cards. Lists of 6 or more simply grow the panel, as before. All tap targets stay ≥ 52px, well above the 44px minimum.
 
 ## 4. Rules & Economy Invariants
 
