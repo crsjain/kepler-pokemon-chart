@@ -25,6 +25,7 @@ When editing dual or multi-column data structures inside modal dialogs (like Wee
 
 ## 5. Keep Scrollbar Tracks Transparent for Rounded Containers
 When using rounded border radii (`border-radius`) on scrolling panels or containers (such as `.modal-content`), never leave custom or system scrollbar tracks with solid background fills. A solid fill track will overlap and flatten the rounded corners. Make scrollbar tracks transparent (`background: transparent`) so the rounded container boundaries clip correctly.
+- **Coloured backdrops too (2026-10-30)**: the same applies to any scrolling area that sits on the themed sky gradient or inside a 26px panel. A solid track draws a grey bar across the sky.
 
 ## 6. Hold-to-Unlock / Gesture Buttons
 For critical or high-value actions (like spending currency, unlocking permanent items, or irreversible operations), prefer a hold-to-unlock gesture button over a simple click button.
@@ -60,6 +61,8 @@ When using tactile 3D elements with physical drop shadows (e.g., `.pixel-btn` wi
 - **Never Mix Margin with Flex Gap**: Do not add inline `margin-top` or `margin-bottom` to child elements inside containers that declare a `gap`. This causes compounding double-margin bugs.
 - **Shadow Compensation**: Because a `0 4px 0` box-shadow renders outside the element's layout flow, stacked buttons require a container `gap: 10px` to `12px` to preserve a comfortable `6px` to `8px` perceived optical whitespace.
 - **One Panel Rhythm (owner, 2026-10-30)**: on the main screen every gap *between* panels is **16px**: header → panels, between the left cards, and panels → bottom panel. Rows *inside* the bottom panel are **12px** apart. Don't add per-panel margins that break this. Set the gaps on the layout grid / flex container.
+- **Candy Lip = "press me" (owner, 2026-10-30)**: tappable kid surfaces (task cards, day pills, Vault tiles, pill buttons) get a solid coloured lip shadow from the theme tokens instead of a dark outline. Cards use `0 5px 0`, pills and buttons `0 3px 0`–`0 4px 0`. Anything that can't be tapped, such as past-week cards, must drop the lip and hover lift. A pressed state removes the lip and moves down by the same amount.
+- **Big Buttons minimum sizes (owner, 2026-10-30)**: catch ball / heart **≥ 56px**, day pills and the Vault tile **≥ 52px**, task cards flex between **64px and 84px**. The compact rhythm must never go below these. With longer activity lists the panel grows; it never shrinks the targets or scrolls.
 - **Zero Inline Dimensions on Form Elements**: Form inputs and buttons inside action groups must use `width: 100%; margin: 0;` declaratively in `style.css` instead of inline `style="..."` attributes.
 
 
@@ -87,6 +90,8 @@ The Weekly Training Grid uses a centralized state machine with 4 distinct chroma
    - **Header**: Neutral Slate Grey (`#cbd5e1`), Slate Text (`#64748b`), `cursor: not-allowed`.
    - **Cells**: Dimmed (0.45 Opacity), read-only historical record honoring past earned badges and stars.
    - **Big Buttons (`.chart-container.is-past-week`)**: same recipe, never a tint. Cards stay solid white with readable names and full-colour emoji, lose the candy lip and hover lift, and only the catch ball / heart fades to 0.45 with a small slate padlock badge (SVG, not emoji). The focused day pill gets a grey `#94a3b8` ring, never today-yellow. Rest 💤 / off-plan cards keep their stripes and get no padlock. No "Back to Today" banner (owner, 2026-10-30).
+
+6. **Themes (owner, 2026-10-30)**: day cells stay **solid white inside the chart panel in every theme**. Only the selectable header colour follows the theme: Poké Blue `#2a71d0` (Pokémon) or Royal Amethyst `#7e22ce` (Unicorn), both with white text. Yellow, or the Unicorn gold→blush gradient, always means *active / today*, with `#1e293b` text. Never use yellow for anything else in the chart, including a focused past day.
 
 ### B. Contrast & Accessibility Invariants
 - **Yellow Active Headers MUST Use Dark Text**: Never use white text on yellow headers. Always use Dark Charcoal (`#1e293b`) for an outstanding 9.8:1 contrast ratio that exceeds WCAG 2.1 AAA standards.
@@ -139,6 +144,13 @@ See canonical PRD [`docs/prd_rest_day_passes_and_bonus_tasks.md`](file:///usr/lo
    - Parent tooltip names the activity and the added/removed date. Inert in all modes (Exception Mode can't cycle it).
    - A removal day the child already ticked keeps its Pokéball and counts. Off-plan days never count toward the Goal column.
 
+7. **Unicorn & Princess theme (`body[data-theme="unicorn"]`)**: same 36×36 footprint and states, with a different check-off skin. See `docs/prd_unicorn_princess_theme.md` §3.3.
+   - Unchecked: dormant lavender heart (`#f3e8ff` fill, `#9333ea` stroke) in a plum `#4a1d66` ring on blush `#fdf2f8`. The Pokéball halves are hidden.
+   - Checked: glowing pink heart (`#f472b6`→`#db2777`) with **three** gold sparkles (top-left, top-right, bottom-right) in the plum ring, plus a soft pink glow.
+   - Bonus to do: `3px dashed #9333ea` ring with ✨. Bonus done: **Royal Crown medallion** (never the Great Ball) with a purple `+XP` pill.
+   - Rest 💤 and Not on the plan are identical to the Pokémon theme.
+8. **Ring and icon in one image (2026-10-30)**: when an icon sits inside a ring, draw both in the **same SVG** (`background-origin: border-box`, size 100%, transparent border to keep the footprint). Don't draw a CSS `border` ring with a separate `background-image` icon. Grid columns land on fractional pixel positions, and the two snap to pixels independently, so the icon looks off-centre (±0.5px at 1×).
+
 ## 15. Daily Total Row (Child Readability Invariant)
 - **Only Clean Icons (No Sub-Labels)**: Day cells in the `Daily Total` row (`tr.total-row td.day-total-cell`) must display ONLY the clean status icon (`❌` for incomplete past missed days, `☆` ghost star for today in-progress and unreached future days, `🌟` for completed days, `💤` for past rest days, `➖` for superseded days).
 - **No Fractional Text for 7-Year-Olds**: Never render fractional progress text (e.g. `1 / 3 (+1)`, `0 / 0 ⭐`, `4 / 4`) below the icons in the chart cells. For a 7-year-old child, these numbers create unnecessary cognitive clutter.
@@ -154,6 +166,8 @@ See canonical PRD [`docs/prd_rest_day_passes_and_bonus_tasks.md`](file:///usr/lo
   - **At least one bonus completed** → the day is complete: `🌟` immediately (normal day-complete XP and celebration).
   - **Nothing completed** → a **💤 rest day**: no star is ever awarded (not in advance, not in arrears), and the streak is paused — neither incremented nor broken. While today or in the future it shows the unlit ghost star `☆` (`.future-star`); once the day has passed it shows a calm, static `💤` (`.badge-indicator.locked.rest-day`, 27px box, 19px emoji, same slate drop-shadow as grid rest cells) — never `🌟` and never `❌`. No sound, confetti, or pulse. Parent tooltip: `Rest day — streak paused 💤`.
   - Dates before 2026-09-30 keep their legacy free rest star (grandfathered; existing stars are never removed).
+- **Same icons in every theme (owner, 2026-10-30)**: the Daily Total and day-ribbon icons (`🌟`/`☆`/`❌`/`💤`/`➖`) and their sizes are identical in every theme. Only the surrounding colours change.
+- **Vault: visible, never the hero (owner, 2026-10-30)**: the Standard grid's Vault (`.grid-vault-tile`) is a mini version of the Big Buttons Vault tile. It is about 60×48px with a theme gem icon about the size of a day star, the label "Vault", and the theme's lip. It must be easy to spot but calm: no glow, pulse or animation, so it never competes with the check-off icons.
 ## 16. XP Float Animation (Child Dwell Time & Readability Invariant)
 - **Extended Dwell Phase (1.5s+ Hold)**: Floating reward feedback text (e.g. `+10 XP`, `+20 XP! 🎉`, `+10 XP Super Trainer! 🚀`) must never vanish or race upwards too quickly. Total animation duration is 2.5s with a locked, rock-steady hold phase between 18% and 75% (~1.4–1.6s) so a 7-year-old child can comfortably read every word and emoji before it gently fades.
 - **Child-Friendly Typography (`Fredoka One`)**: Floating XP text uses `font-family: 'Fredoka One', cursive, sans-serif` with thick 2px dark outlines (`#1e293b` or `#1e3a8a`), ensuring crisp, cheerful legibility against any background.
@@ -185,3 +199,25 @@ When presenting temporary or administrative modes (e.g., Exception Mode, Batch R
 - **Coupled Grid Row Alignment**: In landscape tablet/desktop view (`@media (min-width: 1024px) and (orientation: landscape)`), `.chart-container` spans `grid-row: 2 / span 2` alongside Column 1 (`.trainer-card` and `.mega-milestone-card`), and `.weekly-grid` uses `height: 100%` to fill the available height.
 - **Fixed Badge Status Height Guardrail**: To prevent the task chart and table rows from jumping or stretching vertically when navigating between historical and current weeks (or when weekly badges are unlocked), `.badge-status` in `.weekly-badge-card` must remain strictly locked to `height: 2.6em; min-height: 2.6em; max-height: 2.6em; overflow: hidden;`.
 - **Concise Primary Status & Tooltip Requirements**: In the active/current week before a badge is unlocked, `.badge-status` must display a clean, concise call-to-action (`Clear all goals to unlock!`) that fits within 2 lines. Exhaustive task breakdowns (e.g. `Chinese, Writing: 5 days...`) must be attached to the `title` attribute for hover inspection, eliminating multi-line paragraph bloat that would otherwise push the sidebar and stretch the weekly grid.
+
+## 19. A Theme Changes Only Tokens, the Check-off Skin, and Copy
+A per-child theme (`body[data-theme]`, see `docs/prd_unicorn_princess_theme.md` §10) changes three things only:
+1. the `--sk-*` colour tokens, set on `body[data-theme="…"]`;
+2. the check-off icon skin (Rule 14 item 7);
+3. the copy in `getThemeCopy()`.
+
+Layout, sizes, spacing, radii and component structure are shared and must stay identical across themes.
+- **Parent quarantine**: modals, including Admin and the Parent PIN prompt, live inside `.app-container`. Every theme or skin rule must be scoped to a kid container (`.trainer-card`, `.weekly-badge-card`, `.mega-milestone-card`, `.chart-container` / `.weekly-grid`, `.week-navigation-container`, `.bottom-section`, `.simplified-*`). Never use a bare `body[data-theme] .some-class` that could also match inside a modal. A bare `.level-badge` rule once restyled the partner showcase modal.
+- Never redefine existing global variables (`--poke-blue` etc.) per theme. Add `--sk-*` tokens instead.
+
+## 20. Card / Background Contrast
+- A card's fill must never match the surface it sits on. Kid cards are white, or the "done" tint, on a tinted tray inside a white panel on the coloured sky. Each layer needs a visible step; aim for at least 1.25:1 between neighbouring surfaces. The old white-on-near-white (~1.05:1) is not allowed.
+- **State tints**: to do = white card; done = the theme's done tile (Pokémon warm cream `#fef3c7`, Unicorn soft blush `#fdf2f8`); **bonus done uses the same done tile** (the Great Ball or crown plus `+XP` marks it as a bonus); bonus to do = white; rest / off-plan = diagonal stripes. Never tint a card the same colour as its tray, such as sky blue on the blue tray or lavender on the lavender tray.
+
+## 21. One Name per Concept Across Themes
+Shared concepts keep the same word in every theme, so parents and kids never see two names for one thing. The owner decided this on 2026-10-30:
+- **"Partner"**: "Change Partner", "Choose your Partner!", "Get Partner". There is no "Companion" in the unicorn theme.
+- **"Vault" / "Star Vault"**: tiles are labelled "Vault"; tooltips, aria labels and the modal say "Star Vault". Not "Jewel Box", even though the Unicorn tile *icon* is a jewel box.
+
+Theme copy may restyle titles and flavour text (for example "Royal Unicorn Chart" or "ROYAL QUEST"), but not the names of shared features.
+
