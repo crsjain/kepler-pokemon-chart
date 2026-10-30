@@ -123,8 +123,8 @@ decisions that are expensive to rediscover.
 | `prd_alternating_activity_pairs.md` | Alternating activity pairs & dynamic schedule swapping |
 | `prd_kindness_quests.md` | Kindness Quests & partner berry feeding |
 | `prd_admin_panel_redesign.md` | Parent admin shell and the v2.0 UX revamp (§11: admin design system, 5-tab IA, draft/save bar + unsaved guard, hold-to-confirm, owner decisions Q1–Q14) |
-| `prd_unicorn_princess_theme.md` | Per-child Unicorn & Princess Sparkle theme (`state.theme`: pink/lavender palette, Heart & Royal Crown checkboxes, princess/magic copy reskin); reserves TC127 |
-| `prd_simplified_chart_style.md` | Per-child Simplified "Today Focus" Chart Style (`state.chartStyle`: 7-day star strip + big tactile task cards with visual weekly goal pills, auto full-week grid in Exception/Fix Last Week modes); reserves TC128 |
+| `prd_unicorn_princess_theme.md` | Per-child Unicorn & Princess Sparkle theme (`state.theme`: shared Pokémon Center B & Pastel Castle U1 token skin, Heart & Royal Crown checkboxes, princess/magic copy reskin, modal theme alignment); TC127 |
+| `prd_simplified_chart_style.md` | Per-child Simplified "Today Focus" Chart Style (`state.chartStyle`: 7-day star strip + Vault tile + big tactile stadium task cards, auto full-week grid in Exception/Fix Last Week modes); TC89C, TC128, TC129 |
 | `refactoring_assessment_2026_09_12.md` | Why the codebase is deliberately *not* being refactored |
 
 Manual/verification guides: `test_plan_pokemon_shop_evolutions.md`,
@@ -337,7 +337,7 @@ it alone.
 ### 6.3 UX rules are binding
 
 Read [`_agents/rules/ux-guidelines.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/_agents/rules/ux-guidelines.md)
-before any UI work. 18 numbered rules covering the column state machine's
+before any UI work. 21 numbered rules covering the column state machine's
 chromatic archetypes, the checkbox/Pokéball/Great Ball state matrix, contrast
 invariants (dark charcoal `#1e293b` on Pikachu yellow `#ffcb05`, never white),
 zero inline styles on modals, floating dock ergonomics, and the daily-total
@@ -445,7 +445,7 @@ and deploy. Use the `pokemon-session-wrapup` skill; don't improvise the push.
 ```
 _agents/
 ├── AGENTS.md                              ← this file (injected at conversation start)
-├── rules/ux-guidelines.md                 ← the 18 UX rules (trigger: always_on)
+├── rules/ux-guidelines.md                 ← the 21 UX rules (trigger: always_on)
 └── skills/feature-review-panel/SKILL.md   ← 5-expert review panel
 .agents/
 └── sidecars/firebase_emulator/            ← auto-starts the Firebase emulator

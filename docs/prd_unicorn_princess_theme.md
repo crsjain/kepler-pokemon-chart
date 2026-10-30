@@ -2,7 +2,7 @@
 
 **Document**: `docs/prd_unicorn_princess_theme.md`
 **Version**: 1.0.0
-**Status**: Phase 1 implemented locally (2026-10-26; cache v248, modules 11.17, style 11.13, particles 10.5; **TC127**). Not yet deployed.
+**Status**: Phase 1 + Phase 1b (Direction B "Pokémon Center" & Direction U1 "Pastel Castle" shared token skin + modal theme alignment) implemented & deployed (Checkpoints 82–83+, 2026-10-30; **TC127**).
 **Authors**: crsjain & Jetski
 **Target Systems**: `state.js`, `app.js`, `admin.js`, `index.html`, `style.css`, `tests.js`. **No schema version bump** (stays V19; V20 remains reserved for `prd_parent_pin_and_family_signin.md` §7 Phase 3).
 **Companion docs**: [`prd_simplified_chart_style.md`](prd_simplified_chart_style.md) (independent per-child `chartStyle` setting), [`prd_rest_day_passes_and_bonus_tasks.md`](prd_rest_day_passes_and_bonus_tasks.md) (checkbox state matrix), [`prd_column_state_machine.md`](prd_column_state_machine.md) (8-state column visual hierarchy), [`prd_admin_panel_redesign.md`](prd_admin_panel_redesign.md) (§11 Admin design system), [`_agents/rules/ux-guidelines.md`](../_agents/rules/ux-guidelines.md).
@@ -53,6 +53,8 @@ In `#admin-pane-today` (inside a new or existing per-child card), add a standard
 - **No Kid-Facing Theme Toggle**: Children cannot switch themes from the main screen, preventing bedtime stalling.
 
 ### 3.2 Color Palette & Contrast Tokens (`body[data-theme="unicorn"]`)
+> **Updated in Phase 1b (2026-10-29/30):** See **§10.7** for the final shipped token values across both **Direction B ("Pokémon Center")** (`body[data-theme="pokemon"]`) and **Direction U1 ("Pastel Castle")** (`body[data-theme="unicorn"]`).
+
 All child-facing colors override via CSS variables and `[data-theme="unicorn"]` selectors in `style.css` (zero inline `style="..."` attributes, UX Rule 8):
 
 | Surface / Element | Pokémon Theme (`default`) | Unicorn & Princess Theme (`unicorn`) | Contrast Check (UX Rule 13B) |
@@ -66,6 +68,8 @@ All child-facing colors override via CSS variables and `[data-theme="unicorn"]` 
 | **Parent Admin (`#admin-modal`)** | Poké Blue (`#2a71d0`) + Slate | **Unchanged** (Parent Domain Quarantine, UX Rule 17) | Preserves TC97 / Admin v2.0 |
 
 ### 3.3 Checkbox State Matrix in `unicorn` Theme (UX Rule 14)
+> **Updated 2026-10-30 (Rules 12 & 14.7–14.8):** The outer plum ring and inner heart/crown are drawn together inside a **single SVG** (`background-origin: border-box`, transparent CSS border to keep the footprint) so fractional pixel grid positions never mis-center the icon inside the ring. In Big Buttons mode (`prd_simplified_chart_style.md` §3.6), the catch ball / heart scales to the compact `56px × 56px` target (`58px` at $\le 520\text{px}$).
+
 All states preserve the locked `36px × 36px` circular footprint in the weekly grid (and scale cleanly to `56px × 56px` in Simplified View) using pure CSS `background-image: url("data:image/svg+xml,...")` rules on `.pokeball`:
 
 1. **Normal Unchecked (`.checkbox-cell input:not(:checked) + .pokeball`)**:
@@ -74,7 +78,7 @@ All states preserve the locked `36px × 36px` circular footprint in the weekly g
    - `::before` and `::after` Pokéball hemispheres hidden (`display: none`).
 2. **Normal Checked (`.checkbox-cell input:checked + .pokeball`)**:
    - `36px` circle with `3px solid #4a1d66` border and soft radial glow (`#fdf2f8` → `#fbcfe8`).
-   - Centered **Glowing Magenta-Pink Royal Heart (`#ec4899` / `#db2777`)** with specular highlight and golden 4-point sparkles (`#fde047`).
+   - Centered **Glowing Magenta-Pink Royal Heart (`#ec4899` / `#db2777`)** with specular highlight and three golden 4-point sparkles (`#fde047`, top-left, top-right, bottom-right).
 3. **Rest Day (`.checkbox-cell.rest-cell`)**:
    - Unchanged: non-clickable `💤` on diagonal stripes (`pointer-events: none`).
 4. **Bonus Task Unchecked (`.checkbox-cell.bonus-cell input:not(:checked) + .pokeball`)**:
@@ -100,7 +104,12 @@ Applied declaratively via `applyThemeUI()` in `app.js` whenever `renderState()` 
 | Mega Milestone Title (`.mega-title`) | `🔮 MEGA MILESTONE PROGRESS` | `👑 ROYAL CROWN PROGRESS` |
 | Table Task Column Header (`.task-col-header span`) | `TRAINING TASK` | `ROYAL QUEST` |
 | Partner Shop Title (`.shop-title`) | `Pokémon Partner Shop! 🏪` | `Magical Companion Shop! 🦄` |
+| Badge Case Button (`#open-badges-btn`) | `🏆 Case` | `👑 Gem Case` |
 | Badge Case Title (`#badges-modal h2`) | `<Name>'s Badge Case 🏆` | `<Name>'s Royal Gem Case 👑` |
+| Badge Case Count Word (`#badges-collected-word`) | `Gym Badge` / `Gym Badges` | `Royal Gem` / `Royal Gems` |
+| Partner Showcase Eyebrow (`#showcase-role-label`) | `TRAINER` | `PRINCESS` |
+| Partner Showcase CTA (`#showcase-ok-btn`) | `Let's Go Train! 🚀` | `Let's Go Sparkle! ✨` |
+| Big Buttons Day Banner Prefix (`#simplified-day-title`) | `⚡ Today — <Day>` / `⚡ <Day>'s Quests` | `✨ Today — <Day>` / `✨ <Day>'s Quests` |
 | Task Guide Title (`#guide-modal h2`) | `Pokémon Training Guide 📖` | `Royal Practice Guide 📖` |
 | Task Guide Subtitle (`.guide-subtitle`) | `Here is what <Name> needs to do to earn a pokeball for each task!` | `Here is what <Name> needs to do to earn a sparkle heart for each quest!` |
 | Motivational Quote (`.motivational-quote`) | `"True Trainers never give up! Keep practicing and leveling up your skills!"` | `"True Princesses & Unicorn Riders never give up! Keep sparkling and learning every day! 💖✨"` |
@@ -221,8 +230,8 @@ Add **Test Case 127: Unicorn & Princess Sparkle Theme (`state.theme`, CSS tokens
 ### Implementation notes (2026-10-26)
 - Admin control sits in a new **Look & Feel** card at the bottom of Settings (`#admin-theme-select`), auto-saving like the other selects.
 - Copy swaps target dedicated elements (`#game-title-suffix`, `#trainer-title-prefix`, `#badges-title-suffix`, `#guide-title`, `#guide-subtitle-tail`, `#task-col-header-label`) so `.trainer-name-label` is never touched. `getThemeCopy()` is a function, not a module-level const, because `renderState` runs during module init (TDZ). `document.title` follows the theme too.
-- Big Buttons: hearts and the crown reuse the grid selectors and scale to the existing 64px catch ball (58px at <= 520px), not the 56px noted in §3.3.
-- Superseded cells show a greyscale heart; rest 💤 and the off-plan dash are unchanged. Kid-facing modals (Shop, Badge Case, Guide) get the copy reskin only; their palettes stay as-is in Phase 1.
+- Big Buttons: hearts and the crown reuse the grid selectors and originally scaled to the 64px catch ball (later compacted to **56px**, `58px` at $\le 520\text{px}$, in `prd_simplified_chart_style.md` §3.6).
+- Superseded cells show a greyscale heart; rest 💤 and the off-plan dash are unchanged. Kid-facing and family modals initially received the copy reskin in Phase 1 and were fully aligned to the Direction B ("Pokémon Center") and Direction U1 ("Pastel Castle") token skins on 2026-10-30 (§10.6).
 
 ---
 
@@ -279,9 +288,14 @@ Add **Test Case 127: Unicorn & Princess Sparkle Theme (`state.theme`, CSS tokens
 - Commit locally with explicit paths. Deploy only through the `pokemon-session-wrapup` skill.
 
 ### 10.6 Status
-- [ ] Owner tests theme switching on the local site (Phase 1 look)
+- [x] Owner tests theme switching on the local site (Phase 1 look)
 - [x] Design thread picks the final Pokémon + Unicorn directions (2026-10-28; see §10.7)
 - [x] Shared token skin implemented, both themes, tests green, cache bumped (2026-10-29; v249 / style 11.14 / modules 11.18; owner approved screenshots)
+- [x] All kid-facing & family modals aligned to Direction B ("Pokémon Center") and Direction U1 ("Pastel Castle") (2026-10-30; v259 / style 11.23 / modules 11.22):
+  - **Q1 (`#badges-modal` & `#guide-modal`)**: Unified from wood/parchment (`#fdf6e2` / `#8b5a2b`) into the standard `26px` white panel + sunken `--sk-tray` well + candy-lip cards + pill filter selects.
+  - **Q2 (`#vault-modal`)**: Outer modal shell, stat cards, and buttons follow B / U1 while the inner `.vault-grid-container` keeps the deep dark **Cosmic Nebula** (`#0f172a` → `#1e1b4b`) star cabinet in both themes so yellow, silver, blue, and prism stars pop with maximum contrast.
+  - **Q3 (`#partner-showcase-modal`)**: `.showcase-stats-card .level-badge` switched from rectangular pixel art to the rounded `Nunito` 900 pill (`border-radius: 999px`) matching the main Trainer Card header (`TC62` updated).
+  - **Q4 (`#profile-select-modal` & `#add-profile-modal`)**: Neutral family Pokémon Center surface keeping each child's chosen Pokémon avatar and name with no theme badge; zero inline styles (UX Rule 8).
 - [ ] Owner visual QA on the tablet, then wrap-up / deploy
 
 ### 10.7 Chosen directions (owner, 2026-10-28)

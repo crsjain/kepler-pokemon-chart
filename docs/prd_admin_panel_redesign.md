@@ -2,7 +2,7 @@
 
 **Document**: `docs/prd_admin_panel_redesign.md`  
 **Version**: 2.0.0  
-**Status**: v1.2 implemented (Checkpoint 66) · **v2.0 UX revamp in progress** — Batch 1 (Phases 0a/0b) shipped in Checkpoint 68, Batch 2 (Phases 1–5) being implemented. See **§11** for the v2.0 spec; it supersedes v1.x where they conflict.  
+**Status**: v1.2 implemented (Checkpoint 66) · **v2.0 UX revamp shipped & deployed** (Batch 1 in Checkpoint 68; Batch 2 Phases 1–5 + summary/settings row refinements in Checkpoints 69–71; **TC98–TC105**). See **§11** for the v2.0 spec; it supersedes v1.x where they conflict.  
 **Authors**: crsjain & Jetski  
 **Requested By**: crsjain (2026-09-20, seed) · specced 2026-09-24 (Checkpoint 61) · amended 2026-09-25 (Checkpoint 62: D7, D8) · implemented 2026-09-28 (Checkpoint 66) · revamp decisions locked 2026-09-28/29 (§11.2)  
 **Target Systems**: `index.html`, `style.css`, `admin.js`, `app.js`, `rewards_admin.js`, `tests.js`, `service-worker.js`  
@@ -416,7 +416,7 @@ Source: the rev 2 revamp proposal and its 5-stage panel review (Batch 1 session,
 | Q2 | **Draft + sticky Save bar.** No auto-save. |
 | Q3 | Rewards for a non-active child: **keep the pop-up `#edit-rewards-modal`**, restyled. The active child edits inline in the Rewards tab. |
 | Q4 | **Reorder activities with ▲▼** (active tasks only). |
-| Q5 | Chart Style placeholder moves to the **bottom of Activities**. |
+| Q5 | Chart Style placeholder moves to the **bottom of Activities** *(later activated and moved to **Settings › Look & Feel** on 2026-10-30; see [`prd_simplified_chart_style.md`](prd_simplified_chart_style.md) §3.1)*. |
 | Q6 | Multi-device: merge by id + error on conflict. No co-editing UI. |
 | Q7 | **Keep "Set Exceptions" and "EDIT MODE".** |
 | Q8 | **Restyle BOTH passcode prompts** (Admin entry *and* the kid-side grace prompt). Shipped in Batch 1. |
@@ -495,7 +495,7 @@ Source: the rev 2 revamp proposal and its 5-stage panel review (Batch 1 session,
 - [x] 8. **Reorder active tasks only**; inactive positions kept; a historical week's row order is unchanged after a reorder; TC58 cleanup removes by id. *(Phase 2, TC99: retired tasks keep their array index and a past week's row **set** is unchanged. Active tasks shown in a past week do follow the new order, because the grid renders in array order; fully frozen history order would need a persisted per-week order and a schema migration — not done. TC58 no longer pops: its draft is discarded through the guard.)*
 - [x] 9. **Phase 3 responsive ahead of Phase 4** — satisfied by the 0b portrait-tablet top-tab fix. `viewport-fit=cover` is **not** shipped without the kid-HUD safe-area padding and capture (deferred).
 - [x] 10. **Phase 4 re-parenting** keeps IDs unique; the non-active-child sheet keeps its modal asserts; Add child never calls `selectProfile()` under Admin. *(Phase 4: one `#rewards-editor` subtree moves between `#admin-rewards-editor-host` and `#edit-rewards-modal`; TC101 asserts unique IDs, the sheet for a non-active child, and Esc under the sheet. Add child: TC100.)*
-- [x] 11. **Rule 8 sweep:** inline `z-index` removed from `#guide-modal`, `#family-login-modal`, `#profile-select-modal`, `#add-profile-modal`. *(Phase 5 / TC102; also the confirm checkbox row. Other kid-side inline styles — login/add-profile fields, debug sidebar, Guide button — remain.)*
+- [x] 11. **Rule 8 sweep:** inline `z-index` removed from `#guide-modal`, `#family-login-modal`, `#profile-select-modal`, `#add-profile-modal`. *(Phase 5 / TC102; also the confirm checkbox row. Field-level inline styles inside `#profile-select-modal` and `#add-profile-modal` were removed on 2026-10-30 in TC127 §6b.)*
 - [x] 12. **Fold into this PRD** (v2.0, this section + revision row).
 
 ### 11.7 Test impact

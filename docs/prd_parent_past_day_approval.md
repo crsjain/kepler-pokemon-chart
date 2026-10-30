@@ -2,7 +2,7 @@
 
 **Document**: `docs/prd_parent_past_day_approval.md`  
 **Version**: 1.0.0  
-**Status**: Decisions Locked — Ready for Implementation (not yet started)  
+**Status**: Implemented & deployed (**TC85–TC87**; updated for family-wide Parent PIN in [`prd_parent_pin_and_family_signin.md`](prd_parent_pin_and_family_signin.md))  
 **Authors**: crsjain & Jetski  
 **Target Systems**: `state.js` (Schema V18/V19), `app.js`, `admin.js`, `style.css`, `tests.js`  
 **Companion Standards**: [`_agents/rules/ux-guidelines.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/_agents/rules/ux-guidelines.md) (Rules 6, 8, 10, 11, 12, 17), [`docs/prd_column_state_machine.md`](file:///usr/local/google/home/crsjain/kepler-pokemon-chart/docs/prd_column_state_machine.md)  
