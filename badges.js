@@ -90,13 +90,13 @@ export function renderBadgeCaseGrid() {
   if (countEl) countEl.textContent = String(allBadges.length);
   if (wordEl) {
     wordEl.textContent = isUnicorn
-      ? (allBadges.length === 1 ? 'Royal Gem' : 'Royal Gems')
+      ? (allBadges.length === 1 ? 'Badge' : 'Badges')
       : (allBadges.length === 1 ? 'Gym Badge' : 'Gym Badges');
   }
 
   if (allBadges.length === 0) {
     grid.innerHTML = isUnicorn
-      ? `<div class="no-badges">No Royal Gems collected yet. Complete your weekly goals to earn them! 👑</div>`
+      ? `<div class="no-badges">No badges collected yet. Complete your weekly goals to earn them! 👑</div>`
       : `<div class="no-badges">No badges collected yet. Complete your weekly goals to earn them! 🏆</div>`;
     return;
   }
@@ -108,7 +108,7 @@ export function renderBadgeCaseGrid() {
 
   if (badges.length === 0) {
     grid.innerHTML = isUnicorn
-      ? `<div class="no-badges">No ${selectedType} gems collected yet. Keep sparkling to earn more! 👑</div>`
+      ? `<div class="no-badges">No ${selectedType} badges collected yet. Keep sparkling to earn more! 👑</div>`
       : `<div class="no-badges">No ${selectedType} badges collected yet. Keep training to earn more! 🏆</div>`;
     return;
   }

@@ -1,7 +1,7 @@
 # Manual Test Plan: Modal Theme Alignment (Pokémon Center & Pastel Castle) + Unicorn Big Buttons (`✨`)
 
 **Covers commits:** `796ef4c` (Unicorn Big Buttons `✨` day title), `f26dd54` (Modal theme alignment Q1–Q4), `7935d80` (Documentation sync)  
-**Build:** cache `poke-chart-cache-v261`, modules `?v=11.24`, `style.css?v=11.25`  
+**Build:** cache `poke-chart-cache-v262`, modules `?v=11.25`, `style.css?v=11.25`  
 **Specs:** [`prd_unicorn_princess_theme.md`](prd_unicorn_princess_theme.md) (§10.6–§10.7), [`prd_simplified_chart_style.md`](prd_simplified_chart_style.md), [`../_agents/rules/ux-guidelines.md`](../_agents/rules/ux-guidelines.md) (Rules 5, 8, 11, 12, 17, 19, 20, 21)  
 **Automated coverage:** `TC62`, `TC91`, `TC100`, `TC127` (§6b), and `TC128` (§7b) in [`../tests.js`](../tests.js) (`node run_headless_tests.js`)
 
@@ -65,10 +65,10 @@ Check each modal in **⚡ Pokémon Training** first, then switch to **🦄 Unico
 
 ## 3. Group C — Reference & Case Modals (Q1 — Wood/Parchment Retired)
 
-### 3.1 Badge / Royal Gem Case (`#badges-modal`)
-*Tap `🏆 Case` (Pokémon) or `👑 Gem Case` (Unicorn) on the Weekly Badge card.*
+### 3.1 Badge Case (`#badges-modal`)
+*Tap `🏆 Case` (Pokémon) or `Badge Case` (Unicorn) on the Weekly Badge card (`POKEMON BADGE` vs. `THIS WEEK'S BADGE`).*
 - [ ] **No Wood/Parchment:** The old `#fdf6e2` cream background and `#8b5a2b` brown wood borders are gone, replaced by the standard `26px` white panel + sunken `--sk-tray` grid well + white candy-lip badge cards.
-- [ ] **Header & Counter Copy:** Title reads `<Name>'s Badge Case 🏆` (`pokemon`) vs. `<Name>'s Royal Gem Case 👑` (`unicorn`), and the counter badge reads **`X Gym Badge(s) Collected`** vs. **`X Royal Gem(s) Collected`** (plus matching empty-state text when a filter matches 0 items).
+- [ ] **Header & Counter Copy:** Title reads `<Name>'s Badge Case 🏆` (`pokemon`) vs. `<Name>'s Royal Badge Case` (`unicorn`), and the subtitle reads **`You have collected X Gym Badge(s)!`** vs. **`You have collected X Badge(s)!`** (plus matching empty-state text `No badges collected yet...` when 0 items match).
 - [ ] **Filter & Sort Pills:** `#badges-filter-type` and `#badges-sort-by` render as rounded `999px` pills with theme borders.
 
 ### 3.2 Task Guide Modal (`#guide-modal`)

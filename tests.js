@@ -11554,13 +11554,13 @@ async function runSuite() {
           assert(title.querySelector('.trainer-name-label') && title.querySelector('.trainer-name-label').textContent.length > 0, "Title keeps .trainer-name-label");
           assert(document.querySelector('.trainer-title').textContent.includes('PRINCESS'), "Trainer eyebrow reads PRINCESS");
           assert(document.querySelector('.trainer-title .trainer-name-label').textContent.length > 0, "Trainer eyebrow keeps the child's name");
-          assert(document.querySelector('.badge-title').textContent === 'ROYAL GEM BADGE', "Badge card title reskinned");
-          assert(document.querySelector('.mega-title').textContent.includes('ROYAL CROWN PROGRESS'), "Mega title reskinned");
+          assert(document.querySelector('.badge-title').textContent === "THIS WEEK'S BADGE", "Badge card title reskinned to THIS WEEK'S BADGE");
+          assert(document.querySelector('.mega-title').textContent.includes('MEGA MILESTONE PROGRESS'), "Mega title keeps MEGA MILESTONE PROGRESS");
           assert(document.getElementById('task-col-header-label').textContent === 'ROYAL QUEST', "Task column header reskinned");
           assert(document.getElementById('change-partner-btn').textContent === 'Change Partner', "Change Partner keeps the app-wide 'Partner' wording in every theme");
           assert(document.querySelector('.shop-title').textContent.includes('Magical Partner Shop'), "Shop title reskinned to Magical Partner Shop");
           assert(document.getElementById('guide-subtitle-tail').textContent.includes('sparkle heart'), "Guide subtitle reskinned");
-          assert(document.getElementById('open-badges-btn').textContent === '👑 Gem Case', "Badge case button reskinned");
+          assert(document.getElementById('open-badges-btn').textContent === 'Badge Case', "Badge case button reads Badge Case");
 
           // 3b. Shared token skin (PRD §10): Pastel Castle sky, borderless 26px panels, plum title, amethyst kid buttons.
           assert(getComputedStyle(document.body).backgroundImage.includes('rgb(249, 168, 212)'), "Unicorn sky gradient starts at blush #f9a8d4");
@@ -11639,7 +11639,8 @@ async function runSuite() {
           });
           assert(document.getElementById('showcase-role-label').textContent === 'PRINCESS', "Showcase eyebrow switches to PRINCESS in Unicorn theme");
           assert(document.getElementById('showcase-ok-btn').textContent === "Let's Go Sparkle! ✨", "Showcase CTA switches to Let's Go Sparkle! ✨ in Unicorn theme");
-          assert(document.getElementById('badges-collected-word').textContent.includes('Royal Gem'), "Badge Case count word switches to Royal Gem(s) in Unicorn theme");
+          assert(document.getElementById('badges-title-suffix').textContent === "'s Royal Badge Case", "Badge Case title suffix switches to 's Royal Badge Case in Unicorn theme");
+          assert(document.getElementById('badges-collected-word').textContent === 'Badge' || document.getElementById('badges-collected-word').textContent === 'Badges', "Badge Case count word switches to Badge(s) in Unicorn theme");
           const vaultCabUni = getComputedStyle(document.querySelector('#vault-modal .vault-grid-container')).backgroundImage;
           assert(vaultCabUni.includes('rgb(30, 27, 75)') && vaultCabUni.includes('rgb(15, 23, 42)'), "Star Vault inner cabinet keeps Cosmic Nebula in Unicorn theme (Q2)");
 

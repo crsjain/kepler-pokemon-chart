@@ -100,13 +100,13 @@ Applied declaratively via `applyThemeUI()` in `app.js` whenever `renderState()` 
 | Main Subtitle (`.game-header .subtitle`) | `"Gotta Catch 'Em All!"` | `"Sparkle, Practice & Shine! 💖"` |
 | Trainer Card Eyebrow (`.trainer-title`) | `TRAINER <NAME>` | `PRINCESS <NAME>` |
 | Change Partner Button (`#change-partner-btn`) | `Change Partner` | `Change Partner` (owner 2026-10-30: "Partner" is used app-wide, e.g. "Choose your Partner!", "Get Partner") |
-| Weekly Badge Card Title (`.badge-title`) | `POKEMON BADGE` | `ROYAL GEM BADGE` |
-| Mega Milestone Title (`.mega-title`) | `🔮 MEGA MILESTONE PROGRESS` | `👑 ROYAL CROWN PROGRESS` |
+| Weekly Badge Card Title (`.badge-title`) | `POKEMON BADGE` | `THIS WEEK'S BADGE` |
+| Mega Milestone Title (`.mega-title`) | `🔮 MEGA MILESTONE PROGRESS` | `👑 MEGA MILESTONE PROGRESS` |
 | Table Task Column Header (`.task-col-header span`) | `TRAINING TASK` | `ROYAL QUEST` |
 | Partner Shop Title (`.shop-title`) | `Pokémon Partner Shop! 🏪` | `Magical Partner Shop! 🦄` |
-| Badge Case Button (`#open-badges-btn`) | `🏆 Case` | `👑 Gem Case` |
-| Badge Case Title (`#badges-modal h2`) | `<Name>'s Badge Case 🏆` | `<Name>'s Royal Gem Case 👑` |
-| Badge Case Count Word (`#badges-collected-word`) | `Gym Badge` / `Gym Badges` | `Royal Gem` / `Royal Gems` |
+| Badge Case Button (`#open-badges-btn`) | `🏆 Case` | `Badge Case` |
+| Badge Case Title (`#badges-modal h2`) | `<Name>'s Badge Case 🏆` | `<Name>'s Royal Badge Case` |
+| Badge Case Count Word (`#badges-collected-word`) | `Gym Badge` / `Gym Badges` | `Badge` / `Badges` |
 | Partner Showcase Eyebrow (`#showcase-role-label`) | `TRAINER` | `PRINCESS` |
 | Partner Showcase CTA (`#showcase-ok-btn`) | `Let's Go Train! 🚀` | `Let's Go Sparkle! ✨` |
 | Big Buttons Day Banner Prefix (`#simplified-day-title`) | `⚡ Today — <Day>` / `⚡ <Day>'s Quests` | `✨ Today — <Day>` / `✨ <Day>'s Quests` |

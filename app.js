@@ -1775,13 +1775,13 @@ function getThemeCopy(theme) {
     '#showcase-role-label': 'PRINCESS',
     '#showcase-ok-btn': "Let's Go Sparkle! ✨",
     '#change-partner-btn': 'Change Partner',
-    '.badge-title': 'ROYAL GEM BADGE',
-    '.mega-title': '👑 ROYAL CROWN PROGRESS',
+    '.badge-title': "THIS WEEK'S BADGE",
+    '.mega-title': '👑 MEGA MILESTONE PROGRESS',
     '#task-col-header-label': 'ROYAL QUEST',
-    '#open-badges-btn': '👑 Gem Case',
+    '#open-badges-btn': 'Badge Case',
     '.shop-title': 'Magical Partner Shop! 🦄',
-    '#badges-title-suffix': "'s Royal Gem Case 👑",
-    '#badges-collected-word': 'Royal Gems',
+    '#badges-title-suffix': "'s Royal Badge Case",
+    '#badges-collected-word': 'Badges',
     '#guide-title': 'Royal Practice Guide 📖',
     '#guide-subtitle-tail': ' needs to do to earn a sparkle heart for each quest!',
     '.motivational-quote': '"True Princesses & Unicorn Riders never give up! Keep sparkling and learning every day! 💖✨"',
@@ -1808,7 +1808,7 @@ function applyThemeUI() {
   if (badgeWordEl) {
     const badgeCount = (state.collectedBadges || []).length;
     badgeWordEl.textContent = theme === 'unicorn'
-      ? (badgeCount === 1 ? 'Royal Gem' : 'Royal Gems')
+      ? (badgeCount === 1 ? 'Badge' : 'Badges')
       : (badgeCount === 1 ? 'Gym Badge' : 'Gym Badges');
   }
   document.title = document.title.replace(/(Pokémon Training|Royal Unicorn) Chart$/, copy.docTitleSuffix);

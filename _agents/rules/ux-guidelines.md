@@ -216,8 +216,10 @@ Layout, sizes, spacing, radii and component structure are shared and must stay i
 
 ## 21. One Name per Concept Across Themes
 Shared concepts keep the same word in every theme, so parents and kids never see two names for one thing. The owner decided this on 2026-10-30:
-- **"Partner"**: "Change Partner", "Choose your Partner!", "Get Partner". There is no "Companion" in the unicorn theme.
-- **"Vault" / "Star Vault"**: tiles are labelled "Vault"; tooltips, aria labels and the modal say "Star Vault". Not "Jewel Box", even though the Unicorn tile *icon* is a jewel box.
+- **"Partner"**: "Change Partner", "Choose your Partner!", "Get Partner", "Magical Partner Shop! 🦄". There is no "Companion" in the unicorn theme.
+- **"Vault" / "Star Vault"**: tiles are labelled "Vault"; tooltips, aria labels and the modal say "Star Vault". Not "Jewel Box", and the Unicorn tile icon is a faceted crystal diamond.
+- **"Badge" / "Badge Case"**: "THIS WEEK'S BADGE", "Badge Case", "<Name>'s Royal Badge Case", "You have collected N Badge(s)!". Not "Gem", "Royal Gem", or "Gem Case".
+- **"Mega Milestone"**: "👑 MEGA MILESTONE PROGRESS". Not "Royal Crown Progress".
 
 Theme copy may restyle titles and flavour text (for example "Royal Unicorn Chart" or "ROYAL QUEST"), but not the names of shared features.
 
