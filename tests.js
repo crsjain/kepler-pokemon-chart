@@ -11575,7 +11575,9 @@ async function runSuite() {
             `Chart sits in a borderless white 26px panel (border=${panel.borderTopWidth}, radius=${panel.borderTopLeftRadius})`);
           assert(getComputedStyle(document.querySelector('.app-container')).borderTopWidth === '0px', "No outer charcoal frame");
           assert(getComputedStyle(document.querySelector('.game-header .title')).color === 'rgb(74, 29, 102)', "Unicorn title is plum #4a1d66");
-          assert(getComputedStyle(document.getElementById('switch-profile-btn')).backgroundColor === 'rgb(126, 34, 206)', "Kid info buttons use the amethyst accent");
+          assert(getComputedStyle(document.getElementById('switch-profile-btn')).color === 'rgb(107, 33, 168)' && getComputedStyle(document.getElementById('switch-profile-btn')).backgroundColor === 'rgb(243, 232, 255)', "Footer buttons are quiet lavender pills with amethyst ink");
+          const uniDue = getComputedStyle(document.getElementById('reset-btn'));
+          assert(uniDue.color === 'rgb(255, 255, 255)' && uniDue.backgroundColor === 'rgb(219, 39, 119)', `Unicorn Reset Week uses white on raspberry (got ${uniDue.color} on ${uniDue.backgroundColor})`);
 
           // 4. Heart & Royal Crown checkboxes keep the 36×36 footprint.
           const normalInput = document.querySelector('#grid-tbody td.checkbox-cell.active-column:not(.excused-cell) input[data-day][data-task]:not(:disabled)');
@@ -11693,9 +11695,10 @@ async function runSuite() {
           // Pokémon Center skin (both kids' default): sky-blue backdrop, white title, readable kid buttons.
           assert(getComputedStyle(document.body).backgroundImage.includes('rgb(79, 179, 255)'), "Pokémon sky gradient starts at #4fb3ff");
           assert(getComputedStyle(document.querySelector('.game-header .title')).color === 'rgb(255, 255, 255)', "Pokémon title is white on the sky");
-          assert(getComputedStyle(document.getElementById('switch-profile-btn')).backgroundColor === 'rgb(29, 78, 216)', "Kid info buttons use #1d4ed8 (white text ≥ 4.5:1)");
+          const switchCs = getComputedStyle(document.getElementById('switch-profile-btn'));
+          assert(switchCs.color === 'rgb(29, 78, 216)' && switchCs.backgroundColor === 'rgb(238, 245, 255)', `Footer buttons are quiet tinted pills with #1d4ed8 ink (got ${switchCs.color} on ${switchCs.backgroundColor})`);
           const resetBtn = getComputedStyle(document.getElementById('reset-btn'));
-          assert(resetBtn.color === 'rgb(124, 45, 18)' && resetBtn.backgroundColor === 'rgb(253, 186, 116)', `Reset Week Grid uses dark text on amber (got ${resetBtn.color} on ${resetBtn.backgroundColor})`);
+          assert(resetBtn.color === 'rgb(67, 20, 7)' && resetBtn.backgroundColor === 'rgb(251, 146, 60)', `Reset Week uses dark text on bold orange (got ${resetBtn.color} on ${resetBtn.backgroundColor})`);
           assert(JSON.stringify(state.grid) === gridSnapshot && state.partnersData[inst].xp === xpSnapshot, "Theme switch never alters grid or XP");
         } finally {
           state.theme = 'pokemon';
@@ -12051,6 +12054,65 @@ async function runSuite() {
         } finally {
           state.theme = 'pokemon';
           helpers.setViewingWeekStartDate(state.weekStartDate);
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
+      // 130. Footer toolbar (owner 2026-10-31, option D): version left, Switch Trainer +
+      //      Parent Admin right; Reset Week shows on the main screen only once the week has
+      //      ended and the grid hasn't been reset, and otherwise lives in Admin › Tonight's Check-in.
+      {
+        console.log("Running Test Case 130: Footer toolbar — Reset Week only when due, Admin Reset Week...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        let state = window.__app_state__;
+        const savedStart = state.weekStartDate;
+        const resetBtnEl = document.getElementById('reset-btn');
+        const actionsEl = document.querySelector('.bottom-section .actions');
+        try {
+          helpers.setViewingWeekStartDate(state.weekStartDate);
+          helpers.renderState(true);
+          await sleep(30);
+          assert(actionsEl.firstElementChild.classList.contains('app-version-container'), "Version sits first (left) in the footer toolbar");
+          const btnIds = [...actionsEl.querySelectorAll('.actions-buttons > button')].map(b => b.id);
+          assert(JSON.stringify(btnIds) === JSON.stringify(['reset-btn', 'switch-profile-btn', 'admin-btn']), `Reset Week sits left of Switch Trainer (got ${btnIds})`);
+          assert(resetBtnEl.classList.contains('hidden'), "Mid-week: Reset Week is hidden from the main screen");
+          assert(actionsEl.querySelectorAll('[style]').length === 0, "Footer toolbar has zero inline styles (UX Rule 8)");
+
+          // The week ended 7+ days ago and wasn't reset: the button appears, bold.
+          const old = new Date(savedStart + 'T00:00:00');
+          old.setDate(old.getDate() - 7);
+          state.weekStartDate = `${old.getFullYear()}-${String(old.getMonth() + 1).padStart(2, '0')}-${String(old.getDate()).padStart(2, '0')}`;
+          helpers.setViewingWeekStartDate(state.weekStartDate);
+          helpers.renderState(true);
+          await sleep(30);
+          assert(!resetBtnEl.classList.contains('hidden') && !resetBtnEl.disabled, "New week started: Reset Week appears on the main screen");
+          const ver = document.querySelector('.app-version-container').getBoundingClientRect();
+          const overlaps = ['reset-btn', 'switch-profile-btn', 'admin-btn'].some(id => {
+            const r = document.getElementById(id).getBoundingClientRect();
+            return !(ver.right <= r.left || ver.left >= r.right || ver.bottom <= r.top || ver.top >= r.bottom);
+          });
+          assert(!overlaps, "No footer button covers the version label");
+
+          // Admin › Tonight's Check-in › Start a new week opens the same confirm.
+          const adminResetBtn = document.getElementById('admin-reset-week-btn');
+          assert(adminResetBtn && adminResetBtn.closest('.adm-card') && adminResetBtn.closest('.adm-card').querySelector('#exceptions-btn'), "Reset Week lives in the Tonight's Check-in card");
+          assert(adminResetBtn.compareDocumentPosition(document.getElementById('admin-fix-last-week-btn')) & Node.DOCUMENT_POSITION_FOLLOWING, "Fix last week stays last in the card");
+          assert(!adminResetBtn.disabled, "Admin Reset Week is enabled once the week has ended");
+          document.getElementById('admin-modal').classList.remove('hidden');
+          adminResetBtn.click();
+          await sleep(60);
+          const confirmModalEl = document.getElementById('confirm-modal');
+          assert(!confirmModalEl.classList.contains('hidden') && document.getElementById('confirm-title').textContent.includes('Reset Week Grid'), "Admin Reset Week opens the Reset Week Grid confirm");
+          assert(document.getElementById('admin-modal').classList.contains('hidden'), "Admin closes behind the reset confirm");
+          document.getElementById('confirm-no-btn').click();
+          await sleep(30);
+        } finally {
+          state = window.__app_state__;
+          state.weekStartDate = savedStart;
+          helpers.setViewingWeekStartDate(savedStart);
           helpers.resetState();
           await sleep(30);
         }

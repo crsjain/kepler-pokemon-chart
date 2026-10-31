@@ -1848,6 +1848,11 @@ export function renderState(rebuildGrid = false) {
   if (resetBtn) {
     const canReset = canStartNextWeek(state, currentViewingWeekStartDate);
     resetBtn.disabled = !canReset;
+    // Main-screen Reset Week shows only once the week has really ended and the grid
+    // hasn't been reset yet (forceCheck ignores the test-mode / Future Edits bypass).
+    // The rest of the time it lives in Admin › Tonight's Check-in (owner, 2026-10-31).
+    const resetDue = !isPastWeek && canStartNextWeek(state, currentViewingWeekStartDate, true);
+    resetBtn.classList.toggle('hidden', !resetDue);
     if (isPastWeek) {
       resetBtn.title = "Cannot reset historical weeks";
     } else if (!canReset) {
@@ -1860,6 +1865,7 @@ export function renderState(rebuildGrid = false) {
       resetBtn.title = "Start your new week of training!";
     }
   }
+  updateAdminResetWeekButton();
   const instanceId = state.activePartnerInstanceId || '25';
   const stats = state.partnersData[instanceId] || { familyId: '25', level: 1, xp: 0, stageId: '25' };
   const family = stats.familyId || '25';
@@ -3267,34 +3273,69 @@ function bindRewardSelectEvents() {
 /**
  * Reset Training Grid button and its confirmation modal.
  */
+function openResetWeekConfirm() {
+  const resetConfirmHtml = `
+    <div class="confirm-detail">
+      <div class="schedule-hero-card">
+        <div class="schedule-hero-label">🔄 RESET TRAINING GRID</div>
+        <div class="schedule-hero-main">Start Fresh Week of Training</div>
+        <div class="schedule-hero-sub">Your level, XP, Pokémon badges, and Vault stars will not be affected.</div>
+      </div>
+    </div>
+  `;
+  showCustomConfirm(
+    "Reset Week Grid? 📅",
+    resetConfirmHtml,
+    (carryOver) => {
+      resetWeekGrid(carryOver);
+    },
+    null,
+    "Let's Go! 🚀",
+    "Not Yet",
+    "pixel-btn info",
+    "pixel-btn greyed-out",
+    { showCheckbox: true, checkboxLabel: "Carry over exceptions", checkboxDefaultChecked: true }
+  );
+}
+
+// Admin › Tonight's Check-in › Start a new week. Same gate as the main-screen button
+// (canStartNextWeek on the live week, so Future Edits / test mode still bypass it).
+function updateAdminResetWeekButton() {
+  const btn = document.getElementById('admin-reset-week-btn');
+  const help = document.getElementById('admin-reset-week-help');
+  if (!btn) return;
+  const can = canStartNextWeek(state, state.weekStartDate);
+  btn.disabled = !can;
+  if (help) {
+    if (can) {
+      help.textContent = 'Clears the grid for a fresh week. Levels, badges and Vault stars stay.';
+    } else {
+      const start = new Date((state.weekStartDate || '2026-08-10') + 'T00:00:00');
+      start.setDate(start.getDate() + 7);
+      const nextStr = state.pendingWeekStartDate || formatLocalDate(start);
+      const nice = new Date(nextStr + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      help.textContent = `Unlocks on ${nice}, when this week ends.`;
+    }
+  }
+}
+
 function bindWeekResetEvents() {
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       if (resetBtn.disabled || !canStartNextWeek(state, currentViewingWeekStartDate)) {
         return;
       }
-      const resetConfirmHtml = `
-        <div class="confirm-detail">
-          <div class="schedule-hero-card">
-            <div class="schedule-hero-label">🔄 RESET TRAINING GRID</div>
-            <div class="schedule-hero-main">Start Fresh Week of Training</div>
-            <div class="schedule-hero-sub">Your level, XP, Pokémon badges, and Vault stars will not be affected.</div>
-          </div>
-        </div>
-      `;
-      showCustomConfirm(
-        "Reset Week Grid? 📅",
-        resetConfirmHtml,
-        (carryOver) => {
-          resetWeekGrid(carryOver);
-        },
-        null,
-        "Let's Go! 🚀",
-        "Not Yet",
-        "pixel-btn info",
-        "pixel-btn greyed-out",
-        { showCheckbox: true, checkboxLabel: "Carry over exceptions", checkboxDefaultChecked: true }
-      );
+      openResetWeekConfirm();
+    });
+  }
+  const adminResetWeekBtn = document.getElementById('admin-reset-week-btn');
+  if (adminResetWeekBtn) {
+    adminResetWeekBtn.addEventListener('click', () => {
+      if (adminResetWeekBtn.disabled || !canStartNextWeek(state, state.weekStartDate)) return;
+      requestCloseAdmin(() => {
+        if (adminModal) adminModal.classList.add('hidden');
+        openResetWeekConfirm();
+      });
     });
   }
 }
