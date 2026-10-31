@@ -1451,7 +1451,11 @@ function pushAdminHistoryEntry() {
 }
 
 function releaseAdminHistoryEntry() {
-  if (!ownsAdminHistoryEntry()) return;
+  // history.back() is asynchronous: until its popstate lands, history.state still
+  // shows our entry. A second close in that window (quick open/close, or a close
+  // right after a confirm) used to call back() twice and navigate out of the app
+  // (in the headless suite: back to about:blank, the intermittent TC21 timeout).
+  if (!ownsAdminHistoryEntry() || ignoreNextAdminPop) return;
   ignoreNextAdminPop = true;
   try {
     history.back();
@@ -1463,6 +1467,9 @@ function releaseAdminHistoryEntry() {
 function handleAdminPopState() {
   if (ignoreNextAdminPop) {
     ignoreNextAdminPop = false;
+    // Admin was reopened while our back() was still in flight (the push was
+    // skipped because the old entry still looked like ours): restore it.
+    if (adminModal && !adminModal.classList.contains('hidden')) pushAdminHistoryEntry();
     return;
   }
   if (!adminModal || adminModal.classList.contains('hidden')) return;
