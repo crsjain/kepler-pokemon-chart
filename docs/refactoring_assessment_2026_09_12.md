@@ -210,6 +210,14 @@ or whenever Trigger 4 is on the table. Record the *measured* numbers each time.
 > **If the suite gets slow, tune the harness, not the architecture:** the sleep
 > budget (571 call sites, 53 s declared), the CDP `Network` domain (~2 s), and
 > `assert()` logging on success (2,226 console lines) are the levers.
+>
+> **Update 2026-10-31:** two of those levers were pulled in the harness, without
+> touching application code. The `Network` domain is now verbose-only, and passing
+> asserts are counted instead of logged. A run now prints ~125 lines instead of
+> ~10k. The single 60 s cap became a progress watchdog, and `node
+> run_headless_tests.js <N>` runs one test case in ~6 s. At 116 blocks, a profile
+> showed ~23 s of real render work, ~9 s of scaled sleeps and ~5 s of boot. The
+> sleep budget is the main lever left.
 
 ### Replacement triggers
 

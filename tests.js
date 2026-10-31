@@ -11,13 +11,55 @@ function getGridKey(dayIndex, taskId) {
 
 console.log("🚀 Starting Kepler Chart Regression Tests...");
 
+// Passing asserts are counted, not logged, in headless runs: ~2,400 "✅ Passed"
+// lines per run used to flood the harness output (and every agent's context).
+// Add &verbose=true to the URL (or `node run_headless_tests.js --verbose`) to log
+// them again. Browser runs (?runTests=true without headless) always log them.
+const __params = new URLSearchParams(location.search);
+const __LOG_PASSES = !__params.has('headless') || __params.get('verbose') === 'true';
+let __assertCount = 0;
+
 function assert(condition, message) {
   if (!condition) {
     console.error("❌ Assert Failed: " + message);
     throw new Error(message);
   } else {
-    console.log("✅ Passed: " + message);
+    __assertCount++;
+    if (__LOG_PASSES) console.log("✅ Passed: " + message);
   }
+}
+
+/**
+ * Test selection: &only=128 or &only=120-125,128 runs just those test cases
+ * (e.g. `node run_headless_tests.js 128`). Each numbered test case is wrapped
+ * in `if (__shouldRun('N')) { ... }`; the setup prefix (Test Cases 1–10, which
+ * have no numbered marker) and TC11/TC12 always run, because later tests rely
+ * on the profile, rewards and modal references they set up.
+ *
+ * The wrappers are not re-indented, to keep git blame intact. A flat test case
+ * therefore ends with a lone `}` at the same indent as its body.
+ *
+ * A filtered run is a fast iteration aid, not the gate: a test can still lean
+ * on app state left behind by an earlier test, so always finish with the full
+ * suite before reporting done. New test cases must follow the same pattern:
+ * a bare block opened with `if (__shouldRun('N')) {`, and no top-level
+ * `const`/`let` that a later test reads.
+ */
+const __onlyFilter = (() => {
+  const raw = __params.get('only');
+  if (!raw) return null;
+  return raw.split(',').map(s => s.trim()).filter(Boolean).map(part => {
+    const [a, b] = part.split('-').map(n => parseInt(n, 10));
+    return [a, Number.isNaN(b) || b === undefined ? a : b];
+  });
+})();
+const __ranTests = new Set();
+
+function __shouldRun(id) {
+  const n = parseInt(id, 10);
+  const run = !__onlyFilter || __onlyFilter.some(([lo, hi]) => n >= lo && n <= hi);
+  if (run) __ranTests.add(id);
+  return run;
 }
 
 function sleep(ms, force = false) {
@@ -978,6 +1020,7 @@ async function runSuite() {
         await sleep(100);
       }
 
+      if (__shouldRun('13')) {
       // 13. Test Vault Debug Syncing
       console.log("Running Test Case 13: Vault Debug Syncing...");
       {
@@ -1030,7 +1073,9 @@ async function runSuite() {
         window.__test_helpers__.resetState();
         await sleep(100);
       }
+      }
 
+      if (__shouldRun('14')) {
       // 14. Test Vault Self-Healing Diagnostics
       console.log("Running Test Case 14: Vault Self-Healing Diagnostics...");
       {
@@ -1097,7 +1142,9 @@ async function runSuite() {
         await sleep(100);
         state = window.__app_state__;
       }
+      }
 
+      if (__shouldRun('15')) {
       // 15. Test Week Rollover & Debug Milestone Syncing (vault count mismatch fix)
       console.log("Running Test Case 15: Week Rollover & Debug Milestone Syncing...");
       {
@@ -1188,7 +1235,9 @@ async function runSuite() {
         await sleep(100);
         state = window.__app_state__;
       }
+      }
 
+      if (__shouldRun('16')) {
       // 16. Test Backup Import Overlay & Notifications
       console.log("Running Test Case 16: Backup Import Overlay & Notifications...");
       {
@@ -1318,7 +1367,9 @@ async function runSuite() {
         await sleep(100);
         state = window.__app_state__;
       }
+      }
 
+      if (__shouldRun('17')) {
       // 17. Test Case 17: Exception Edit Mode & Carry Over
       console.log("Running Test Case 17: Exception Edit Mode & Carry Over...");
       {
@@ -1585,7 +1636,9 @@ async function runSuite() {
         await sleep(100);
         state = window.__app_state__;
       }
+      }
 
+      if (__shouldRun('18')) {
       // 18. Test Case 18: Normal Mode Cell Click Switch Day Prompt
       console.log("Running Test Case 18: Normal Mode Cell Click Switch Day Prompt...");
       {
@@ -1675,7 +1728,9 @@ async function runSuite() {
         await sleep(100);
         state = window.__app_state__;
       }
+      }
 
+      if (__shouldRun('19')) {
       // 19. Test Case 19: Star Vault Display Order
       console.log("Running Test Case 19: Star Vault Display Order...");
       {
@@ -1740,7 +1795,9 @@ async function runSuite() {
         await sleep(100);
         state = window.__app_state__;
       }
+      }
 
+      if (__shouldRun('20')) {
       // 20. Test Case 20: Task Instructions Guide Modal
       console.log("Running Test Case 20: Task Instructions Guide Modal...");
       {
@@ -1852,7 +1909,9 @@ async function runSuite() {
         await sleep(100);
         state = window.__app_state__;
       }
+      }
 
+      if (__shouldRun('21')) {
       // 21. Test Week Start Day Setting & Dynamic Headers
       console.log("Running Test Case 21: Week Start Day Setting & Dynamic Headers...");
       {
@@ -1987,7 +2046,9 @@ async function runSuite() {
         await sleep(100);
         state = window.__app_state__;
       }
+      }
 
+      if (__shouldRun('22')) {
       // 22. Test Streak Calculation with Friday Start
       console.log("Running Test Case 22: Streak Calculation with Friday Start...");
       {
@@ -2052,7 +2113,9 @@ async function runSuite() {
         await sleep(100);
         state = window.__app_state__;
       }
+      }
 
+      if (__shouldRun('23')) {
       // 23. Test Admin Profiles List Rendering & Deletion Flow
       console.log("Running Test Case 23: Admin Profiles List Rendering & Deletion Flow...");
       {
@@ -2109,7 +2172,9 @@ async function runSuite() {
         helpers.setDeleteChildProfileMock(null); // Restore original
         helpers.renderAdminProfilesList();
       }
+      }
 
+      if (__shouldRun('24')) {
       // 24. Test Cloud Export & Import UI wiring
       console.log("Running Test Case 24: Cloud Export & Import UI wiring...");
       {
@@ -2190,7 +2255,9 @@ async function runSuite() {
         helpers.setImportCloudDataMock(null);
         restoreMocks();
       }
+      }
 
+      if (__shouldRun('25')) {
       console.log("Running Test Case 25: Profile Modal Click-Outside Cancellation...");
       {
         const helpers = window.__test_helpers__;
@@ -2238,7 +2305,9 @@ async function runSuite() {
         appContainer.style.pointerEvents = 'auto';
         helpers.setActiveProfileId(null);
       }
+      }
 
+      if (__shouldRun('26')) {
       console.log("Running Test Case 26: Auto-Switch Profile on Restore/Delete...");
       {
         const helpers = window.__test_helpers__;
@@ -2284,7 +2353,9 @@ async function runSuite() {
         appContainer.style.pointerEvents = 'auto';
         helpers.setActiveProfileId(null);
       }
+      }
 
+      if (__shouldRun('27')) {
       console.log("Running Test Case 27: Wipe All Progress UI wiring...");
       {
         const helpers = window.__test_helpers__;
@@ -2343,7 +2414,9 @@ async function runSuite() {
         if (closeAdminBtn) closeAdminBtn.click();
         await sleep(100);
       }
+      }
 
+      if (__shouldRun('89')) {
       console.log("Running Test Case 89: Wipe All Progress resets only the active child & Chart Style placeholder is inert...");
       {
         const helpers = window.__test_helpers__;
@@ -2452,7 +2525,9 @@ async function runSuite() {
         helpers.renderState(true);
         await sleep(80);
       }
+      }
 
+      if (__shouldRun('28')) {
       console.log("Running Test Case 28: Keep exceptions on Week Start Day change (date-keyed)...");
       {
         const helpers = window.__test_helpers__;
@@ -2538,7 +2613,9 @@ async function runSuite() {
         if (closeAdminBtn) closeAdminBtn.click();
         await sleep(100);
       }
+      }
 
+      if (__shouldRun('29')) {
       console.log("Running Test Case 29: Inactivity Detector / Idle Mode...");
       {
         const helpers = window.__test_helpers__;
@@ -2563,7 +2640,9 @@ async function runSuite() {
         document.dispatchEvent(new MouseEvent('click'));
         await sleep(50);
       }
+      }
 
+      if (__shouldRun('30')) {
       console.log("Running Test Case 30: Screensaver Inactivity Timeout configuration in Admin Panel...");
       {
         const helpers = window.__test_helpers__;
@@ -2631,7 +2710,9 @@ async function runSuite() {
         if (closeAdminBtn) closeAdminBtn.click();
         await sleep(100);
       }
+      }
 
+      if (__shouldRun('31')) {
       console.log("Running Test Case 31: Per-child Custom Rewards...");
       {
         const helpers = window.__test_helpers__;
@@ -2764,7 +2845,9 @@ async function runSuite() {
         if (closeAdminBtn) closeAdminBtn.click();
         await sleep(100);
       }
+      }
 
+      if (__shouldRun('32')) {
       // 32. Test Case 32: Grid Migration (V14 -> V15)
       console.log("Running Test Case 32: Grid Migration (V14 -> V15)...");
       {
@@ -2810,7 +2893,9 @@ async function runSuite() {
           assert(t.deletedAt === null, "Existing tasks should have deletedAt = null");
         });
       }
+      }
 
+      if (__shouldRun('33')) {
       // 33. Test Case 33: Historical Paging (Read-Only)
       console.log("Running Test Case 33: Historical Paging (Read-Only)...");
       {
@@ -2880,7 +2965,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(100);
       }
+      }
 
+      if (__shouldRun('34')) {
       // 34. Test Case 34: Task Lifecycle Rendering (out of range cells)
       console.log("Running Test Case 34: Task Lifecycle Rendering (out of range cells)...");
       {
@@ -2936,7 +3023,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(100);
       }
+      }
 
+      if (__shouldRun('35')) {
       // 35. Test Case 35: Future Day Locking
       console.log("Running Test Case 35: Future Day Locking...");
       {
@@ -3009,7 +3098,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(100);
       }
+      }
 
+      if (__shouldRun('36')) {
       // 36. Test Case 36: Reward Selection Persistence
       console.log("Running Test Case 36: Reward Selection Persistence...");
       {
@@ -3047,7 +3138,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(100);
       }
+      }
 
+      if (__shouldRun('37')) {
       // 37. Test Case 37: Partner Devolution
       console.log("Running Test Case 37: Partner Devolution...");
       {
@@ -3118,7 +3211,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(100);
       }
+      }
 
+      if (__shouldRun('38')) {
       // 38. Test Case 38: State Migration (V15 -> V16)
       console.log("Running Test Case 38: State Migration (V15 -> V16)...");
       {
@@ -3150,7 +3245,9 @@ async function runSuite() {
         assert(migrated.starVault.totalTraded === 1, "totalTraded should be preserved");
         assert(migrated.starVault.earnedDates.length === 1, "earnedDates should be preserved");
       }
+      }
 
+      if (__shouldRun('39')) {
       // 39. Test Case 39: Grid Star Streak Colors
       console.log("Running Test Case 39: Grid Star Streak Colors...");
       {
@@ -3246,9 +3343,11 @@ async function runSuite() {
         helpers.resetState();
         await sleep(50);
       }
+      }
 
 
 
+      if (__shouldRun('41')) {
       // 41. Test Case 41: Partner Shop Filtering (Type & Legendary)
       console.log("Running Test Case 41: Partner Shop Filtering...");
       {
@@ -3333,7 +3432,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(50);
       }
+      }
 
+      if (__shouldRun('42')) {
       // 42. Test Case 42: New Partner Persistence on Reload
       console.log("Running Test Case 42: New Partner Persistence on Reload...");
       {
@@ -3391,7 +3492,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(50);
       }
+      }
 
+      if (__shouldRun('45')) {
       // 45. Test Case 45: Old Week Alert on Startup
       console.log("Running Test Case 45: Old Week Alert on Startup...");
       {
@@ -3465,7 +3568,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(50);
       }
+      }
 
+      if (__shouldRun('46')) {
       // 46. Test Case 46: Customize Rewards UI propagation
       console.log("Running Test Case 46: Customize Rewards UI propagation...");
       {
@@ -3577,12 +3682,13 @@ async function runSuite() {
         if (closeAdminBtn) closeAdminBtn.click();
         await sleep(100);
       }
+      }
 
 
       // ==========================================
       // Test Case 47: Legendary Mega & Branching Evolution Lifecycle
       // ==========================================
-      {
+      if (__shouldRun('47')) {
         console.log("Running Test Case 47: Legendary Mega & Branching Evolution Lifecycle...");
         const helpers = window.__test_helpers__;
         const state = window.__app_state__;
@@ -3732,7 +3838,7 @@ async function runSuite() {
       }
 
       // 48. Test Case 48: Active Day Highlighting on Sunday (Monday-Start)
-      {
+      if (__shouldRun('48')) {
         console.log("Running Test Case 48: Active Day Highlighting on Sunday (Monday-Start)...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -3793,7 +3899,7 @@ async function runSuite() {
       // ==========================================
       // Test Case 84: 3-Tier Star Pricing & Accelerando Swarm Validation
       // ==========================================
-      {
+      if (__shouldRun('84')) {
         console.log("Running Test Case 84: 3-Tier Star Pricing & Accelerando Swarm Validation...");
         const helpers = window.__test_helpers__;
         const state = window.__app_state__;
@@ -3901,7 +4007,7 @@ async function runSuite() {
       // ==========================================
       // Test Case 49: Historical Week Badge Display Logic (Option 1)
       // ==========================================
-      {
+      if (__shouldRun('49')) {
         console.log("Running Test Case 49: Historical Week Badge Display Logic (Option 1)...");
         const helpers = window.__test_helpers__;
         const state = window.__app_state__;
@@ -3967,7 +4073,7 @@ async function runSuite() {
       // ==========================================
       // Test Case 50: Parent Admin Passcode Update Lifecycle
       // ==========================================
-      {
+      if (__shouldRun('50')) {
         console.log("Running Test Case 50: Parent Admin Passcode Update Lifecycle...");
         const helpers = window.__test_helpers__;
         const state = window.__app_state__;
@@ -4055,7 +4161,7 @@ async function runSuite() {
       // ==========================================
       // Test Case 51: Pokémon Shop Sorting (Alphabetical vs Number)
       // ==========================================
-      {
+      if (__shouldRun('51')) {
         console.log("Running Test Case 51: Pokémon Shop Sorting...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -4115,7 +4221,7 @@ async function runSuite() {
       }
 
       // Test Case 52: Historical Week Badge Theme Alignment
-      {
+      if (__shouldRun('52')) {
         console.log("Running Test Case 52: Historical Week Badge Theme Alignment...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -4154,7 +4260,7 @@ async function runSuite() {
       }
 
       // Test Case 53: Edit Past Week Before Reset
-      {
+      if (__shouldRun('53')) {
         console.log("Running Test Case 53: Edit Past Week Before Reset...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -4212,7 +4318,7 @@ async function runSuite() {
       }
 
       // Test Case 54: No Default Yellow Header in Past Week & Reset Behavior
-      {
+      if (__shouldRun('54')) {
         console.log("Running Test Case 54: No Default Yellow Header in Past Week & Reset Behavior...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -4303,7 +4409,7 @@ async function runSuite() {
       }
 
       // Test Case 55: Debug Panel Close Button Lifecycle
-      {
+      if (__shouldRun('55')) {
         console.log("Running Test Case 55: Debug Panel Close Button Lifecycle...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -4341,7 +4447,7 @@ async function runSuite() {
       }
 
       // Test Case 56: Sticky Mini-HUD Layout Structure and Dynamic Sync
-      {
+      if (__shouldRun('56')) {
         console.log("Running Test Case 56: Sticky Mini-HUD Layout Structure and Dynamic Sync...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -4376,7 +4482,7 @@ async function runSuite() {
       }
 
       // Test Case 57: Reward Inline Editing, Drag-and-Drop Reordering, and Dropdown Sync
-      {
+      if (__shouldRun('57')) {
         console.log("Running Test Case 57: Reward Inline Editing, Drag-and-Drop Reordering, and Dropdown Sync...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -4535,6 +4641,7 @@ async function runSuite() {
         assert(document.getElementById('admin-modal').classList.contains('hidden'), "Clean inline rewards close Admin with no guard");
       }
 
+      if (__shouldRun('58')) {
       // ----------------------------------------------------
       // TEST CASE 58: Parent Admin "Save Activities" Custom Modal Notification & Validation
       // ----------------------------------------------------
@@ -4625,7 +4732,9 @@ async function runSuite() {
 
         window.alert = origAlert;
       }
+      }
 
+      if (__shouldRun('85')) {
       // ----------------------------------------------------
       // TEST CASE 85: Week Start Change and Prev/Next Navigation Header Color Preservation
       // ----------------------------------------------------
@@ -4713,11 +4822,12 @@ async function runSuite() {
         }
         state = window.__app_state__ || state;
       }
+      }
 
       // ==========================================
       // Test Case 59: Dynamic Week Interval Resolution & Boundary Calculations
       // ==========================================
-      {
+      if (__shouldRun('59')) {
         console.log("Running Test Case 59: Dynamic Week Interval Resolution & Boundary Calculations...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -4780,7 +4890,7 @@ async function runSuite() {
       // ==========================================
       // Test Case 60: Partial Week 7-Column Grid Rendering & Superseded Styling
       // ==========================================
-      {
+      if (__shouldRun('60')) {
         console.log("Running Test Case 60: Partial Week 7-Column Grid Rendering & Superseded Styling...");
         const helpers = window.__test_helpers__;
         const state = window.__app_state__;
@@ -4859,7 +4969,7 @@ async function runSuite() {
       // ==========================================
       // Test Case 61: Discrete Chronological Timeline Navigation
       // ==========================================
-      {
+      if (__shouldRun('61')) {
         console.log("Running Test Case 61: Discrete Chronological Timeline Navigation...");
         const helpers = window.__test_helpers__;
         const state = window.__app_state__;
@@ -4914,7 +5024,7 @@ async function runSuite() {
       // ==========================================
       // Test Case 62: Admin Smart Start-Day Transition & Mega Milestone Integrity
       // ==========================================
-      {
+      if (__shouldRun('62')) {
         console.log("Running Test Case 62: Admin Smart Start-Day Transition & Mega Milestone Integrity...");
         const helpers = window.__test_helpers__;
         let state = window.__app_state__;
@@ -4974,7 +5084,7 @@ async function runSuite() {
       // ==========================================
       // Test Case 63: Timeline Mutation JSON Schema & Data Invariant Integrity
       // ==========================================
-      {
+      if (__shouldRun('63')) {
         console.log("Running Test Case 63: Timeline Mutation JSON Schema & Data Invariant Integrity...");
         const helpers = window.__test_helpers__;
         let state = window.__app_state__;
@@ -5136,7 +5246,7 @@ async function runSuite() {
             // ==========================================
       // Test Case 64: Smart Micro-Week Consolidation & Circular Start-Day Shifts
       // ==========================================
-      {
+      if (__shouldRun('64')) {
         console.log("Running Test Case 64: Smart Micro-Week Consolidation & Circular Start-Day Shifts...");
         const helpers = window.__test_helpers__;
         let state = window.__app_state__;
@@ -5224,7 +5334,7 @@ async function runSuite() {
             // ==========================================
       // Test Case 65: Active Week Forward-Hashing, Reversibility, and Shortened Rollover
       // ==========================================
-      {
+      if (__shouldRun('65')) {
         console.log("Running Test Case 65: Active Week Forward-Hashing & Reversibility...");
         const helpers = window.__test_helpers__;
         let state = window.__app_state__;
@@ -5336,7 +5446,7 @@ async function runSuite() {
       // ==========================================
       // Test Case 66: Centralized Column State Machine Unit & Integration Suite
       // ==========================================
-      {
+      if (__shouldRun('66')) {
         console.log("Running Test Case 66: Centralized Column State Machine Unit & Integration Suite...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -5424,7 +5534,7 @@ async function runSuite() {
       // ==========================================
       // Test Case 67: Onix -> Steelix Evolution Line & Shop Sparkle
       // ==========================================
-      {
+      if (__shouldRun('67')) {
         console.log("Running Test Case 67: Onix -> Steelix Evolution Line & Shop Sparkle...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -5514,7 +5624,7 @@ async function runSuite() {
       }
 
       // 68. Test Phase 1: Rest Day Passes & Overachiever Bonus Tasks
-      {
+      if (__shouldRun('68')) {
         console.log("Running Test Case 68: Rest Day Passes & Overachiever Bonus Tasks (Phase 1)...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -5685,7 +5795,7 @@ async function runSuite() {
       }
 
       // 69. Test PWA Backward-Compatibility Contract (Export Surface Stubs)
-      {
+      if (__shouldRun('69')) {
         console.log("Running Test Case 69: PWA Backward-Compatibility Contract (Export Surface)...");
         
         // Assert that state.js exports required backward-compatibility stubs for cached clients
@@ -5711,7 +5821,7 @@ async function runSuite() {
       }
 
       // 70. Test Add Child Profile Modal UI, Validation, and Button State Reset
-      {
+      if (__shouldRun('70')) {
         console.log("Running Test Case 70: Add Child Profile Modal UI & State Reset...");
         const helpers = window.__test_helpers__;
         const addProfileModal = document.getElementById('add-profile-modal');
@@ -5796,7 +5906,7 @@ async function runSuite() {
       }
 
       // 71. Test Unearned Badge and Reward Carry Over on Week Rollover
-      {
+      if (__shouldRun('71')) {
         console.log("Running Test Case 71: Unearned Badge & Reward Carry Over on Rollover...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -5891,7 +6001,7 @@ async function runSuite() {
       }
 
       // 72. Test Smart Hybrid Exception Mode (3-State Cycling & Smart Rollover)
-      {
+      if (__shouldRun('72')) {
         console.log("Running Test Case 72: Smart Hybrid Exception Mode (3-State Cycling & Smart Rollover)...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -6054,7 +6164,7 @@ async function runSuite() {
       }
 
       // 73. Test Parent Command Dock (Floating Bottom Bar, Z-Index, Safe Clearance, and Escape Key Dismissal)
-      {
+      if (__shouldRun('73')) {
         console.log("Running Test Case 73: Parent Command Dock Floating UI & Escape Dismissal...");
         const helpers = window.__test_helpers__;
         const exceptionsBtn = document.getElementById('exceptions-btn');
@@ -6112,7 +6222,7 @@ async function runSuite() {
       }
 
       // 74. Test Responsive Viewport Policy: Zero Scroll (Desktop/Tablet >= 768px) vs. Horizontal Scroll (Mobile < 768px)
-      {
+      if (__shouldRun('74')) {
         console.log("Running Test Case 74: Responsive Viewport Policy (Zero Scroll Tablet/Desktop vs. Horizontal Scroll Mobile)...");
         const helpers = window.__test_helpers__;
         const gridWrapper = document.querySelector('.grid-scroll-wrapper');
@@ -6177,7 +6287,7 @@ async function runSuite() {
       }
 
       // 75. Test Partner Pokémon Showcase Modal & Enlarged View Inspection
-      {
+      if (__shouldRun('75')) {
         console.log("Running Test Case 75: Partner Pokémon Showcase Modal & Enlarged View Inspection...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -6279,6 +6389,7 @@ async function runSuite() {
         await sleep(50);
       }
 
+      if (__shouldRun('76')) {
       // 76. Test Case 76: Pokemon Shop Option A Caught Indicators & Repurchase Flow
       console.log("Running Test Case 76: Pokemon Shop Option A Caught Indicators & Repurchase Flow...");
       {
@@ -6382,7 +6493,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(50);
       }
+      }
 
+      if (__shouldRun('77')) {
       // ----------------------------------------------------------------------
       // TEST CASE 77: Galarian Moltres Standalone Shop Item & Adoption
       // ----------------------------------------------------------------------
@@ -6496,11 +6609,12 @@ async function runSuite() {
         helpers.resetState();
         await sleep(50);
       }
+      }
 
       // ==========================================
       // Test Case 78: Future Day Daily Total Ghost Star (☆)
       // ==========================================
-      {
+      if (__shouldRun('78')) {
         console.log("Running Test Case 78: Future Day Daily Total Ghost Star (☆)...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -6601,7 +6715,7 @@ async function runSuite() {
       }
 
       // 79. Test Future/Today In-Progress Rest Days & Bonus Days (Must Display Ghost Star ☆, Not Premature 🌟)
-      {
+      if (__shouldRun('79')) {
         console.log("Running Test Case 79: Future/Today In-Progress Rest Days & Bonus Days (Ghost Star Invariant)...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -6749,7 +6863,7 @@ async function runSuite() {
       // ==========================================
       // Test Case 80: Wooper ➔ Quagsire & Heracross ➔ Mega Heracross Evolutions & Shop Affordances
       // ==========================================
-      {
+      if (__shouldRun('80')) {
         console.log("Running Test Case 80: Wooper ➔ Quagsire & Heracross ➔ Mega Heracross Evolutions & Shop...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -6941,7 +7055,7 @@ async function runSuite() {
       // ==========================================
       // TEST CASE 81: Priorities 1-6 Pokémon Shop Evolutions & Branching Modal
       // ==========================================
-      {
+      if (__shouldRun('81')) {
         console.log("Running Test Case 81: Priorities 1-6 Pokémon Shop Evolutions & Branching Modal...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -7300,7 +7414,7 @@ async function runSuite() {
       }
 
       // 83. Test Star Vault Static Star Color Legend
-      {
+      if (__shouldRun('83')) {
         console.log("Running Test Case 83: Star Vault Static Star Color Legend...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -7377,6 +7491,7 @@ async function runSuite() {
         await sleep(50);
       }
 
+      if (__shouldRun('82')) {
       // ==========================================
       // Test Case 82: Parent Approval & Timed Grace Window for Past Day Editing
       // See docs/prd_parent_past_day_approval.md
@@ -7549,7 +7664,9 @@ async function runSuite() {
         await sleep(50);
         state = window.__app_state__;
       }
+      }
 
+      if (__shouldRun('86')) {
       // 86. Test Case 86: Shop Listener De-duplication (Phantom Pichu Regression)
       // Guards the root cause of the prod incident: initShop() runs on every
       // Firestore snapshot, and an anonymous touchstart listener meant one tap
@@ -7626,7 +7743,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(50);
       }
+      }
 
+      if (__shouldRun('87')) {
       // 87. Test Case 87: Phantom Partner Detection & Cleanup
       console.log("Running Test Case 87: Phantom Partner Detection & Cleanup...");
       {
@@ -7693,7 +7812,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(50);
       }
+      }
 
+      if (__shouldRun('88')) {
       // 88. Test Case 88: Diagnostics Must Not Launder Corrupt Partners Into Pichus
       console.log("Running Test Case 88: Diagnostics Must Not Launder Corrupt Partners Into Pichus...");
       {
@@ -7754,7 +7875,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(50);
       }
+      }
 
+      if (__shouldRun('90')) {
       // 90. Test Case 90: Service worker never links a fresh app.js to a stale cached module
       console.log("Running Test Case 90: Service worker serves local modules network-first & stale-module self-heal...");
       {
@@ -7907,7 +8030,9 @@ async function runSuite() {
             `__clearStaleModuleCaches must delete all CacheStorage caches before reload, got ${deletedCaches.join(',')}`);
         }
       }
+      }
 
+      if (__shouldRun('91')) {
       // 91. Test Case 91: Badge Case Shop-style Type filter & Date / Dex # / A–Z sorting
       console.log("Running Test Case 91: Badge Case Type filter & Date / Dex # / A-Z sorting...");
       {
@@ -8040,7 +8165,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(50);
       }
+      }
 
+      if (__shouldRun('92')) {
       // 92. Test Case 92: Boot skeleton hides placeholder data until the real profile renders
       console.log("Running Test Case 92: Boot skeleton & retry watchdog (no Pikachu/Kepler placeholder flash)...");
       {
@@ -8096,7 +8223,9 @@ async function runSuite() {
           "Boot status markup must have zero inline styles");
         assert(getComputedStyle(document.getElementById('partner-name')).display !== 'none', "Partner name must be visible after ready");
       }
+      }
 
+      if (__shouldRun('93')) {
       // 93. Test Case 93: Admin left-nav shell (docs/prd_admin_panel_redesign.md §6.3)
       console.log("Running Test Case 93: Admin left-nav shell, pane home map, scope chip & zero inline styles...");
       {
@@ -8265,7 +8394,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(50);
       }
+      }
 
+      if (__shouldRun('94')) {
       // 94. Test Case 94: Shop card status rail (✨ / 🔒 never crowd the ribbon or sprite; no duplicate Poké Ball)
       console.log("Running Test Case 94: Shop card status rail keeps corner icons clear of the ribbon and sprite...");
       {
@@ -8325,7 +8456,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(50);
       }
+      }
 
+      if (__shouldRun('95')) {
       // 95. Test Case 95: Starter Pikachu (V19) — new children start with a Pikachu that never devolves to Pichu
       console.log("Running Test Case 95: Starter Pikachu with minStageId floor (V19)...");
       {
@@ -8418,7 +8551,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(50);
       }
+      }
 
+      if (__shouldRun('96')) {
       // 96. Test Case 96: Admin draft-leak hotfix (Phase 0a) — nothing unsaved reaches state or the kid chart
       console.log("Running Test Case 96: Admin draft-leak hotfix (unsaved add/remove, reward rename cancel, snapshot merge)...");
       {
@@ -8612,7 +8747,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(50);
       }
+      }
 
+      if (__shouldRun('97')) {
       console.log("Running Test Case 97: Admin surface isolation, Escape layering & passcode restyle...");
       {
         const helpers = window.__test_helpers__;
@@ -8812,7 +8949,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(30);
       }
+      }
 
+      if (__shouldRun('98')) {
       console.log("Running Test Case 98: Admin Phase 1 — cards, restore dialog, toast, reload guard & focus...");
       {
         const helpers = window.__test_helpers__;
@@ -8978,7 +9117,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(30);
       }
+      }
 
+      if (__shouldRun('99')) {
       console.log("Running Test Case 99: Admin Phase 2 — nightly path, unsaved guard, save bar, dirty dot, reorder & Android back...");
       {
         const helpers = window.__test_helpers__;
@@ -9172,7 +9313,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(30);
       }
+      }
 
+      if (__shouldRun('100')) {
       console.log("Running Test Case 100: Admin Phase 3 — 5 tabs, Family passcode, add child without switching, roving focus...");
       {
         const helpers = window.__test_helpers__;
@@ -9308,7 +9451,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(30);
       }
+      }
 
+      if (__shouldRun('101')) {
       console.log("Running Test Case 101: Admin Phase 4 — inline rewards editor (active child) + sheet for another child...");
       {
         const helpers = window.__test_helpers__;
@@ -9510,7 +9655,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(30);
       }
+      }
 
+      if (__shouldRun('102')) {
       console.log("Running Test Case 102: Admin Phase 5 — hold-to-confirm, dock has Done ✅ only (↩ Admin removed), Rule 8 z-index sweep...");
       {
         const helpers = window.__test_helpers__;
@@ -9695,7 +9842,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(30);
       }
+      }
 
+      if (__shouldRun('103')) {
       console.log("Running Test Case 103: Backdrop dismiss policy — clean modals close, drafts are guarded, drags never dismiss...");
       {
         const helpers = window.__test_helpers__;
@@ -9865,7 +10014,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(30);
       }
+      }
 
+      if (__shouldRun('104')) {
       console.log("Running Test Case 104: Activities summary rows — read mode, one row edits at a time, draft unchanged...");
       {
         const helpers = window.__test_helpers__;
@@ -9952,7 +10103,9 @@ async function runSuite() {
         helpers.resetState();
         await sleep(30);
       }
+      }
 
+      if (__shouldRun('105')) {
       console.log("Running Test Case 105: Settings list rows — name + helper, aria-describedby, compact controls...");
       {
         const helpers = window.__test_helpers__;
@@ -10006,9 +10159,10 @@ async function runSuite() {
         helpers.resetState();
         await sleep(30);
       }
+      }
 
       // 106. Rest days pause the streak (no star) — prd_star_vault.md §3.2.1
-      {
+      if (__shouldRun('106')) {
         console.log("Running Test Case 106: Rest days pause the streak without a star; completed bonus earns one...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -10075,7 +10229,7 @@ async function runSuite() {
       }
 
       // 107. Multi-month week range text stays centered when wrapping on mobile
-      {
+      if (__shouldRun('107')) {
         console.log("Running Test Case 107: Multi-month week range text is centered when wrapping on mobile...");
         const nav = document.querySelector('.week-navigation-container');
         const center = document.querySelector('.week-nav-center');
@@ -10104,7 +10258,7 @@ async function runSuite() {
       }
 
       // 108. Badge Case UX alignment: Sort: Newest, collection count subtitle, top-right X, and side-by-side mobile controls
-      {
+      if (__shouldRun('108')) {
         console.log("Running Test Case 108: Badge Case mobile filter bar does not shrink or overlap cards...");
         const helpers = window.__test_helpers__;
         const stateObj = window.__app_state__;
@@ -10222,7 +10376,7 @@ async function runSuite() {
       }
 
       // 109. Multi-viewport UX sweep regressions: Guide modal, Partner Shop title, Showcase stage, and Admin timezone select
-      {
+      if (__shouldRun('109')) {
         console.log("Running Test Case 109: Multi-viewport UX sweep regressions...");
         const helpers = window.__test_helpers__;
 
@@ -10286,7 +10440,7 @@ async function runSuite() {
 
       // 110. Parent PIN: one family source of truth, drift fixes, Sign Out gate
       //      (docs/prd_parent_pin_and_family_signin.md, Phases 0–1)
-      {
+      if (__shouldRun('110')) {
         console.log("Running Test Case 110: Parent PIN source of truth, drift fixes & Sign Out gate...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -10403,7 +10557,7 @@ async function runSuite() {
       }
 
       // 111. Parent PIN number keypad + legacy text mode
-      {
+      if (__shouldRun('111')) {
         console.log("Running Test Case 111: Parent PIN number keypad & legacy passcode mode...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -10490,7 +10644,7 @@ async function runSuite() {
       }
 
       // 112. Family sign-in: Forgot password on login, Admin reset email & change password
-      {
+      if (__shouldRun('112')) {
         console.log("Running Test Case 112: Family sign-in reset email & change password...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -10613,7 +10767,7 @@ async function runSuite() {
       }
 
       // 113. Admin › Family "+ Add a child" is a quiet text link trailing the Children list.
-      {
+      if (__shouldRun('113')) {
         console.log("Running Test Case 113: Family + Add a child is a quiet trailing text link...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -10649,7 +10803,7 @@ async function runSuite() {
       // 114. Retiring per-child PIN copies, Phase 1: backfill the doc-level PIN from
       //      legacy child copies, and never let a family restore revert it
       //      (docs/prd_parent_pin_and_family_signin.md §7).
-      {
+      if (__shouldRun('114')) {
         console.log("Running Test Case 114: Parent PIN backfill resolver, write-if-absent & family-restore normalisation...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -10765,7 +10919,7 @@ async function runSuite() {
 
       // 115. "Forgot PIN?": the family sign-in password unlocks setting a new PIN
       //      (docs/prd_parent_pin_and_family_signin.md §7, Phase 1).
-      {
+      if (__shouldRun('115')) {
         console.log("Running Test Case 115: Forgot PIN? re-authenticates with the family password (or hands off to sign-in)...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -10867,7 +11021,7 @@ async function runSuite() {
       // 117. Unchecking a pokeball after the weekly badge was earned retracts it
       //      (the claim, the badge-case copy, and the claimed-reward log entry) with a
       //      calm "BADGE LOCKED AGAIN" notice; the devolve notice is calm too.
-      {
+      if (__shouldRun('117')) {
         console.log("Running Test Case 117: Unchecking after a weekly success retracts the badge...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -10949,7 +11103,7 @@ async function runSuite() {
       // 118. Fix last week: a parent edits the most recent archived week from Admin.
       //      Stars, streak and XP update; badges, claims and Mega progress stay frozen
       //      (docs/prd_parent_edit_last_week.md).
-      {
+      if (__shouldRun('118')) {
         console.log("Running Test Case 118: Fix last week edits the most recent archived week (stars/XP update, badges frozen)...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -11072,7 +11226,7 @@ async function runSuite() {
 
       // 119. Mega Milestone modal: badge circles use the same week themes as the
       //      main-screen Mega slots, and rewards show the label picked from the list.
-      {
+      if (__shouldRun('119')) {
         console.log("Running Test Case 119: Mega Milestone modal themes badges and shows reward labels...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -11135,7 +11289,7 @@ async function runSuite() {
       }
 
       // 120. Reward names are capped at 60 characters in the reward editor.
-      {
+      if (__shouldRun('120')) {
         console.log("Running Test Case 120: Reward name entry boxes cap names at 60 characters...");
         const weeklyInput = document.getElementById('new-weekly-reward-input');
         const megaInput = document.getElementById('new-mega-reward-input');
@@ -11144,7 +11298,7 @@ async function runSuite() {
 
       // 121. "Start New Training Week?" never follows a weekly win; it appears only
       //      once the active week is over (owner 2026-10-20).
-      {
+      if (__shouldRun('121')) {
         console.log("Running Test Case 121: New-week prompt only after the week ends, never right after a win...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -11196,7 +11350,7 @@ async function runSuite() {
       }
 
       // 122. Exception Mode locks week navigation (exceptions are for the current week only).
-      {
+      if (__shouldRun('122')) {
         console.log("Running Test Case 122: Exception Mode disables Prev/Next instead of silently exiting...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -11235,7 +11389,7 @@ async function runSuite() {
       }
 
       // 123. Future Edits is remembered per device on the local test site only.
-      {
+      if (__shouldRun('123')) {
         console.log("Running Test Case 123: Future Edits switch survives reloads on the local test site only...");
         const helpers = window.__test_helpers__;
         const cb = document.getElementById('debug-allow-future-edits');
@@ -11267,7 +11421,7 @@ async function runSuite() {
       // 124. Parent edits that complete a week award the badge (never revoke), and a
       //      past week whose goals are met after the fact shows "✅ Goal completed retroactively!"
       //      with a star badge — but never for an all-rest week (owner 2026-10-21).
-      {
+      if (__shouldRun('124')) {
         console.log("Running Test Case 124: Exception Mode completion awards the badge; past 'Goal completed' star; all-rest weeks excluded...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -11380,7 +11534,7 @@ async function runSuite() {
 
       // 125. Deleting the only activity still short completes the week -> badge + visible
       //      celebration; the deleted activity stays on past weeks' charts (owner 2026-10-22).
-      {
+      if (__shouldRun('125')) {
         console.log("Running Test Case 125: Deleting the short activity awards the badge; deleted activity stays in past weeks...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -11449,7 +11603,7 @@ async function runSuite() {
       // 126. State 7 "Not on the plan": striped cell + dash (no Pokéball), parent tooltip,
       //      a ticked removal day still counts, Goal counts only on-plan days, inert in
       //      Exception Mode (owner 2026-10-22).
-      {
+      if (__shouldRun('126')) {
         console.log("Running Test Case 126: 'Not on the plan' cells (State 7) look, tooltip, counting and inertness...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -11508,7 +11662,7 @@ async function runSuite() {
       }
 
       // 127. Unicorn & Princess Sparkle Theme (docs/prd_unicorn_princess_theme.md §6)
-      {
+      if (__shouldRun('127')) {
         console.log("Running Test Case 127: Unicorn & Princess Sparkle Theme (state.theme, Heart/Crown checkboxes, copy reskin)...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -11675,12 +11829,22 @@ async function runSuite() {
           assert(addProfileModalEl.querySelectorAll('[style]').length === 0 && !addProfileModalEl.hasAttribute('style'),
             "#add-profile-modal must have zero inline styles (UX Rule 8)");
           const addProfileContentCs = getComputedStyle(addProfileModalEl.querySelector('.add-profile-content'));
+          // The partner picker is only filled once the Add Child sheet has opened (behind
+          // the Parent PIN). If no earlier test opened it, measure a stand-in icon so this
+          // CSS check also passes on its own (`node run_headless_tests.js 127`).
+          let stubPickerImg = null;
+          if (!addProfileModalEl.querySelector('.icon-picker-img')) {
+            stubPickerImg = document.createElement('img');
+            stubPickerImg.className = 'icon-picker-img';
+            document.getElementById('new-profile-icon-picker').appendChild(stubPickerImg);
+          }
           const iconPickerImgEl = addProfileModalEl.querySelector('.icon-picker-img');
           const iconPickerImgCs = iconPickerImgEl ? getComputedStyle(iconPickerImgEl) : null;
           assert(addProfileContentCs.maxWidth === '680px',
             `Add Child modal widens to 680px for easier partner browsing (got ${addProfileContentCs.maxWidth})`);
           assert(iconPickerImgCs && parseFloat(iconPickerImgCs.width) >= 64,
             `Add Child partner icons are enlarged for easy browsing (got ${iconPickerImgCs && iconPickerImgCs.width})`);
+          if (stubPickerImg) stubPickerImg.remove();
 
           const gridSnapshot = JSON.stringify(state.grid);
           const xpSnapshot = state.partnersData[inst].xp;
@@ -11710,7 +11874,7 @@ async function runSuite() {
 
       // 128. Simplified "Today Focus" Chart Style (Big Buttons — Under 5)
       //      (docs/prd_simplified_chart_style.md; TC127 reserved for Unicorn Theme).
-      {
+      if (__shouldRun('128')) {
         console.log("Running Test Case 128: Simplified 'Today Focus' Chart Style (Big Buttons)...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -11979,6 +12143,7 @@ async function runSuite() {
         }
       }
 
+      if (__shouldRun('129')) {
       // 129. Past weeks in Big Buttons look read-only like the Standard grid (owner pick "B3").
       console.log("Running Test Case 129: Big Buttons past week — faded balls, padlock, no candy lip, no today-yellow...");
       {
@@ -12058,11 +12223,12 @@ async function runSuite() {
           await sleep(30);
         }
       }
+      }
 
       // 130. Footer toolbar (owner 2026-10-31, option D): version left, Switch Trainer +
       //      Parent Admin right; Reset Week shows on the main screen only once the week has
       //      ended and the grid hasn't been reset, and otherwise lives in Admin › Tonight's Check-in.
-      {
+      if (__shouldRun('130')) {
         console.log("Running Test Case 130: Footer toolbar — Reset Week only when due, Admin Reset Week...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
@@ -12118,6 +12284,11 @@ async function runSuite() {
         }
       }
 
+      if (__onlyFilter && __ranTests.size === 0) {
+        throw new Error(`&only=${__params.get('only')} matched no test case`);
+      }
+      const __filterNote = __onlyFilter ? `, filtered run (only=${__params.get('only')}) — run the full suite before reporting done` : '';
+      console.log(`📊 ${__assertCount} asserts passed across ${__ranTests.size} numbered test cases${__filterNote}`);
       console.log("🎉 All regression tests passed successfully! Grid performance is optimized.");
       alert("🎉 All regression tests passed successfully!\nGrid rebuild count remained at 1 during checks.");
     } catch (e) {

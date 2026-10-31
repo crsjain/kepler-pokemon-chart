@@ -52,7 +52,7 @@ asking. **Stop and ask** only for a hard gate.
    ```
    `dupes:12` is expected. Any other duplicate is a defect — report it, don't fix
    it unasked.
-7. **Test suite.** `node run_headless_tests.js`. Expect 100% green in ~23–30s.
+7. **Test suite.** `node run_headless_tests.js`. Expect 100% green in ~35 s.
 8. **Commit identity.** `git config --get user.email` must return
    `crsjain@gmail.com` (this repo pushes to public GitHub — see §7). If it
    returns the corp address or nothing, the `.git/config` override was lost to a
@@ -65,7 +65,7 @@ asking. **Stop and ask** only for a hard gate.
 - The working tree has changes you did not make (report them; never stash,
   revert, or commit them on your own).
 - The branch is wrong *and* the tree is dirty.
-- The test suite fails, hangs, or exceeds ~60s. Report the failing test; do not
+- The test suite fails, hangs, or trips a watchdog. Report the failing test; do not
   start fixing unless asked.
 - Any manifest file above is missing from disk entirely.
 
@@ -259,13 +259,22 @@ state helpers on `window`), `?runMigrationTest=true`.
 ## 5. Testing — run it after every change
 
 ```bash
-node run_headless_tests.js
+node run_headless_tests.js                # full suite: the gate before reporting done
+node run_headless_tests.js 128            # one test case (~6 s), for iterating
+node run_headless_tests.js 120-125,128    # ranges and lists (same as --only=...)
+node run_headless_tests.js --verbose      # every passing assert, app log and network request
 ```
 
-~23–30s wall clock (measured Sept 2026); Chrome cold start and deliberate
-`sleep()` padding dominate — see Pillar 3 of
-`docs/refactoring_assessment_2026_09_12.md`. Must be **100%
-green** before you report done. Flag it only if it exceeds ~60s or hangs.
+The full suite takes ~35 s (measured 2026-10-31, 116 blocks). Real render work is
+~23 s of that, deliberate `sleep()` padding ~9 s, and Chrome cold start plus page
+load ~5 s. Must be **100% green** before you report done. While you iterate, run
+just the test you're touching. A filtered run always includes the setup prefix
+(Test Cases 1–10, TC11, TC12), and it ends by reminding you to run the full suite.
+
+Output is quiet by default, about 125 lines: one `▶` line per test case, warnings
+and errors, an assert count, and `✅ Passed in Ns · slowest: …` (the five slowest
+tests, so creeping slowness is visible). On failure the harness names the failing
+test case and dumps the last 40 browser console lines.
 
 > [!WARNING]
 > `run_headless_tests.js` does **not** start a web server. It launches headless
@@ -273,11 +282,18 @@ green** before you report done. Flag it only if it exceeds ~60s or hangs.
 > If `python3 -m http.server 8000` is not already running, the suite fails with a
 > navigation error and a screenshot, not a useful test failure.
 
-How it works: CDP over `localhost:9223`, sprite requests to
+How it works: CDP over `localhost:9223` (so only one run at a time per machine), sprite requests to
 `raw.githubusercontent.com` are intercepted and stubbed with a 1×1 GIF, and the
 harness watches the browser console for `All regression tests passed successfully!`
 (exit 0) versus `Test Suite Failed` / `Assert Failed` / any uncaught exception
-(exit 1). Internal watchdog is 60s.
+(exit 1). Watchdogs measure **progress**, not total time: 30 s to reach the first
+test case, then 20 s between consecutive test cases, plus a 180 s hard cap. The old
+single 60 s cap failed healthy runs once the cloudtop got busy.
+
+**Adding a test case:** wrap it in a bare block opened with
+`if (__shouldRun('N')) {` (that's what makes `node run_headless_tests.js N` work),
+and don't declare a top-level `const`/`let` that a later test reads. The
+selection helper and its rules are documented above `__shouldRun` in `tests.js`.
 
 Other harnesses: `node run_migration_test.js`, `node run_verify_all.js`,
 `node run_cleanup_all.js`.

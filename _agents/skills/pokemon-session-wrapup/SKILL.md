@@ -65,8 +65,8 @@ Then:
 node run_headless_tests.js
 ```
 
-**Gate:** must be 100% green. Expect ~23–30s; investigate if it exceeds ~60s or
-hangs. Do not proceed to commit with a failing suite.
+**Gate:** the **full** suite (no test filter) must be 100% green. Expect ~35 s;
+investigate if a watchdog trips or it hangs. Do not proceed to commit with a failing suite.
 
 ## 5. Update the README
 
