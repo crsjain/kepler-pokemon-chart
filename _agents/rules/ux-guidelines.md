@@ -224,7 +224,7 @@ Shared concepts keep the same word in every theme, so parents and kids never see
 Theme copy may restyle titles and flavour text (for example "Royal Unicorn Chart" or "ROYAL QUEST"), but not the names of shared features.
 
 ## 22. Bottom Footer Toolbar (owner, 2026-10-31)
-The bottom panel ends in one footer row under a thin divider: the version label on the left, the action buttons grouped on the right (on phones below 600px the buttons wrap onto their own centred row above the version).
+The bottom panel ends in one footer row under a thin divider: the version label on the left and the action buttons grouped at the **true centre of the panel** (a `1fr | auto | 1fr` grid, so the version's width never shifts them; owner, 2026-10-31). On phones below 600px the buttons get their own centred row, with the version centred underneath.
 - `Switch Trainer` and `Parent Admin` are **quiet tinted pills** (`--sk-soft-btn-bg` with `--sk-accent-ink` text and a `--sk-pill-lip`), never solid accent: neither is the main thing on screen.
 - `🔄 Reset Week` is **not** shown on the main screen while the week is running. It appears to the left of `Switch Trainer`, in the theme's bold "due" colour (`--sk-due-*`: dark `#431407` on orange `#fb923c` / white on raspberry `#db2777`, both ≥ 4.5:1), only when the week has ended and the grid hasn't been reset (`canStartNextWeek(..., forceCheck = true)`). At all other times Reset Week lives in **Admin › Tonight's Check-in › Start a new week**, above `Fix last week`.
 - Never position the version label absolutely over the button row.
