@@ -11666,6 +11666,13 @@ async function runSuite() {
             "#profile-select-modal must have zero inline styles (UX Rule 8)");
           assert(addProfileModalEl.querySelectorAll('[style]').length === 0 && !addProfileModalEl.hasAttribute('style'),
             "#add-profile-modal must have zero inline styles (UX Rule 8)");
+          const addProfileContentCs = getComputedStyle(addProfileModalEl.querySelector('.add-profile-content'));
+          const iconPickerImgEl = addProfileModalEl.querySelector('.icon-picker-img');
+          const iconPickerImgCs = iconPickerImgEl ? getComputedStyle(iconPickerImgEl) : null;
+          assert(addProfileContentCs.maxWidth === '680px',
+            `Add Child modal widens to 680px for easier partner browsing (got ${addProfileContentCs.maxWidth})`);
+          assert(iconPickerImgCs && parseFloat(iconPickerImgCs.width) >= 64,
+            `Add Child partner icons are enlarged for easy browsing (got ${iconPickerImgCs && iconPickerImgCs.width})`);
 
           const gridSnapshot = JSON.stringify(state.grid);
           const xpSnapshot = state.partnersData[inst].xp;
