@@ -10511,7 +10511,14 @@ body[data-theme] .simplified-day-pill {
 }
 
 body[data-theme] .simplified-vault-tile {
-  min-height: 52px;
+  /* The day pills' pale lip blends into the ribbon, so their visible bottom is the
+     white box edge; the Vault's navy lip reads as part of the tile. Shrink the Vault
+     by its 3px lip so tile + lip end exactly on the pills' bottom edge (owner, 2026-10-31).
+     contain: size keeps the Vault's own content from setting the row height, so the day
+     pills decide it and the Vault stretches to (row − 3px). */
+  min-height: 0;
+  margin-bottom: 3px;
+  contain: size;
 }
 
 body[data-theme] .simplified-cards-list {
