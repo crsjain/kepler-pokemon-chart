@@ -10455,8 +10455,12 @@ body[data-theme] .simplified-day-banner {
   padding: 2px 2px 0;
 }
 
+/* Tray padding is uneven on purpose: the pills carry a 3px lip and the Vault/today
+   pill a 4px lip below them, so the bottom padding reserves the lip plus the same
+   ~4px of tray that shows above and beside them. With 5px all round, the Vault's lip
+   ran to within 1px of the tray's edge and looked like it overlapped (owner, 2026-10-31). */
 body[data-theme] .simplified-week-row {
-  padding: 5px;
+  padding: 4px 5px 8px;
   gap: 6px;
 }
 
