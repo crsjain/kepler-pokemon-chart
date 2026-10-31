@@ -11870,7 +11870,10 @@ async function runSuite() {
           assert(document.getElementById('simplified-day-title').textContent.startsWith('✨ '), `Unicorn Big Buttons day title starts with ✨ (got "${document.getElementById('simplified-day-title').textContent}")`);
           const u1Vault = getComputedStyle(vaultTile);
           assert(u1Vault.backgroundImage.includes('rgb(168, 85, 247)') && /rgb\(88, 28, 135\) 0px 4px 0px/.test(u1Vault.boxShadow),
-            `Unicorn Vault is the rose→amethyst Jewel Box (bg=${u1Vault.backgroundImage.slice(0, 120)})`);
+            `Unicorn Vault is the rose→amethyst gem tile (bg=${u1Vault.backgroundImage.slice(0, 120)})`);
+          const u1VaultIcon = getComputedStyle(vaultTile.querySelector('.simplified-vault-icon')).backgroundImage;
+          assert(u1VaultIcon.includes('M9%205.5h14') || u1VaultIcon.includes('M9 5.5h14'),
+            "Unicorn Vault icon is the Faceted Crystal Diamond + Gold Sparkle (Option 1)");
           assert(vaultTile.querySelector('.simplified-vault-label').textContent === 'Vault', "Unicorn Vault label stays 'Vault' (matches the Star Vault modal)");
           const u1Done = cardsListEl.querySelector(`.simplified-task-card[data-task="${firstTask.id}"]`);
           assert(getComputedStyle(u1Done).backgroundColor === 'rgb(253, 242, 248)', `Unicorn done card is soft blush (got ${getComputedStyle(u1Done).backgroundColor})`);

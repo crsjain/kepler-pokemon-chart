@@ -311,7 +311,7 @@ Add **Test Case 127: Unicorn & Princess Sparkle Theme (`state.theme`, CSS tokens
 **Unicorn & Princess look → Direction U1 "Pastel Castle"** (`/usr/local/google/home/crsjain/.gemini/jetski/brain/f05c83c6-d9f7-4f31-9401-99005d0fc562/unicorn_theme_directions.html`). It uses the same markup and token names as B:
 - Blush→lavender sky (`--sky #F9A8D4→#C4B5FD`), white 26px panels, `--tray #EFD3FB`, orchid `--lip #E0A6F2`.
 - Accent `--accent #7E22CE`, plum `--ink #4A1D66`, `--heart #DB2777`. Today pill gold→blush (`#FEF08A→#FBCFE8`) with `#1e293b` text.
-- **Jewel Box** Vault (rose→amethyst tile with a lidded box + pink gem). The label stays **"Vault"** to match the Star Vault modal (owner 2026-10-30).
+- **Crystal Diamond Gem** Vault (`--sk-vault-icon` updated 2026-10-31 to Option 1: rose-quartz faceted crystal diamond with a golden 4-point sparkle on the rose→amethyst tile, replacing the domed jewel box that looked like a cupcake). The label stays **"Vault"** to match the Star Vault modal (owner 2026-10-30).
 - Sylveon shown in a round blush sparkle frame (the Phase 1 partner stays a Pokémon).
 - Plum outlines only on the hearts.
 

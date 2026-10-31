@@ -1,7 +1,7 @@
 # Manual Test Plan: Modal Theme Alignment (Pokémon Center & Pastel Castle) + Unicorn Big Buttons (`✨`)
 
 **Covers commits:** `796ef4c` (Unicorn Big Buttons `✨` day title), `f26dd54` (Modal theme alignment Q1–Q4), `7935d80` (Documentation sync)  
-**Build:** cache `poke-chart-cache-v260`, modules `?v=11.23`, `style.css?v=11.24`  
+**Build:** cache `poke-chart-cache-v261`, modules `?v=11.24`, `style.css?v=11.25`  
 **Specs:** [`prd_unicorn_princess_theme.md`](prd_unicorn_princess_theme.md) (§10.6–§10.7), [`prd_simplified_chart_style.md`](prd_simplified_chart_style.md), [`../_agents/rules/ux-guidelines.md`](../_agents/rules/ux-guidelines.md) (Rules 5, 8, 11, 12, 17, 19, 20, 21)  
 **Automated coverage:** `TC62`, `TC91`, `TC100`, `TC127` (§6b), and `TC128` (§7b) in [`../tests.js`](../tests.js) (`node run_headless_tests.js`)
 
@@ -50,7 +50,7 @@ Check each modal in **⚡ Pokémon Training** first, then switch to **🦄 Unico
 - [ ] **Get More Partners CTA:** Warm gold/amber button (`#f59e0b` / `#fde047`) with dark ink text.
 
 ### 2.3 Star Vault Modal (`#vault-modal`)
-*Tap the `Vault` gem / jewel-box tile.*
+*Tap the `Vault` gem tile (blue diamond in Pokémon, rose-quartz crystal diamond with gold sparkle in Unicorn).*
 - [ ] **Outer Shell & Stat Cards:** `26px` white panel; the 3 top summary cards (`Available Stars`, `Current Streak`, `Longest Streak`) sit on `--sk-tray` cards with candy lips and `--sk-ink` titles.
 - [ ] **Inner Star Cabinet (Q2):** `.vault-grid-container` keeps the deep dark **Cosmic Nebula** (`#0f172a` → `#1e1b4b`) background in **both** themes so Yellow, Silver, Blue, and Prism stars pop with maximum contrast.
 - [ ] **Footer CTAs:** `Spend in Shop 🏪` uses the primary blue/amethyst button; `Done` uses the neutral slate pill.
