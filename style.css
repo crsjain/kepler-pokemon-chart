@@ -3490,6 +3490,20 @@ input:checked + .slider:before {
   }
 }
 
+/* Outside the ≥1024px landscape split view the three buttons spread edge to edge
+   (Reset left, Switch centre, Parent Admin right), so an absolutely positioned
+   version label sat underneath Parent Admin. Give it its own quiet centred line. */
+@media not all and (min-width: 1024px) and (orientation: landscape) {
+  .app-version-container {
+    position: static;
+    transform: none;
+    flex-basis: 100%;
+    order: 99;
+    text-align: center;
+    margin-top: -4px;
+  }
+}
+
 /* Star Vault Pagination Controls */
 .vault-pagination {
   display: flex;
@@ -10286,6 +10300,22 @@ body[data-theme] .grid-vault-icon {
   height: 22px;
   background: var(--sk-vault-icon) center / contain no-repeat;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
+
+/* Portrait / compact layouts (everything except the ≥1024px landscape split view):
+   the Daily Total row is only ~65px tall and the Vault column ~63–76px wide, so the
+   fixed 60×48 tile ran edge to edge (2–4px side insets) and its lip landed ~4px from
+   the panel's rounded bottom-right corner. Size it from the cell instead: ≥8px clear
+   on each side, 44px tall, and reserve the 4px lip so tile + lip sit optically centred.
+   The landscape split view (insets 11–17px) is untouched. */
+@media not all and (min-width: 1024px) and (orientation: landscape) {
+  body[data-theme] #open-vault-btn.grid-vault-tile {
+    width: calc(100% - 12px);
+    max-width: 56px;
+    min-height: 44px;
+    margin-bottom: 4px;
+    border-radius: 13px;
+  }
 }
 
 /* Daily Total ❌ / ➖: a fixed centred box like the SVG stars (the bare emoji sat
