@@ -10152,7 +10152,7 @@ body[data-theme] .simplified-day-pill[data-column-state="active_future"],
 body[data-theme] .simplified-day-pill[data-column-state="historical"].is-focused {
   background: var(--sk-now-bg);
   color: #1e293b; /* Rule 13B */
-  box-shadow: 0 4px 0 var(--sk-now-lip);
+  box-shadow: 0 3px 0 var(--sk-now-lip); /* same 3px lip as the other day pills, so every bottom lines up */
 }
 
 body[data-theme] .simplified-day-pill[data-column-state^="active"] .simplified-pill-day,
@@ -10169,14 +10169,16 @@ body[data-theme] .simplified-vault-tile {
     radial-gradient(circle at 82% 70%, rgba(255, 255, 255, 0.6) 0 1.5px, transparent 2px),
     radial-gradient(circle at 74% 16%, rgba(255, 255, 255, 0.55) 0 1px, transparent 1.5px),
     var(--sk-vault-bg);
-  box-shadow: 0 4px 0 var(--sk-vault-lip);
+  /* 3px lip like the day pills (owner 2026-10-31): the box already matches the pills'
+     height, so with a 4px navy lip the Vault looked like it hung below the row. */
+  box-shadow: 0 3px 0 var(--sk-vault-lip);
   font-family: 'Fredoka', 'Fredoka One', sans-serif;
   font-weight: 700;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
 }
 
 body[data-theme] .simplified-vault-tile:hover {
-  box-shadow: 0 5px 0 var(--sk-vault-lip);
+  box-shadow: 0 4px 0 var(--sk-vault-lip);
 }
 
 body[data-theme] .simplified-vault-tile:active {

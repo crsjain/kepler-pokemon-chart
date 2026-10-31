@@ -11793,7 +11793,7 @@ async function runSuite() {
           // Pokémon Center skin (PRD §10.7): deep-blue gem tile with a blue lip, never a charcoal edge.
           assert(vaultStyles.borderTopWidth === '0px' && vaultStyles.backgroundImage.includes('rgb(29, 78, 216)'),
             `Vault tile is a borderless deep-blue gem (border=${vaultStyles.borderTopWidth}, bg=${vaultStyles.backgroundImage.slice(0, 120)})`);
-          assert(/rgb\(30, 58, 138\) 0px 4px 0px/.test(vaultStyles.boxShadow) && !vaultStyles.boxShadow.includes('rgb(45, 55, 72)'),
+          assert(/rgb\(30, 58, 138\) 0px 3px 0px/.test(vaultStyles.boxShadow) && !vaultStyles.boxShadow.includes('rgb(45, 55, 72)'),
             `Vault lip is navy, not a charcoal edge (shadow=${vaultStyles.boxShadow})`);
           assert(getComputedStyle(vaultTile.querySelector('.simplified-vault-icon')).backgroundImage.includes('svg'), "Vault icon is the theme's gem SVG");
           assert(vaultTile.querySelector('.simplified-vault-label').textContent === 'Vault', "Pokémon Vault label");
@@ -11886,7 +11886,7 @@ async function runSuite() {
           await sleep(30);
           assert(document.getElementById('simplified-day-title').textContent.startsWith('✨ '), `Unicorn Big Buttons day title starts with ✨ (got "${document.getElementById('simplified-day-title').textContent}")`);
           const u1Vault = getComputedStyle(vaultTile);
-          assert(u1Vault.backgroundImage.includes('rgb(168, 85, 247)') && /rgb\(88, 28, 135\) 0px 4px 0px/.test(u1Vault.boxShadow),
+          assert(u1Vault.backgroundImage.includes('rgb(168, 85, 247)') && /rgb\(88, 28, 135\) 0px 3px 0px/.test(u1Vault.boxShadow),
             `Unicorn Vault is the rose→amethyst gem tile (bg=${u1Vault.backgroundImage.slice(0, 120)})`);
           const u1VaultIcon = getComputedStyle(vaultTile.querySelector('.simplified-vault-icon')).backgroundImage;
           assert(u1VaultIcon.includes('M9%205.5h14') || u1VaultIcon.includes('M9 5.5h14'),
