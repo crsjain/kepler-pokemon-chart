@@ -1779,7 +1779,7 @@ function getThemeCopy(theme) {
     '.mega-title': '👑 ROYAL CROWN PROGRESS',
     '#task-col-header-label': 'ROYAL QUEST',
     '#open-badges-btn': '👑 Gem Case',
-    '.shop-title': 'Magical Companion Shop! 🦄',
+    '.shop-title': 'Magical Partner Shop! 🦄',
     '#badges-title-suffix': "'s Royal Gem Case 👑",
     '#badges-collected-word': 'Royal Gems',
     '#guide-title': 'Royal Practice Guide 📖',

@@ -1,7 +1,7 @@
 # Manual Test Plan: Modal Theme Alignment (Pokémon Center & Pastel Castle) + Unicorn Big Buttons (`✨`)
 
 **Covers commits:** `796ef4c` (Unicorn Big Buttons `✨` day title), `f26dd54` (Modal theme alignment Q1–Q4), `7935d80` (Documentation sync)  
-**Build:** cache `poke-chart-cache-v259`, modules `?v=11.22`, `style.css?v=11.23`  
+**Build:** cache `poke-chart-cache-v260`, modules `?v=11.23`, `style.css?v=11.24`  
 **Specs:** [`prd_unicorn_princess_theme.md`](prd_unicorn_princess_theme.md) (§10.6–§10.7), [`prd_simplified_chart_style.md`](prd_simplified_chart_style.md), [`../_agents/rules/ux-guidelines.md`](../_agents/rules/ux-guidelines.md) (Rules 5, 8, 11, 12, 17, 19, 20, 21)  
 **Automated coverage:** `TC62`, `TC91`, `TC100`, `TC127` (§6b), and `TC128` (§7b) in [`../tests.js`](../tests.js) (`node run_headless_tests.js`)
 
@@ -57,8 +57,8 @@ Check each modal in **⚡ Pokémon Training** first, then switch to **🦄 Unico
 
 ### 2.4 Partner Shop Modal (`#pokemon-shop-modal`)
 *Tap `Spend in Shop 🏪` from the Vault.*
-- [ ] **Header & Balance Pill:** `--sk-ink` title (`Pokémon Partner Shop! 🏪` vs. `Magical Companion Shop! 🦄`); star balance pill has a warm gold border on cream/blush.
-- [ ] **Filter Bar:** Search input and Type/Cost/Sort dropdowns sit inside a sunken `--sk-tray` bar (`border-radius: 18px`) as rounded white pills.
+- [ ] **Header & Balance Pill:** `--sk-ink` title (`Pokémon Partner Shop! 🏪` vs. `Magical Partner Shop! 🦄`); star balance pill has a warm gold border on cream/blush.
+- [ ] **Filter Bar:** Type, Cost, and Sort dropdowns distribute evenly (`1/3` width each) across the horizontal row as rounded white pills with `16px` left padding and custom chevrons inset `16px` from the right edge.
 - [ ] **Shop Grid & Cards:** Sunken `--sk-tray` scrolling well (transparent scrollbar track, UX Rule 5); white `18px` cards with candy lips; `Hold to Unlock` button fills smoothly.
 
 ---

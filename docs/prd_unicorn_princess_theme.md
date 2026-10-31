@@ -103,7 +103,7 @@ Applied declaratively via `applyThemeUI()` in `app.js` whenever `renderState()` 
 | Weekly Badge Card Title (`.badge-title`) | `POKEMON BADGE` | `ROYAL GEM BADGE` |
 | Mega Milestone Title (`.mega-title`) | `🔮 MEGA MILESTONE PROGRESS` | `👑 ROYAL CROWN PROGRESS` |
 | Table Task Column Header (`.task-col-header span`) | `TRAINING TASK` | `ROYAL QUEST` |
-| Partner Shop Title (`.shop-title`) | `Pokémon Partner Shop! 🏪` | `Magical Companion Shop! 🦄` |
+| Partner Shop Title (`.shop-title`) | `Pokémon Partner Shop! 🏪` | `Magical Partner Shop! 🦄` |
 | Badge Case Button (`#open-badges-btn`) | `🏆 Case` | `👑 Gem Case` |
 | Badge Case Title (`#badges-modal h2`) | `<Name>'s Badge Case 🏆` | `<Name>'s Royal Gem Case 👑` |
 | Badge Case Count Word (`#badges-collected-word`) | `Gym Badge` / `Gym Badges` | `Royal Gem` / `Royal Gems` |

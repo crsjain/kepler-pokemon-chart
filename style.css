@@ -10809,14 +10809,45 @@ body[data-theme] #pokemon-shop-modal .shop-available-stars-count {
   font-weight: 900;
 }
 
+body[data-theme] #pokemon-shop-modal .shop-filter-bar {
+  width: 100%;
+  gap: 12px;
+}
+
+body[data-theme] #pokemon-shop-modal .shop-filter-bar select {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 body[data-theme] #pokemon-shop-modal .shop-filter-bar select,
 body[data-theme] #badges-modal .shop-filter-bar.badge-case-controls select {
+  height: 38px;
+  padding: 6px 38px 6px 16px;
   border-radius: 999px;
   border: 2px solid var(--sk-pill-lip);
-  background: #ffffff;
+  background-color: #ffffff;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1.5 1.75 L6 6.25 L10.5 1.75' stroke='%23334155' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 12px 8px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
   color: var(--sk-text);
   font-family: 'Nunito', 'Quicksand', sans-serif;
   font-weight: 800;
+}
+
+@media (max-width: 480px) {
+  body[data-theme] #pokemon-shop-modal .shop-filter-bar select {
+    flex: 1 1 100%;
+  }
+  body[data-theme] #pokemon-shop-modal .shop-filter-bar select,
+  body[data-theme] #badges-modal .shop-filter-bar.badge-case-controls select {
+    height: 34px;
+    padding: 4px 32px 4px 14px;
+    background-position: right 12px center;
+  }
 }
 
 body[data-theme] #pokemon-shop-modal .shop-filter-bar select:hover,

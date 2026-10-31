@@ -11558,7 +11558,7 @@ async function runSuite() {
           assert(document.querySelector('.mega-title').textContent.includes('ROYAL CROWN PROGRESS'), "Mega title reskinned");
           assert(document.getElementById('task-col-header-label').textContent === 'ROYAL QUEST', "Task column header reskinned");
           assert(document.getElementById('change-partner-btn').textContent === 'Change Partner', "Change Partner keeps the app-wide 'Partner' wording in every theme");
-          assert(document.querySelector('.shop-title').textContent.includes('Magical Companion Shop'), "Shop title reskinned");
+          assert(document.querySelector('.shop-title').textContent.includes('Magical Partner Shop'), "Shop title reskinned to Magical Partner Shop");
           assert(document.getElementById('guide-subtitle-tail').textContent.includes('sparkle heart'), "Guide subtitle reskinned");
           assert(document.getElementById('open-badges-btn').textContent === '👑 Gem Case', "Badge case button reskinned");
 
@@ -11642,6 +11642,22 @@ async function runSuite() {
           assert(document.getElementById('badges-collected-word').textContent.includes('Royal Gem'), "Badge Case count word switches to Royal Gem(s) in Unicorn theme");
           const vaultCabUni = getComputedStyle(document.querySelector('#vault-modal .vault-grid-container')).backgroundImage;
           assert(vaultCabUni.includes('rgb(30, 27, 75)') && vaultCabUni.includes('rgb(15, 23, 42)'), "Star Vault inner cabinet keeps Cosmic Nebula in Unicorn theme (Q2)");
+
+          // Shop dropdowns: custom chevron (appearance: none), 16px left / 38px right padding, equal horizontal distribution
+          const shopModalEl = document.getElementById('pokemon-shop-modal');
+          shopModalEl.classList.remove('hidden');
+          const sType = document.getElementById('shop-filter-type');
+          const sCost = document.getElementById('shop-filter-cost');
+          const sSort = document.getElementById('shop-sort-by');
+          const csType = getComputedStyle(sType);
+          assert(csType.appearance === 'none' && csType.paddingLeft === '16px' && csType.paddingRight === '38px',
+            `Shop dropdowns use custom chevron with 16px left and 38px right padding (got appearance=${csType.appearance}, pl=${csType.paddingLeft}, pr=${csType.paddingRight})`);
+          const rType = sType.getBoundingClientRect();
+          const rCost = sCost.getBoundingClientRect();
+          const rSort = sSort.getBoundingClientRect();
+          assert(Math.abs(rType.width - rCost.width) <= 2 && Math.abs(rCost.width - rSort.width) <= 2,
+            `Shop dropdowns distribute equally across the horizontal bar (widths: ${Math.round(rType.width)}, ${Math.round(rCost.width)}, ${Math.round(rSort.width)})`);
+          shopModalEl.classList.add('hidden');
 
           const profileSelectModalEl = document.getElementById('profile-select-modal');
           const addProfileModalEl = document.getElementById('add-profile-modal');
