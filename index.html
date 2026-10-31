@@ -8,25 +8,25 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=11.26">
+  <link rel="stylesheet" href="style.css?v=11.27">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800;900&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script type="importmap">
   {
     "imports": {
-      "./app.js": "./app.js?v=11.26",
-      "./state.js": "./state.js?v=11.26",
-      "./firebase.js": "./firebase.js?v=11.26",
-      "./migrations.js": "./migrations.js?v=11.26",
-      "./vault.js": "./vault.js?v=11.26",
-      "./badges.js": "./badges.js?v=11.26",
-      "./shop.js": "./shop.js?v=11.26",
-      "./guide.js": "./guide.js?v=11.26",
-      "./pokemon_data.js": "./pokemon_data.js?v=11.26",
-      "./date_utils.js": "./date_utils.js?v=11.26",
-      "./admin.js": "./admin.js?v=11.26",
-      "./rewards_admin.js": "./rewards_admin.js?v=11.26",
-      "./audio.js": "./audio.js?v=11.26",
-      "./modal_backdrop.js": "./modal_backdrop.js?v=11.26"
+      "./app.js": "./app.js?v=11.27",
+      "./state.js": "./state.js?v=11.27",
+      "./firebase.js": "./firebase.js?v=11.27",
+      "./migrations.js": "./migrations.js?v=11.27",
+      "./vault.js": "./vault.js?v=11.27",
+      "./badges.js": "./badges.js?v=11.27",
+      "./shop.js": "./shop.js?v=11.27",
+      "./guide.js": "./guide.js?v=11.27",
+      "./pokemon_data.js": "./pokemon_data.js?v=11.27",
+      "./date_utils.js": "./date_utils.js?v=11.27",
+      "./admin.js": "./admin.js?v=11.27",
+      "./rewards_admin.js": "./rewards_admin.js?v=11.27",
+      "./audio.js": "./audio.js?v=11.27",
+      "./modal_backdrop.js": "./modal_backdrop.js?v=11.27"
     }
   }
   </script>
@@ -336,37 +336,49 @@
 
     <!-- Debug Sidebar -->
     <div id="debug-sidebar" class="debug-sidebar hidden">
-      <button id="close-debug-sidebar-btn" class="debug-close-btn" aria-label="Close Debug Panel">&times;</button>
-      <h3>🧪 Debug Panel</h3>
+      <div class="debug-header">
+        <h3>🧪 Debug Panel</h3>
+        <button id="close-debug-sidebar-btn" class="debug-close-btn" aria-label="Close Debug Panel">&times;</button>
+      </div>
       <div class="testing-buttons">
-        <div class="testing-row">
-          <button id="test-milestone-minus-one" class="pixel-btn warning">Milestone -1 Ball</button>
-          <button id="test-mega-minus-one" class="pixel-btn warning">Mega -1 Ball</button>
-        </div>
-        <div class="testing-row">
-          <button id="test-near-evolve" class="pixel-btn warning">Near Evolution</button>
-          <button id="test-near-levelup" class="pixel-btn warning">Near Level Up</button>
-        </div>
-        <div class="test-week-selector">
-          <span>Set Week:</span>
-          <button id="test-week-1" class="pixel-btn info small">W1</button>
-          <button id="test-week-2" class="pixel-btn info small">W2</button>
-          <button id="test-week-3" class="pixel-btn info small">W3</button>
-          <button id="test-week-4" class="pixel-btn info small">W4</button>
-        </div>
-        <div class="testing-row" style="margin-top: 5px; display: flex; align-items: center; gap: 8px; width: 100%;">
-          <label style="font-family: 'Fredoka One', cursive; font-size: 0.8rem; color: #5c3a21; display: flex; align-items: center; gap: 6px; cursor: pointer;">
-            <input type="checkbox" id="debug-allow-future-edits"> Future Edits
-          </label>
-        </div>
-        <div class="testing-row" style="margin-top: 10px; border-top: 1px dashed #cbd5e1; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; width: 100%;">
-          <span style="font-family: 'Fredoka One', cursive; font-size: 0.8rem; color: #5c3a21; text-align: left; align-self: flex-start;">🏅 Badges:</span>
-          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <button id="debug-badge-add-random" class="pixel-btn info small" style="flex: 1; min-width: 80px; font-size: 0.65rem; padding: 4px;">Add Rand</button>
-            <button id="debug-badge-roll" class="pixel-btn info small" style="flex: 1; min-width: 80px; font-size: 0.65rem; padding: 4px;">Roll Next</button>
-            <button id="debug-badge-clear" class="pixel-btn danger small" style="flex: 1.3; min-width: 105px; font-size: 0.65rem; padding: 4px;">Clear Badge Case</button>
+        <section class="debug-section">
+          <span class="debug-section-label">Jump ahead</span>
+          <div class="debug-btn-grid">
+            <button id="test-milestone-minus-one" class="pixel-btn debug-btn">Milestone −1</button>
+            <button id="test-mega-minus-one" class="pixel-btn debug-btn">Mega −1</button>
+            <button id="test-near-evolve" class="pixel-btn debug-btn">Near Evolution</button>
+            <button id="test-near-levelup" class="pixel-btn debug-btn">Near Level Up</button>
           </div>
-        </div>
+        </section>
+        <section class="debug-section">
+          <span class="debug-section-label">Mega cycle week</span>
+          <div class="test-week-selector">
+            <button id="test-week-1" class="pixel-btn debug-btn debug-week-btn">W1</button>
+            <button id="test-week-2" class="pixel-btn debug-btn debug-week-btn">W2</button>
+            <button id="test-week-3" class="pixel-btn debug-btn debug-week-btn">W3</button>
+            <button id="test-week-4" class="pixel-btn debug-btn debug-week-btn">W4</button>
+          </div>
+        </section>
+        <section class="debug-section">
+          <label class="debug-toggle-row" for="debug-allow-future-edits">
+            <span class="debug-toggle-text">
+              <span class="debug-toggle-title">Future Edits</span>
+              <span class="debug-toggle-sub">Tick days that haven't happened yet</span>
+            </span>
+            <span class="switch">
+              <input type="checkbox" id="debug-allow-future-edits">
+              <span class="slider"></span>
+            </span>
+          </label>
+        </section>
+        <section class="debug-section">
+          <span class="debug-section-label">🏅 Badges</span>
+          <div class="debug-btn-grid">
+            <button id="debug-badge-add-random" class="pixel-btn debug-btn">Add Random</button>
+            <button id="debug-badge-roll" class="pixel-btn debug-btn">Roll Next</button>
+            <button id="debug-badge-clear" class="pixel-btn debug-btn debug-btn--danger debug-btn--wide">Clear Badge Case</button>
+          </div>
+        </section>
       </div>
     </div>
   </div>
@@ -1272,7 +1284,7 @@
   </div>
 
   <script src="particles.js?v=10.8"></script>
-  <script type="module" src="app.js?v=11.26" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=11.27" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 

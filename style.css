@@ -1492,40 +1492,53 @@ button:disabled,
   margin: 0 auto;
 }
 
+/* Debug Panel — parent/dev tool in the Pokémon Center skin: white 26px panel,
+   soft blue shadow, no charcoal outline, grouped sections, readable pills. */
 .debug-sidebar {
   position: relative;
-  background: white;
-  border: var(--pixel-border);
-  border-radius: 12px;
-  padding: 20px;
-  width: 250px;
-  box-shadow: var(--shadow);
+  background: #ffffff;
+  border: none;
+  border-radius: 26px;
+  padding: 18px 18px 20px;
+  width: 260px;
+  box-shadow: 0 6px 0 rgba(20, 60, 150, 0.25), 0 14px 28px rgba(12, 40, 110, 0.25);
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 14px;
   z-index: 5;
+  font-family: 'Nunito', 'Quicksand', sans-serif;
+}
+
+.debug-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .debug-close-btn {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  background: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  background: #f1f5f9;
   border: none;
-  color: var(--border-color);
-  font-size: 1.6rem;
+  border-radius: 50%;
+  color: #475569;
+  font-size: 1.3rem;
   font-family: inherit;
-  font-weight: bold;
+  font-weight: 800;
   cursor: pointer;
   line-height: 1;
-  transition: color 0.2s, transform 0.1s;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 0;
+  transition: background-color 0.15s, color 0.15s;
 }
 
 .debug-close-btn:hover {
-  color: var(--poke-red);
-  transform: scale(1.15);
+  background: #e2e8f0;
+  color: #1e293b;
 }
 
 .debug-sidebar.hidden {
@@ -1533,13 +1546,148 @@ button:disabled,
 }
 
 .debug-sidebar h3 {
-  font-family: 'Fredoka One', cursive;
-  font-size: 1.1rem;
-  color: var(--poke-dark-blue);
-  margin-bottom: 5px;
+  font-family: 'Fredoka', 'Fredoka One', sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #1d4ed8;
+  margin: 0;
+  text-align: left;
+}
+
+.debug-sidebar .testing-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.debug-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #eef5ff;
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.debug-section-label {
+  font-family: 'Nunito', 'Quicksand', sans-serif;
+  font-weight: 900;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.debug-btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.debug-sidebar .pixel-btn.debug-btn {
+  width: 100%;
+  margin: 0;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1d4ed8;
+  box-shadow: 0 3px 0 #9cc2f2;
+  font-family: 'Nunito', 'Quicksand', sans-serif;
+  font-weight: 800;
+  font-size: 0.8rem;
+  line-height: 1.15;
+  white-space: normal;
   text-align: center;
-  border-bottom: 2px dashed var(--poke-blue);
-  padding-bottom: 8px;
+  text-shadow: none;
+}
+
+.debug-sidebar .pixel-btn.debug-btn:hover {
+  background: #dbeafe;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 #60a5fa;
+}
+
+.debug-sidebar .pixel-btn.debug-btn:active {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+
+.debug-sidebar .pixel-btn.debug-btn--danger {
+  background: #fff1f2;
+  color: #b91c1c;
+  box-shadow: 0 3px 0 #fecaca;
+}
+
+.debug-sidebar .pixel-btn.debug-btn--danger:hover {
+  background: #ffe4e6;
+  box-shadow: 0 4px 0 #fca5a5;
+}
+
+.debug-btn--wide {
+  grid-column: 1 / -1;
+}
+
+.debug-sidebar .test-week-selector {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 0;
+}
+
+.debug-sidebar .pixel-btn.debug-week-btn {
+  min-height: 38px;
+  padding: 6px 0;
+}
+
+.debug-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.debug-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.debug-toggle-title {
+  font-weight: 900;
+  font-size: 0.88rem;
+  color: #1e293b;
+}
+
+.debug-toggle-sub {
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.debug-toggle-row .switch {
+  flex-shrink: 0;
+}
+
+.debug-toggle-row .slider {
+  border: none;
+  background-color: #cbd5e1;
+}
+
+.debug-toggle-row .slider:before {
+  border: none;
+  height: 18px;
+  width: 18px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.3);
+}
+
+.debug-toggle-row input:checked + .slider {
+  background-color: #2563eb;
 }
 
 @media (max-width: 1023px) {

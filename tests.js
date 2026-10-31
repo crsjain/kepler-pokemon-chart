@@ -4323,6 +4323,12 @@ async function runSuite() {
 
         assert(!debugSidebar.classList.contains('hidden'), "Debug sidebar should be visible when enabled");
         assert(toggleCheckbox.checked === true, "Admin toggle checkbox should be checked");
+        assert(debugSidebar.querySelectorAll('[style]').length === 0, "Debug panel has zero inline styles (UX Rule 8)");
+        const dbgCs = getComputedStyle(debugSidebar);
+        assert(dbgCs.borderRadius === '26px' && dbgCs.borderTopStyle === 'none', `Debug panel uses the 26px borderless skin panel (got r=${dbgCs.borderRadius}, border=${dbgCs.borderTopStyle})`);
+        const dbgBtnCs = getComputedStyle(document.getElementById('test-near-evolve'));
+        assert(dbgBtnCs.color === 'rgb(29, 78, 216)' && dbgBtnCs.backgroundColor === 'rgb(255, 255, 255)', `Debug buttons use readable dark-blue on white (got ${dbgBtnCs.color} on ${dbgBtnCs.backgroundColor})`);
+        assert(document.getElementById('debug-allow-future-edits').closest('.switch'), "Future Edits is a toggle switch");
 
         // 2. Click the Close button directly on the Debug Panel
         closeBtn.click();
