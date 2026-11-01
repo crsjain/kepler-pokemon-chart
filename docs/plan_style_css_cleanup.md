@@ -1,6 +1,6 @@
 # Plan: style.css cleanup (light path)
 
-**Status:** P0, P1 and P2 done (2026-11-01). P3 is next.
+**Status:** P0–P3 done (2026-11-01), all local commits. Next: owner's 5-minute tablet check (§8), then deploy via `pokemon-session-wrapup`.
 **Owner:** crsjain. **Goal:** make `style.css` faster and safer to edit, for the owner and her
 agents, **without changing how anything looks**.
 
@@ -127,13 +127,26 @@ End state is about 10,700–10,900 lines. The bigger win: what an agent finds by
 - **Result:** 10,980 → 10,807 lines (−173), `!important` 296 → 295.
 - **Cumulative:** 11,380 → 10,807 (−573), `!important` 306 → 295.
 
-### P3: navigation for agents
+### P3: navigation for agents. ✅ 2026-11-01
 
-- [ ] Add a greppable marker at each area: `/* @section <name>: <one line> */`.
-  - Names: `tokens`, `header-cards`, `grid`, `cells-rule14`, `daily-total`, `modals-base`, `admin-legacy`, `column-states`, `admin-shell`, `vault`, `badge-case`, `exception-mode`, `guide`, `login-profiles`, `shop`, `showcase`, `grace-dock`, `boot`, `admin-revamp`, `big-buttons`, `skin-unicorn-checkbox`, `skin`, `skin-modals`.
-- [ ] A short index comment at the top of `style.css` listing the section names (no line numbers, which go stale).
-- [ ] AGENTS.md §2: the same map, plus "search `@section <name>`, then read that range; values in the skin sections override earlier ones".
-- [ ] Gate (§3). Comments only, so the screenshots must be byte-identical. Commit.
+- [x] Added 26 `/* @section <name>: <one line> */` markers, in file order:
+  - `tokens`, `header-cards`, `grid`, `pokeball`, `daily-total`, `layout-modals`, `dialogs-legacy`, `column-states`
+  - `admin-shell`, `weekly-success`, `vault`, `badge-case`
+  - `exception-mode`, `cells-rest-bonus`, `guide`
+  - `login-profiles`, `rewards-editor`, `shop`, `showcase`
+  - `grace-dock`, `boot`, `admin`, `big-buttons`
+  - `skin-unicorn-checkbox`, `skin`, `skin-modals`
+  - Script: `scratch/p3.js` in conv `9c83646b`.
+- [x] Added a section index at the top of `style.css`, without line numbers.
+- [x] AGENTS.md §2:
+  - The `style.css` row now says 10,800 lines and "jump by `@section`".
+  - Added a section map.
+  - Added the rule: edit kid-screen looks in the skin layer.
+- [x] Gate:
+  - Suite green (36.7 s).
+  - Compare: 723 screens, 0 changes, lint ok.
+  - Cache `v275`, `style.css?v=11.38`.
+- **Result:** 10,807 → 10,864 lines; the +57 lines are comments.
 
 ## 5. Deferred (not planned; pick up only when a feature already touches that area)
 
@@ -144,13 +157,32 @@ End state is about 10,700–10,900 lines. The bigger win: what an agent finds by
 | Regroup by area and merge `@media` (53 → ~25) | Moving rules can change winners between equal-specificity rules | Do it only after the fold |
 | Split out `admin.css` | Admin sits in 4 places and interleaves with modal rules; little agent benefit once P3 exists | Needs its own `<link ?v=>`, an `ASSETS_TO_CACHE` entry and TC90 changes |
 
-## 6. Baseline
+## 6. Rig speed (2026-11-01, owner request)
+
+- Full capture now runs in parallel across `--jobs=3` Chrome instances: about 5 minutes, down from 13.
+- `--quick` (1366×1024 and 390×844; main, past and state screens) takes about 1 minute, for iterating.
+- `compare.js` skips screens that a partial run didn't take.
+- Parallel runs showed more backdrop-blur jitter: up to 250 px, but only a 1/255 colour shift. So the noise rule also accepts a shift of at most 2/255 when computed styles are identical.
+- The test suite is unchanged at about 35 s. It was never the slow part.
+
+## 6b. Baseline
 
 - `~/.cache/kpc-css-rig/baseline/`, captured at `042d169` with the P0 rig.
 - It covers 5 viewports (1366×1024, 1180×820, 1180×820@2, 768×1024, 390×844) × 2 themes, with main, past, modal, admin, state and pseudo screens.
 - **Regenerate if lost:** `git stash` or check out the P0 commit, run `node tools/css_rig/capture.js baseline`, then return. The fixed clock makes this independent of today's date.
 
+## 8. Before deploying: owner tablet check (~5 min)
+
+On the iPad (Safari), after this ships to the local or live site:
+
+1. Both kids (Pokémon and Unicorn), Standard and Big Buttons.
+2. Last week (Prev).
+3. Parent Admin → Set Exceptions: tap cells and check they cycle 🔴 → ✨ → 💤.
+4. Open the Vault and the Partner Shop: the blurred backgrounds should look normal.
+
+Steps 3 and 4 cover what the Chrome-only rig can't fully see: real touch, and Safari's blur.
+
 ## 7. Log
 
 - 2026-10-31: audit and options (conv `9c83646b`).
-- 2026-11-01: Senior Staff Engineer review (conv `b0a761e9`); decisions D1–D4; P0; P1; P2.
+- 2026-11-01: Senior Staff Engineer review (conv `b0a761e9`); decisions D1–D4; P0; P1; P2; rig speed-up; P3.

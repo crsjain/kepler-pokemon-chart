@@ -149,12 +149,30 @@ read line ranges; never dump them whole.
 | File | Lines (≈, Sept 2026) | Notes |
 | :--- | ---: | :--- |
 | `tests.js` | 7,600 | The entire regression suite. **Never read whole.** |
-| `style.css` | 6,200 | All styling. Grep by class name. |
+| `style.css` | 10,800 (Nov 2026) | All styling. Jump by `@section` (below), then grep by class name. |
 | `app.js` | 4,600 | Main controller. Grep by function name. |
 | `pokemon_data.js` | 1,100 | Static Pokédex tables. |
 | `index.html` | 900 | Single page, all modal markup inline. |
 | `firebase-debug.log` | ~15 MB | **Never read.** Gitignored emulator noise. |
 | `firestore-debug.log` | ~3 MB | **Never read.** Gitignored emulator noise. |
+
+**Navigating `style.css`:** the file opens with a section index. Each area starts with
+`/* @section <name>: … */`, so search `@section <name>` and read from there to the next marker.
+The sections are, in file order:
+
+| Group | Sections |
+| :--- | :--- |
+| Main screen | `tokens`, `header-cards`, `grid`, `pokeball`, `daily-total`, `layout-modals`, `dialogs-legacy`, `column-states` |
+| Admin shell, Vault, Badge Case | `admin-shell`, `weekly-success`, `vault`, `badge-case` |
+| Exception Mode and cell states | `exception-mode`, `cells-rest-bonus` (most `!important`s), `guide` |
+| Login, rewards, Shop | `login-profiles`, `rewards-editor`, `shop`, `showcase` |
+| Docks, boot, Admin, Big Buttons | `grace-dock`, `boot`, `admin`, `big-buttons` |
+| Skin layer (always last) | `skin-unicorn-checkbox`, `skin`, `skin-modals` |
+
+The last two (`skin`, `skin-modals`) are the **skin layer**. `body[data-theme]` is always set, so
+they override the base sections above for both themes. Change a kid-screen look there, not in the
+base rule. Section names are stable; line numbers aren't, so don't record them. Plan and history:
+`docs/plan_style_css_cleanup.md`.
 
 ---
 
