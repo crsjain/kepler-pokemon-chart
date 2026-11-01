@@ -53,10 +53,7 @@ body {
   min-width: 0;
   max-width: 900px;
   width: 100%;
-  background: var(--card-bg);
-  border: var(--pixel-border);
   border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
   padding: 20px;
   overflow: hidden;
   position: relative;
@@ -66,9 +63,6 @@ body {
 /* Header */
 .game-header {
   text-align: center;
-  margin-bottom: 20px;
-  border-bottom: 3px dashed var(--poke-blue);
-  padding-bottom: 12px;
 }
 
 .title {
@@ -92,12 +86,7 @@ body {
 .trainer-card {
   display: grid;
   grid-template-columns: 1.5fr 1fr;
-  gap: 20px;
-  margin-bottom: 20px;
-  background: #f8fafc;
-  border: 3px solid var(--border-color);
   border-radius: 8px;
-  padding: 15px;
 }
 
 @media (max-width: 600px) {
@@ -108,7 +97,6 @@ body {
 
 .trainer-info {
   display: flex;
-  align-items: center;
   gap: 15px;
 }
 
@@ -252,10 +240,6 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #edf2f7;
-  border: 2px dashed #a0aec0;
-  border-radius: 8px;
-  padding: 10px;
   text-align: center;
 }
 
@@ -342,11 +326,6 @@ body {
 
 /* Mega Milestone Progress Section */
 .mega-milestone-card {
-  background: #f0f4ff;
-  border: 3px solid var(--poke-blue);
-  border-radius: 8px;
-  padding: 15px;
-  margin-bottom: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -521,10 +500,6 @@ button:disabled,
 
 /* Grid Container & Table */
 .chart-container {
-  margin-bottom: 20px;
-  border: 3px solid var(--border-color);
-  border-radius: 8px;
-  background: white;
   overflow: hidden;
 }
 
@@ -533,9 +508,7 @@ button:disabled,
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  padding: 10px 15px;
   background-color: #f8fafc;
-  border-bottom: 3px solid var(--border-color);
 }
 
 .week-nav-center {
@@ -734,12 +707,7 @@ button:disabled,
   border-bottom: none;
 }
 
-.weekly-grid thead tr {
-  background-color: var(--poke-blue);
-}
-
 .weekly-grid th {
-  background-color: var(--poke-blue);
   color: white;
   font-family: 'Fredoka One', cursive;
   font-size: 0.95rem;
@@ -1065,8 +1033,6 @@ button:disabled,
 .bottom-section {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  border-top: 3px dashed var(--poke-blue);
   padding-top: 15px;
 }
 
@@ -1305,19 +1271,15 @@ button:disabled,
   .trainer-card {
     grid-column: 1;
     grid-template-columns: 1fr; /* Stack trainer info and badge vertically */
-    gap: 15px;
-    margin-bottom: 0;
   }
 
   .mega-milestone-card {
     grid-column: 1;
-    margin-bottom: 0;
   }
 
   .chart-container {
     grid-column: 2;
     grid-row: 2 / span 2; /* Span alongside trainer and mega cards */
-    margin-bottom: 0;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -1339,8 +1301,6 @@ button:disabled,
     grid-column: 1 / -1;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-top: 10px;
   }
 
   .bottom-section .reward-select-container {
@@ -1349,7 +1309,6 @@ button:disabled,
 
   .bottom-section .motivational-quote {
     grid-column: 1 / -1;
-    margin-top: 10px;
   }
 
   .bottom-section .actions {
@@ -2346,7 +2305,6 @@ input:checked + .slider:before {
 .day-header[data-column-state="active_past"],
 .day-header[data-column-state="active_future"] {
   background-color: var(--poke-yellow) !important;
-  color: var(--text-color) !important;
   text-shadow: none !important;
 }
 
@@ -5465,18 +5423,13 @@ body.idle-mode * {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: rgba(0, 0, 0, 0.6);
 }
 
 #pokemon-shop-modal .modal-content {
   max-width: 650px;
   width: 90%;
-  background: white;
-  border: var(--pixel-border);
-  border-radius: 12px;
   padding: 25px;
   position: relative;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   margin: auto;
   display: flex;
   flex-direction: column;
@@ -5852,12 +5805,8 @@ body.has-banner {
 
 /* 2. Level-Up Modal */
 #level-up-modal .modal-content {
-  background: radial-gradient(circle, #fffbeb 0%, #fef3c7 100%); /* Warm Amber */
-  border: var(--pixel-border); /* Consistent thick dark slate border */
-  border-radius: 8px; /* Tighter pixel feel */
   text-align: center;
   max-width: 400px;
-  box-shadow: 8px 8px 0 rgba(45, 55, 72, 0.15); /* Blocky retro shadow */
   animation: modal-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   position: relative;
   overflow: hidden;
@@ -5871,16 +5820,8 @@ body.has-banner {
 }
 
 #level-up-modal h2 {
-  font-family: 'Fredoka One', cursive;
   font-size: 2.2rem;
-  color: var(--poke-yellow);
   /* Retro text outline */
-  text-shadow: 
-    -2px -2px 0 var(--border-color),  
-     2px -2px 0 var(--border-color),
-    -2px  2px 0 var(--border-color),
-     2px  2px 0 var(--border-color),
-     4px  4px 0 rgba(0,0,0,0.15);
   margin: 0; /* Handled by flex gap */
 }
 
@@ -6280,8 +6221,6 @@ body.has-banner .mini-hud.visible {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -8666,8 +8605,6 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 
 .simplified-today-view {
   display: none;
-  padding: 16px 18px 20px;
-  background: linear-gradient(180deg, #f8fafc 0%, #eff6ff 100%);
   box-sizing: border-box;
 }
 
@@ -8678,7 +8615,6 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 .layout-container:not(.exception-mode):not(.last-week-edit) .chart-container[data-chart-style="big-buttons"] .simplified-today-view {
   display: flex;
   flex-direction: column;
-  gap: 14px;
 }
 
 .simplified-day-banner {
@@ -8687,16 +8623,12 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   align-items: center;
   justify-content: flex-start;
   gap: 10px 14px;
-  padding: 8px 2px 0;
   background: transparent;
   border: none;
   box-shadow: none;
 }
 
 .simplified-day-title {
-  font-family: 'Fredoka One', cursive;
-  font-size: 1.22rem;
-  color: #1e293b;
   letter-spacing: 0.01em;
 }
 
@@ -8704,10 +8636,6 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 .simplified-week-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(72px, 96px);
-  gap: 8px;
-  padding: 6px 6px 10px;
-  border-radius: 18px;
-  background: rgba(59, 130, 246, 0.10);
   min-width: 0;
   box-sizing: border-box;
 }
@@ -8715,7 +8643,6 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 .simplified-day-strip {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
   min-width: 0;
   box-sizing: border-box;
 }
@@ -8735,42 +8662,26 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  min-height: 58px;
   width: 100%;
   margin: 0;
   padding: 6px 4px;
   box-sizing: border-box;
   border: none;
-  border-radius: 14px;
-  background:
-    radial-gradient(circle at 18% 28%, rgba(255, 255, 255, 0.75) 0 1px, transparent 1.6px),
-    radial-gradient(circle at 82% 22%, rgba(255, 255, 255, 0.6) 0 1px, transparent 1.6px),
-    radial-gradient(circle at 90% 58%, rgba(249, 168, 212, 0.7) 0 1.2px, transparent 2px),
-    radial-gradient(circle at 10% 60%, rgba(255, 255, 255, 0.45) 0 0.8px, transparent 1.4px),
-    radial-gradient(120% 100% at 50% 0%, var(--vault-bg-top) 0%, var(--vault-bg-bottom) 100%);
   color: var(--vault-ink);
-  font-family: 'Fredoka One', cursive;
   font-size: 0.85rem;
   line-height: 1;
   letter-spacing: 0.03em;
   white-space: nowrap;
-  box-shadow: 0 6px 14px rgba(76, 29, 149, 0.28);
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .simplified-vault-tile:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(124, 58, 237, 0.35);
 }
 
 .simplified-vault-tile:hover .simplified-vault-icon {
   transform: rotate(12deg) scale(1.08);
-}
-
-.simplified-vault-tile:active {
-  transform: translateY(2px) scale(0.97);
-  box-shadow: 0 3px 8px rgba(76, 29, 149, 0.25);
 }
 
 .simplified-vault-tile:focus-visible {
@@ -8780,10 +8691,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 
 .simplified-vault-icon {
   display: inline-flex;
-  width: 32px;
-  height: 32px;
   color: var(--vault-spark);
-  filter: drop-shadow(0 0 5px var(--vault-glow));
   transition: transform 0.2s ease;
 }
 
@@ -8797,12 +8705,8 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  min-height: 58px;
   padding: 6px 4px;
   border: none;
-  border-radius: 14px;
-  font-family: 'Fredoka One', cursive;
   box-sizing: border-box;
   background: transparent;
   color: #64748b;
@@ -8814,10 +8718,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 .simplified-day-pill[data-column-state="active_today"],
 .simplified-day-pill[data-column-state="active_past"],
 .simplified-day-pill[data-column-state="active_future"] {
-  background: linear-gradient(135deg, #fde047 0%, #fbbf24 100%);
   background-color: var(--poke-yellow, #ffcb05);
-  color: #1e293b;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
   transform: translateY(-1px);
   cursor: default;
 }
@@ -8825,9 +8726,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 /* Rule 13A.2: Selectable Unselected Day Pill — Translucent White Card in Ribbon Track */
 .simplified-day-pill[data-column-state="selectable_today"],
 .simplified-day-pill[data-column-state="selectable_past"] {
-  background: rgba(255, 255, 255, 0.88);
   color: #1e3a8a;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
   cursor: pointer;
 }
 
@@ -8845,10 +8744,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 
 /* Rule 13A.3: Future Locked Day Pill */
 .simplified-day-pill[data-column-state="future_locked"] {
-  background: transparent;
   color: #94a3b8;
-  opacity: 0.55;
-  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -8869,28 +8765,18 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 
 /* Rule 13A.5: Historical Week Day Pill (tappable in Simplified mode to inspect days) */
 .simplified-day-pill[data-column-state="historical"] {
-  background: rgba(255, 255, 255, 0.65);
   color: #475569;
-  box-shadow: none;
   cursor: pointer;
 }
 
 .simplified-day-pill[data-column-state="historical"].is-focused {
-  background: linear-gradient(135deg, #fde047 0%, #fbbf24 100%);
   background-color: var(--poke-yellow, #ffcb05);
-  color: #1e293b;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.30);
 }
 
 .simplified-pill-day {
   font-size: 0.76rem;
   letter-spacing: 0.04em;
   line-height: 1.1;
-  color: #475569; /* ≈ 6.8:1 on the strip tint (was inheriting #94a3b8/#64748b) */
-}
-
-.simplified-day-pill[data-column-state^="active"] .simplified-pill-day {
-  color: #1e293b; /* Rule 13B */
 }
 
 .simplified-pill-star {
@@ -8909,7 +8795,6 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 .simplified-cards-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
 .simplified-empty-state {
@@ -8930,12 +8815,8 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  min-height: 76px;
-  padding: 10px 14px 10px 12px;
-  background: #ffffff;
   border: none;
   border-radius: 999px;
-  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
   box-sizing: border-box;
   cursor: pointer;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background 0.2s ease;
@@ -8943,28 +8824,10 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 
 .simplified-task-card:hover:not(.is-rest):not(.is-out-of-range) {
   transform: translateY(-2px);
-  box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.12), 0 4px 8px -1px rgba(15, 23, 42, 0.06);
-}
-
-/* Done state (UX review #2 rec #2): warm earned-star tile with charcoal text instead of green/white. */
-.simplified-task-card.is-checked {
-  background: #fef3c7;
-  box-shadow: 0 8px 22px -4px rgba(217, 119, 6, 0.22), 0 2px 6px -1px rgba(217, 119, 6, 0.10);
-}
-
-.simplified-task-card.is-bonus {
-  background: linear-gradient(90deg, #f0f9ff 0%, #e0f2fe 100%);
-}
-
-.simplified-task-card.is-bonus.is-checked {
-  background: linear-gradient(90deg, #eff6ff 0%, #dbeafe 100%);
-  box-shadow: 0 8px 22px -4px rgba(37, 99, 235, 0.22);
 }
 
 .simplified-task-card.is-rest,
 .simplified-task-card.is-out-of-range {
-  background: rgba(241, 245, 249, 0.85);
-  box-shadow: none;
   cursor: default;
 }
 
@@ -8982,11 +8845,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 62px;
-  height: 62px;
   flex-shrink: 0;
-  font-size: 2.15rem;
-  background: #ffffff;
   border: 3px solid var(--task-ring);
   border-radius: 50%;
   box-sizing: border-box;
@@ -9002,12 +8861,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 .simplified-card-emoji[data-ring="5"] { --task-ring: #a890f0; } /* Flying */
 
 .simplified-task-card.is-checked .simplified-card-emoji {
-  background: #fffbeb;
   transform: scale(1.04);
-}
-
-.simplified-task-card.is-bonus .simplified-card-emoji {
-  background: #f0f9ff;
 }
 
 .simplified-task-card.is-rest .simplified-card-emoji,
@@ -9033,9 +8887,7 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 }
 
 .simplified-card-name {
-  font-family: 'Fredoka One', cursive;
   font-size: 1.18rem;
-  color: #1e293b;
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
@@ -9048,11 +8900,6 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   font-family: 'Fredoka One', cursive;
   font-size: 0.72rem;
   line-height: 1.2;
-}
-
-.simplified-card-tag.bonus-tag {
-  background: #e0f2fe;
-  color: #0369a1;
 }
 
 .simplified-card-tag.rest-tag,
@@ -9158,7 +9005,6 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   height: var(--sv-ball-size) !important;
   border-width: var(--sv-ball-border);
   box-sizing: border-box;
-  box-shadow: 0 4px 0 rgba(45, 55, 72, 0.25);
   transform-origin: 50% 85%;
 }
 
@@ -9219,12 +9065,8 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 }
 
 @media (max-width: 520px) {
-  .simplified-today-view {
-    padding: 12px 12px 16px;
-  }
 
   .simplified-day-pill {
-    min-height: 52px;
     padding: 4px 2px;
   }
 
@@ -9234,22 +9076,10 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 
   .simplified-week-row {
     grid-template-columns: minmax(0, 1fr) 56px;
-    gap: 4px;
-    padding: 4px 4px 8px;
-  }
-
-  .simplified-day-strip {
-    gap: 3px;
   }
 
   .simplified-vault-tile {
-    min-height: 52px;
     font-size: 0.66rem;
-  }
-
-  .simplified-vault-icon {
-    width: 26px;
-    height: 26px;
   }
 
   .simplified-today-view {
@@ -9257,19 +9087,11 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   }
 
   .simplified-task-card {
-    padding: 8px 10px 8px 10px;
     gap: 10px;
-    min-height: 70px;
   }
 
   .simplified-card-main {
     gap: 12px;
-  }
-
-  .simplified-card-emoji {
-    width: 54px;
-    height: 54px;
-    font-size: 1.85rem;
   }
 
   .simplified-card-name {
@@ -9355,6 +9177,11 @@ body[data-theme="unicorn"] .checkbox-cell.bonus-cell:not(.superseded-cell) .poke
      variable. Buttons are restyled only inside kid containers.
    - Rule 13B: active/today headers and pills keep #1e293b text on yellow.
    - Rule 14: the only dark outlines left are on the checkboxes.
+   SKIN LAYER: body[data-theme] is always set (index.html sets it before any
+   markup), so the rules from here to the end of the file win over the base
+   rules above for BOTH themes. Edit the value here; base values these rules
+   restate were deleted (docs/plan_style_css_cleanup.md P2). Unicorn-only
+   values are the body[data-theme="unicorn"] token block and selectors.
    ========================================================================== */
 body[data-theme] {
   /* ---- Direction B "Pokémon Center" tokens (default) ---- */

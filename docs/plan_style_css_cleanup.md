@@ -1,6 +1,6 @@
 # Plan: style.css cleanup (light path)
 
-**Status:** P0 and P1 done (2026-11-01). P2 is next.
+**Status:** P0, P1 and P2 done (2026-11-01). P3 is next.
 **Owner:** crsjain. **Goal:** make `style.css` faster and safer to edit, for the owner and her
 agents, **without changing how anything looks**.
 
@@ -101,18 +101,31 @@ End state is about 10,700–10,900 lines. The bigger win: what an agent finds by
   - The rig caught a bad intermediate attempt, where removing an emptied rule left half a selector list attached to the next rule. Its computed-style diff flagged the superseded cells even though the pixels matched.
   - `compare.js`'s vendor-prefix lint now keys by rule, so deleting a whole dead rule is info, not an error.
 
-### P2: base values shadowed by the skin
+### P2: base values shadowed by the skin. ✅ 2026-11-01
 
-- [ ] Delete a base declaration only when every one of these holds:
-  - Its selector equals a skin selector minus the leading `body[data-theme] `. Bare `[data-theme]` only, never `="unicorn"`.
-  - It sits in the same `@media` context.
-  - It sets the same property name. Shorthand and longhand count as different, so `background` vs `background-color` stays.
-  - The base declaration is not `!important` unless the skin's is too.
+- [x] Deleted 132 base declarations, 12 of them as whole rules, using the rule below. Script: `scratch/p2.js` in conv `9c83646b`.
 
-  The skin rule then always wins (higher specificity, later in the file), so the base value is dead. About 116 declarations and 15 whole rules.
-- [ ] Leave the skin in place. Do not move skin rules or drop the `body[data-theme]` prefix, which would lower specificity.
-- [ ] Add a header at the top of the skin block: *"Skin layer: these rules win over the base rules above for both themes. Edit the value here; Unicorn-only values are the `body[data-theme="unicorn"]` token block."*
-- [ ] Gate (§3). Split into P2a (main screen + grid) and P2b (Big Buttons + modals) if the diff is large. Commit per sub-phase.
+  A base declaration was deleted only when all of these held:
+  - **Every** selector in its list has a `body[data-theme] <same selector>` skin twin.
+  - The twin sets the same property name.
+  - The skin's `@media` chain is a subset of the base's, so the skin applies whenever the base does.
+  - The base is not `!important` unless the skin is too.
+  - The skin value uses no newer feature, which would make the base value a fallback.
+
+  The areas covered:
+  - Panels and cards (`.app-container`, header, trainer/badge/Mega cards, chart, bottom section).
+  - Grid header.
+  - Shop, level-up and showcase modal shells.
+  - Most of the old Big Buttons look: tray, ribbon, pills, Vault tile, cards, emoji, the compact rhythm.
+- [x] The skin stayed in place. No skin rule was moved or edited.
+- [x] Added a "SKIN LAYER" note to the skin banner: it wins for both themes, so edit values there.
+- [x] Removed 1 comment that only described a deleted rule.
+- [x] Gate:
+  - Suite green (34.5 s).
+  - Compare: 723 screens, 0 changes, 13 within raster noise, lint ok.
+  - Cache `v274`, `style.css?v=11.37`.
+- **Result:** 10,980 → 10,807 lines (−173), `!important` 296 → 295.
+- **Cumulative:** 11,380 → 10,807 (−573), `!important` 306 → 295.
 
 ### P3: navigation for agents
 
@@ -140,4 +153,4 @@ End state is about 10,700–10,900 lines. The bigger win: what an agent finds by
 ## 7. Log
 
 - 2026-10-31: audit and options (conv `9c83646b`).
-- 2026-11-01: Senior Staff Engineer review (conv `b0a761e9`); decisions D1–D4; P0; P1.
+- 2026-11-01: Senior Staff Engineer review (conv `b0a761e9`); decisions D1–D4; P0; P1; P2.
