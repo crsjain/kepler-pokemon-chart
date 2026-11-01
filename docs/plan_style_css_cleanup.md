@@ -1,0 +1,133 @@
+# Plan: style.css cleanup (light path)
+
+**Status:** P0 done (2026-11-01). P1 is next.
+**Owner:** crsjain. **Goal:** make `style.css` faster and safer to edit, for the owner and her
+agents, **without changing how anything looks**.
+
+---
+
+## 1. Why
+
+`style.css` grew from 6,201 to 11,379 lines between 2026-09-24 and 2026-10-31. It is now 281 KB,
+with 306 `!important` declarations and 53 `@media` blocks.
+
+The real problem is layering, not length:
+
+1. **The theme skin (L9729–11380) overrides older base rules.** Agents find the base value by searching, edit it, and nothing changes.
+2. **Escalating `!important` rules (Rule 14 cell skins → column state → Big Buttons → Unicorn hearts) mean every fix needs another `!important`.**
+
+Audit at commit `042d169`:
+
+- **The skin rules are the real base.** `index.html` L159 sets `data-theme` before any markup, and nothing ever removes it. So the 302 bare `body[data-theme] …` selectors apply to both themes all the time. Only 12 selectors are Unicorn-only.
+- **Dead code under the skin:**
+  - 269 base rules are overridden by a skin rule.
+  - 116 base declarations are fully shadowed (the skin restates the exact selector and property).
+  - 15 base rules are dead outright.
+- **About 170 `!important`s are one escalation chain.** Many set `pointer-events` and `cursor`, so they decide what a child can tap, not only how things look.
+- **Unreferenced code:**
+  - 47 dead rules (about 295 lines) use 30 classes/IDs that no module or `index.html` uses.
+  - 4 custom properties are unused: `--shadow` and `--sk-warn-bg`/`-fg`/`-lip`.
+  - 22 selectors are duplicated in the same `@media` context, with 19 shadowed declarations.
+- **Test pins:** 132 `getComputedStyle` checks in 24 test cases pin computed values. They don't pin selectors.
+
+## 2. Owner decisions (2026-11-01)
+
+| # | Decision |
+|---|---|
+| D1 | Take the **light path** recommended by the Senior Staff Engineer review: dead code, then shadowed base values, then navigation markers. The full rebuild is deferred (§5). |
+| D2 | Commit the screenshot **scripts** to the repo (`tools/css_rig/`), but **not the screenshots**. Screenshots go to `~/.cache/kpc-css-rig/`, 723 screens and about 190 MB, and any commit can regenerate them. The scripts are not in `ASSETS_TO_CACHE`. |
+| D3 | **Improve the screenshot check before any CSS change.** Add 2× density (tablet), Exception Mode, Fix last week + grace dock, superseded columns, boot skeleton, forced hover/active/focus, a seeded Great Ball/Crown and a "Not on the plan" day, `cursor`/`pointer-events`/`touch-action` in the fingerprint, and a lint for things Chrome can't see. |
+| D4 | No visual change, in both themes, both chart styles and past weeks. UX guidelines stay binding. |
+
+Not chosen: (a) the full in-place rebuild, (b) a split into 6 files, (c) the rebuild plus an
+`admin.css` split. The review found the fold saves only about 1,000 lines, not 2,000. Unwinding
+`!important` changes tap behaviour that screenshots can't see. And splitting adds versioned
+requests without removing any fights.
+
+## 3. Gate for every phase
+
+A phase is committed only when all of these hold:
+
+1. **Screenshots.** Run `node tools/css_rig/capture.js <phase>-after`, then `node tools/css_rig/compare.js baseline <phase>-after`.
+   - It must exit 0: no lint errors, and nothing beyond raster noise (at most 16 px with identical computed styles).
+   - Always compare against the original `baseline` (§6), not the previous phase, so drift can't build up.
+2. **Tests.** `node run_headless_tests.js` is 100% green.
+3. **Cache busting** (AGENTS.md §6.1): bump `CACHE_NAME` and `style.css?v=` in `index.html`.
+4. **One local commit per phase** (or sub-phase), staging explicit paths. No push; deploy only through `pokemon-session-wrapup` on the owner's say-so.
+
+Safari/iPad guardrails (the rig is Chrome-only; `compare.js` lints for these):
+
+- Never delete a vendor-prefixed line (`-webkit-backdrop-filter`, `-webkit-appearance`, …) as a "duplicate".
+- Never merge selector lists that contain a vendor pseudo (`::-webkit-slider-thumb`, `::-moz-range-thumb`, `::-webkit-scrollbar*`). A browser that doesn't know the pseudo drops the whole rule.
+- Never touch `@keyframes` bodies. The rig freezes animations, so a broken one would not show.
+
+## 4. Phases
+
+| Phase | Work | Est. lines | Est. `!imp` | Risk |
+|---|---|---:|---:|---|
+| P0 | This plan, `tools/css_rig/`, the new baseline | 0 | 0 | None |
+| P1 | Dead code and duplicates | −300 to −400 | −0 to −5 | Low |
+| P2 | Delete base declarations shadowed by the skin; add a skin header | −150 to −300 | 0 | Low–medium |
+| P3 | Section markers and an AGENTS.md map | +40 | 0 | None |
+
+End state is about 10,700–10,900 lines. The bigger win: what an agent finds by searching is the value that's actually live, and it can jump straight to an area.
+
+### P0: plan, rig and baseline. ✅ 2026-11-01
+
+- [x] Senior Staff Engineer review of the first plan (conv `b0a761e9`); owner decisions D1–D4.
+- [x] `tools/css_rig/capture.js`, `compare.js`, `README.md`. The rig serves the repo on :8000 directly and blanks `tests.js` through CDP.
+- [x] Rig improvements from D3.
+- [x] Baseline captured: 723 screens at `042d169` (the P0 commit ships no app change). An A/A re-run showed 0 changes and 8 screens within raster noise. The Fix-last-week countdown text is pinned so it stays deterministic.
+- [x] Plan committed before any CSS change.
+
+### P1: dead code and duplicates
+
+- [ ] Delete the 47 rules whose every selector uses an unreferenced class/ID.
+  - Re-run the audit first (`cssmap.js` in conv `9c83646b` scratch, or re-check every token against all `*.js` + `index.html`).
+  - Check `tests.js` too: `.day-total-count` and `.coming-soon-tag` appear only in absence asserts, so their CSS can go.
+  - Keep dynamic families (`badge-theme-N`, `type-*`).
+- [ ] Delete `--shadow` and `--sk-warn-bg`/`--sk-warn-fg`/`--sk-warn-lip`. This closes the Checkpoint 84 follow-up.
+- [ ] Duplicates (same selector, same `@media` context): delete only the **earlier** rule's declarations that the later rule restates with the same importance (19). Then delete rules left empty.
+  - Do **not** move or merge whole rules: rules in between could win.
+- [ ] Gate (§3). Commit: `style.css cleanup P1: remove dead rules, unused tokens, shadowed duplicates`.
+
+### P2: base values shadowed by the skin
+
+- [ ] Delete a base declaration only when every one of these holds:
+  - Its selector equals a skin selector minus the leading `body[data-theme] `. Bare `[data-theme]` only, never `="unicorn"`.
+  - It sits in the same `@media` context.
+  - It sets the same property name. Shorthand and longhand count as different, so `background` vs `background-color` stays.
+  - The base declaration is not `!important` unless the skin's is too.
+
+  The skin rule then always wins (higher specificity, later in the file), so the base value is dead. About 116 declarations and 15 whole rules.
+- [ ] Leave the skin in place. Do not move skin rules or drop the `body[data-theme]` prefix, which would lower specificity.
+- [ ] Add a header at the top of the skin block: *"Skin layer: these rules win over the base rules above for both themes. Edit the value here; Unicorn-only values are the `body[data-theme="unicorn"]` token block."*
+- [ ] Gate (§3). Split into P2a (main screen + grid) and P2b (Big Buttons + modals) if the diff is large. Commit per sub-phase.
+
+### P3: navigation for agents
+
+- [ ] Add a greppable marker at each area: `/* @section <name>: <one line> */`.
+  - Names: `tokens`, `header-cards`, `grid`, `cells-rule14`, `daily-total`, `modals-base`, `admin-legacy`, `column-states`, `admin-shell`, `vault`, `badge-case`, `exception-mode`, `guide`, `login-profiles`, `shop`, `showcase`, `grace-dock`, `boot`, `admin-revamp`, `big-buttons`, `skin-unicorn-checkbox`, `skin`, `skin-modals`.
+- [ ] A short index comment at the top of `style.css` listing the section names (no line numbers, which go stale).
+- [ ] AGENTS.md §2: the same map, plus "search `@section <name>`, then read that range; values in the skin sections override earlier ones".
+- [ ] Gate (§3). Comments only, so the screenshots must be byte-identical. Commit.
+
+## 5. Deferred (not planned; pick up only when a feature already touches that area)
+
+| Item | Why deferred | Before starting |
+|---|---|---|
+| Fold the skin into base rules | About −1,000 lines; changes specificity in states the rig doesn't show | Add rig states for the area; per-area sub-phases |
+| Unwind the cell-skin `!important` chain (~170) | Controls tapping (`pointer-events`) in Exception Mode, superseded and past weeks; screenshots can't see it | Add `elementFromPoint` tap asserts to `tests.js` for Exception Mode × rest/bonus/superseded |
+| Regroup by area and merge `@media` (53 → ~25) | Moving rules can change winners between equal-specificity rules | Do it only after the fold |
+| Split out `admin.css` | Admin sits in 4 places and interleaves with modal rules; little agent benefit once P3 exists | Needs its own `<link ?v=>`, an `ASSETS_TO_CACHE` entry and TC90 changes |
+
+## 6. Baseline
+
+- `~/.cache/kpc-css-rig/baseline/`, captured at `042d169` with the P0 rig.
+- It covers 5 viewports (1366×1024, 1180×820, 1180×820@2, 768×1024, 390×844) × 2 themes, with main, past, modal, admin, state and pseudo screens.
+- **Regenerate if lost:** `git stash` or check out the P0 commit, run `node tools/css_rig/capture.js baseline`, then return. The fixed clock makes this independent of today's date.
+
+## 7. Log
+
+- 2026-10-31: audit and options (conv `9c83646b`).
+- 2026-11-01: Senior Staff Engineer review (conv `b0a761e9`); decisions D1–D4; P0.
