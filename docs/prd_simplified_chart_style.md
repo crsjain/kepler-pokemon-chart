@@ -113,6 +113,7 @@ When `state.chartStyle === 'big-buttons'` and neither Exception Mode nor Fix Las
   - **Today (`SELECTABLE_TODAY`)**: Switches `state.activeDay` immediately with zero modal.
   - **Past Day (`SELECTABLE_PAST`)**: If `requiresParentApproval(col.dateStr)` is true (`state.lockPastDays`), prompts for the **Parent PIN** (`withParentApproval`) and then switches straight to that day; otherwise prompts `"Switch Day? 📅"`.
   - **Viewing a Past Day**: The `#back-to-today-btn` (`⚡ Back to Today`) pill appears in `.week-navigation-container` as usual so child or parent can jump back to Today in one tap.
+  - **Planned change (approved 2026-11-01, not yet implemented):** once the week has ended but the grid hasn't been reset, and no day is active, no day pill is focused. The cards area shows one "Pick a day to fix, or start your new week 🚀" card instead, and `🚀 Start New Week` sits under the week dates. See [`prd_week_over_start_new_week.md`](prd_week_over_start_new_week.md) §4.5.
   - **Viewing an Archived Historical Week (`◀ Prev`)**: All cards render in read-only `historical` state (`disabled`), and clicking any day pill on the 7-day strip previews that day's cards in the archived week (`viewingHistoricalDayIndex`).
 
 ### 3.4 Automatic Full-Week Grid in Parent Edit Modes
