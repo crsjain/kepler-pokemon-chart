@@ -17,9 +17,13 @@ const root = process.env.CSS_RIG_OUT || path.join(os.homedir(), '.cache', 'kpc-c
 function cssOf(tag) { const d = path.join(root, tag); return fs.readdirSync(d).filter(f => f.endsWith('.css')).map(f => fs.readFileSync(path.join(d, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')).join('\n'); }
 function lint() {
   const a = cssOf(A), b = cssOf(B), errs = [];
-  const prefixed = s => { const m = new Map(); for (const x of s.matchAll(/(-(?:webkit|moz|ms)-[\w-]+)\s*:\s*([^;}]+)/g)) { const k = x[1] + ': ' + x[2].trim().replace(/\s+/g, ' '); m.set(k, (m.get(k) || 0) + 1); } return m; };
-  const pa = prefixed(a), pb = prefixed(b);
-  for (const [k, n] of pa) if ((pb.get(k) || 0) < n) errs.push(`vendor-prefixed declaration removed (${n} -> ${pb.get(k) || 0}): ${k}`);
+  // keyed by selector, so deleting a whole dead rule is allowed but dropping a prefixed line from a
+  // rule that still exists (e.g. "-webkit-backdrop-filter" next to "backdrop-filter") is not.
+  const prefixed = s => { const m = new Map(); for (const r of s.matchAll(/([^{}]+)\{([^{}]*)\}/g)) { const sel = r[1].trim().replace(/\s+/g, ' '); for (const x of r[2].matchAll(/(-(?:webkit|moz|ms)-[\w-]+)\s*:\s*([^;}]+)/g)) { const k = sel + ' { ' + x[1] + ': ' + x[2].trim().replace(/\s+/g, ' ') + ' }'; m.set(k, (m.get(k) || 0) + 1); } } return m; };
+  const selsOf = s => new Set([...s.matchAll(/([^{}]+)\{[^{}]*\}/g)].map(r => r[1].trim().replace(/\s+/g, ' ')));
+  const pa = prefixed(a), pb = prefixed(b), sb = selsOf(b); let wholeRuleDrops = 0;
+  for (const [k, n] of pa) { const sel = k.slice(0, k.indexOf(' { ')); if (!sb.has(sel)) { wholeRuleDrops++; continue; } if ((pb.get(k) || 0) < n) errs.push(`vendor-prefixed declaration removed from a rule that still exists (${n} -> ${pb.get(k) || 0}): ${k}`); }
+  if (wholeRuleDrops) console.log(`info: ${wholeRuleDrops} vendor-prefixed declaration(s) left with whole rules that were deleted`);
   const frames = s => { const m = new Map(); const re = /@(?:-webkit-)?keyframes\s+([\w-]+)\s*\{/g; let x; while ((x = re.exec(s))) { let d = 1, i = re.lastIndex; while (d && i < s.length) { if (s[i] === '{') d++; else if (s[i] === '}') d--; i++; } m.set(x[0].replace(/\s+/g, ' ') , s.slice(re.lastIndex, i).replace(/\s+/g, '')); } return m; };
   const fa = frames(a), fb = frames(b);
   for (const [k, v] of fa) if (fb.get(k) !== v) errs.push(`@keyframes changed or removed: ${k}`);

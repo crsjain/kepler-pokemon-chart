@@ -60,7 +60,7 @@ The run is made deterministic in four ways:
 ## How compare decides
 
 1. **Lint** of the saved CSS copies. Each check guards against something Chrome can't see:
-   - **No vendor-prefixed declaration may disappear.** For example, `-webkit-backdrop-filter` keeps the blur on iPads.
+   - **No vendor-prefixed declaration may disappear from a rule that still exists.** For example, `-webkit-backdrop-filter` keeps the blur on iPads. Deleting a whole dead rule is reported as info, not an error.
    - **No `@keyframes` may change**, since animations are frozen in the screenshots.
    - **No new selector list may mix a vendor pseudo (`::-webkit-…`) with other selectors.** A browser that doesn't know the pseudo drops the whole rule.
 2. **Screens**: byte-identical PNGs pass. Otherwise pixels and fingerprints are diffed.

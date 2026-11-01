@@ -10,7 +10,6 @@
   --text-color: #2d3748;
   --xp-color: #4caf50;
   --xp-bg: #e2e8f0;
-  --shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
   --pixel-border: 4px solid var(--border-color);
 }
 
@@ -231,15 +230,6 @@ body {
   width: 100%;
   height: 100%;
   pointer-events: none;
-}
-
-.xp-milestone-marker {
-  position: absolute;
-  top: 0;
-  width: 2px;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.35);
-  z-index: 2;
 }
 
 .evolution-helper {
@@ -470,14 +460,6 @@ body {
   animation: pulse 1.5s infinite alternate;
 }
 
-/* Purple highlight on earned Mega Reward */
-.reward-select-container.mega-earned .pixel-select {
-  background-color: #faf5ff;
-  border-color: #7c3aed;
-  box-shadow: 0 0 15px rgba(124, 58, 237, 0.5), 0 3px 0 #7c3aed;
-  animation: pulsePurple 1.5s infinite alternate;
-}
-
 /* Pixel Buttons */
 .pixel-btn {
   background: var(--poke-yellow);
@@ -694,20 +676,6 @@ button:disabled,
   filter: grayscale(100%) opacity(0.6) !important;
 }
 
-.checkbox-cell.superseded-cell.excused-cell .pokeball::before {
-  content: '★' !important;
-  opacity: 0.45 !important;
-  color: #64748b !important;
-  text-shadow: none !important;
-  background: transparent !important;
-  border-bottom: none !important;
-}
-
-.checkbox-cell.superseded-cell.excused-cell .pokeball::after,
-.checkbox-cell.superseded-cell .pokeball-checkbox::after {
-  display: none !important;
-}
-
 .day-header.superseded-header {
   opacity: 0.5 !important;
   background: repeating-linear-gradient(
@@ -737,59 +705,6 @@ button:disabled,
 .day-total-cell.superseded-total .badge-indicator {
   opacity: 0.35;
   filter: grayscale(100%);
-}
-
-.transition-options-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 16px 0;
-  text-align: left;
-}
-
-.transition-option-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 2px solid #cbd5e1;
-  border-radius: 8px;
-  background-color: #f8fafc;
-  cursor: pointer;
-  transition: border-color 0.2s, background-color 0.2s;
-}
-
-.transition-option-card:hover {
-  border-color: #3b82f6;
-  background-color: #eff6ff;
-}
-
-.transition-option-card.selected {
-  border-color: #2563eb;
-  background-color: #dbeafe;
-}
-
-.transition-option-card input[type="radio"] {
-  margin-top: 3px;
-  cursor: pointer;
-}
-
-.transition-option-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.transition-option-title {
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #1e293b;
-}
-
-.transition-option-desc {
-  font-size: 0.85rem;
-  color: #64748b;
-  line-height: 1.3;
 }
 
 .grid-scroll-wrapper {
@@ -1082,12 +997,6 @@ button:disabled,
   transform: scale(1.12);
 }
 
-.weekly-grid td.day-total-cell.unlocked {
-  opacity: 1 !important;
-  background: rgba(254, 243, 199, 0.45) !important;
-  border-radius: 6px;
-}
-
 .badge-indicator.future-star {
   display: inline-flex;
   align-items: center;
@@ -1152,11 +1061,6 @@ button:disabled,
   border-width: 0;
 }
 
-/* Hide any daily total count text (clean X and stars only for 7yo readability) */
-.day-total-count {
-  display: none !important;
-}
-
 /* Bottom Section */
 .bottom-section {
   display: flex;
@@ -1164,12 +1068,6 @@ button:disabled,
   gap: 15px;
   border-top: 3px dashed var(--poke-blue);
   padding-top: 15px;
-}
-
-.reward-input-container {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
 }
 
 .reward-label {
@@ -1342,10 +1240,6 @@ button:disabled,
   100% { transform: scale(1); filter: brightness(1); }
 }
 
-.level-up {
-  animation: levelUpAnimation 0.8s ease-out;
-}
-
 /* Notification Modal Styles */
 .notification-content {
   border: 4px solid var(--poke-blue);
@@ -1465,19 +1359,6 @@ button:disabled,
     gap: 15px;
     flex-wrap: wrap;
   }
-}
-
-/* Admin Modal Styles */
-.admin-options {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.admin-options .pixel-btn {
-  width: 100%;
-  text-align: center;
 }
 
 
@@ -1789,16 +1670,6 @@ input:checked + .slider:before {
 
 .testing-buttons > .pixel-btn {
   width: 100%;
-  text-align: center;
-}
-
-.testing-row {
-  display: flex;
-  gap: 10px;
-}
-
-.testing-row .pixel-btn {
-  flex: 1;
   text-align: center;
 }
 
@@ -2176,44 +2047,6 @@ input:checked + .slider:before {
   padding: 15px 0;
 }
 
-/* Sound Control Styles */
-.sound-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: white;
-  border: 2px solid var(--border-color);
-  border-radius: 6px;
-  padding: 4px 8px;
-  box-shadow: 0 2px 0 var(--border-color);
-  margin-left: 10px;
-}
-
-.sound-icon {
-  font-size: 1rem;
-  cursor: pointer;
-  user-select: none;
-}
-
-.volume-slider {
-  width: 80px;
-  height: 6px;
-  -webkit-appearance: none;
-  background: #e2e8f0;
-  border-radius: 3px;
-  outline: none;
-}
-
-.volume-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--poke-blue);
-  cursor: pointer;
-  border: 2px solid var(--border-color);
-}
-
 /* Dynamic Tasks Editor Styles */
 .admin-tasks-list {
   display: flex;
@@ -2306,32 +2139,6 @@ input:checked + .slider:before {
   box-sizing: border-box;
 }
 
-.admin-task-item .task-goal-container {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-}
-
-.admin-task-item .task-goal-label {
-  font-family: 'Quicksand', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #64748b;
-}
-
-.admin-task-item input[type="number"].task-req-input {
-  width: 50px;
-  height: 36px;
-  padding: 6px;
-  border: 2px solid #cbd5e1;
-  border-radius: 6px;
-  text-align: center;
-  font-family: 'Quicksand', sans-serif;
-  font-size: 0.95rem;
-  box-sizing: border-box;
-}
-
 .admin-tasks-actions {
   display: flex;
   gap: 10px;
@@ -2366,16 +2173,6 @@ input:checked + .slider:before {
   display: flex;
   gap: 6px;
   flex-shrink: 0;
-}
-
-/* 42×42 = minimum touch target (PRD admin redesign §4.7 R8-1, Phase 3) */
-.admin-profile-actions .pixel-btn.admin-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  padding: 0;
 }
 
 /* Labelled row actions ("Edit Rewards", "Delete") — owner asked for text so the
@@ -3446,25 +3243,6 @@ input:checked + .slider:before {
   .vault-star-wrapper {
     width: 34px;
     height: 34px;
-  }
-}
-
-/* Star Vault Admin Controls Adjuster */
-.number-adjuster {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.star-vault-admin {
-  grid-column: 1 / -1; /* Take full width on mobile */
-}
-
-@media (min-width: 768px) {
-  /* Place Star Vault Admin section below backup/rewards sections */
-  .star-vault-admin {
-    grid-column: 2 / span 2;
-    grid-row: 3;
   }
 }
 
@@ -4955,67 +4733,7 @@ input:checked + .slider:before {
   margin-top: 10px;
 }
 
-.confirm-warning-intro {
-  font-weight: 700;
-  margin-bottom: 15px;
-  color: var(--text-color);
-  text-align: center;
-}
-
-.confirm-info-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 20px 0;
-}
-
-.confirm-info-list li {
-  margin-bottom: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 @media (min-width: 480px) {
-  .confirm-info-list li {
-    flex-direction: row;
-    align-items: baseline;
-    gap: 8px;
-  }
-}
-
-.badge-label {
-  display: inline-block;
-  padding: 2px 8px;
-  font-family: 'Fredoka One', cursive;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  border-radius: 4px;
-  border: 2px solid var(--border-color);
-  text-align: center;
-  min-width: 60px;
-}
-
-.badge-label.safe {
-  background-color: #d1fae5;
-  color: #065f46;
-  border-color: #059669;
-}
-
-.badge-label.reset {
-  background-color: #fee2e2;
-  color: #991b1b;
-  border-color: #dc2626;
-}
-
-.confirm-tip-box {
-  background-color: #fef3c7;
-  border: 3px solid #d97706;
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 0.9rem;
-  color: #92400e;
-  margin-bottom: 15px;
-  box-shadow: 0 4px 0 #d97706;
 }
 
 /* Admin Action Grouping & Layout */
@@ -5104,13 +4822,6 @@ input:checked + .slider:before {
     align-items: stretch;
     gap: 4px;
   }
-}
-
-.confirm-tip-box.info-box {
-  background-color: #e0f2fe;
-  border: 3px solid #0284c7;
-  color: #0369a1;
-  box-shadow: 0 4px 0 #0284c7;
 }
 
 /* Idle Mode - Pause all animations to allow device sleep */
@@ -5845,42 +5556,6 @@ body.idle-mode * {
   border-color: #94a3b8;
 }
 
-/* Styled filter toggle button (formerly checkbox label) */
-.filter-toggle-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 14px;
-  font-size: 0.85rem;
-  border-radius: 8px;
-  border: 2px solid #cbd5e1;
-  background: #f8fafc;
-  color: #64748b;
-  cursor: pointer;
-  font-weight: 600;
-  user-select: none;
-  transition: all 0.2s ease;
-}
-
-.filter-toggle-label:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-}
-
-/* Hide actual checkbox input */
-.filter-toggle-label input {
-  display: none;
-}
-
-/* Checked/Active state for toggle label */
-.filter-toggle-label.active {
-  background: #fef3c7; /* light yellow */
-  border-color: #f59e0b; /* amber-500 */
-  color: #b45309; /* amber-700 */
-  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.15);
-}
-
 /* Screen 2: Confirm Unlock (Hold-to-Unlock) */
 /* Rule 8: responsive max-height and scrolling for low-height devices */
 #shop-screen-confirm {
@@ -6004,11 +5679,6 @@ body.idle-mode * {
   
   .shop-filter-bar select {
     flex: 1 1 100%; /* force select to wrap to full width on extremely small mobile */
-  }
-  
-  .filter-toggle-label {
-    flex-grow: 1;
-    justify-content: center;
   }
   
   #shop-screen-confirm {
@@ -7173,46 +6843,11 @@ body.has-banner .mini-hud.visible {
 /* Admin: Chart Style segmented control (Standard 7-Day Grid vs. Big Buttons Today Focus)
    Activated per docs/prd_simplified_chart_style.md. Legacy .admin-coming-soon
    rules kept only if a future card uses them. */
-.admin-coming-soon {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  cursor: not-allowed;
-}
-
-.admin-coming-soon-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  font-family: 'Fredoka One', cursive;
-  font-size: 0.88rem;
-  color: #64748b;
-}
-
-.coming-soon-tag {
-  font-family: 'Quicksand', sans-serif;
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #475569;
-  background: #e2e8f0;
-  border-radius: 999px;
-  padding: 2px 8px;
-  white-space: nowrap;
-}
 
 .admin-segmented {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-}
-
-.admin-coming-soon .admin-segmented {
-  opacity: 0.55;
-  filter: grayscale(1);
-  pointer-events: none;
 }
 
 .admin-segment {
@@ -8141,22 +7776,6 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 }
 
 /* List row: ≥56px, leading control, 2-line left-aligned text, trailing actions */
-#admin-modal .adm-list-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 56px;
-  text-align: left;
-}
-
-#admin-modal .adm-list-row-text {
-  flex: 1;
-  min-width: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
 
 
 /* Data: paired buttons wrap on narrow panes (Rule 7) */
@@ -9764,9 +9383,6 @@ body[data-theme] {
   --sk-btn1-bg: #ffcb05;
   --sk-btn1-fg: #1e293b;
   --sk-btn1-lip: #c99a00;
-  --sk-warn-bg: #fdba74;
-  --sk-warn-fg: #7c2d12;
-  --sk-warn-lip: #ea8a3c;
   --sk-soft-btn-bg: #eef5ff;
   --sk-footer-rule: #eef2f7;
   --sk-due-bg: #fb923c;
@@ -9826,7 +9442,6 @@ body[data-theme] .app-container {
 
 body[data-theme] .game-header {
   border-bottom: none;
-  padding-bottom: 4px;
 }
 
 body[data-theme] .game-header .title {
@@ -9837,7 +9452,6 @@ body[data-theme] .game-header .title {
   letter-spacing: 0.01em;
   color: var(--sk-title-fg);
   text-shadow: var(--sk-title-shadow);
-  margin-bottom: 4px;
 }
 
 body[data-theme] .game-header .subtitle {
@@ -9881,7 +9495,6 @@ body[data-theme] .mega-milestone-card {
 }
 
 body[data-theme] .bottom-section {
-  padding: 18px 20px;
   border-top: none;
 }
 
@@ -10115,7 +9728,6 @@ body[data-theme] .day-header[data-column-state="active_future"] {
 /* ---- Big Buttons (Today Focus) ---- */
 body[data-theme] .simplified-today-view {
   background: var(--sk-tray);
-  padding: 16px;
 }
 
 body[data-theme] .simplified-day-title {
@@ -10128,19 +9740,12 @@ body[data-theme] .simplified-day-title {
 body[data-theme] .simplified-week-row {
   background: var(--sk-ribbon);
   border-radius: 20px;
-  padding: 7px;
-  gap: 7px;
-}
-
-body[data-theme] .simplified-day-strip {
-  gap: 7px;
 }
 
 body[data-theme] .simplified-day-pill {
   font-family: 'Nunito', 'Quicksand', sans-serif;
   font-weight: 900;
   border-radius: 15px;
-  min-height: 62px;
 }
 
 body[data-theme] .simplified-pill-day {
@@ -10177,7 +9782,6 @@ body[data-theme] .simplified-day-pill.is-focused .simplified-pill-day {
 
 /* Vault: blue gem tile (B) / Jewel Box (U1). Icon comes from --sk-vault-icon. */
 body[data-theme] .simplified-vault-tile {
-  min-height: 62px;
   border-radius: 15px;
   background:
     radial-gradient(circle at 18% 25%, rgba(255, 255, 255, 0.7) 0 1.5px, transparent 2px),
@@ -10622,9 +10226,6 @@ body[data-theme="unicorn"] {
   --sk-btn1-bg: linear-gradient(180deg, #fde68a, #fbcfe8);
   --sk-btn1-fg: #1e293b;
   --sk-btn1-lip: #e3a1c6;
-  --sk-warn-bg: #fbcfe8;
-  --sk-warn-fg: #831843;
-  --sk-warn-lip: #e3a1c6;
   --sk-soft-btn-bg: #f3e8ff;
   --sk-footer-rule: #f5e8fb;
   --sk-due-bg: #db2777;

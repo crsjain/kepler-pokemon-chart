@@ -1,6 +1,6 @@
 # Plan: style.css cleanup (light path)
 
-**Status:** P0 done (2026-11-01). P1 is next.
+**Status:** P0 and P1 done (2026-11-01). P2 is next.
 **Owner:** crsjain. **Goal:** make `style.css` faster and safer to edit, for the owner and her
 agents, **without changing how anything looks**.
 
@@ -80,16 +80,26 @@ End state is about 10,700–10,900 lines. The bigger win: what an agent finds by
 - [x] Baseline captured: 723 screens at `042d169` (the P0 commit ships no app change). An A/A re-run showed 0 changes and 8 screens within raster noise. The Fix-last-week countdown text is pinned so it stays deterministic.
 - [x] Plan committed before any CSS change.
 
-### P1: dead code and duplicates
+### P1: dead code and duplicates. ✅ 2026-11-01
 
-- [ ] Delete the 47 rules whose every selector uses an unreferenced class/ID.
-  - Re-run the audit first (`cssmap.js` in conv `9c83646b` scratch, or re-check every token against all `*.js` + `index.html`).
-  - Check `tests.js` too: `.day-total-count` and `.coming-soon-tag` appear only in absence asserts, so their CSS can go.
-  - Keep dynamic families (`badge-theme-N`, `type-*`).
-- [ ] Delete `--shadow` and `--sk-warn-bg`/`--sk-warn-fg`/`--sk-warn-lip`. This closes the Checkpoint 84 follow-up.
-- [ ] Duplicates (same selector, same `@media` context): delete only the **earlier** rule's declarations that the later rule restates with the same importance (19). Then delete rules left empty.
-  - Do **not** move or merge whole rules: rules in between could win.
-- [ ] Gate (§3). Commit: `style.css cleanup P1: remove dead rules, unused tokens, shadowed duplicates`.
+- [x] Deleted 48 rules whose every selector uses an unreferenced class/ID.
+  - Includes `.day-total-count` and `.coming-soon-tag`, which `tests.js` only asserts are absent.
+  - Tokens inside `:not()` don't count as dead.
+  - Kept the dynamic families (`badge-theme-N`, `type-*`).
+  - Removed the comments that only described the deleted rules.
+- [x] Deleted `--shadow` and `--sk-warn-bg`/`-fg`/`-lip`, in both themes.
+- [x] Duplicates: deleted 19 earlier declarations that a later rule with the same selector and `@media` restates.
+  - Two rules emptied this way were deleted whole.
+  - No rule was moved or merged.
+- [x] Gate:
+  - Suite green (35 s).
+  - Compare: 723 screens, 0 changes, lint ok.
+  - One Fix-last-week phone screen showed 64 px with identical computed styles. Three re-captures were byte-identical to the baseline: a one-off render-timing blip.
+  - Cache `v273`, `style.css?v=11.36`.
+- **Result:** `style.css` 11,380 → 10,980 lines (−400), `!important` 306 → 296, `@media` 53 → 52.
+- Lessons:
+  - The rig caught a bad intermediate attempt, where removing an emptied rule left half a selector list attached to the next rule. Its computed-style diff flagged the superseded cells even though the pixels matched.
+  - `compare.js`'s vendor-prefix lint now keys by rule, so deleting a whole dead rule is info, not an error.
 
 ### P2: base values shadowed by the skin
 
@@ -130,4 +140,4 @@ End state is about 10,700–10,900 lines. The bigger win: what an agent finds by
 ## 7. Log
 
 - 2026-10-31: audit and options (conv `9c83646b`).
-- 2026-11-01: Senior Staff Engineer review (conv `b0a761e9`); decisions D1–D4; P0.
+- 2026-11-01: Senior Staff Engineer review (conv `b0a761e9`); decisions D1–D4; P0; P1.
