@@ -58,13 +58,15 @@ function encode(w, h, px) {
   const raw = Buffer.alloc((w * 4 + 1) * h); for (let y = 0; y < h; y++) px.copy(raw, y * (w * 4 + 1) + 1, y * w * 4, (y + 1) * w * 4);
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
 }
-const NOISE_PX = +(process.env.NOISE_PX || 16); let noise = 0;
-let total = 0, changed = 0; const report = [];
+const NOISE_PX = +(process.env.NOISE_PX || 16), MAX_NOISE_DELTA = +(process.env.MAX_NOISE_DELTA || 2); let noise = 0;
+let total = 0, changed = 0, skipped = 0;
+const partialB = fs.existsSync(path.join(root, B, 'PARTIAL')); // quick/filtered run: missing screens are skipped, not failures
+const report = [];
 for (const vp of fs.readdirSync(path.join(root, A)).filter(d => /^\d+x\d+(@\d+)?$/.test(d))) {
-  const da = path.join(root, A, vp), db = path.join(root, B, vp); if (!fs.existsSync(db)) { report.push(`MISSING vp ${vp} in ${B}`); changed++; continue; }
+  const da = path.join(root, A, vp), db = path.join(root, B, vp); if (!fs.existsSync(db)) { if (partialB) { skipped += fs.readdirSync(da).filter(f => f.endsWith('.png')).length; continue; } report.push(`MISSING vp ${vp} in ${B}`); changed++; continue; }
   for (const f of fs.readdirSync(da).filter(f => f.endsWith('.png'))) {
     total++; const pa = path.join(da, f), pb = path.join(db, f);
-    if (!fs.existsSync(pb)) { report.push(`MISSING ${vp}/${f}`); changed++; continue; }
+    if (!fs.existsSync(pb)) { if (partialB) { total--; skipped++; continue; } report.push(`MISSING ${vp}/${f}`); changed++; continue; }
     const ba = fs.readFileSync(pa), bb = fs.readFileSync(pb);
     const ja = path.join(da, f.replace('.png', '.css.json')), jb = path.join(db, f.replace('.png', '.css.json'));
     let cssDiff = [];
@@ -74,12 +76,15 @@ for (const vp of fs.readdirSync(path.join(root, A)).filter(d => /^\d+x\d+(@\d+)?
     const ia = decode(ba), ib = decode(bb); let n = 0;
     if (ia.w !== ib.w || ia.h !== ib.h) { report.push(`SIZE ${vp}/${f} ${ia.w}x${ia.h} -> ${ib.w}x${ib.h}; css diffs ${cssDiff.length}: ${cssDiff.slice(0, 5).join(' ; ')}`); changed++; continue; }
     const out = Buffer.from(ia.px);
-    for (let i = 0; i < ia.px.length; i += 4) if (ia.px[i] !== ib.px[i] || ia.px[i + 1] !== ib.px[i + 1] || ia.px[i + 2] !== ib.px[i + 2]) { n++; out[i] = 255; out[i + 1] = 0; out[i + 2] = 255; } else { out[i] = (out[i] + 510) / 3; out[i + 1] = (out[i + 1] + 510) / 3; out[i + 2] = (out[i + 2] + 510) / 3; }
+    let maxD = 0;
+    for (let i = 0; i < ia.px.length; i += 4) if (ia.px[i] !== ib.px[i] || ia.px[i + 1] !== ib.px[i + 1] || ia.px[i + 2] !== ib.px[i + 2]) { n++; maxD = Math.max(maxD, Math.abs(ia.px[i] - ib.px[i]), Math.abs(ia.px[i + 1] - ib.px[i + 1]), Math.abs(ia.px[i + 2] - ib.px[i + 2])); out[i] = 255; out[i + 1] = 0; out[i + 2] = 255; } else { out[i] = (out[i] + 510) / 3; out[i + 1] = (out[i + 1] + 510) / 3; out[i + 2] = (out[i + 2] + 510) / 3; }
     if (!n && !cssDiff.length) continue;
-    if (!cssDiff.length && n <= NOISE_PX) { noise++; continue; } // backdrop-blur raster jitter seen in A/A runs
+    // Raster noise: identical computed styles AND either a handful of pixels or only a 1-2/255 colour
+    // shift (backdrop-blur jitter, worse when captures run in parallel). Both seen in A/A runs.
+    if (!cssDiff.length && (n <= NOISE_PX || maxD <= MAX_NOISE_DELTA)) { noise++; continue; }
     changed++; const dd = path.join(root, `diff_${A}_${B}`, vp); fs.mkdirSync(dd, { recursive: true }); if (n) fs.writeFileSync(path.join(dd, f), encode(ia.w, ia.h, out));
-    report.push(`DIFF ${vp}/${f}: ${n} px; css diffs ${cssDiff.length}${cssDiff.length ? ': ' + cssDiff.slice(0, 6).join(' ; ') : ''}`);
+    report.push(`DIFF ${vp}/${f}: ${n} px (max channel delta ${maxD}); css diffs ${cssDiff.length}${cssDiff.length ? ': ' + cssDiff.slice(0, 6).join(' ; ') : ''}`);
   }
 }
-console.log(report.join('\n')); console.log(`${total} screens, ${changed} changed, ${noise} within raster noise (<=${NOISE_PX}px, identical computed styles)`);
+console.log(report.join('\n')); console.log(`${total} screens, ${changed} changed, ${noise} within raster noise (identical computed styles; <=${NOISE_PX}px or <=${MAX_NOISE_DELTA}/255 shift)` + (partialB ? `; ${skipped} not captured (partial run: do a full capture before committing)` : ''));
 process.exit(changed || lintErrors ? 1 : 0);

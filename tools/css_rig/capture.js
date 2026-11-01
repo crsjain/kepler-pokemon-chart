@@ -1,5 +1,8 @@
 // CSS visual regression rig — capture. See tools/css_rig/README.md.
-// Usage: node tools/css_rig/capture.js <tag> [--vps=1366x1024,1180x820@2] [--only=main,past,modal,admin,state,pseudo] [--themes=pokemon,unicorn]
+// Usage: node tools/css_rig/capture.js <tag> [--quick] [--jobs=3] [--vps=1366x1024,1180x820@2] [--only=main,past,modal,admin,state,pseudo] [--themes=pokemon,unicorn]
+// --quick: 1366x1024 + 390x844, main/past/state only (~2 min) for iterating; compare.js skips the
+//          screens a quick run didn't take. Run a full capture before committing.
+// --jobs=N: viewports are split across N Chrome instances running in parallel (default 3).
 // Needs the usual static server on :8000 (python3 -m http.server 8000). tests.js is blanked
 // via CDP so the app boots in test mode without running the suite. Output goes OUTSIDE the
 // repo (default ~/.cache/kpc-css-rig/<tag>, override with CSS_RIG_OUT).
@@ -16,8 +19,11 @@ const REPO = path.resolve(__dirname, '..', '..');
 const tag = process.argv[2];
 if (!tag || tag.startsWith('--')) { console.error('usage: node capture.js <tag> [--vps=..] [--only=..] [--themes=..]'); process.exit(2); }
 const arg = (k, d) => { const a = process.argv.find(x => x.startsWith(`--${k}=`)); return a ? a.slice(k.length + 3) : d; };
-const VPS = arg('vps', '1366x1024,1180x820,1180x820@2,768x1024,390x844').split(',').map(s => { const m = s.match(/^(\d+)x(\d+)(?:@(\d+))?$/); return { w: +m[1], h: +m[2], dpr: +(m[3] || 1), name: s }; });
-const ONLY = arg('only', 'main,past,modal,admin,state,pseudo').split(',');
+const QUICK = process.argv.includes('--quick');
+const CHILD = process.argv.includes('--child');
+const JOBS = +arg('jobs', 3);
+const VPS = arg('vps', QUICK ? '1366x1024,390x844' : '1366x1024,1180x820,1180x820@2,768x1024,390x844').split(',').map(s => { const m = s.match(/^(\d+)x(\d+)(?:@(\d+))?$/); return { w: +m[1], h: +m[2], dpr: +(m[3] || 1), name: s }; });
+const ONLY = arg('only', QUICK ? 'main,past,state' : 'main,past,modal,admin,state,pseudo').split(',');
 const THEMES = arg('themes', 'pokemon,unicorn').split(',');
 const OUT_ROOT = process.env.CSS_RIG_OUT || path.join(os.homedir(), '.cache', 'kpc-css-rig');
 const OUT = path.join(OUT_ROOT, tag);
@@ -69,11 +75,33 @@ const getTargets = () => new Promise((res, rej) => { http.get(`http://127.0.0.1:
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 (async () => {
+  if (!CHILD) {
+    fs.rmSync(OUT, { recursive: true, force: true });
+    fs.mkdirSync(OUT, { recursive: true });
+    for (const f of fs.readdirSync(REPO).filter(f => f.endsWith('.css'))) fs.copyFileSync(path.join(REPO, f), path.join(OUT, f));
+    if (QUICK || process.argv.some(a => a.startsWith('--only=') || a.startsWith('--vps=') || a.startsWith('--themes='))) fs.writeFileSync(path.join(OUT, 'PARTIAL'), process.argv.slice(3).join(' '));
+    const jobs = Math.min(JOBS, VPS.length);
+    if (jobs > 1) {
+      // Split viewports round-robin (heaviest first) across child processes, one Chrome each.
+      const order = [...VPS].sort((a, b) => b.w * b.h * b.dpr * b.dpr - a.w * a.h * a.dpr * a.dpr);
+      const groups = Array.from({ length: jobs }, () => []); order.forEach((v, k) => groups[k % jobs].push(v.name));
+      const pass = process.argv.slice(3).filter(a => !/^--(vps|jobs)=/.test(a) && a !== '--quick');
+      if (QUICK) pass.push(`--only=${ONLY.join(',')}`);
+      const t0 = Date.now();
+      const codes = await Promise.all(groups.map((g, k) => new Promise(res => {
+        const c = spawn(process.execPath, [__filename, tag, `--vps=${g.join(',')}`, '--child', ...pass], { env: { ...process.env, CSS_RIG_CDP_PORT: String(PORT + k) }, stdio: ['ignore', 'pipe', 'inherit'] });
+        c.stdout.on('data', d => String(d).split('\n').filter(l => /^done /.test(l)).forEach(l => console.log(l)));
+        c.on('exit', res);
+      })));
+      const logs = fs.readdirSync(OUT).filter(f => /^log-\d+\.txt$/.test(f)).map(f => { const t = fs.readFileSync(path.join(OUT, f), 'utf8'); fs.unlinkSync(path.join(OUT, f)); return t; }).filter(Boolean);
+      fs.writeFileSync(path.join(OUT, 'log.txt'), logs.join('\n'));
+      console.log(`out: ${OUT} (${jobs} jobs, ${Math.round((Date.now() - t0) / 1000)} s)`);
+      console.log(logs.length ? 'WARN\n' + logs.join('\n') : 'no errors');
+      process.exit(codes.some(c => c) ? 1 : 0);
+    }
+  }
   const prof = path.join(os.tmpdir(), `kpc-css-rig-${PORT}`);
   fs.rmSync(prof, { recursive: true, force: true });
-  fs.rmSync(OUT, { recursive: true, force: true });
-  fs.mkdirSync(OUT, { recursive: true });
-  for (const f of fs.readdirSync(REPO).filter(f => f.endsWith('.css'))) fs.copyFileSync(path.join(REPO, f), path.join(OUT, f));
   const chrome = spawn('google-chrome', ['--headless=new', `--remote-debugging-port=${PORT}`, `--user-data-dir=${prof}`, '--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage', '--no-first-run', '--hide-scrollbars', '--font-render-hinting=none', '--force-color-profile=srgb', 'about:blank']);
   let targets; for (let i = 0; i < 100; i++) { try { targets = await getTargets(); if (targets.length) break; } catch (e) { } await sleep(100); }
   const ws = new WebSocket(targets.find(t => t.type === 'page').webSocketDebuggerUrl);
@@ -263,7 +291,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       console.log('done', vp.name, theme);
     }
   }
-  fs.writeFileSync(path.join(OUT, 'log.txt'), log.join('\n'));
+  fs.writeFileSync(path.join(OUT, CHILD ? `log-${PORT}.txt` : 'log.txt'), log.join('\n'));
   console.log(`out: ${OUT}`);
   console.log(log.length ? 'WARN\n' + log.join('\n') : 'no errors');
   ws.close(); chrome.kill(); process.exit(0);

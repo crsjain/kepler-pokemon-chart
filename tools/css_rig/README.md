@@ -12,16 +12,30 @@ a full run is ~720 screens, ~190 MB and any commit can regenerate it.
 
 ```bash
 python3 -m http.server 8000                       # same server the test suite needs
-node tools/css_rig/capture.js before              # at the commit you start from
+node tools/css_rig/capture.js before              # at the commit you start from (~5 min)
 # ...edit style.css...
-node tools/css_rig/capture.js after
+node tools/css_rig/capture.js after --quick       # while iterating: 2 sizes, main/past/state (~1 min)
 node tools/css_rig/compare.js before after        # exit 0 = no visual change
+node tools/css_rig/capture.js after               # full run before committing (~5 min)
+node tools/css_rig/compare.js before after
 ```
 
-Options: `--vps=1366x1024,1180x820@2` (`@2` = 2× pixel density, like a tablet),
-`--only=main,past,modal,admin,state,pseudo`, `--themes=pokemon,unicorn`.
-Env: `CSS_RIG_CDP_PORT` (default 9271; the test suite uses 9223), `CSS_RIG_BASE` (default
-`http://127.0.0.1:8000`). One capture at a time per port.
+A full run splits the viewports across `--jobs=3` Chrome instances in parallel. It takes about 5 minutes; one at a time took about 13. A `--quick` run, or any run with `--vps`, `--only` or `--themes`, is marked partial, and `compare.js` skips the screens it didn't take. **Never edit the CSS while a capture is running**: it reads the live file.
+
+Options:
+
+- `--quick`
+- `--jobs=N` (default 3)
+- `--vps=1366x1024,1180x820@2` (`@2` = 2× pixel density, like a tablet)
+- `--only=main,past,modal,admin,state,pseudo`
+- `--themes=pokemon,unicorn`
+
+Environment variables:
+
+- `CSS_RIG_CDP_PORT`: default 9271. Parallel jobs use 9271, 9272 and 9273; the test suite uses 9223.
+- `CSS_RIG_BASE`: default `http://127.0.0.1:8000`.
+
+Run one capture at a time.
 
 ## What it captures
 
@@ -64,7 +78,7 @@ The run is made deterministic in four ways:
    - **No `@keyframes` may change**, since animations are frozen in the screenshots.
    - **No new selector list may mix a vendor pseudo (`::-webkit-…`) with other selectors.** A browser that doesn't know the pseudo drops the whole rule.
 2. **Screens**: byte-identical PNGs pass. Otherwise pixels and fingerprints are diffed.
-   - **Raster noise:** at most 16 changed pixels with identical computed styles counts as noise. This is backdrop-blur jitter seen when the same commit is captured twice.
+   - **Raster noise:** if computed styles are identical, a difference counts as noise when it is either at most 16 pixels, or only a 1–2/255 colour shift. This is backdrop-blur jitter seen when the same commit is captured twice, and it is worse with parallel jobs.
    - **Anything else is a change.**
 
 Limits: Chrome only. iPad WebKit differences are covered only by the lint. Run the suite too.
