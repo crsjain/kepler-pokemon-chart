@@ -126,6 +126,7 @@ decisions that are expensive to rediscover.
 | `prd_unicorn_princess_theme.md` | Per-child Unicorn & Princess Sparkle theme (`state.theme`: shared Pokémon Center B & Pastel Castle U1 token skin, Heart & Royal Crown checkboxes, princess/magic copy reskin, modal theme alignment); TC127 |
 | `prd_simplified_chart_style.md` | Per-child Simplified "Today Focus" Chart Style (`state.chartStyle`: 7-day star strip + Vault tile + big tactile stadium task cards, auto full-week grid in Exception/Fix Last Week modes); TC89C, TC128, TC129 |
 | `prd_week_over_start_new_week.md` | "Week over" state: `🚀 Start New Week` moves from the footer to under the week dates, Back to Today only when today is in the grid, Big Buttons week-over card, overnight `activeDay` rollover. Approved, not yet implemented; reserves TC131 |
+| `prd_mega_milestone_past_weeks.md` | Mega Milestone card rebuilt per past week from `weeklyHistory` (slot index = archived `megaWeeks`), Change Week Start Day won-week fix, Jul 27 badge data fix; reserves TC132, TC133 |
 | `refactoring_assessment_2026_09_12.md` | Why the codebase is deliberately *not* being refactored |
 | `plan_style_css_cleanup.md` | No-visual-change style.css cleanup (light path P0–P3, owner decisions D1–D4, deferred items, the screenshot gate) |
 
