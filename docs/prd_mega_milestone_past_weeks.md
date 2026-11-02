@@ -2,7 +2,7 @@
 
 **Document**: `docs/prd_mega_milestone_past_weeks.md`
 **Version**: 1.0.0
-**Status**: Phases 1–2 implemented locally 2026-11-02 (`9578884`, `456ecd7`; cache v277, modules 11.37), awaiting owner review. Phase 3 (data fix) waiting on the owner.
+**Status**: Phases 1–2 implemented locally 2026-11-02 (`9578884`, `456ecd7`; cache v277, modules 11.37), awaiting owner review. Phase 3 data fix restored by the owner 2026-11-02 (verified in the family code: Kepler Jul 27 = 155, Lyra Jul 27 = 381).
 **Authors**: crsjain & Jetski
 **Target Systems**: `app.js`, `tests.js`. **No schema change** (stays V19). No CSS change expected.
 **Companion docs**: [`prd_badge_collection.md`](prd_badge_collection.md) (weekly badge + Mega cycle), [`prd_historical_weeks.md`](prd_historical_weeks.md) / [`plan_historical_weeks.md`](plan_historical_weeks.md) (week intervals, start-day changes, "Rolled forward"), [`prd_parent_edit_last_week.md`](prd_parent_edit_last_week.md) (Fix last week freezes badges and Mega), [`_agents/rules/ux-guidelines.md`](../_agents/rules/ux-guidelines.md).
@@ -106,5 +106,5 @@ A second, still-live bug was found during research: the **Change Week Start Day*
 
 ### Phase 3: one-time data fix for the two Jul 27 entries (owner, no code)
 - [x] Jetski provides a local patcher (scratch, outside the repo; backup codes contain the family PIN and the repo is public). It sets `weeklyHistory["2026-07-27"].badgeId` to 381 for Lyra and 155 for Kepler, only if the entry still holds 136 / 135.
-- [ ] Owner, per child, just before restoring: Admin › Data › Copy backup code → patch → Restore from code (with that child active, before the kids tick anything).
+- [x] Owner, per child, just before restoring: Admin › Data › Copy backup code → patch → Restore from code (with that child active, before the kids tick anything).
 - [ ] Owner verifies Jul 27 and Aug 3 for both kids after deploy.
