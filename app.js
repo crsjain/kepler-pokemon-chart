@@ -3932,6 +3932,24 @@ function bindWeekStartDayEvents() {
                 megaWeeks: state.megaWeeks !== undefined ? state.megaWeeks : 0
               };
             }
+
+            // A week that was already won counts once: award it if needed, then
+            // start the new chart unwon with a fresh badge and the next Mega slot,
+            // the same as the scheduled path in resetWeekGrid. An unwon week keeps
+            // its badge and slot ("Rolled forward"). prd_mega_milestone_past_weeks.md Phase 2.
+            if (state.weeklyClaimed) {
+              if (!state.collectedBadges.some(b => b.id === state.activeWeeklyBadgeId)) {
+                awardCurrentWeeklyBadge();
+              }
+              rollNewWeeklyBadge();
+              state.megaWeeks = (state.megaWeeks !== undefined ? state.megaWeeks : 0) + 1;
+              if (state.megaWeeks >= 4) {
+                state.megaWeeks = 0;
+                state.megaReward = '';
+              }
+              state.weeklyClaimed = false;
+              state.reward = '';
+            }
           }
           
           state.weekStartDay = newStartDay;

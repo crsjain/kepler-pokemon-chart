@@ -12385,6 +12385,73 @@ async function runSuite() {
         }
       }
 
+      // 133. Change Week Start Day (immediate) on a week that was already won: the win
+      //      counts once and the new chart starts unwon (prd_mega_milestone_past_weeks.md Phase 2).
+      //      The unwon case (megaWeeks preserved) is Test Case 62.
+      if (__shouldRun('133')) {
+        console.log("Running Test Case 133: Change Week Start Day on a won week counts the win once...");
+        const helpers = window.__test_helpers__;
+        let state = window.__app_state__;
+        const runChange = async ({ megaWeeks }) => {
+          helpers.resetState();
+          await sleep(30);
+          state = window.__app_state__;
+          state.weekStartDate = '2026-07-20'; // Monday start, as in Test Case 62
+          state.weekStartDay = 1;
+          state.activeDay = 5;
+          state.weeklyHistory = {};
+          state.megaWeeks = megaWeeks;
+          state.weeklyClaimed = true;
+          state.activeWeeklyBadgeId = 25;
+          state.collectedBadges = [];
+          state.reward = 'Ice Cream';
+          state.megaReward = 'Lego Set';
+          helpers.saveState();
+          helpers.renderState(true);
+          await sleep(60);
+          document.getElementById('admin-btn').click();
+          await sleep(80);
+          document.getElementById('password-input').value = 'zxcv';
+          document.getElementById('password-submit-btn').click();
+          await sleep(80);
+          const sel = document.getElementById('admin-week-start-select');
+          sel.value = '5';
+          sel.dispatchEvent(new Event('change'));
+          await sleep(80);
+          assert(!document.getElementById('confirm-modal').classList.contains('hidden'), "Start-day change confirm opens");
+          document.getElementById('confirm-yes-btn').click();
+          await sleep(80);
+          const closeAdminBtn = document.getElementById('close-admin-modal-btn');
+          if (closeAdminBtn) closeAdminBtn.click();
+          await sleep(30);
+          return window.__app_state__;
+        };
+        try {
+          // Week 3 of the cycle was won before the change.
+          state = await runChange({ megaWeeks: 2 });
+          const archived = state.weeklyHistory['2026-07-20'];
+          assert(archived && archived.weeklyClaimed === true && archived.badgeId === 25 && archived.megaWeeks === 2,
+            `The won week is archived once as won with its badge and slot (got ${JSON.stringify(archived)})`);
+          assert(state.collectedBadges.filter(b => b.id === 25).length === 1, "The badge is in the Badge Case exactly once");
+          assert(state.weeklyClaimed === false, "The new chart starts unwon");
+          assert(state.activeWeeklyBadgeId !== 25, `The new chart has a fresh badge (got ${state.activeWeeklyBadgeId})`);
+          assert(state.megaWeeks === 3, `Mega progress moves to the next slot (got ${state.megaWeeks})`);
+          assert(state.reward === '' && state.megaReward === 'Lego Set', "Weekly reward cleared, Mega reward kept mid-cycle");
+          helpers.setViewingWeekStartDate('2026-07-20');
+          helpers.renderState(true);
+          await sleep(30);
+          assert(document.getElementById('mega-weeks-count').textContent === '3', "The cut-short won week's Mega card reads 3 / 4");
+
+          // Week 4 won: the change completes the Mega cycle and starts a new one.
+          state = await runChange({ megaWeeks: 3 });
+          assert(state.megaWeeks === 0 && state.megaReward === '', `Winning week 4 resets the cycle (got megaWeeks ${state.megaWeeks}, megaReward "${state.megaReward}")`);
+          assert(state.weeklyHistory['2026-07-20'].megaWeeks === 3, "The archived week keeps slot 4");
+        } finally {
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       if (__onlyFilter && __ranTests.size === 0) {
         throw new Error(`&only=${__params.get('only')} matched no test case`);
       }
