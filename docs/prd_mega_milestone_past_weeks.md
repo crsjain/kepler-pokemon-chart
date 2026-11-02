@@ -2,7 +2,7 @@
 
 **Document**: `docs/prd_mega_milestone_past_weeks.md`
 **Version**: 1.0.0
-**Status**: Approved by owner 2026-11-02. Phase 1 in progress.
+**Status**: Phases 1–2 implemented locally 2026-11-02 (`9578884`, `456ecd7`; cache v277, modules 11.37), awaiting owner review. Phase 3 (data fix) waiting on the owner.
 **Authors**: crsjain & Jetski
 **Target Systems**: `app.js`, `tests.js`. **No schema change** (stays V19). No CSS change expected.
 **Companion docs**: [`prd_badge_collection.md`](prd_badge_collection.md) (weekly badge + Mega cycle), [`prd_historical_weeks.md`](prd_historical_weeks.md) / [`plan_historical_weeks.md`](plan_historical_weeks.md) (week intervals, start-day changes, "Rolled forward"), [`prd_parent_edit_last_week.md`](prd_parent_edit_last_week.md) (Fix last week freezes badges and Mega), [`_agents/rules/ux-guidelines.md`](../_agents/rules/ux-guidelines.md).
@@ -91,20 +91,20 @@ A second, still-live bug was found during research: the **Change Week Start Day*
 ## 8. Phases
 
 ### Phase 1: past-week Mega card (TC132)
-- [ ] `getMegaSlotsForWeek(weekStart)` in `app.js` (§4). `renderProgress()` uses it for the counter and slots.
-- [ ] Current week unchanged (delegates to `getMegaSlotBadges()`); pop-up untouched.
-- [ ] TC132: 5-week example (1, 2, 3, 4, then 1), an unwon week (earlier badges, own slot locked, counter = slots filled), the cycle reset, a legacy week with no `megaWeeks` (inferred), an unknown week (locked + counter hidden), a won week without `badgeId` ("?"), a retro-completed week (no slot), current week still live; Unicorn theme and Big Buttons.
-- [ ] Cache bump per AGENTS.md §6.1 (SW `CACHE_NAME`, `app.js?v=` + every importmap entry).
-- [ ] Full suite green.
-- [ ] Before/after screenshots of past weeks for both kids (local copy of the owner's history).
+- [x] `getMegaSlotsForWeek(weekStart)` in `app.js` (§4). `renderProgress()` uses it for the counter and slots.
+- [x] Current week unchanged (delegates to `getMegaSlotBadges()`); pop-up untouched.
+- [x] TC132: 5-week example (1, 2, 3, 4, then 1), an unwon week (earlier badges, own slot locked, counter = slots filled), the cycle reset, a legacy week with no `megaWeeks` (inferred), an unknown week (locked + counter hidden), a won week without `badgeId` ("?"), a retro-completed week (no slot), current week still live; Unicorn theme and Big Buttons.
+- [x] Cache bump per AGENTS.md §6.1 (SW `CACHE_NAME`, `app.js?v=` + every importmap entry).
+- [x] Full suite green.
+- [x] Before/after screenshots of past weeks for both kids (local copy of the owner's history, real sprites; scratch only, not in the repo).
 
 ### Phase 2: Change Week Start Day keeps a won week won once (TC133)
-- [ ] In the immediate Change Week Start Day confirm: if the current week is won, award the badge if not yet collected, archive (unchanged), then roll a new badge, advance `megaWeeks` (reset to 0 and clear `megaReward` at 4), and clear `weeklyClaimed` and `reward`, mirroring the scheduled path in `resetWeekGrid`.
-- [ ] Unwon weeks unchanged: `megaWeeks` preserved, badge rolls forward ("Rolled forward to new chart").
-- [ ] TC133 covers won and unwon cases.
-- [ ] Full suite green.
+- [x] In the immediate Change Week Start Day confirm: if the current week is won, award the badge if not yet collected, archive (unchanged), then roll a new badge, advance `megaWeeks` (reset to 0 and clear `megaReward` at 4), and clear `weeklyClaimed` and `reward`, mirroring the scheduled path in `resetWeekGrid`.
+- [x] Unwon weeks unchanged: `megaWeeks` preserved, badge rolls forward ("Rolled forward to new chart").
+- [x] TC133 covers won and unwon cases.
+- [x] Full suite green.
 
 ### Phase 3: one-time data fix for the two Jul 27 entries (owner, no code)
-- [ ] Jetski provides a local patcher (scratch, outside the repo; backup codes contain the family PIN and the repo is public). It sets `weeklyHistory["2026-07-27"].badgeId` to 381 for Lyra and 155 for Kepler, only if the entry still holds 136 / 135.
+- [x] Jetski provides a local patcher (scratch, outside the repo; backup codes contain the family PIN and the repo is public). It sets `weeklyHistory["2026-07-27"].badgeId` to 381 for Lyra and 155 for Kepler, only if the entry still holds 136 / 135.
 - [ ] Owner, per child, just before restoring: Admin › Data › Copy backup code → patch → Restore from code (with that child active, before the kids tick anything).
 - [ ] Owner verifies Jul 27 and Aug 3 for both kids after deploy.
