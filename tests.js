@@ -12284,6 +12284,107 @@ async function runSuite() {
         }
       }
 
+      // 132. Mega Milestone card shows each past week as it was when that week finished,
+      //      rebuilt from weeklyHistory (docs/prd_mega_milestone_past_weeks.md, Phase 1).
+      if (__shouldRun('132')) {
+        console.log("Running Test Case 132: Mega Milestone card shows each past week as it was...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        let state = window.__app_state__;
+        const savedStart = state.weekStartDate;
+        const shift = (base, days) => {
+          const dt = new Date(base + 'T00:00:00');
+          dt.setDate(dt.getDate() + days);
+          return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+        };
+        const wk = n => shift(savedStart, -7 * n); // n weeks before the current week
+        const slotView = () => [...document.querySelectorAll('.mega-slot')].map(el => {
+          if (!el.classList.contains('unlocked')) return 'L';
+          if (el.querySelector('.badge-placeholder')) return '?';
+          const m = el.querySelector('img').src.match(/\/(\d+)\.png$/);
+          return m ? m[1] : 'bad';
+        }).join(',');
+        const counterEl = document.getElementById('mega-weeks-count');
+        const counterHidden = () => counterEl.closest('.mega-counter-label').classList.contains('hidden');
+        const show = async weekStart => {
+          helpers.setViewingWeekStartDate(weekStart);
+          helpers.renderState(true);
+          await sleep(30);
+        };
+        try {
+          state.tasks.forEach(t => { t.createdAt = '2020-01-01'; t.deletedAt = null; });
+          state.weeklyHistory = {
+            // Unknown: no megaWeeks and nothing earlier to infer from.
+            [wk(9)]: { weekStartDay: state.weekStartDay, weeklyClaimed: false, badgeId: 10, xpEarned: 0 },
+            // Five wins in a row: slots 0, 1, 2, 3, then a new cycle.
+            [wk(8)]: { weekStartDay: state.weekStartDay, weeklyClaimed: true, badgeId: 1, megaWeeks: 0, xpEarned: 0 },
+            [wk(7)]: { weekStartDay: state.weekStartDay, weeklyClaimed: true, badgeId: 4, megaWeeks: 1, xpEarned: 0 },
+            [wk(6)]: { weekStartDay: state.weekStartDay, weeklyClaimed: true, badgeId: 7, megaWeeks: 2, xpEarned: 0 },
+            [wk(5)]: { weekStartDay: state.weekStartDay, weeklyClaimed: true, badgeId: 25, megaWeeks: 3, xpEarned: 0 },
+            [wk(4)]: { weekStartDay: state.weekStartDay, weeklyClaimed: true, badgeId: 133, megaWeeks: 0, xpEarned: 0 },
+            // Unwon, but completed afterwards ("Goal completed retroactively"): still no slot.
+            [wk(3)]: { weekStartDay: state.weekStartDay, weeklyClaimed: false, badgeId: 150, megaWeeks: 1, xpEarned: 0 },
+            // Legacy won week: no megaWeeks (inferred = 1) and no badgeId ("?").
+            [wk(2)]: { weekStartDay: state.weekStartDay, weeklyClaimed: true, xpEarned: 0 },
+            // Won week whose slot index is valid again.
+            [wk(1)]: { weekStartDay: state.weekStartDay, weeklyClaimed: true, badgeId: 197, megaWeeks: 2, xpEarned: 0 }
+          };
+          for (let d = 0; d < 7; d++) {
+            state.tasks.forEach(t => { state.grid[`${shift(wk(3), d)}-${t.id}`] = true; });
+          }
+          // Live cycle for the current week: 3 won, this week not yet.
+          state.megaWeeks = 3;
+          state.weeklyClaimed = false;
+          state.collectedBadges = [1, 4, 7, 25, 133, 197].map((id, i) => ({ id, name: 'B' + i, dateEarned: `2020-01-0${i + 1}T00:00:00.000Z` }));
+
+          const combos = [['pokemon', 'standard'], ['unicorn', 'big-buttons']];
+          for (const [theme, chartStyle] of combos) {
+            state.theme = theme;
+            state.chartStyle = chartStyle;
+            const tag = `[${theme}/${chartStyle}]`;
+
+            await show(wk(8));
+            assert(counterEl.textContent === '1' && slotView() === '1,L,L,L', `${tag} Win 1 of the cycle: 1/4 (got ${counterEl.textContent}: ${slotView()})`);
+            await show(wk(7));
+            assert(counterEl.textContent === '2' && slotView() === '1,4,L,L', `${tag} Win 2: 2/4 (got ${counterEl.textContent}: ${slotView()})`);
+            await show(wk(6));
+            assert(counterEl.textContent === '3' && slotView() === '1,4,7,L', `${tag} Win 3: 3/4 (got ${counterEl.textContent}: ${slotView()})`);
+            await show(wk(5));
+            assert(counterEl.textContent === '4' && slotView() === '1,4,7,25', `${tag} Win 4 completes the Mega: 4/4 (got ${counterEl.textContent}: ${slotView()})`);
+            const themes = [...document.querySelectorAll('.mega-slot')].map(el => [...el.classList].find(c => c.startsWith('badge-theme-')));
+            assert(JSON.stringify(themes) === JSON.stringify(['badge-theme-1', 'badge-theme-2', 'badge-theme-3', 'badge-theme-4']), `${tag} Slot colours stay positional (got ${themes})`);
+            assert(!document.querySelector('.mega-slot .animate-pop'), `${tag} Past weeks never pop the slot animation`);
+            await show(wk(4));
+            assert(counterEl.textContent === '1' && slotView() === '133,L,L,L', `${tag} Win 5 starts a new cycle: 1/4 (got ${counterEl.textContent}: ${slotView()})`);
+
+            await show(wk(3));
+            assert(helpers.archivedWeekMeetsEveryGoal(wk(3)), `${tag} Setup: the unwon week meets every goal now`);
+            assert(counterEl.textContent === '1' && slotView() === '133,L,L,L', `${tag} Unwon (retro-completed) week: earlier badge kept, own slot locked (got ${counterEl.textContent}: ${slotView()})`);
+
+            await show(wk(2));
+            assert(counterEl.textContent === '2' && slotView() === '133,?,L,L', `${tag} Legacy won week: slot inferred, missing badge shows ? (got ${counterEl.textContent}: ${slotView()})`);
+            await show(wk(1));
+            assert(counterEl.textContent === '3' && slotView() === '133,?,197,L', `${tag} Next win walks back through the legacy week (got ${counterEl.textContent}: ${slotView()})`);
+
+            await show(wk(9));
+            assert(counterHidden() && slotView() === 'L,L,L,L', `${tag} Unknown slot index: counter hidden, all slots locked (got ${slotView()})`);
+
+            // The current week stays live (state.megaWeeks + collectedBadges).
+            await show(savedStart);
+            assert(!counterHidden() && counterEl.textContent === '3' && slotView() === '25,133,197,L',
+              `${tag} Current week stays live: 3/4 from the live cycle (got ${counterEl.textContent}: ${slotView()})`);
+            assert(document.body.dataset.theme === theme, `${tag} Theme applied`);
+          }
+        } finally {
+          state = window.__app_state__;
+          state.weekStartDate = savedStart;
+          helpers.setViewingWeekStartDate(savedStart);
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       if (__onlyFilter && __ranTests.size === 0) {
         throw new Error(`&only=${__params.get('only')} matched no test case`);
       }

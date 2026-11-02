@@ -4720,6 +4720,65 @@ function getMegaSlotBadges() {
   });
 }
 
+// The Mega Milestone card for any week. The current week is live
+// (getMegaSlotBadges). A past week shows the card as it stood when that week
+// finished, rebuilt from weeklyHistory: each entry's `megaWeeks` is that week's
+// slot index (archived before the increment), so its slot is filled if it was
+// won and the earlier slots come from the cycle's earlier won weeks.
+// See docs/prd_mega_milestone_past_weeks.md §4.
+// Returns { count, slots, isLive }; count is null when the slot index is unknown.
+function getMegaSlotsForWeek(weekStart) {
+  const isPast = !!(state.weekStartDate && weekStart && weekStart < state.weekStartDate);
+  if (!isPast) {
+    return {
+      count: state.weeklyClaimed ? Math.min(4, state.megaWeeks + 1) : state.megaWeeks,
+      slots: getMegaSlotBadges(),
+      isLive: true
+    };
+  }
+
+  // Rule 1: slot index per history entry; entries without a valid megaWeeks
+  // inherit from the previous entry ((m + 1) % 4 after a win, m otherwise).
+  const history = state.weeklyHistory || {};
+  const keys = Object.keys(history).filter(k => k <= weekStart).sort();
+  const resolved = [];
+  let carry = null;
+  keys.forEach(k => {
+    const entry = history[k] || {};
+    const m = entry.megaWeeks;
+    const slot = (Number.isInteger(m) && m >= 0 && m <= 3) ? m : carry;
+    const won = !!entry.weeklyClaimed;
+    resolved.push({ key: k, slot, won, badgeId: entry.badgeId || null });
+    carry = slot === null ? null : (won ? (slot + 1) % 4 : slot);
+  });
+
+  const locked = index => ({ index, isUnlocked: false, id: null, name: '', themeClass: `badge-theme-${index + 1}` });
+  const filled = (index, id) => ({ index, isUnlocked: true, id: id || null, name: id ? getPokemonName(id) : '', themeClass: `badge-theme-${index + 1}` });
+
+  const current = resolved.length && resolved[resolved.length - 1].key === weekStart ? resolved[resolved.length - 1] : null;
+  if (!current || current.slot === null) {
+    // Rule 5: unknown slot index → all slots locked, counter hidden.
+    return { count: null, slots: [0, 1, 2, 3].map(locked), isLive: false };
+  }
+
+  const s = current.slot;
+  const slots = [0, 1, 2, 3].map(locked);
+  // Rule 2: earlier slots from the cycle's earlier won weeks, newest first.
+  for (let i = 0; i < s; i++) slots[i] = filled(i, null); // "?" unless found below
+  let expected = s - 1;
+  for (let j = resolved.length - 2; j >= 0 && expected >= 0; j--) {
+    const prev = resolved[j];
+    if (!prev.won) continue;
+    if (prev.slot !== expected) break; // previous cycle
+    slots[expected] = filled(expected, prev.badgeId);
+    expected--;
+  }
+  // Rule 3: this week's own slot.
+  if (current.won) slots[s] = filled(s, current.badgeId);
+
+  return { count: current.won ? s + 1 : s, slots, isLive: false };
+}
+
 function renderProgress() {
   const tasks = (state.tasks || []).filter(task => isTaskActiveInWeek(task, currentViewingWeekStartDate));
   
@@ -4918,15 +4977,24 @@ function renderProgress() {
     }
   }
 
-  megaWeeksCountEl.textContent = `${state.weeklyClaimed ? Math.min(4, state.megaWeeks + 1) : state.megaWeeks}`;
-  getMegaSlotBadges().forEach(({ index, isUnlocked, id: bId, name: bName, themeClass }) => {
+  const megaView = getMegaSlotsForWeek(currentViewingWeekStartDate);
+  const megaCounterLabel = megaWeeksCountEl ? megaWeeksCountEl.closest('.mega-counter-label') : null;
+  if (megaView.count === null) {
+    megaWeeksCountEl.textContent = '';
+    if (megaCounterLabel) megaCounterLabel.classList.add('hidden');
+  } else {
+    megaWeeksCountEl.textContent = `${megaView.count}`;
+    if (megaCounterLabel) megaCounterLabel.classList.remove('hidden');
+  }
+  megaView.slots.forEach(({ index, isUnlocked, id: bId, name: bName, themeClass }) => {
     const slot = megaSlots[index];
     if (!slot) return;
     for (let i = 1; i <= 4; i++) slot.classList.remove(`badge-theme-${i}`);
     
     if (isUnlocked) {
       if (bId) {
-        slot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${bId}.png" alt="${bName}" class="mega-slot-img ${index === state.megaWeeks && state.weeklyClaimed ? 'animate-pop' : ''}">`;
+        const pop = megaView.isLive && index === state.megaWeeks && state.weeklyClaimed;
+        slot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${bId}.png" alt="${bName}" class="mega-slot-img ${pop ? 'animate-pop' : ''}">`;
       } else {
         slot.innerHTML = `<div class="badge-placeholder">?</div>`;
       }
