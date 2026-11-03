@@ -1,8 +1,8 @@
 # PRD: "Week Over" State — Start New Week in the Week Header
 
 **Document**: `docs/prd_week_over_start_new_week.md`
-**Version**: 1.0.0
-**Status**: Approved by owner 2026-11-01. **Not implemented yet.** It is waiting for a parallel thread's code changes to be committed. Reserves **TC131**.
+**Version**: 1.1.0
+**Status**: Approved by owner 2026-11-01. **Implemented locally 2026-11-03** (TC131, TC130 updated; cache v278, modules 11.38, style 11.39). Not deployed yet.
 **Authors**: crsjain & Jetski
 **Target Systems**: `index.html`, `app.js`, `style.css`, `tests.js`, `service-worker.js`. **No schema change** (stays V19). No new column state.
 **Companion docs**:
@@ -82,8 +82,9 @@ Day switching in scenarios 2–3 works the same as today. With `lockPastDays` on
 - **Colour:** the theme's bold "due" token (`--sk-due-*`: dark `#431407` on orange `#fb923c` / white on raspberry `#db2777`, both ≥ 4.5:1). **Never yellow**, because yellow means active / today (UX Rule 13.6).
 - **Size:** a full-size touch target of at least **44px** high, not `small`. It has the theme's candy lip, and a pressed state that drops the lip (Rule 12).
 - **Layout:**
-  - Reserve the pill row's height in `.week-nav-center` so the grid doesn't jump between the three header states (Back to Today / Start New Week / nothing).
-  - No horizontal scroll at ≥ 768px (Rule 13 §C). At 390px the pill stacks under the date between `◀ Prev` and `Next ▶`, and its label must not wrap.
+  - The pill row's height is **not** reserved. Reserving 44px on every normal day would make the header taller all week for a state that shows once a week. The header grows when the pill appears, as it already did for Back to Today.
+  - No horizontal scroll at ≥ 768px (Rule 13 §C).
+  - **Phones (≤ 520px):** `◀ Prev`, the date and `Next ▶` stay on one row and the pill drops to its own centred row underneath. This uses `.week-nav-center { display: contents }` plus a `::after` line break, applied only while the pill is visible (`:has(.start-week-pill:not(.hidden))`). The label never wraps.
 - **Tap:** opens the **"Start New Training Week?"** dialog (owner decision Q3), not the plain "Reset Week Grid? 📅".
   - The auto prompt and the header pill share one function, `openStartNewWeekConfirm()`, extracted from `maybePromptNewWeek()`.
   - The dialog keeps:
@@ -128,24 +129,29 @@ The plan went through the 5-stage feature review panel on 2026-11-01. Verdict: a
 
 ## 6. Implementation plan
 
-**Precondition:** the parallel thread's code changes are committed and the tree is clean.
+**Precondition:** the parallel thread's code changes are committed and the tree is clean. (Met 2026-11-03.)
 
-- [ ] **1. Helper:** add `isWeekAwaitingReset()` to app.js (§3).
-- [ ] **2. Markup:** move `#reset-btn` into `.week-nav-center` with the new label and full-size classes. Remove it from `.actions-buttons`.
-- [ ] **3. `renderState`:** show or hide the pill from the helper, and also hide it in Exception Mode and Fix last week.
-- [ ] **4. Dialog:** extract `openStartNewWeekConfirm()` from `maybePromptNewWeek()`, and wire the pill to it in `bindResetEvents`. The Admin button keeps `openResetWeekConfirm()`.
-- [ ] **5. Back to Today:** the `SELECTABLE_TODAY` guard in `updateActiveColumnUI`, and a click that targets today's column (§4.3).
-- [ ] **6. Rollover:** add the rollover tick and its test hook (§4.6).
-- [ ] **7. Big Buttons:** the no-focus ribbon, the title and the week-over card in `renderSimplifiedView` (§4.5).
-- [ ] **8. CSS:** the header pill (due token, ≥ 44px, lip, reserved row height, 390px stack), the week-over card, and removal of the footer-only `.reset-due-btn` positioning.
-- [ ] **9. Tests:** update TC130 (Reset now lives in the header, not the footer). Add **TC131** (§8).
-- [ ] **10. Docs:**
+All steps were done on 2026-11-03. Implementation notes:
+- The pill keeps the `#reset-btn` ID with a new `.start-week-pill` class. `updateStartNewWeekButton()` is called from `applyWeekNavLock()`, so entering Exception Mode or Fix last week hides it in the same place Prev/Next are locked.
+- The rollover is `clearActiveDayIfWeekOver()`. It runs once per child + week per session (`weekOverActiveDayClearedFor`), so a day picked after the week ended is never cleared. The profile's first load marks the week as already handled, because it clears the day itself.
+- The dialog's Week N line now says *"Start a fresh grid for Week N"* instead of *"Reset the grid and begin Week N"* (Q1: Start, not Reset).
+
+- [x] **1. Helper:** add `isWeekAwaitingReset()` to app.js (§3).
+- [x] **2. Markup:** move `#reset-btn` into `.week-nav-center` with the new label and full-size classes. Remove it from `.actions-buttons`.
+- [x] **3. `renderState`:** show or hide the pill from the helper, and also hide it in Exception Mode and Fix last week.
+- [x] **4. Dialog:** extract `openStartNewWeekConfirm()` from `maybePromptNewWeek()`, and wire the pill to it in `bindResetEvents`. The Admin button keeps `openResetWeekConfirm()`.
+- [x] **5. Back to Today:** the `SELECTABLE_TODAY` guard in `updateActiveColumnUI`, and a click that targets today's column (§4.3).
+- [x] **6. Rollover:** add the rollover tick and its test hook (§4.6).
+- [x] **7. Big Buttons:** the no-focus ribbon, the title and the week-over card in `renderSimplifiedView` (§4.5).
+- [x] **8. CSS:** the header pill (due token, ≥ 44px, lip, reserved row height, 390px stack), the week-over card, and removal of the footer-only `.reset-due-btn` positioning.
+- [x] **9. Tests:** update TC130 (Reset now lives in the header, not the footer). Add **TC131** (§8).
+- [x] **10. Docs:**
   - [`prd_column_state_machine.md`](prd_column_state_machine.md): §5 item 7 and the §7 checklist
   - [`prd_simplified_chart_style.md`](prd_simplified_chart_style.md) §3.3
   - UX Rule 22
   - a changelog row in [`prd_admin_panel_redesign.md`](prd_admin_panel_redesign.md)
   - mark this PRD as implemented
-- [ ] **11. Cache bump:** `CACHE_NAME`, `style.css?v=`, `app.js?v=` and all importmap entries (TC90). Then run the full suite, and run the CSS rig if the header layout moves.
+- [x] **11. Cache bump:** `CACHE_NAME`, `style.css?v=`, `app.js?v=` and all importmap entries (TC90). Then run the full suite, and run the CSS rig if the header layout moves.
 
 ## 7. Edge cases
 

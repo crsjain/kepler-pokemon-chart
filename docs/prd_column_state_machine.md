@@ -126,8 +126,7 @@ All 6 consumers in [`app.js`](file:///usr/local/google/home/crsjain/kepler-pokem
 4. **Header Click Handler**: Guards on `if (!col.canSelectHeader) return;`. Uses `col.requiresSwitchConfirmation` to determine whether to prompt modal or switch immediately.
 5. **Parent Exception Mode (`handleGridClick`)**: Guards on `if (!col.canToggleException) return;`. Allows future non-superseded days (Scenario 10) while strictly locking superseded/historical days.
 6. **Normal Checkbox Toggle (`handleCheckboxChange`)**: Uses `col.canCheckTaskNormal` for immediate checks; uses `col.canSelectHeader` to invoke the switch-day confirmation modal.
-7. **Back-to-Today Quick Pill (`#back-to-today-btn`)**: Automatically visible when `colStates.some(c => c.state === 'ACTIVE_PAST' || c.state === 'ACTIVE_FUTURE')`.
-   - **Planned change (approved 2026-11-01, not yet implemented):** the pill will also require a `SELECTABLE_TODAY` column in the viewed week. When the week has ended but the grid hasn't been reset, `🚀 Start New Week` takes this slot instead. See [`prd_week_over_start_new_week.md`](prd_week_over_start_new_week.md).
+7. **Back-to-Today Quick Pill (`#back-to-today-btn`)**: Visible when `colStates.some(c => c.state === 'ACTIVE_PAST' || c.state === 'ACTIVE_FUTURE')` **and** the viewed week has a `SELECTABLE_TODAY` column. Its click lands on today's column. When the week has ended but the grid hasn't been reset, `🚀 Start New Week` takes this slot instead (2026-11-03, [`prd_week_over_start_new_week.md`](prd_week_over_start_new_week.md)).
 
 ---
 

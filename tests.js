@@ -12229,7 +12229,7 @@ async function runSuite() {
       //      Parent Admin right; Reset Week shows on the main screen only once the week has
       //      ended and the grid hasn't been reset, and otherwise lives in Admin › Tonight's Check-in.
       if (__shouldRun('130')) {
-        console.log("Running Test Case 130: Footer toolbar — Reset Week only when due, Admin Reset Week...");
+        console.log("Running Test Case 130: Footer toolbar — Start New Week only when due (in the header), Admin Reset Week...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
         await sleep(30);
@@ -12243,8 +12243,9 @@ async function runSuite() {
           await sleep(30);
           assert(actionsEl.firstElementChild.classList.contains('app-version-container'), "Version sits first (left) in the footer toolbar");
           const btnIds = [...actionsEl.querySelectorAll('.actions-buttons > button')].map(b => b.id);
-          assert(JSON.stringify(btnIds) === JSON.stringify(['reset-btn', 'switch-profile-btn', 'admin-btn']), `Reset Week sits left of Switch Trainer (got ${btnIds})`);
-          assert(resetBtnEl.classList.contains('hidden'), "Mid-week: Reset Week is hidden from the main screen");
+          assert(JSON.stringify(btnIds) === JSON.stringify(['switch-profile-btn', 'admin-btn']), `Footer holds only Switch Trainer and Parent Admin; Start New Week moved under the week dates (got ${btnIds})`);
+          assert(resetBtnEl.closest('.week-nav-center'), "Start New Week lives under the week dates (prd_week_over_start_new_week.md)");
+          assert(resetBtnEl.classList.contains('hidden'), "Mid-week: Start New Week is hidden from the main screen");
           assert(actionsEl.querySelectorAll('[style]').length === 0, "Footer toolbar has zero inline styles (UX Rule 8)");
 
           // The week ended 7+ days ago and wasn't reset: the button appears, bold.
@@ -12254,9 +12255,9 @@ async function runSuite() {
           helpers.setViewingWeekStartDate(state.weekStartDate);
           helpers.renderState(true);
           await sleep(30);
-          assert(!resetBtnEl.classList.contains('hidden') && !resetBtnEl.disabled, "New week started: Reset Week appears on the main screen");
+          assert(!resetBtnEl.classList.contains('hidden') && !resetBtnEl.disabled, "New week started: Start New Week appears on the main screen");
           const ver = document.querySelector('.app-version-container').getBoundingClientRect();
-          const overlaps = ['reset-btn', 'switch-profile-btn', 'admin-btn'].some(id => {
+          const overlaps = ['switch-profile-btn', 'admin-btn'].some(id => {
             const r = document.getElementById(id).getBoundingClientRect();
             return !(ver.right <= r.left || ver.left >= r.right || ver.bottom <= r.top || ver.top >= r.bottom);
           });
@@ -12279,6 +12280,146 @@ async function runSuite() {
           state = window.__app_state__;
           state.weekStartDate = savedStart;
           helpers.setViewingWeekStartDate(savedStart);
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
+      // 131. "Week over" state (docs/prd_week_over_start_new_week.md): the week has ended
+      //      and the grid hasn't been reset. 🚀 Start New Week sits under the week dates,
+      //      no day is active until one is picked, Back to Today never shows, the overnight
+      //      rollover clears a stale day once, and Big Buttons shows the week-over card.
+      if (__shouldRun('131')) {
+        console.log("Running Test Case 131: Week over — Start New Week under the dates, no stuck Back to Today...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        let state = window.__app_state__;
+        const savedStart = state.weekStartDate;
+        const pill = document.getElementById('reset-btn');
+        const backBtn = document.getElementById('back-to-today-btn');
+        const layout = document.querySelector('.layout-container');
+        const confirmModalEl = document.getElementById('confirm-modal');
+        const ymd = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+        const shift = (base, days) => { const dt = new Date(base + 'T00:00:00'); dt.setDate(dt.getDate() + days); return ymd(dt); };
+        const activeHeaders = () => [...document.querySelectorAll('.day-header')].filter(th => (th.dataset.columnState || '').startsWith('active'));
+        const isShown = el => !el.classList.contains('hidden') && el.getBoundingClientRect().height > 0;
+        try {
+          state.chartStyle = 'standard';
+          // The live week ended last week and was never reset.
+          state.weekStartDate = shift(savedStart, -7);
+          state.activeDay = -1;
+          helpers.setViewingWeekStartDate(state.weekStartDate);
+          helpers.renderState(true);
+          await sleep(30);
+
+          // Scenario 1: chart loads with the week over.
+          assert(helpers.isWeekAwaitingReset() === true, "The week is awaiting reset");
+          assert(isShown(pill) && pill.closest('.week-nav-center') && !pill.disabled, "Start New Week shows under the week dates");
+          assert(pill.textContent.includes('Start New Week') && !pill.textContent.includes('Reset'), `Pill says Start, not Reset (got "${pill.textContent}")`);
+          assert(!document.querySelector('.actions-buttons #reset-btn'), "No Start/Reset button in the footer");
+          assert(activeHeaders().length === 0, "No day is highlighted while no day is picked");
+          assert(!isShown(backBtn), "Back to Today is hidden");
+          assert(pill.getBoundingClientRect().height >= 44, `Pill is a full-size touch target (got ${pill.getBoundingClientRect().height}px)`);
+          const pillCs = getComputedStyle(pill);
+          assert(pillCs.backgroundColor === 'rgb(251, 146, 60)' && pillCs.color === 'rgb(67, 20, 7)', `Pill uses the due colour, never today-yellow (got ${pillCs.backgroundColor} / ${pillCs.color})`);
+          assert(pill.getAttribute('style') === null, "Pill has no inline style");
+
+          // Scenario 2: pick Wednesday of the ended week.
+          const wedDay = ((state.weekStartDay || 0) + 3) % 7;
+          state.activeDay = wedDay;
+          helpers.renderState(true);
+          await sleep(30);
+          const wedHeader = document.querySelector('.day-header[data-day="3"]');
+          assert(wedHeader && wedHeader.dataset.columnState === 'active_past', `Picked day is active_past (got ${wedHeader && wedHeader.dataset.columnState})`);
+          assert(isShown(pill), "Pill stays while a day of the ended week is picked");
+          assert(!isShown(backBtn), "Back to Today never shows when today isn't in the grid");
+          // The old bug: tapping Back to Today jumped to the same weekday of the ended week.
+          backBtn.click();
+          await sleep(30);
+          assert(state.activeDay === wedDay, "Back to Today does nothing when today isn't in the grid");
+
+          // Scenario 3: switch to Friday, the pill stays.
+          state.activeDay = ((state.weekStartDay || 0) + 5) % 7;
+          helpers.renderState(true);
+          await sleep(30);
+          assert(activeHeaders().length === 1 && activeHeaders()[0].dataset.day === '5' && isShown(pill), "Switching days keeps the pill");
+
+          // Overnight rollover: a stale day is cleared once, later picks are kept.
+          helpers.resetWeekOverRolloverKey();
+          state.activeDay = ((state.weekStartDay || 0) + 6) % 7;
+          // The rollover waits while any dialog is open; earlier cases can leave a
+          // stale #level-up-modal behind, so clear the screen first.
+          document.querySelectorAll('.modal:not(.hidden)').forEach(m => m.classList.add('hidden'));
+          assert(helpers.clearActiveDayIfWeekOver() === true && state.activeDay === -1, "Rollover clears the day left over from when the week was live");
+          state.activeDay = wedDay;
+          assert(helpers.clearActiveDayIfWeekOver() === false && state.activeDay === wedDay, "Rollover never clears a day picked after the week ended");
+          state.activeDay = -1;
+          helpers.renderState(true);
+          await sleep(30);
+
+          // Exception Mode and older weeks hide the pill.
+          document.getElementById('exceptions-btn').click();
+          await sleep(30);
+          assert(layout.classList.contains('exception-mode') && !isShown(pill), "Exception Mode hides the pill");
+          document.getElementById('exceptions-done-btn').click();
+          await sleep(30);
+          assert(isShown(pill), "Done ✅ brings the pill back");
+          helpers.setViewingWeekStartDate(shift(state.weekStartDate, -7));
+          helpers.renderState(true);
+          await sleep(30);
+          assert(!isShown(pill), "An older archived week shows no pill");
+          helpers.setViewingWeekStartDate(state.weekStartDate);
+
+          // Big Buttons: no focused pill, one calm card; picking a day shows its cards.
+          state.chartStyle = 'big-buttons';
+          state.activeDay = -1;
+          helpers.renderState(true);
+          await sleep(30);
+          assert(document.querySelectorAll('.simplified-day-pill').length === 7 && !document.querySelector('.simplified-day-pill.is-focused'), "Big Buttons: no day pill is focused");
+          const card = document.querySelector('#simplified-cards-list .simplified-week-over-card');
+          assert(card && card.textContent.includes('Pick a day to fix'), "Big Buttons: the week-over card shows");
+          assert(!document.querySelector('#simplified-cards-list .simplified-task-card'), "Big Buttons: no task cards before a day is picked");
+          assert(document.getElementById('simplified-day-title').textContent.includes('Last week is done!'), "Big Buttons title says last week is done");
+          assert(getComputedStyle(card).cursor !== 'pointer', "The week-over card isn't a button");
+          state.activeDay = wedDay;
+          helpers.renderState(true);
+          await sleep(30);
+          assert(document.querySelector('.simplified-day-pill[data-day="3"].is-focused') && document.querySelector('#simplified-cards-list .simplified-task-card'), "Big Buttons: picking a day shows that day's cards");
+          state.chartStyle = 'standard';
+          state.activeDay = -1;
+          helpers.renderState(true);
+          await sleep(30);
+
+          // Tap the pill: the Start New Training Week dialog, then a fresh week.
+          pill.click();
+          await sleep(60);
+          const title = document.getElementById('confirm-title').textContent;
+          assert(!confirmModalEl.classList.contains('hidden') && /Start New (Training Week|Mega Cycle)/.test(title), `Pill opens the Start New Training Week dialog (got "${title}")`);
+          assert(document.getElementById('confirm-checkbox'), "Dialog keeps Carry over exceptions");
+          document.getElementById('confirm-yes-btn').click();
+          await sleep(100);
+          state = window.__app_state__;
+          assert(state.weekStartDate === savedStart, `New week starts on the current week (got ${state.weekStartDate})`);
+          assert(!isShown(pill) && helpers.isWeekAwaitingReset() === false, "Pill hides once the new week starts");
+
+          // Mid-week regression: Back to Today still returns to today's column.
+          const todayDay = state.activeDay;
+          state.activeDay = (todayDay + 1) % 7;
+          helpers.renderState(true);
+          await sleep(30);
+          assert(isShown(backBtn), "Mid-week: Back to Today shows when another day is active");
+          backBtn.click();
+          await sleep(30);
+          assert(state.activeDay === todayDay && confirmModalEl.classList.contains('hidden'), "Back to Today returns to today with no dialog");
+        } finally {
+          if (layout.classList.contains('exception-mode')) document.getElementById('exceptions-done-btn').click();
+          if (!confirmModalEl.classList.contains('hidden')) document.getElementById('confirm-no-btn').click();
+          state = window.__app_state__;
+          state.chartStyle = 'standard';
+          state.weekStartDate = savedStart;
+          helpers.setViewingWeekStartDate(savedStart);
+          helpers.resetWeekOverRolloverKey();
           helpers.resetState();
           await sleep(30);
         }

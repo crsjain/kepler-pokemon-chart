@@ -1332,6 +1332,9 @@ function selectProfile(profileId) {
         
         // The week is over: offer to start the new one (owner 2026-10-20: never
         // straight after a weekly win, only once the next week has begun).
+        // The load already cleared the day, so the rollover check must not clear
+        // a day the child picks after this (prd_week_over_start_new_week.md §4.6).
+        if (isNewWeekDue()) weekOverActiveDayClearedFor = `${profileId}:${state.weekStartDate}`;
         maybePromptNewWeek();
       }
       
@@ -1741,6 +1744,18 @@ export function canStartNextWeek(state, viewingDateStr = null, forceCheck = fals
   return todayStr >= nextWeekStartStr;
 }
 
+// "Week awaiting reset" (docs/prd_week_over_start_new_week.md §3): the live week
+// is on screen, it has ended, and the grid hasn't been reset yet. forceCheck
+// ignores the test-mode / Future Edits bypass, so this is about the real date.
+// Drives the header Start New Week pill, the Back to Today guard, the Big
+// Buttons week-over card and the overnight rollover.
+function isWeekAwaitingReset() {
+  if (!state || !state.weekStartDate) return false;
+  const viewing = currentViewingWeekStartDate || state.weekStartDate;
+  if (viewing < state.weekStartDate) return false;
+  return canStartNextWeek(state, viewing, true);
+}
+
 // Per-child visual theme copy (docs/prd_unicorn_princess_theme.md §3.4). Only
 // child-facing text changes; XP / star / badge math is shared by both themes.
 // Each entry targets a dedicated element so .trainer-name-label is never wiped.
@@ -1843,28 +1858,8 @@ export function renderState(rebuildGrid = false) {
     prevWeekBtn.disabled = (currentIndex <= 0);
   }
 
+  // Also shows / hides the header Start New Week pill (updateStartNewWeekButton).
   applyWeekNavLock();
-  
-  if (resetBtn) {
-    const canReset = canStartNextWeek(state, currentViewingWeekStartDate);
-    resetBtn.disabled = !canReset;
-    // Main-screen Reset Week shows only once the week has really ended and the grid
-    // hasn't been reset yet (forceCheck ignores the test-mode / Future Edits bypass).
-    // The rest of the time it lives in Admin › Tonight's Check-in (owner, 2026-10-31).
-    const resetDue = !isPastWeek && canStartNextWeek(state, currentViewingWeekStartDate, true);
-    resetBtn.classList.toggle('hidden', !resetDue);
-    if (isPastWeek) {
-      resetBtn.title = "Cannot reset historical weeks";
-    } else if (!canReset) {
-      const currentWeekStart = new Date((state.weekStartDate || '2026-08-10') + 'T00:00:00');
-      const nextWeekStart = new Date(currentWeekStart.getTime());
-      nextWeekStart.setDate(currentWeekStart.getDate() + 7);
-      const nextDate = state.pendingWeekStartDate || formatLocalDate(nextWeekStart);
-      resetBtn.title = `Next week can be started once this training cycle finishes (${nextDate})`;
-    } else {
-      resetBtn.title = "Start your new week of training!";
-    }
-  }
   updateAdminResetWeekButton();
   const instanceId = state.activePartnerInstanceId || '25';
   const stats = state.partnersData[instanceId] || { familyId: '25', level: 1, xp: 0, stageId: '25' };
@@ -2120,12 +2115,13 @@ function updateActiveColumnUI() {
   if (backToTodayBtn) {
     const isViewingPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
     const hasActiveNonToday = colStates.some(c => c.state === 'ACTIVE_PAST' || c.state === 'ACTIVE_FUTURE');
-    if (!isViewingPastWeek && hasActiveNonToday && state.activeDay !== -1) {
-      const todayCol = colStates.find(c => c.state === 'SELECTABLE_TODAY');
-      const todayRealDay = getLocalDate(state?.timezoneOffset).getDay();
+    // Only when today is actually in this grid. Once the week has ended there is
+    // no today column, and the pill used to jump to the same weekday of the ended
+    // week (docs/prd_week_over_start_new_week.md §1, §4.3).
+    const todayCol = colStates.find(c => c.state === 'SELECTABLE_TODAY');
+    if (!isViewingPastWeek && hasActiveNonToday && todayCol && state.activeDay !== -1) {
       const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      const todayName = todayCol ? daysOfWeek[todayCol.dayOfWeek] : daysOfWeek[todayRealDay];
-      backToTodayBtn.textContent = `⚡ Back to Today (${todayName})`;
+      backToTodayBtn.textContent = `⚡ Back to Today (${daysOfWeek[todayCol.dayOfWeek]})`;
       backToTodayBtn.classList.remove('hidden');
     } else {
       backToTodayBtn.classList.add('hidden');
@@ -2160,7 +2156,10 @@ function renderSimplifiedView() {
   const isPastWeek = !!(state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate));
 
   let focusedColIndex = colStates.findIndex(c => c.state.startsWith('ACTIVE'));
-  if (focusedColIndex === -1) {
+  // Week over and no day picked yet: no pill is focused and one calm card asks
+  // the child to pick a day or start the new week (prd_week_over_start_new_week.md §4.5).
+  const weekOverNoDay = focusedColIndex === -1 && !isPastWeek && isWeekAwaitingReset();
+  if (focusedColIndex === -1 && !weekOverNoDay) {
     focusedColIndex = isPastWeek ? Math.max(0, Math.min(6, viewingHistoricalDayIndex)) : 0;
   }
 
@@ -2210,6 +2209,16 @@ function renderSimplifiedView() {
     `;
   }
   stripEl.innerHTML = stripHtml;
+
+  if (weekOverNoDay) {
+    if (dayTitleEl) dayTitleEl.textContent = `${getThemeCopy(state.theme).dayTitleEmoji} Last week is done!`;
+    cardsListEl.innerHTML = `
+      <div class="simplified-week-over-card" role="status">
+        <span class="simplified-week-over-text">Pick a day to fix, or start your new week 🚀</span>
+      </div>
+    `;
+    return;
+  }
 
   const focusedCol = colStates[focusedColIndex] || colStates[0];
   if (!focusedCol) return;
@@ -2540,6 +2549,30 @@ function applyWeekNavLock() {
       btn.title = '';
     }
   });
+  updateStartNewWeekButton();
+}
+
+// Header "🚀 Start New Week" pill (#reset-btn, under the week dates). Visible only
+// while the week is awaiting reset and no parent mode is active
+// (docs/prd_week_over_start_new_week.md §4.2). `disabled` keeps the old
+// canStartNextWeek gate, so test mode / Future Edits can still start a week.
+function updateStartNewWeekButton() {
+  if (!resetBtn) return;
+  const viewingPast = !!(state.weekStartDate && currentViewingWeekStartDate && currentViewingWeekStartDate < state.weekStartDate);
+  const canStart = canStartNextWeek(state, currentViewingWeekStartDate);
+  resetBtn.disabled = !canStart;
+  const show = isWeekAwaitingReset() && !isExceptionMode && !isLastWeekEditActive();
+  resetBtn.classList.toggle('hidden', !show);
+  if (viewingPast) {
+    resetBtn.title = "Cannot start a new week from a past week";
+  } else if (!canStart) {
+    const currentWeekStart = new Date((state.weekStartDate || '2026-08-10') + 'T00:00:00');
+    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+    const nextDate = state.pendingWeekStartDate || formatLocalDate(currentWeekStart);
+    resetBtn.title = `Next week can be started once this training cycle finishes (${nextDate})`;
+  } else {
+    resetBtn.title = "Start your new week of training!";
+  }
 }
 
 function startExceptionMode() {
@@ -3325,7 +3358,9 @@ function bindWeekResetEvents() {
       if (resetBtn.disabled || !canStartNextWeek(state, currentViewingWeekStartDate)) {
         return;
       }
-      openResetWeekConfirm();
+      // The header pill opens the same dialog as the automatic new-week prompt
+      // (owner 2026-11-01, prd_week_over_start_new_week.md §4.2).
+      openStartNewWeekConfirm();
     });
   }
   const adminResetWeekBtn = document.getElementById('admin-reset-week-btn');
@@ -3572,8 +3607,15 @@ function bindDayHeaderEvents() {
   const backToTodayBtn = document.getElementById('back-to-today-btn');
   if (backToTodayBtn) {
     backToTodayBtn.addEventListener('click', () => {
-      const todayRealDay = getLocalDate(state?.timezoneOffset).getDay();
-      state.activeDay = todayRealDay;
+      // Land on today's column, not just today's weekday number: once the week
+      // has ended that number points at the same weekday of the ended week.
+      const todayCol = getWeekColumnStates(state, currentViewingWeekStartDate)
+        .find(c => c.state === 'SELECTABLE_TODAY' || c.state === 'ACTIVE_TODAY');
+      if (!todayCol) {
+        updateActiveColumnUI();
+        return;
+      }
+      state.activeDay = todayCol.dayOfWeek;
       saveState();
       updateActiveColumnUI();
       // Returning to Today is an explicit exit from past-day editing.
@@ -4601,7 +4643,13 @@ function maybePromptNewWeek() {
   // check tries again once the screen is clear.
   if (document.querySelector('.modal:not(.hidden)') || isExceptionMode || isLastWeekEditActive()) return false;
   newWeekPromptedFor = promptKey;
+  openStartNewWeekConfirm();
+  return true;
+}
 
+// "Start New Training Week?" dialog: the automatic prompt above and the header
+// 🚀 Start New Week pill both open it.
+function openStartNewWeekConfirm() {
   const claimed = !!state.weeklyClaimed;
   const isMega = claimed && state.megaWeeks === 3;
   const nextWeekNum = claimed ? (isMega ? 1 : state.megaWeeks + 2) : state.megaWeeks + 1;
@@ -4610,7 +4658,7 @@ function maybePromptNewWeek() {
   const sub = isMega
     ? 'Loop back to Week 1 and start working towards your NEXT Mega Milestone!'
     : (claimed
-      ? `Last week is saved with its badge. Reset the grid and begin Week ${nextWeekNum} of training.`
+      ? `Last week is saved with its badge. Start a fresh grid for Week ${nextWeekNum} of training.`
       : 'Missed a check last week? Tap Not Yet and finish it first. Your badge and reward carry over to the new week.');
   showCustomConfirm(
     isMega ? "Start New Mega Cycle? 👑" : "Start New Training Week? 📅",
@@ -4626,10 +4674,36 @@ function maybePromptNewWeek() {
   return true;
 }
 
+// Overnight rollover (prd_week_over_start_new_week.md §4.6). A tablet left open
+// keeps the day that was selected when the week ended (e.g. Saturday), so the
+// first check after the week ends clears it: no day is highlighted until the
+// child or parent picks one. Once per child + week per session, so a day picked
+// afterwards (scenario 2) is never cleared. Writes only when something changes.
+let weekOverActiveDayClearedFor = null;
+
+function clearActiveDayIfWeekOver() {
+  if (!isNewWeekDue()) return false;
+  const key = `${activeProfileId || ''}:${state.weekStartDate}`;
+  if (weekOverActiveDayClearedFor === key) return false;
+  if (document.querySelector('.modal:not(.hidden)') || isExceptionMode || isLastWeekEditActive()) return false;
+  weekOverActiveDayClearedFor = key;
+  if (state.activeDay === -1) return false;
+  state.activeDay = -1;
+  saveState();
+  renderState(false);
+  return true;
+}
+
 if (!location.search.includes('runTests=true') && !location.search.includes('runMigrationTest=true')) {
-  setInterval(() => { if (activeProfileId) maybePromptNewWeek(); }, 60 * 1000);
+  setInterval(() => {
+    if (!activeProfileId) return;
+    clearActiveDayIfWeekOver();
+    maybePromptNewWeek();
+  }, 60 * 1000);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && activeProfileId) maybePromptNewWeek();
+    if (document.visibilityState !== 'visible' || !activeProfileId) return;
+    clearActiveDayIfWeekOver();
+    maybePromptNewWeek();
   });
 }
 
@@ -5142,6 +5216,9 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     resetWeekGrid: (carryOver) => resetWeekGrid(carryOver),
     checkAndTriggerWeeklySuccess: () => checkAndTriggerWeeklySuccess(),
     maybePromptNewWeek: () => maybePromptNewWeek(),
+    clearActiveDayIfWeekOver: () => clearActiveDayIfWeekOver(),
+    resetWeekOverRolloverKey: () => { weekOverActiveDayClearedFor = null; },
+    isWeekAwaitingReset: () => isWeekAwaitingReset(),
     isFutureEditsRemembered: () => isFutureEditsRemembered(),
     isLocalTestSite: () => !!useEmulator,
     archivedWeekMeetsEveryGoal: (weekStart) => archivedWeekMeetsEveryGoal(weekStart),

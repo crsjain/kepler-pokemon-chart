@@ -580,6 +580,49 @@ button:disabled,
   box-shadow: none;
 }
 
+/* 🚀 Start New Week: a full-size touch target (≥ 44px), not a small pill.
+   Colours live in the skin layer (@section skin). */
+.week-navigation-container .pixel-btn.start-week-pill {
+  min-height: 44px;
+  padding: 8px 20px;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+/* Phones: Prev + date + Next don't leave room for the pill, so it drops to its own
+   centred row under them (display: contents lifts the date and pill into the nav's
+   flex row; ::after is the line break). Only while the pill is showing. */
+@media (max-width: 520px) {
+  .week-navigation-container:has(.start-week-pill:not(.hidden)) {
+    flex-wrap: wrap;
+  }
+
+  .week-navigation-container:has(.start-week-pill:not(.hidden)) .week-nav-center {
+    display: contents;
+  }
+
+  .week-navigation-container:has(.start-week-pill:not(.hidden)) .week-range-text {
+    order: 1;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .week-navigation-container:has(.start-week-pill:not(.hidden)) #next-week-btn {
+    order: 2;
+  }
+
+  .week-navigation-container:has(.start-week-pill:not(.hidden))::after {
+    content: '';
+    order: 2;
+    flex-basis: 100%;
+  }
+
+  .week-navigation-container:has(.start-week-pill:not(.hidden)) .start-week-pill {
+    order: 3;
+    margin: 0 auto;
+  }
+}
+
 .week-navigation-container .pixel-btn {
   margin: 0;
   padding: 6px 12px;
@@ -8863,6 +8906,26 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   border-radius: 24px;
 }
 
+/* Week over, no day picked (prd_week_over_start_new_week.md §4.5): one calm card in
+   place of the task cards. Not a button, so no candy lip, hover lift or animation. */
+.simplified-week-over-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 84px;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  border-radius: 24px;
+  text-align: center;
+}
+
+.simplified-week-over-text {
+  font-family: 'Fredoka', 'Fredoka One', sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1.35;
+}
+
 /* Floating Stadium Pill Task Card (Zero Black Borders) */
 .simplified-task-card {
   display: flex;
@@ -9531,9 +9594,8 @@ body[data-theme] .actions .pixel-btn.info {
 }
 
 /* Footer toolbar (owner, 2026-10-31: option D). Switch Trainer and Parent Admin are
-   quiet tinted pills — neither is the main thing on screen. Reset Week appears only
-   when the week has ended and the grid hasn't been reset, in the theme's bold "due"
-   colour so it can't be missed (dark text on orange / white on raspberry, both ≥ 4.5:1). */
+   quiet tinted pills — neither is the main thing on screen. When the week has ended,
+   🚀 Start New Week appears under the week dates instead (rule below). */
 body[data-theme] .bottom-section .actions {
   border-top: 2px solid var(--sk-footer-rule);
   padding-top: 12px;
@@ -9545,7 +9607,10 @@ body[data-theme] .actions .pixel-btn.info {
   box-shadow: 0 3px 0 var(--sk-pill-lip);
 }
 
-body[data-theme] .actions .pixel-btn.warning.reset-due-btn {
+/* 🚀 Start New Week (prd_week_over_start_new_week.md §4.2): under the week dates, only
+   when the week has ended and the grid hasn't been reset. The theme's bold "due" colour
+   (dark text on orange / white on raspberry, both ≥ 4.5:1), never today-yellow. */
+body[data-theme] .week-navigation-container .pixel-btn.start-week-pill {
   background: var(--sk-due-bg);
   color: var(--sk-due-fg);
   box-shadow: 0 3px 0 var(--sk-due-lip);
@@ -9703,6 +9768,12 @@ body[data-theme] .simplified-vault-icon svg {
 body[data-theme] .simplified-task-card {
   background: var(--sk-panel-bg);
   box-shadow: 0 5px 0 var(--sk-task-lip), 0 10px 18px var(--sk-task-glow);
+}
+
+body[data-theme] .simplified-week-over-card {
+  background: var(--sk-panel-bg);
+  color: var(--sk-today-fg);
+  box-shadow: 0 10px 18px var(--sk-task-glow);
 }
 
 body[data-theme] .simplified-task-card:hover:not(.is-rest):not(.is-out-of-range) {

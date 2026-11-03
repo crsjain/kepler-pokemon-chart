@@ -8,25 +8,25 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=11.38">
+  <link rel="stylesheet" href="style.css?v=11.39">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800;900&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script type="importmap">
   {
     "imports": {
-      "./app.js": "./app.js?v=11.37",
-      "./state.js": "./state.js?v=11.37",
-      "./firebase.js": "./firebase.js?v=11.37",
-      "./migrations.js": "./migrations.js?v=11.37",
-      "./vault.js": "./vault.js?v=11.37",
-      "./badges.js": "./badges.js?v=11.37",
-      "./shop.js": "./shop.js?v=11.37",
-      "./guide.js": "./guide.js?v=11.37",
-      "./pokemon_data.js": "./pokemon_data.js?v=11.37",
-      "./date_utils.js": "./date_utils.js?v=11.37",
-      "./admin.js": "./admin.js?v=11.37",
-      "./rewards_admin.js": "./rewards_admin.js?v=11.37",
-      "./audio.js": "./audio.js?v=11.37",
-      "./modal_backdrop.js": "./modal_backdrop.js?v=11.37"
+      "./app.js": "./app.js?v=11.38",
+      "./state.js": "./state.js?v=11.38",
+      "./firebase.js": "./firebase.js?v=11.38",
+      "./migrations.js": "./migrations.js?v=11.38",
+      "./vault.js": "./vault.js?v=11.38",
+      "./badges.js": "./badges.js?v=11.38",
+      "./shop.js": "./shop.js?v=11.38",
+      "./guide.js": "./guide.js?v=11.38",
+      "./pokemon_data.js": "./pokemon_data.js?v=11.38",
+      "./date_utils.js": "./date_utils.js?v=11.38",
+      "./admin.js": "./admin.js?v=11.38",
+      "./rewards_admin.js": "./rewards_admin.js?v=11.38",
+      "./audio.js": "./audio.js?v=11.38",
+      "./modal_backdrop.js": "./modal_backdrop.js?v=11.38"
     }
   }
   </script>
@@ -250,6 +250,8 @@
         <div class="week-nav-center">
           <span id="week-range-display" class="week-range-text"></span>
           <button id="back-to-today-btn" class="pixel-btn warning small back-to-today-pill hidden" aria-label="Switch active highlight back to today">⚡ Back to Today</button>
+          <!-- Shown only once the week has ended and the grid hasn't been reset (docs/prd_week_over_start_new_week.md). -->
+          <button id="reset-btn" class="pixel-btn warning start-week-pill hidden">🚀 Start New Week</button>
         </div>
         <button id="next-week-btn" class="pixel-btn info">Next ▶</button>
       </div>
@@ -318,16 +320,15 @@
       <!-- Motivational Quote -->
       <div class="motivational-quote">"True Trainers never give up! Keep practicing and leveling up your skills!"</div>
 
-      <!-- Action Buttons: footer toolbar (version left, actions right). Reset Week only
-           appears once the week has ended and the grid hasn't been reset yet; at other
-           times it lives in Admin › Tonight's Check-in (owner, 2026-10-31). -->
+      <!-- Action Buttons: footer toolbar (version left, actions centred). When the week
+           has ended, 🚀 Start New Week appears under the week dates instead
+           (owner, 2026-11-01); Admin › Tonight's Check-in always has Start a new week. -->
       <div class="actions">
         <!-- App Version Info -->
         <div class="app-version-container">
           version <span id="app-version-label">v0.0.0</span>
         </div>
         <div class="actions-buttons">
-          <button id="reset-btn" class="pixel-btn warning small reset-due-btn hidden">🔄 Reset Week</button>
           <button id="switch-profile-btn" class="pixel-btn info small">Switch Trainer</button>
           <button id="admin-btn" class="pixel-btn info small">Parent Admin</button>
         </div>
@@ -1294,7 +1295,7 @@
   </div>
 
   <script src="particles.js?v=10.8"></script>
-  <script type="module" src="app.js?v=11.37" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=11.38" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 
