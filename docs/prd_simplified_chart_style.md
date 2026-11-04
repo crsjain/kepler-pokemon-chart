@@ -1,7 +1,7 @@
 # PRD: Simplified "Today Focus" Chart Style (`Big Buttons` for Younger Children)
 
 **Document**: `docs/prd_simplified_chart_style.md`
-**Version**: 1.0.0
+**Version**: 1.1.0 (§10 "Show milestones & rewards" switch for under-5s, 2026-11-04)
 **Status**: Implemented & deployed (Checkpoints 81–83+; **TC89C**, **TC128**, **TC129**).
 **Authors**: crsjain & Jetski
 **Target Systems**: `state.js`, `app.js`, `admin.js`, `index.html`, `style.css`, `tests.js`. **No schema version bump** (stays V19; V20 remains reserved for `prd_parent_pin_and_family_signin.md` §7 Phase 3).
@@ -259,3 +259,52 @@ Cards flex between **64px and 84px**, so short lists fill the tray with roomy ca
 - [x] Implement Simplified Chart Style (`state.js`, `index.html`, `admin.js`, `app.js`, `style.css`) (2026-10-25)
 - [x] Update **TC89C** and add **TC128** in `tests.js`; verify 100% green `node run_headless_tests.js` (2026-10-25)
 - [x] Bump `CACHE_NAME` in `service-worker.js` and `?v=` in `index.html` (TC90) (2026-10-25)
+
+---
+
+## 10. "Show milestones & rewards" switch (children under 5)
+
+**Status**: Approved by the owner 2026-11-01. Built 2026-11-04 (**TC134**).
+**For**: any child under 5 (first user: Alden). Parent-facing copy never names a child.
+
+### 10.1 Problem
+A 4-week Mega horizon and two dropdowns of written rewards mean nothing to a pre-reader. Today a child can't even tick a card until both rewards are picked ("⚠️ Choose your Weekly Reward and Mega Reward first"), and that pop-up is unreadable for them. Daily stars, the partner and the weekly badge already make a complete loop.
+
+### 10.2 Owner decisions (2026-11-01)
+| # | Decision |
+| :--- | :--- |
+| D1 | A **switch** under Big Buttons, *not* a third chart style. It describes exactly what it does, it doesn't touch the six `chartStyle === 'big-buttons'` checks or the diagnostics whitelist, and a tablet on an older build keeps the unknown field instead of resetting the child to Standard. |
+| D2 | **No reward at all** when the switch is off: no pickers, no reward box in the win pop-up, no `claimedRewardsHistory` entries. |
+| D3 | **Mega keeps counting in the background** (`megaWeeks`, `weeklyHistory`, badges in `collectedBadges`), so the Standard grid later shows real progress. |
+| D4 | The motivational quote is hidden too. |
+| D5 | Generic for any child under 5. |
+
+### 10.3 Behaviour
+- **Field**: `state.hideMilestones` (optional boolean; absent = shown). No schema bump, no migration, no diagnostics change. Kept by `WIPE_PRESERVED_KEYS`.
+- **Single rule**: `milestonesHidden(s) = s.chartStyle === 'big-buttons' && s.hideMilestones === true` (state.js). Standard always shows milestones, whatever the field says.
+- **Main screen**: `renderState` sets `body[data-milestones="hidden|shown"]`. CSS hides `.mega-milestone-card`, `#weekly-reward-container`, `#mega-reward-container` and `.motivational-quote`, with no inline styles. In the landscape split view the chart spans only the trainer row.
+- **Tick gate**: skipped while milestones are hidden.
+- **Week won**: "🎉 WEEKLY SUCCESS! 🎉" with the badge art and the normal (non-Mega) confetti and sound, "completed all training goals this week!", and no reward boxes. On the 4th week it is still the weekly pop-up. No claims are recorded.
+- **Start New Week dialog**: never the "Start New Mega Cycle? 👑" variant. A won week reads "Start a New Week"; an unwon week says the badge (not "badge and reward") carries over.
+- **Admin › Settings › Look & Feel**: a switch row `#admin-milestones-row` right under Chart style, shown only while Big Buttons is selected (hidden, never greyed out, under Standard). Label "🏆 Show milestones & rewards", help text "For children under 5: turn off to hide Mega Milestone progress and reward choices. Progress still counts in the background." Auto-saves with "Saved ✓" like its neighbours.
+- **Turning it back on, or moving to Standard**: the pickers come back empty, so the child picks rewards before the first tick (normal flow). Mega slots show the badges earned meanwhile. Past weeks show empty reward pickers; this is expected.
+
+### 10.4 Panel synthesis (2026-11-01): APPROVED WITH MITIGATIONS
+- **Child Development**: PASS. The badge and its celebration are the prize, which fits under-5s. There's no "missing" placeholder on the child's screen.
+- **Game Economy**: PASS. No XP or star change. Never write placeholder claims ("A cool reward") when no reward was set.
+- **Weary Parent**: PASS. Two taps, once; nothing to pick each week; one switch when the child grows up.
+- **UX**: PASS with mitigations. Show the switch only under Big Buttons. Re-check the 16px panel rhythm and column heights without the Mega card (landscape and portrait, both themes).
+- **Staff Engineer**: PASS. One helper drives CSS, the tick gate, the win pop-up and the copy, so they can't drift.
+
+### 10.5 Tests: TC134 (+ TC128 untouched)
+1. Big Buttons + `hideMilestones: true` + empty rewards: the four elements have computed `display: none`; `body[data-milestones="hidden"]`.
+2. A tick sticks, with no "ATTENTION, TRAINER" pop-up, and XP goes up.
+3. A win at `megaWeeks = 3`: WEEKLY SUCCESS, no `.reward-box`, no new claims; after the reset `megaWeeks === 0` and the badge is collected.
+4. Standard (field still true): everything is visible again and the tick gate is back.
+5. Admin: the row is visible only under Big Buttons, and the switch writes `state.hideMilestones`.
+
+### 10.6 Rollout
+- [x] Owner decisions D1–D5 (2026-11-01)
+- [x] PRD §10 written (2026-11-04)
+- [x] Build + TC134, cache bump, full suite green (2026-11-04)
+- [ ] Owner VQA, then deploy via `pokemon-session-wrapup`; set Alden to Big Buttons and switch milestones off.
