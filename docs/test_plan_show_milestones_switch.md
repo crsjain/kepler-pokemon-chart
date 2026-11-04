@@ -27,7 +27,7 @@ Open **🔒 Admin › 🗓️ Settings › Look & Feel**.
 1. With **🧸 Chart style = Standard**:
    - [ ] There's **no** "🏆 Show milestones & rewards" row. It's hidden, not greyed out.
 2. Select **Big Buttons**:
-   - [ ] The row appears **directly under Chart style**, with the help text *"For children under 5: turn off to hide Mega Milestone progress and reward choices. Progress still counts in the background."*
+   - [ ] The row appears **directly under Chart style**, with the help text *"For children under 6: turn off to hide Mega Milestone progress and reward choices. Progress still counts in the background."*
    - [ ] The switch is **on** by default.
 3. Turn the switch **off**:
    - [ ] An inline **Saved ✓** flashes; there's no pop-up.

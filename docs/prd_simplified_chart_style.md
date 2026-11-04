@@ -286,7 +286,7 @@ A 4-week Mega horizon and two dropdowns of written rewards mean nothing to a pre
 - **Tick gate**: skipped while milestones are hidden.
 - **Week won**: "🎉 WEEKLY SUCCESS! 🎉" with the badge art and the normal (non-Mega) confetti and sound, "completed all training goals this week!", and no reward boxes. On the 4th week it is still the weekly pop-up. No claims are recorded.
 - **Start New Week dialog**: never the "Start New Mega Cycle? 👑" variant. A won week reads "Start a New Week"; an unwon week says the badge (not "badge and reward") carries over.
-- **Admin › Settings › Look & Feel**: a switch row `#admin-milestones-row` right under Chart style, shown only while Big Buttons is selected (hidden, never greyed out, under Standard). Label "🏆 Show milestones & rewards", help text "For children under 5: turn off to hide Mega Milestone progress and reward choices. Progress still counts in the background." Auto-saves with "Saved ✓" like its neighbours.
+- **Admin › Settings › Look & Feel**: a switch row `#admin-milestones-row` right under Chart style, shown only while Big Buttons is selected (hidden, never greyed out, under Standard). Label "🏆 Show milestones & rewards", help text "For children under 6: turn off to hide Mega Milestone progress and reward choices. Progress still counts in the background." Auto-saves with "Saved ✓" like its neighbours.
 - **Turning it back on, or moving to Standard**: the pickers come back empty, so the child picks rewards before the first tick (normal flow). Mega slots show the badges earned meanwhile. Past weeks show empty reward pickers; this is expected.
 
 ### 10.4 Panel synthesis (2026-11-01): APPROVED WITH MITIGATIONS
