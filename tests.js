@@ -12830,6 +12830,13 @@ async function runSuite() {
           helpers.checkAndTriggerWeeklySuccess();
           await sleep(30);
           assert(state.weeklyClaimed !== true, "A ticked rest day can't win the week while a required day is missing");
+
+          // Owner decision 2026-11-04: a completed ✨ bonus still makes up a missed day.
+          state.excused[`${ds(6)}-${task.id}`] = 'bonus'; // Saturday stays ticked, now as a bonus
+          assert(StateModule.countsTowardGoal(task, ds(6), state) === true, "A completed bonus counts toward the goal");
+          helpers.renderState(false);
+          await sleep(30);
+          assert(cell.textContent.trim() === '5 / 5' && cell.classList.contains('completed'), `The bonus tick makes up the missed day: 5 / 5 (got "${cell.textContent.trim()}")`);
         } finally {
           document.querySelectorAll('.notif-modal').forEach(el => el.remove());
           helpers.resetState();
