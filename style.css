@@ -9217,6 +9217,32 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 }
 
 
+/* "Show milestones & rewards" off (Big Buttons, children under 5;
+   docs/prd_simplified_chart_style.md §10). renderState sets body[data-milestones]
+   from milestonesHidden(); the Standard grid always gets "shown". The Mega cycle
+   still counts in the background. */
+body[data-milestones="hidden"] .mega-milestone-card,
+body[data-milestones="hidden"] #weekly-reward-container,
+body[data-milestones="hidden"] #mega-reward-container,
+body[data-milestones="hidden"] .motivational-quote {
+  display: none;
+}
+
+/* Only the toolbar is left in the bottom panel, so its divider line has nothing
+   to separate. (body[data-theme] matches the skin rule's specificity.) */
+body[data-theme][data-milestones="hidden"] .bottom-section .actions {
+  border-top: none;
+  padding-top: 0;
+}
+
+@media (min-width: 1024px) and (orientation: landscape) {
+  /* No Mega card under the trainer card: the chart spans the trainer row only. */
+  body[data-milestones="hidden"] .chart-container {
+    grid-row: 2;
+  }
+}
+
+
 /* @section skin-unicorn-checkbox: Unicorn heart / crown check-off skin */
 /* ==========================================================================
    UNICORN & PRINCESS SPARKLE THEME — checkbox skin (body[data-theme="unicorn"])

@@ -12593,6 +12593,131 @@ async function runSuite() {
         }
       }
 
+      // 134. "Show milestones & rewards" switch for children under 5
+      //      (docs/prd_simplified_chart_style.md §10): Big Buttons only; hides the Mega
+      //      card, reward pickers and quote; no tick gate; no reward on a win; the Mega
+      //      cycle keeps counting in the background.
+      if (__shouldRun('134')) {
+        console.log("Running Test Case 134: Show milestones & rewards switch (Big Buttons, under 5)...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        let state = window.__app_state__;
+        const hiddenEls = () => ({
+          mega: document.querySelector('.mega-milestone-card'),
+          weekly: document.getElementById('weekly-reward-container'),
+          megaPick: document.getElementById('mega-reward-container'),
+          quote: document.querySelector('.motivational-quote')
+        });
+        const shown = el => getComputedStyle(el).display !== 'none';
+        const adminModal = document.getElementById('admin-modal');
+        try {
+          // 1. Default: field absent, milestones shown, Admin row hidden under Standard.
+          assert(state.hideMilestones === undefined, "hideMilestones is absent by default (no migration)");
+          assert(StateModule.WIPE_PRESERVED_KEYS.includes('hideMilestones'), "WIPE_PRESERVED_KEYS keeps hideMilestones");
+          assert(document.body.dataset.milestones === 'shown', `body[data-milestones] defaults to 'shown' (got ${document.body.dataset.milestones})`);
+          Object.entries(hiddenEls()).forEach(([k, el]) => assert(el && shown(el), `${k} is visible by default`));
+
+          document.getElementById('admin-btn').click();
+          await sleep(80);
+          document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+          document.getElementById('password-submit-btn').click();
+          await sleep(80);
+          document.getElementById('admin-tab-today').click();
+          await sleep(30);
+          const row = document.getElementById('admin-milestones-row');
+          const toggle = document.getElementById('admin-show-milestones-toggle');
+          assert(row && !shown(row), "The milestones switch row is hidden under Standard (never just greyed out)");
+          document.querySelector('#admin-chart-style-placeholder input[value="big-buttons"]').click();
+          await sleep(40);
+          assert(shown(row), "The milestones switch row appears once Big Buttons is selected");
+          assert(row.previousElementSibling && row.previousElementSibling.id === 'admin-chart-style-placeholder', "The switch sits right under Chart style");
+          assert(toggle.checked === true, "The switch starts on (milestones shown)");
+          assert(row.querySelectorAll('[style]').length === 0, "The switch row has zero inline styles (UX Rule 8)");
+
+          // 2. Turning it off writes the field, flashes Saved, and hides the four elements.
+          toggle.click();
+          await sleep(40);
+          assert(state.hideMilestones === true, "Switching off sets state.hideMilestones = true");
+          const savedBadge = row.closest('.adm-card').querySelector('[data-admin-saved-status]');
+          assert(savedBadge && savedBadge.classList.contains('is-visible'), "Switching flashes inline 'Saved ✓'");
+          document.getElementById('close-admin-modal-btn').click();
+          await sleep(40);
+          assert(StateModule.milestonesHidden(state) === true, "milestonesHidden() is true for Big Buttons + hideMilestones");
+          assert(document.body.dataset.milestones === 'hidden', "body[data-milestones] is 'hidden'");
+          Object.entries(hiddenEls()).forEach(([k, el]) => assert(!shown(el), `${k} is hidden (display: none)`));
+          StateModule.runStateDiagnostics();
+          assert(state.chartStyle === 'big-buttons' && state.hideMilestones === true, "Diagnostics keep Big Buttons and the switch");
+
+          // 3. No tick gate: a card tick sticks with no rewards picked, and no ATTENTION pop-up.
+          state.reward = '';
+          state.megaReward = '';
+          helpers.renderState(true);
+          await sleep(40);
+          const card = document.querySelector('#simplified-cards-list .simplified-task-card');
+          const taskId = card.dataset.task;
+          const partner = state.partnersData[state.activePartnerInstanceId];
+          const xpBefore = partner.level * 100 + partner.xp;
+          card.querySelector('input[type="checkbox"]').click();
+          await sleep(40);
+          assert(Object.keys(state.grid).some(k => k.endsWith(`-${taskId}`) && state.grid[k] === true), "The tick sticks with no rewards picked");
+          assert(partner.level * 100 + partner.xp > xpBefore, "The tick awards XP");
+          const attention = [...document.querySelectorAll('.notif-modal')].some(m => m.textContent.includes('ATTENTION, TRAINER'));
+          assert(!attention, "No 'ATTENTION, TRAINER' reward pop-up");
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+
+          // 4. Winning week 4: weekly pop-up, no reward boxes, no claims; the cycle still wraps.
+          state.megaWeeks = 3;
+          state.claimedRewardsHistory = [];
+          state.collectedBadges = [];
+          const badgeId = state.activeWeeklyBadgeId;
+          for (let d = 0; d < 7; d++) {
+            const dt = new Date(state.weekStartDate + 'T00:00:00');
+            dt.setDate(dt.getDate() + d);
+            const ds = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+            state.tasks.forEach(t => { state.grid[`${ds}-${t.id}`] = true; });
+          }
+          helpers.checkAndTriggerWeeklySuccess();
+          await sleep(40);
+          assert(state.weeklyClaimed === true, "All goals met: the week is won");
+          assert(state.collectedBadges.some(b => b.id === badgeId), "The weekly badge is still collected");
+          assert(state.claimedRewardsHistory.length === 0, `No reward claims are recorded (got ${state.claimedRewardsHistory.length})`);
+          const notif = [...document.querySelectorAll('.notif-modal')].pop();
+          assert(notif && notif.textContent.includes('WEEKLY SUCCESS') && !notif.textContent.includes('MEGA'), "Week 4 shows the weekly pop-up, never Mega");
+          assert(notif.querySelectorAll('.reward-box').length === 0, "The win pop-up has no reward boxes");
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetWeekGrid(true);
+          await sleep(40);
+          state = window.__app_state__;
+          assert(state.megaWeeks === 0, `The hidden Mega cycle still wraps 3 → 0 (got ${state.megaWeeks})`);
+
+          // 5. Standard ignores the field: everything is back, and the tick gate returns.
+          state.chartStyle = 'standard';
+          helpers.saveState();
+          helpers.renderState(true);
+          await sleep(40);
+          assert(state.hideMilestones === true && StateModule.milestonesHidden(state) === false, "Standard ignores hideMilestones");
+          assert(document.body.dataset.milestones === 'shown', "Standard: body[data-milestones] is 'shown'");
+          Object.entries(hiddenEls()).forEach(([k, el]) => assert(shown(el), `Standard: ${k} is visible again`));
+          state.reward = '';
+          state.megaReward = '';
+          state.activeDay = 0;
+          helpers.renderState(true);
+          await sleep(40);
+          const gridCb = document.querySelector('#grid-tbody td[data-column-state^="active_"] input[type="checkbox"]:not(:disabled)');
+          assert(gridCb, "Standard: an active-column checkbox exists");
+          gridCb.click();
+          await sleep(40);
+          assert(gridCb.checked === false, "Standard: the tick is reverted with no rewards picked");
+          assert([...document.querySelectorAll('.notif-modal')].some(m => m.textContent.includes('ATTENTION, TRAINER')), "Standard: the reward tick gate is back");
+        } finally {
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          adminModal.classList.add('hidden');
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       if (__onlyFilter && __ranTests.size === 0) {
         throw new Error(`&only=${__params.get('only')} matched no test case`);
       }

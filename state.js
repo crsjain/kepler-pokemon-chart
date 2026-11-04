@@ -278,6 +278,7 @@ export const WIPE_PRESERVED_KEYS = [
   'parentGraceMinutes',
   'lockPastDays',
   'chartStyle',
+  'hideMilestones',
   'theme',
   'adminPassword',
   'volume',
@@ -864,6 +865,15 @@ export function isTaskOffPlan(task, dateStr, currentState = state) {
 // Required days for a task in a given week (default: the current week). Rest/bonus
 // exceptions and out-of-range days come from THAT week, so past weeks are judged
 // by their own exceptions, not the current week's.
+// "Show milestones & rewards" switch for children under 5
+// (docs/prd_simplified_chart_style.md §10). Optional `hideMilestones` field,
+// absent = shown, so no migration. It only applies to Big Buttons: the Standard
+// grid always shows the Mega card and reward pickers. Single source for the
+// CSS hook, the tick gate, the win pop-up and the new-week copy.
+export function milestonesHidden(s = state) {
+  return !!s && s.chartStyle === 'big-buttons' && s.hideMilestones === true;
+}
+
 export function getTaskRequiredDays(taskId, weekStartDate = state.weekStartDate) {
   if (!weekStartDate) return 7;
   const task = state.tasks.find(t => t.id === taskId);

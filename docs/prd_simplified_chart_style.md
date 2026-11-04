@@ -282,7 +282,7 @@ A 4-week Mega horizon and two dropdowns of written rewards mean nothing to a pre
 ### 10.3 Behaviour
 - **Field**: `state.hideMilestones` (optional boolean; absent = shown). No schema bump, no migration, no diagnostics change. Kept by `WIPE_PRESERVED_KEYS`.
 - **Single rule**: `milestonesHidden(s) = s.chartStyle === 'big-buttons' && s.hideMilestones === true` (state.js). Standard always shows milestones, whatever the field says.
-- **Main screen**: `renderState` sets `body[data-milestones="hidden|shown"]`. CSS hides `.mega-milestone-card`, `#weekly-reward-container`, `#mega-reward-container` and `.motivational-quote`, with no inline styles. In the landscape split view the chart spans only the trainer row.
+- **Main screen**: `renderState` sets `body[data-milestones="hidden|shown"]`. CSS hides `.mega-milestone-card`, `#weekly-reward-container`, `#mega-reward-container` and `.motivational-quote`, with no inline styles. In the landscape split view the chart spans only the trainer row (the trainer and badge cards stretch to the chart's height, keeping the columns level). The footer's divider line is dropped, because only the toolbar is left in the bottom panel.
 - **Tick gate**: skipped while milestones are hidden.
 - **Week won**: "🎉 WEEKLY SUCCESS! 🎉" with the badge art and the normal (non-Mega) confetti and sound, "completed all training goals this week!", and no reward boxes. On the 4th week it is still the weekly pop-up. No claims are recorded.
 - **Start New Week dialog**: never the "Start New Mega Cycle? 👑" variant. A won week reads "Start a New Week"; an unwon week says the badge (not "badge and reward") carries over.

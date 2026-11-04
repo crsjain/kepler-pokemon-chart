@@ -927,6 +927,20 @@ export function initAdmin(callbacks) {
     });
   }
 
+  // "Show milestones & rewards" (prd_simplified_chart_style.md §10). Under Big
+  // Buttons only; renderState shows/hides the row and syncs the switch.
+  const showMilestonesToggle = document.getElementById('admin-show-milestones-toggle');
+  if (showMilestonesToggle) {
+    showMilestonesToggle.addEventListener('change', () => {
+      const hide = !showMilestonesToggle.checked;
+      if (hide) state.hideMilestones = true;
+      else delete state.hideMilestones;
+      saveState();
+      renderState(true);
+      flashAdminSaved(showMilestonesToggle);
+    });
+  }
+
   // Per-child visual theme (docs/prd_unicorn_princess_theme.md): auto-saves on
   // change like the other Settings selects; renderState applies body[data-theme].
   const themeSelect = document.getElementById('admin-theme-select');

@@ -8,25 +8,25 @@
   <meta name="theme-color" content="#2a71d0">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png" type="image/png">
-  <link rel="stylesheet" href="style.css?v=11.39">
+  <link rel="stylesheet" href="style.css?v=11.41">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800;900&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
   <script type="importmap">
   {
     "imports": {
-      "./app.js": "./app.js?v=11.38",
-      "./state.js": "./state.js?v=11.38",
-      "./firebase.js": "./firebase.js?v=11.38",
-      "./migrations.js": "./migrations.js?v=11.38",
-      "./vault.js": "./vault.js?v=11.38",
-      "./badges.js": "./badges.js?v=11.38",
-      "./shop.js": "./shop.js?v=11.38",
-      "./guide.js": "./guide.js?v=11.38",
-      "./pokemon_data.js": "./pokemon_data.js?v=11.38",
-      "./date_utils.js": "./date_utils.js?v=11.38",
-      "./admin.js": "./admin.js?v=11.38",
-      "./rewards_admin.js": "./rewards_admin.js?v=11.38",
-      "./audio.js": "./audio.js?v=11.38",
-      "./modal_backdrop.js": "./modal_backdrop.js?v=11.38"
+      "./app.js": "./app.js?v=11.39",
+      "./state.js": "./state.js?v=11.39",
+      "./firebase.js": "./firebase.js?v=11.39",
+      "./migrations.js": "./migrations.js?v=11.39",
+      "./vault.js": "./vault.js?v=11.39",
+      "./badges.js": "./badges.js?v=11.39",
+      "./shop.js": "./shop.js?v=11.39",
+      "./guide.js": "./guide.js?v=11.39",
+      "./pokemon_data.js": "./pokemon_data.js?v=11.39",
+      "./date_utils.js": "./date_utils.js?v=11.39",
+      "./admin.js": "./admin.js?v=11.39",
+      "./rewards_admin.js": "./rewards_admin.js?v=11.39",
+      "./audio.js": "./audio.js?v=11.39",
+      "./modal_backdrop.js": "./modal_backdrop.js?v=11.39"
     }
   }
   </script>
@@ -979,6 +979,17 @@
                   </label>
                 </div>
               </div>
+              <!-- "Show milestones & rewards" for children under 5 (docs/prd_simplified_chart_style.md §10). Shown only under Big Buttons. -->
+              <div id="admin-milestones-row" class="admin-option-row adm-row adm-setting-row admin-switch-row hidden">
+                <span class="adm-setting-label">
+                  <label class="admin-switch-label adm-setting-name" for="admin-show-milestones-toggle">🏆 Show milestones &amp; rewards</label>
+                  <span id="admin-show-milestones-hint" class="adm-setting-help">For children under 5: turn off to hide Mega Milestone progress and reward choices. Progress still counts in the background.</span>
+                </span>
+                <label class="switch">
+                  <input type="checkbox" id="admin-show-milestones-toggle" checked aria-label="Show milestones and rewards" aria-describedby="admin-show-milestones-hint">
+                  <span class="slider"></span>
+                </label>
+              </div>
             </div>
           </div>
         </section>
@@ -1295,7 +1306,7 @@
   </div>
 
   <script src="particles.js?v=10.8"></script>
-  <script type="module" src="app.js?v=11.38" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
+  <script type="module" src="app.js?v=11.39" onerror="window.onerror('Failed to load application script module. Please verify that the local web server is running and refresh.', this.src, 0, 0)"></script>
   <!-- Global Star Tooltip (Fixed to Viewport to prevent clipping) -->
   <div id="global-star-tooltip" class="global-star-tooltip hidden"></div>
 

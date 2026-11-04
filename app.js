@@ -22,7 +22,8 @@ import {
   getDefaultStateTemplate,
   buildWipedChildState,
   registerOnSave,
-  getEarliestDataWeekStartDate
+  getEarliestDataWeekStartDate,
+  milestonesHidden
 } from './state.js';
 import { formatLocalDate, getWeekStart, getDateOfColumn, getLocalDate, getFormattedDateRange, getHistoricalWeekIntervals, getWeekColumnStates, getColumnState } from './date_utils.js';
 import { 
@@ -2007,6 +2008,10 @@ export function renderState(rebuildGrid = false) {
   document.querySelectorAll('input[name="admin-chart-style"]').forEach(r => {
     r.checked = (r.value === chartStyleVal);
   });
+  // "Show milestones & rewards" (prd_simplified_chart_style.md §10): style.css hides
+  // the Mega card, reward pickers and quote from this one attribute.
+  document.body.dataset.milestones = milestonesHidden() ? 'hidden' : 'shown';
+  refreshMilestonesSwitch();
   if (currentViewingWeekStartDate !== lastViewedWeekForSimplified) {
     lastViewedWeekForSimplified = currentViewingWeekStartDate;
     viewingHistoricalDayIndex = 0;
@@ -2844,7 +2849,8 @@ function handleCheckboxChange(e) {
     return;
   }
   
-  if (!state.reward || !state.megaReward) {
+  // Skipped when milestones are hidden: the child can't see the pickers (§10).
+  if (!milestonesHidden() && (!state.reward || !state.megaReward)) {
     cb.checked = false;
     showCustomNotification(
       "⚠️ ATTENTION, TRAINER! ⚠️",
@@ -3301,6 +3307,15 @@ function bindRewardSelectEvents() {
     saveState();
     renderRewardDropdowns();
   });
+}
+
+// Admin › Settings › Look & Feel › "Show milestones & rewards" (§10). The row only
+// shows under Big Buttons; the Standard grid always shows milestones.
+function refreshMilestonesSwitch() {
+  const row = document.getElementById('admin-milestones-row');
+  const toggle = document.getElementById('admin-show-milestones-toggle');
+  if (row) row.classList.toggle('hidden', state.chartStyle !== 'big-buttons');
+  if (toggle) toggle.checked = state.hideMilestones !== true;
 }
 
 /**
@@ -4651,15 +4666,23 @@ function maybePromptNewWeek() {
 // 🚀 Start New Week pill both open it.
 function openStartNewWeekConfirm() {
   const claimed = !!state.weeklyClaimed;
-  const isMega = claimed && state.megaWeeks === 3;
+  // Milestones hidden (§10): the Mega cycle still counts, but the child never sees it.
+  const hideMega = milestonesHidden();
+  const isMega = claimed && state.megaWeeks === 3 && !hideMega;
   const nextWeekNum = claimed ? (isMega ? 1 : state.megaWeeks + 2) : state.megaWeeks + 1;
   const label = isMega ? '👑 MEGA MILESTONE' : (claimed ? '🎉 NEW WEEK CYCLE' : '📅 NEW WEEK');
-  const main = isMega ? 'Begin New Mega Cycle' : (claimed ? `Start Week ${nextWeekNum}` : 'A new week has started!');
+  const main = isMega
+    ? 'Begin New Mega Cycle'
+    : (claimed ? (hideMega ? 'Start a New Week' : `Start Week ${nextWeekNum}`) : 'A new week has started!');
   const sub = isMega
     ? 'Loop back to Week 1 and start working towards your NEXT Mega Milestone!'
     : (claimed
-      ? `Last week is saved with its badge. Start a fresh grid for Week ${nextWeekNum} of training.`
-      : 'Missed a check last week? Tap Not Yet and finish it first. Your badge and reward carry over to the new week.');
+      ? (hideMega
+        ? 'Last week is saved with its badge. Start a fresh grid of training.'
+        : `Last week is saved with its badge. Start a fresh grid for Week ${nextWeekNum} of training.`)
+      : (hideMega
+        ? 'Missed a check last week? Tap Not Yet and finish it first. Your badge carries over to the new week.'
+        : 'Missed a check last week? Tap Not Yet and finish it first. Your badge and reward carry over to the new week.'));
   showCustomConfirm(
     isMega ? "Start New Mega Cycle? 👑" : "Start New Training Week? 📅",
     `<div class="confirm-detail"><div class="schedule-hero-card ${isMega ? 'future' : ''}"><div class="schedule-hero-label">${label}</div><div class="schedule-hero-main">${main}</div><div class="schedule-hero-sub">${sub}</div></div></div>`,
@@ -4736,8 +4759,10 @@ function checkAndTriggerWeeklySuccess(changedTaskId = null) {
     const activePokemon = getStageInfo(family, stats.stageId).currentStage;
     
     if (!state.claimedRewardsHistory) state.claimedRewardsHistory = [];
+    // Milestones hidden (§10, owner D2): no reward at all, so record no claims.
+    const hideRewards = milestonesHidden();
     
-    state.claimedRewardsHistory.unshift({
+    if (!hideRewards) state.claimedRewardsHistory.unshift({
       date: new Date().toISOString(),
       reward: state.reward || 'A cool reward',
       type: 'weekly',
@@ -4746,7 +4771,7 @@ function checkAndTriggerWeeklySuccess(changedTaskId = null) {
       level: stats.level
     });
     
-    if (state.megaWeeks === 3) {
+    if (state.megaWeeks === 3 && !hideRewards) {
       state.claimedRewardsHistory.unshift({
         date: new Date().toISOString(),
         reward: state.megaReward || 'A special reward',
@@ -4761,18 +4786,22 @@ function checkAndTriggerWeeklySuccess(changedTaskId = null) {
     renderProgress();
     
     const weekDisplayNum = state.megaWeeks + 1;
-    const isMegaWeek = weekDisplayNum === 4;
+    const isMegaWeek = weekDisplayNum === 4 && !hideRewards;
     
     CelebrationEngine.triggerCelebration(isMegaWeek);
     playSound(isMegaWeek ? 'megaSuccess' : 'badge');
     
-    let successMessage = `<p class="notif-desc">${state.childName || 'Trainer'} has completed all training goals for <strong>Week ${weekDisplayNum}</strong>!</p>`;
+    let successMessage = hideRewards
+      ? `<p class="notif-desc">${state.childName || 'Trainer'} has completed all training goals <strong>this week</strong>!</p>`
+      : `<p class="notif-desc">${state.childName || 'Trainer'} has completed all training goals for <strong>Week ${weekDisplayNum}</strong>!</p>`;
+    if (!hideRewards) {
     successMessage += `<div class="notif-rewards-container">`;
     if (isMegaWeek) {
       successMessage += `<div class="reward-box mega"><div class="reward-box-header">🏆 MEGA REWARD 🏆</div><div class="reward-box-name">${getRewardLabel(state.megaReward, state.megaRewardOptions) || 'Mega Reward'}</div></div>`;
     }
     successMessage += `<div class="reward-box"><div class="reward-box-header">🎁 WEEKLY REWARD 🎁</div><div class="reward-box-name">${getRewardLabel(state.reward, state.weeklyRewardOptions) || 'Weekly Reward'}</div></div>`;
     successMessage += `</div>`;
+    }
     
     showCustomNotification(
       isMegaWeek ? "👑 MEGA MILESTONE COMPLETED! 👑" : "🎉 WEEKLY SUCCESS! 🎉",
