@@ -23,7 +23,8 @@ import {
   buildWipedChildState,
   registerOnSave,
   getEarliestDataWeekStartDate,
-  milestonesHidden
+  milestonesHidden,
+  countsTowardGoal
 } from './state.js';
 import { formatLocalDate, getWeekStart, getDateOfColumn, getLocalDate, getFormattedDateRange, getHistoricalWeekIntervals, getWeekColumnStates, getColumnState } from './date_utils.js';
 import { 
@@ -4576,8 +4577,8 @@ function weekMeetsEveryGoal(weekStart, tasks) {
     let checkedDays = 0;
     for (let d = 0; d < 7; d++) {
       const ds = getDateOfColumn(weekStart, d);
-      // Only on-plan days count toward a goal (State 7, owner 2026-10-22).
-      if (state.grid[`${ds}-${task.id}`] && !isTaskOffPlan(task, ds)) checkedDays++;
+      // Only on-plan, non-rest days count toward a goal (State 7, owner 2026-10-22).
+      if (countsTowardGoal(task, ds)) checkedDays++;
     }
     const required = getTaskRequiredDays(task.id, weekStart);
     totalRequired += required;
@@ -4623,7 +4624,7 @@ function getShortTasksThisWeek() {
     let checked = 0;
     for (let d = 0; d < 7; d++) {
       const ds = getDateOfColumn(state.weekStartDate, d);
-      if (state.grid[`${ds}-${task.id}`] && !isTaskOffPlan(task, ds)) checked++;
+      if (countsTowardGoal(task, ds)) checked++;
     }
     return { task, needed: getTaskRequiredDays(task.id) - checked };
   }).filter(x => x.needed > 0);
@@ -4950,7 +4951,7 @@ function renderProgress() {
   tasks.forEach(task => {
     DAYS.forEach(day => {
       const dateStr = getDateOfColumn(currentViewingWeekStartDate, day);
-      if (state.grid[`${dateStr}-${task.id}`] && !isTaskOffPlan(task, dateStr)) {
+      if (countsTowardGoal(task, dateStr)) {
         taskTotals[task.id]++;
       }
     });

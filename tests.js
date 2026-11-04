@@ -12795,6 +12795,48 @@ async function runSuite() {
         }
       }
 
+      // 136. A 💤 rest day that still holds an old tick (ticked, then marked rest) never
+      //      counts toward the Goal column numerator or the weekly win (owner bug 2026-11-04:
+      //      "7 / 6" with Friday on rest).
+      if (__shouldRun('136')) {
+        console.log("Running Test Case 136: Ticked rest days don't count toward the Goal column...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const state = window.__app_state__;
+        const ds = d => { const dt = new Date(state.weekStartDate + 'T00:00:00'); dt.setDate(dt.getDate() + d); return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`; };
+        try {
+          state.reward = 'Ice cream';
+          state.megaReward = 'Zoo trip';
+          const [task, ...others] = state.tasks;
+          // Every other activity is complete, so only `task` decides the week.
+          for (let d = 0; d < 7; d++) others.forEach(t => { state.grid[`${ds(d)}-${t.id}`] = true; });
+          // `task`: all 7 days ticked, then Friday (day 5) marked rest → 7 ticks, 6 required.
+          for (let d = 0; d < 7; d++) state.grid[`${ds(d)}-${task.id}`] = true;
+          state.excused[`${ds(5)}-${task.id}`] = 'rest';
+          assert(StateModule.countsTowardGoal(task, ds(5), state) === false, "A ticked rest day doesn't count toward the goal");
+          assert(StateModule.countsTowardGoal(task, ds(4), state) === true, "A ticked required day counts");
+          helpers.saveState();
+          helpers.renderState(true);
+          await sleep(40);
+          const cell = document.querySelector(`.task-total-cell[data-task="${task.id}"]`);
+          assert(cell.textContent.trim() === '6 / 6', `Goal reads 6 / 6, not 7 / 6 (got "${cell.textContent.trim()}")`);
+
+          // Miss Thursday: the rest-day tick must not make up for it.
+          state.grid[`${ds(4)}-${task.id}`] = false;
+          helpers.renderState(false);
+          await sleep(30);
+          assert(cell.textContent.trim() === '5 / 6' && !cell.classList.contains('completed'), `Goal reads 5 / 6 and isn't complete (got "${cell.textContent.trim()}")`);
+          helpers.checkAndTriggerWeeklySuccess();
+          await sleep(30);
+          assert(state.weeklyClaimed !== true, "A ticked rest day can't win the week while a required day is missing");
+        } finally {
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       if (__onlyFilter && __ranTests.size === 0) {
         throw new Error(`&only=${__params.get('only')} matched no test case`);
       }

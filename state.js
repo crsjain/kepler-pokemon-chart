@@ -874,6 +874,19 @@ export function milestonesHidden(s = state) {
   return !!s && s.chartStyle === 'big-buttons' && s.hideMilestones === true;
 }
 
+// Does this tick count toward the Goal column and the weekly win? Only on-plan
+// days that are not 💤 rest days. A rest day can still hold an old tick (the
+// cell was ticked before a parent marked it rest), but the denominator
+// (getTaskRequiredDays) already leaves rest days out, so counting the tick showed
+// e.g. "7 / 6" (owner bug report 2026-11-04).
+export function countsTowardGoal(task, dateStr, currentState = state) {
+  const key = `${dateStr}-${task.id}`;
+  if (!(currentState.grid && currentState.grid[key])) return false;
+  const excusedVal = currentState.excused && currentState.excused[key];
+  if (excusedVal === 'rest' || excusedVal === true) return false;
+  return !isTaskOffPlan(task, dateStr);
+}
+
 export function getTaskRequiredDays(taskId, weekStartDate = state.weekStartDate) {
   if (!weekStartDate) return 7;
   const task = state.tasks.find(t => t.id === taskId);
