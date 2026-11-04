@@ -12718,6 +12718,83 @@ async function runSuite() {
         }
       }
 
+      // 135. Escape dismisses the "Who is training today?" picker (same as its
+      //      backdrop: only when a child is active) and cancels the Parent PIN prompt.
+      //      A layer opened from the picker owns Escape first.
+      if (__shouldRun('135')) {
+        console.log("Running Test Case 135: Escape closes the profile picker and the Parent PIN prompt...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const picker = document.getElementById('profile-select-modal');
+        const passwordModal = document.getElementById('password-modal');
+        const addProfileModal = document.getElementById('add-profile-modal');
+        const adminModal = document.getElementById('admin-modal');
+        const app = document.querySelector('.app-container');
+        const isOpen = el => !el.classList.contains('hidden');
+        const esc = () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        const escDoc = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        const prevActive = helpers.getActiveProfileId();
+        try {
+          // 1. Switch Trainer → picker → Escape closes it and keeps the child.
+          helpers.setActiveProfileId('tc135_child');
+          document.getElementById('switch-profile-btn').click();
+          await sleep(20);
+          assert(isOpen(picker), "Switch Trainer opens the picker");
+          esc();
+          await sleep(20);
+          assert(!isOpen(picker), "Escape closes the picker");
+          assert(app.style.filter === 'none' && app.style.pointerEvents === 'auto', "Escape removes the blur and re-enables the chart");
+          assert(helpers.getActiveProfileId() === 'tc135_child', "The current child stays active");
+
+          // 2. No active child (boot): Escape does nothing, like the backdrop.
+          helpers.setActiveProfileId(null);
+          picker.classList.remove('hidden');
+          esc();
+          await sleep(20);
+          assert(isOpen(picker), "With no active child the picker can't be dismissed");
+          picker.classList.add('hidden');
+
+          // 3. Picker → + Add Child → Parent PIN: Escape cancels the PIN only.
+          helpers.setActiveProfileId('tc135_child');
+          document.getElementById('switch-profile-btn').click();
+          await sleep(20);
+          document.getElementById('add-profile-open-btn').click();
+          await sleep(30);
+          assert(isOpen(passwordModal), "+ Add Child asks for the Parent PIN");
+          escDoc();
+          await sleep(20);
+          assert(!isOpen(passwordModal), "Escape cancels the Parent PIN prompt");
+          assert(isOpen(picker), "The picker underneath stays open");
+          assert(!isOpen(addProfileModal), "Cancelling the PIN never opens Add Child");
+
+          // 4. Add Child sheet open above the picker: Escape leaves the picker alone.
+          addProfileModal.classList.remove('hidden');
+          esc();
+          await sleep(20);
+          assert(isOpen(picker), "Escape doesn't close the picker under the Add Child sheet");
+          addProfileModal.classList.add('hidden');
+          esc();
+          await sleep(20);
+          assert(!isOpen(picker), "Once Add Child is gone, Escape closes the picker");
+
+          // 5. Parent PIN for Admin: Escape cancels it and Admin never opens.
+          document.getElementById('admin-btn').click();
+          await sleep(30);
+          assert(isOpen(passwordModal), "Parent Admin asks for the Parent PIN");
+          escDoc();
+          await sleep(20);
+          assert(!isOpen(passwordModal) && !isOpen(adminModal), "Escape cancels the Admin PIN prompt");
+        } finally {
+          [picker, passwordModal, addProfileModal, adminModal].forEach(el => el.classList.add('hidden'));
+          app.style.filter = 'none';
+          app.style.pointerEvents = 'auto';
+          helpers.setActiveProfileId(prevActive);
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       if (__onlyFilter && __ranTests.size === 0) {
         throw new Error(`&only=${__params.get('only')} matched no test case`);
       }

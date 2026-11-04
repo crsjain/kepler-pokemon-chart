@@ -776,6 +776,13 @@ export function initAdmin(callbacks) {
       closeBackupDialog(null);
       return;
     }
+    // Parent PIN prompt: Escape = Cancel (like its backdrop). Stop here so the
+    // layer under it (Admin, or the profile picker's window handler) stays open.
+    if (e.key === 'Escape' && passwordModal && !passwordModal.classList.contains('hidden')) {
+      e.stopPropagation();
+      if (passwordCancelBtn) passwordCancelBtn.click();
+      return;
+    }
     if (e.key === 'Escape' && isUnsavedGuardOpen()) {
       // Guard-specific: Esc = Keep editing. Other admin confirms keep X16.
       document.getElementById('confirm-no-btn').click();

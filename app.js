@@ -3229,14 +3229,7 @@ function bindProfileSwitchEvents() {
   // Click outside profile select modal to close (if a profile is active)
   if (profileSelectModal) {
     profileSelectModal.addEventListener('click', (e) => {
-      if (isBackdropClick(e, profileSelectModal) && activeProfileId) {
-        profileSelectModal.classList.add('hidden');
-        const appContainer = document.querySelector('.app-container');
-        if (appContainer) {
-          appContainer.style.filter = 'none';
-          appContainer.style.pointerEvents = 'auto';
-        }
-      }
+      if (isBackdropClick(e, profileSelectModal)) dismissProfilePicker();
     });
   }
 }
@@ -3307,6 +3300,20 @@ function bindRewardSelectEvents() {
     saveState();
     renderRewardDropdowns();
   });
+}
+
+// "Who is training today?" picker: the backdrop and Escape both cancel it and keep
+// the current child. Only when a child is already active (on boot the picker is
+// the only way in, so it can't be dismissed). Returns true if it closed.
+function dismissProfilePicker() {
+  if (!profileSelectModal || profileSelectModal.classList.contains('hidden') || !activeProfileId) return false;
+  profileSelectModal.classList.add('hidden');
+  const appContainer = document.querySelector('.app-container');
+  if (appContainer) {
+    appContainer.style.filter = 'none';
+    appContainer.style.pointerEvents = 'auto';
+  }
+  return true;
 }
 
 // Admin › Settings › Look & Feel › "Show milestones & rewards" (§10). The row only
@@ -3429,6 +3436,15 @@ function bindExceptionModeEvents() {
   // Allow Escape key to cleanly dismiss Showcase Modal or exit Exception Mode
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      // Profile picker, unless a layer opened from it (Add Child, Parent PIN,
+      // a confirm or notice) is on top: that layer owns Escape.
+      const layerAbove = ['add-profile-modal', 'password-modal', 'confirm-modal', 'family-login-modal']
+        .some(id => { const el = document.getElementById(id); return el && !el.classList.contains('hidden'); }) ||
+        !!document.querySelector('.notif-modal:not(.hidden):not(.toast)');
+      if (!layerAbove && dismissProfilePicker()) {
+        e.stopImmediatePropagation();
+        return;
+      }
       if (partnerShowcaseModal && !partnerShowcaseModal.classList.contains('hidden')) {
         closePartnerShowcaseModal();
         e.stopImmediatePropagation();
