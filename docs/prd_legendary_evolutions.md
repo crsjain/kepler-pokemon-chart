@@ -44,7 +44,7 @@ For branching evolutions (such as Mewtwo branching into Mega Mewtwo X or Mega Me
 
 ### 3.1. Zygarde: an evolution every 5 levels (owner, 2026-11-06)
 
-Zygarde has more forms than any other legendary, so it evolves every 5 levels instead of once at Lv 10. The Shop still sells one "Zygarde" (`718`, 15 stars), but the partner starts as Zygarde Core.
+Zygarde has more forms than any other legendary, so it evolves every 5 levels instead of once at Lv 10. The Shop sells it as "Zygarde Core" (family `718`, 15 stars): the Shop always shows the lowest stage, which is the one you buy.
 
 | Level | Form | Artwork ID |
 |---|---|---|

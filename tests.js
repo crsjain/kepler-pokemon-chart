@@ -12867,7 +12867,18 @@ async function runSuite() {
           // Shop: still one buyable Zygarde (718), shown and adopted as the Core.
           assert(PD.isBuyablePokemonId(718), 'Zygarde (718) is still in the Shop');
           for (const id of [90718, 10181, 10120, 10301]) assert(!PD.isBuyablePokemonId(id), `Form ${id} is not sold separately`);
-          assert(PD.getPokemonName(718) === 'Zygarde', "The Shop card still says 'Zygarde'");
+          helpers.openPokemonShop();
+          await sleep(50);
+          const zCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="718"]');
+          assert(zCard, 'The Shop has a Zygarde card');
+          assert(zCard.querySelector('.shop-item-name').textContent.trim() === 'Zygarde Core', `The Shop sells it as 'Zygarde Core' (got '${zCard.querySelector('.shop-item-name').textContent.trim()}')`);
+          assert(zCard.querySelector('.shop-item-sprite').getAttribute('src') === 'images/zygarde-core.png', 'The Shop card shows the Core art');
+          zCard.click();
+          await sleep(50);
+          assert((document.getElementById('shop-confirm-name')?.textContent || 'Zygarde Core').includes('Zygarde Core'), 'The confirm screen names Zygarde Core');
+          document.getElementById('close-shop-modal-btn')?.click();
+          document.getElementById('pokemon-shop-modal')?.classList.add('hidden');
+          await sleep(30);
           assert(PD.getFirstStageId('718') === '90718' && PD.getFirstStageId('384') === '384', 'Adoption starts Zygarde as the Core; other families at their own id');
           assert(PD.getArtworkUrl('90718') === 'images/zygarde-core.png', 'Zygarde Core art is local');
           assert(PD.getArtworkUrl('10120').endsWith('/official-artwork/10120.png'), 'Other forms use PokeAPI artwork');

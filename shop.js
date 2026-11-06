@@ -166,6 +166,12 @@ export function getOwnedPokemonCount(pokemonId) {
   return count;
 }
 
+// The Shop sells a family's lowest stage, so it shows that stage's name
+// (e.g. Zygarde 718 is sold as "Zygarde Core").
+function getShopName(id) {
+  return getPokemonName(getFirstStageId(id));
+}
+
 function getBuyablePokemonIds() {
   const allIds = Object.keys(POKEMON_MAP).map(Number);
   return allIds.filter(id => !EVOLVED_POKEMON_IDS.has(id));
@@ -204,8 +210,8 @@ function showBrowse() {
   const sortBy = shopSortSelect ? shopSortSelect.value : 'number';
   if (sortBy === 'name') {
     filteredIds.sort((a, b) => {
-      const nameA = getPokemonName(a).toLowerCase();
-      const nameB = getPokemonName(b).toLowerCase();
+      const nameA = getShopName(a).toLowerCase();
+      const nameB = getShopName(b).toLowerCase();
       if (nameA < nameB) return -1;
       if (nameA > nameB) return 1;
       return a - b; // Secondary sort by ID (number)
@@ -216,8 +222,8 @@ function showBrowse() {
   }
 
   filteredIds.forEach(id => {
-    const name = getPokemonName(id);
-    const shortName = getPokemonShortName(id);
+    const name = getShopName(id);
+    const shortName = getPokemonShortName(getFirstStageId(id));
     const cost = getPokemonCost(id);
     const isLocked = remainingStars < cost;
     const progressPct = Math.min(100, Math.round((remainingStars / cost) * 100));
@@ -270,7 +276,7 @@ function showBrowse() {
 
 function selectPokemon(id) {
   selectedPokemonId = id;
-  const name = getPokemonName(id);
+  const name = getShopName(id);
   const cost = getPokemonCost(id);
   const ownedCount = getOwnedPokemonCount(id);
   const isCaught = ownedCount > 0;
@@ -618,7 +624,7 @@ function playUnlockAnimation(pokemonId, starCount, onComplete) {
       
       playSound('unlock');
       
-      animTitle.textContent = `${getPokemonName(pokemonId)} Unlocked! 🎉`;
+      animTitle.textContent = `${getShopName(pokemonId)} Unlocked! 🎉`;
       animTitle.classList.remove('hidden');
       
       const celebrationDelay = getAnimDuration(3000);
