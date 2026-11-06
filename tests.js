@@ -12844,6 +12844,70 @@ async function runSuite() {
         }
       }
 
+      // 137. Zygarde evolves every 5 levels (owner 2026-11-06):
+      //      Core (Lv 1) → 10% (5) → 50% (10) → 100% (15) → Mega (20). The Shop sells
+      //      family 718 but shows and adopts the Core, whose art ships locally.
+      if (__shouldRun('137')) {
+        console.log("Running Test Case 137: Zygarde evolves every 5 levels, starting as Zygarde Core...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const state = window.__app_state__;
+        const PD = await import('./pokemon_data.js');
+        try {
+          const chain = PD.EVOLUTIONS['718'].stages.map(s => `${s.level}:${s.id}:${s.name}`);
+          assert(JSON.stringify(chain) === JSON.stringify([
+            '1:90718:Zygarde Core', '5:10181:Zygarde 10% Forme', '10:718:Zygarde 50% Forme',
+            '15:10120:Zygarde 100% Forme', '20:10301:Mega Zygarde'
+          ]), `Zygarde chain is Core → 10% → 50% → 100% → Mega every 5 levels (got ${chain.join(', ')})`);
+          for (const [lvl, id] of [[1, '90718'], [4, '90718'], [5, '10181'], [9, '10181'], [10, '718'], [15, '10120'], [19, '10120'], [20, '10301'], [30, '10301']]) {
+            const evo = PD.EVOLUTIONS['718'];
+            assert(String(evo.stages[PD.getStageIndexForLevel(evo, lvl)].id) === id, `Zygarde at Lv ${lvl} is ${id}`);
+          }
+          // Shop: still one buyable Zygarde (718), shown and adopted as the Core.
+          assert(PD.isBuyablePokemonId(718), 'Zygarde (718) is still in the Shop');
+          for (const id of [90718, 10181, 10120, 10301]) assert(!PD.isBuyablePokemonId(id), `Form ${id} is not sold separately`);
+          assert(PD.getPokemonName(718) === 'Zygarde', "The Shop card still says 'Zygarde'");
+          assert(PD.getFirstStageId('718') === '90718' && PD.getFirstStageId('384') === '384', 'Adoption starts Zygarde as the Core; other families at their own id');
+          assert(PD.getArtworkUrl('90718') === 'images/zygarde-core.png', 'Zygarde Core art is local');
+          assert(PD.getArtworkUrl('10120').endsWith('/official-artwork/10120.png'), 'Other forms use PokeAPI artwork');
+          assert(PD.getSpriteUrl('10301').endsWith('/official-artwork/10301.png'), 'Mega Zygarde has no small sprite, so the mini HUD uses the artwork');
+          const coreImg = await fetch('images/zygarde-core.png', { cache: 'no-store' });
+          assert(coreImg.ok && (coreImg.headers.get('content-type') || '').includes('image/png'), 'images/zygarde-core.png is served');
+
+          // Live: a Lv 4 Core shows the next evolution, then evolves at Lv 5.
+          state.activePartnerInstanceId = '718_test';
+          state.partnersData['718_test'] = { familyId: '718', level: 4, xp: 95, stageId: '90718' };
+          helpers.renderState(false);
+          await sleep(30);
+          const evoText = () => (document.getElementById('evolution-helper')?.textContent || '').replace(/\u00a0/g, ' ');
+          assert(document.getElementById('partner-name').textContent === 'Zygarde Core', 'Partner card shows Zygarde Core');
+          assert(document.getElementById('pokemon-sprite').src.endsWith('images/zygarde-core.png'), 'Partner sprite is the local Core art');
+          assert(evoText().includes('Zygarde 10% Forme') && evoText().includes('LV 5'), `Helper names the next form at LV 5 (got "${evoText()}")`);
+
+          helpers.addXp(5);
+          await sleep(100);
+          assert(state.partnersData['718_test'].level === 5, `Zygarde reaches Lv 5 (got ${JSON.stringify(state.partnersData['718_test'])})`);
+          assert(state.partnersData['718_test'].stageId === '10181', 'Zygarde Core evolves into Zygarde 10% Forme at Lv 5');
+          helpers.renderState(false);
+          await sleep(30);
+          assert(document.getElementById('partner-name').textContent === 'Zygarde 10% Forme', 'Partner card shows Zygarde 10% Forme');
+          assert(evoText().includes('Zygarde 50% Forme') && evoText().includes('LV 10'), `Next: 50% Forme at LV 10 (got "${evoText()}")`);
+
+          // Mega Zygarde is the last form.
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          state.partnersData['718_test'] = { familyId: '718', level: 20, xp: 0, stageId: '10301' };
+          helpers.renderState(false);
+          await sleep(30);
+          assert(document.getElementById('partner-name').textContent === 'Mega Zygarde', 'Lv 20 shows Mega Zygarde');
+          assert(evoText().includes('Fully Evolved'), 'Mega Zygarde is fully evolved');
+        } finally {
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       if (__onlyFilter && __ranTests.size === 0) {
         throw new Error(`&only=${__params.get('only')} matched no test case`);
       }

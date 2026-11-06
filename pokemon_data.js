@@ -119,7 +119,11 @@ export const POKEMON_MAP = {
   10079: "Mega Rayquaza",
   10245: "Origin Dialga", 10246: "Origin Palkia", 10007: "Origin Giratina",
   10022: "Black Kyurem", 10023: "White Kyurem",
-  10120: "Complete Zygarde",
+  10120: "Zygarde 100% Forme",
+  10181: "Zygarde 10% Forme", 10301: "Mega Zygarde",
+  // Zygarde Core has no PokeAPI form id; this id is local to the app (art in images/).
+  // See ZYGARDE_CORE_ID and LOCAL_ARTWORK below.
+  90718: "Zygarde Core",
   10075: "Mega Diancie",
   10086: "Hoopa Unbound",
   10157: "Ultra Necrozma",
@@ -154,6 +158,44 @@ export const TIER_2_IDS = [
   907, 908, 909, 910, 911, 912, 913, 914, 926, 927, 935, 936, 937, 957, 958, 959, 1007, 
   1008, 1017, 10171, 10174, 10175, 10191
 ];
+
+/**
+ * Stages with no PokeAPI artwork. These ids are local to the app (>= 90000 so
+ * they never collide with a PokeAPI id); their art ships in images/.
+ */
+export const ZYGARDE_CORE_ID = '90718';
+export const LOCAL_ARTWORK = {
+  [ZYGARDE_CORE_ID]: { artwork: 'images/zygarde-core.png', sprite: 'images/zygarde-core.png' }
+};
+
+const POKEAPI_SPRITES = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon';
+
+/** Official artwork URL for a Pokémon or form id. Use this, never a hand-built URL. */
+export function getArtworkUrl(id) {
+  const local = LOCAL_ARTWORK[String(id)];
+  return local ? local.artwork : `${POKEAPI_SPRITES}/other/official-artwork/${id}.png`;
+}
+
+/**
+ * Small pixel sprite URL (mini HUD). PokeAPI has no small sprite for some newer
+ * forms (e.g. Mega Zygarde 10301), so those fall back to the official artwork.
+ */
+const NO_SMALL_SPRITE = new Set(['10301']);
+export function getSpriteUrl(id) {
+  const local = LOCAL_ARTWORK[String(id)];
+  if (local) return local.sprite;
+  if (NO_SMALL_SPRITE.has(String(id))) return getArtworkUrl(id);
+  return `${POKEAPI_SPRITES}/${id}.png`;
+}
+
+/**
+ * The stage a newly adopted partner starts at. Almost always the family id
+ * itself; Zygarde ('718') starts as Zygarde Core.
+ */
+export function getFirstStageId(familyId) {
+  const evo = EVOLUTIONS[String(familyId)];
+  return evo && evo.stages && evo.stages.length ? String(evo.stages[0].id) : String(familyId);
+}
 
 export function getPokemonName(id) {
   return POKEMON_MAP[id] || `Pokémon #${id}`;
@@ -346,10 +388,17 @@ export const EVOLUTIONS = {
       { id: '10023', name: 'White Kyurem', level: 10 }
     ]
   },
+  // Zygarde (owner 2026-11-06): five evolutions, one every 5 levels instead of the
+  // single Lv 10 jump of the other legendaries. The family key stays '718' (the
+  // dex number the Shop sells), but the partner starts as Zygarde Core.
+  // 718 is PokeAPI's 50% Forme artwork.
   '718': {
     stages: [
-      { level: 1, id: '718', name: 'Zygarde' },
-      { level: 10, id: '10120', name: 'Complete Zygarde' }
+      { level: 1, id: '90718', name: 'Zygarde Core' },
+      { level: 5, id: '10181', name: 'Zygarde 10% Forme' },
+      { level: 10, id: '718', name: 'Zygarde 50% Forme' },
+      { level: 15, id: '10120', name: 'Zygarde 100% Forme' },
+      { level: 20, id: '10301', name: 'Mega Zygarde' }
     ]
   },
   '719': {
@@ -959,7 +1008,9 @@ export const EVOLVED_POKEMON_IDS = new Set([
   10245, 10246, // Origin Dialga, Origin Palkia
   10007,        // Origin Giratina
   10022, 10023, // Black Kyurem, White Kyurem
-  10120,        // Complete Zygarde
+  10120,        // Zygarde 100% Forme
+  10181, 10301, // Zygarde 10% Forme, Mega Zygarde
+  90718,        // Zygarde Core (first stage; the Shop sells it as 718)
   10075,        // Mega Diancie
   10086,        // Hoopa Unbound
   10157,        // Ultra Necrozma
@@ -1088,7 +1139,7 @@ export const POKEMON_TYPES = {
   10079: "Dragon",
   10245: "Steel", 10246: "Water", 10007: "Ghost",
   10022: "Dragon", 10023: "Dragon",
-  10120: "Dragon",
+  10120: "Dragon", 10181: "Dragon", 10301: "Dragon", 90718: "Dragon",
   10075: "Rock",
   10086: "Psychic",
   10157: "Psychic",

@@ -459,7 +459,7 @@ function handleLastWeekToggle(e) {
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault, getStarsFromDates } from './vault.js';
-import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES, getStageIndexForLevel } from './pokemon_data.js';
+import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES, getStageIndexForLevel, getArtworkUrl, getSpriteUrl } from './pokemon_data.js';
 import { initBadgeCase, awardCurrentWeeklyBadge, revokeCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
 import { initAdmin, refreshAdminScopeChip, adminNotice, showAdminToast, setReadBackupCodeMock, setCloudRestoreSlowMsMock, requestCloseAdmin, openAdminRewardsTab, holdToConfirm, resolveHoldMs, setHoldDurationMock } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
@@ -900,7 +900,7 @@ function initFirebaseUI() {
       item.className = `icon-picker-item ${opt.id === selectedNewProfileAvatar ? 'selected' : ''}`;
       item.dataset.id = opt.id;
       item.innerHTML = `
-        <img class="icon-picker-img" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${opt.id}.png" alt="${opt.name}">
+        <img class="icon-picker-img" src="${getArtworkUrl(opt.id)}" alt="${opt.name}">
         <span class="icon-picker-name">${opt.name}</span>
       `;
       item.addEventListener('click', () => {
@@ -1146,7 +1146,7 @@ function renderProfilesGrid() {
     card.className = 'profile-card';
     
     const avatarId = profile.avatarId || '25';
-    const imageUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${avatarId}.png`;
+    const imageUrl = `${getArtworkUrl(avatarId)}`;
     
     card.innerHTML = `
       <div class="profile-card-img-container">
@@ -1180,7 +1180,7 @@ function renderAdminProfilesList() {
     item.className = 'admin-profile-item';
     
     const avatarId = profile.avatarId || '25';
-    const imageUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${avatarId}.png`;
+    const imageUrl = `${getArtworkUrl(avatarId)}`;
     
     const isActive = (profile.id === activeProfileId);
     
@@ -1460,10 +1460,10 @@ function preloadImages() {
     'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/star-piece.png'
   ];
   if (state.activeWeeklyBadgeId) {
-    imagesToPreload.push(`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${state.activeWeeklyBadgeId}.png`);
+    imagesToPreload.push(`${getArtworkUrl(state.activeWeeklyBadgeId)}`);
   }
   MEGA_POKEMON.forEach(p => {
-    imagesToPreload.push(`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`);
+    imagesToPreload.push(`${getArtworkUrl(p.id)}`);
   });
   
   const families = ['25', '4', '1', '7', '133'];
@@ -1472,12 +1472,12 @@ function preloadImages() {
     if (evo) {
       if (evo.stages) {
         evo.stages.forEach(s => {
-          imagesToPreload.push(`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${s.id}.png`);
+          imagesToPreload.push(`${getArtworkUrl(s.id)}`);
         });
       }
       if (evo.options) {
         evo.options.forEach(o => {
-          imagesToPreload.push(`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${o.id}.png`);
+          imagesToPreload.push(`${getArtworkUrl(o.id)}`);
         });
       }
     }
@@ -1651,7 +1651,7 @@ export function showCustomNotification(title, message, imageUrl = null, isMega =
     imageHtml = `<div class="notif-mega-badges-row">`;
     getMegaSlotBadges().forEach(({ index: idx, id, themeClass }) => {
       if (id) {
-        const imgUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+        const imgUrl = `${getArtworkUrl(id)}`;
         const name = getPokemonName(id);
         imageHtml += `
           <div class="notif-badge-slot">
@@ -1870,7 +1870,7 @@ export function renderState(rebuildGrid = false) {
   const activePokemon = stageInfo.currentStage;
 
   // 1. Render Partner (Active Evolved Form)
-  pokemonSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`;
+  pokemonSprite.src = `${getArtworkUrl(activePokemon.id)}`;
   partnerNameEl.textContent = activePokemon.name;
 
   // 2. Render Stats
@@ -1895,7 +1895,7 @@ export function renderState(rebuildGrid = false) {
   const miniHudXpBar = document.getElementById('mini-hud-xp-bar');
   
   if (miniHudSprite) {
-    miniHudSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${activePokemon.id}.png`;
+    miniHudSprite.src = `${getSpriteUrl(activePokemon.id)}`;
   }
   if (miniHudName) {
     miniHudName.textContent = activePokemon.name;
@@ -3036,7 +3036,7 @@ function renderPartnerSelector() {
     optionDiv.dataset.id = instanceId;
 
     optionDiv.innerHTML = `
-      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png" alt="${activePokemon.name}">
+      <img src="${getArtworkUrl(activePokemon.id)}" alt="${activePokemon.name}">
       <span class="partner-select-name">${activePokemon.name}</span>
       <span class="partner-select-stats">LV ${pData.level}<br>${pData.xp}/100 XP</span>
     `;
@@ -3103,7 +3103,7 @@ export function renderPartnerShowcaseContent() {
   if (showcasePokemonName) showcasePokemonName.textContent = activePokemon.name;
   if (showcaseDexNum) showcaseDexNum.textContent = `#${String(activePokemon.id).padStart(3, '0')}`;
   if (showcaseSprite) {
-    showcaseSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`;
+    showcaseSprite.src = `${getArtworkUrl(activePokemon.id)}`;
     showcaseSprite.alt = activePokemon.name;
   }
 
@@ -4536,7 +4536,7 @@ function addXp(amount, { quiet = false } = {}) {
       showCustomNotification(
         "✨ POKÉMON EVOLVED! ✨",
         `Amazing job! ${state.childName || 'Trainer'}'s ${prevStageName} evolved into ${activePokemon.name}!`,
-        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`,
+        `${getArtworkUrl(activePokemon.id)}`,
         false,
         null,
         'evolution-celebration'
@@ -4555,7 +4555,7 @@ function addXp(amount, { quiet = false } = {}) {
       showCustomNotification(
         "🔄 TIME TO TRAIN",
         `${state.childName || 'Trainer'}'s ${oldPokemon.name} went back to ${activePokemon.name} for now. Earn more XP to evolve again!`,
-        `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`,
+        `${getArtworkUrl(activePokemon.id)}`,
         false,
         null,
         '',
@@ -4638,7 +4638,7 @@ function showBadgeLockedAgainNotice(badgeId, changedTaskId) {
   showCustomNotification(
     "🔒 BADGE LOCKED AGAIN",
     `${lead}Finish all your goals to win the ${badgeName} Badge and your reward!`,
-    `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png`,
+    `${getArtworkUrl(badgeId)}`,
     false,
     null,
     'badge-locked-again',
@@ -4825,7 +4825,7 @@ function checkAndTriggerWeeklySuccess(changedTaskId = null) {
       successMessage,
       isMegaWeek 
         ? null 
-        : `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${state.activeWeeklyBadgeId}.png`,
+        : `${getArtworkUrl(state.activeWeeklyBadgeId)}`,
       isMegaWeek
       // No "Start New Training Week?" here: a child could tap Let's Go and freeze
       // the week early. maybePromptNewWeek() offers it once the next week begins.
@@ -5041,7 +5041,7 @@ function renderProgress() {
       weeklyBadgeSlot.classList.add(`badge-theme-${Math.min(4, Math.max(1, goalThemeIndex))}`);
     } else if (isClaimed && badgeId) {
       const badgeName = getPokemonName(badgeId);
-      weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="${badgeName}" class="mega-slot-img">`;
+      weeklyBadgeSlot.innerHTML = `<img src="${getArtworkUrl(badgeId)}" alt="${badgeName}" class="mega-slot-img">`;
       badgeStatusEl.textContent = `🏆 ${badgeName} Badge Earned!`;
       weeklyBadgeSlot.classList.remove('locked');
       weeklyBadgeSlot.classList.add('unlocked');
@@ -5053,12 +5053,12 @@ function renderProgress() {
     } else if (badgeId) {
       const badgeName = getPokemonName(badgeId);
       if (currentInterval && currentInterval.isPartial) {
-        weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="${badgeName}" class="mega-slot-img silhouette">`;
+        weeklyBadgeSlot.innerHTML = `<img src="${getArtworkUrl(badgeId)}" alt="${badgeName}" class="mega-slot-img silhouette">`;
         badgeStatusEl.textContent = "➡️ Rolled Forward to New Chart!";
         weeklyBadgeSlot.classList.remove('unlocked');
         weeklyBadgeSlot.classList.add('locked');
       } else {
-        weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="${badgeName}" class="mega-slot-img silhouette">`;
+        weeklyBadgeSlot.innerHTML = `<img src="${getArtworkUrl(badgeId)}" alt="${badgeName}" class="mega-slot-img silhouette">`;
         badgeStatusEl.textContent = "🏃 The Pokémon Fled! (Goal Not Reached)";
         weeklyBadgeSlot.classList.remove('unlocked');
         weeklyBadgeSlot.classList.add('locked');
@@ -5073,7 +5073,7 @@ function renderProgress() {
     if (isClaimed) {
       const badgeName = getPokemonName(badgeId);
       if (badgeId) {
-        weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="${badgeName}" class="mega-slot-img">`;
+        weeklyBadgeSlot.innerHTML = `<img src="${getArtworkUrl(badgeId)}" alt="${badgeName}" class="mega-slot-img">`;
         badgeStatusEl.textContent = `${badgeName} Badge Earned!`;
       }
       weeklyBadgeSlot.classList.remove('locked');
@@ -5083,7 +5083,7 @@ function renderProgress() {
     } else {
       const badgeName = getPokemonName(badgeId);
       if (badgeId) {
-        weeklyBadgeSlot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badgeId}.png" alt="Who's that Pokémon?" class="mega-slot-img silhouette">`;
+        weeklyBadgeSlot.innerHTML = `<img src="${getArtworkUrl(badgeId)}" alt="Who's that Pokémon?" class="mega-slot-img silhouette">`;
       } else {
         weeklyBadgeSlot.innerHTML = `<div class="badge-placeholder">?</div>`;
       }
@@ -5132,7 +5132,7 @@ function renderProgress() {
     if (isUnlocked) {
       if (bId) {
         const pop = megaView.isLive && index === state.megaWeeks && state.weeklyClaimed;
-        slot.innerHTML = `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${bId}.png" alt="${bName}" class="mega-slot-img ${pop ? 'animate-pop' : ''}">`;
+        slot.innerHTML = `<img src="${getArtworkUrl(bId)}" alt="${bName}" class="mega-slot-img ${pop ? 'animate-pop' : ''}">`;
       } else {
         slot.innerHTML = `<div class="badge-placeholder">?</div>`;
       }
@@ -5191,7 +5191,7 @@ function showBranchEvolutionDialog(familyId, instanceId) {
     const type = POKEMON_TYPES[opt.id] || 'Normal';
     optDiv.className = `eevee-option type-${type.toLowerCase()}`;
     optDiv.innerHTML = `
-      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${opt.id}.png" alt="${opt.name}">
+      <img src="${getArtworkUrl(opt.id)}" alt="${opt.name}">
       <span class="eevee-option-name">${opt.name}</span>
     `;
     
@@ -5232,7 +5232,7 @@ function selectBranchEvolution(familyId, instanceId, evolvedId, evolvedName) {
   showCustomNotification(
     `✨ ${familyName.toUpperCase()} EVOLVED! ✨`,
     `Congratulations! ${state.childName || 'Trainer'}'s ${familyName} evolved into ${evolvedName}!`,
-    `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${evolvedId}.png`,
+    `${getArtworkUrl(evolvedId)}`,
     false,
     null,
     'evolution-celebration'
@@ -5517,7 +5517,7 @@ function showLevelUpModal(newLevel) {
   const activePokemon = getStageInfo(stats.familyId, stats.stageId || stats.familyId).currentStage;
   
   levelNumSpan.textContent = newLevel;
-  spriteImg.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${activePokemon.id}.png`;
+  spriteImg.src = `${getArtworkUrl(activePokemon.id)}`;
   
   const messageEl = document.getElementById('level-up-message');
   if (messageEl) {

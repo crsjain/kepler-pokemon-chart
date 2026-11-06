@@ -1,5 +1,5 @@
 import { state, saveState } from './state.js';
-import { POKEMON_MAP, EVOLUTIONS, getPokemonName, getPokemonShortName, EVOLVED_POKEMON_IDS, POKEMON_TYPES, LEGENDARY_POKEMON_IDS, RARE_POKEMON_IDS, getPokemonCost, isBuyablePokemonId } from './pokemon_data.js';
+import { POKEMON_MAP, EVOLUTIONS, getPokemonName, getPokemonShortName, EVOLVED_POKEMON_IDS, POKEMON_TYPES, LEGENDARY_POKEMON_IDS, RARE_POKEMON_IDS, getPokemonCost, isBuyablePokemonId, getArtworkUrl, getFirstStageId } from './pokemon_data.js';
 
 import { playSound } from './audio.js';
 import { bindBackdropDismiss } from './modal_backdrop.js';
@@ -243,7 +243,7 @@ function showBrowse() {
     card.innerHTML = `
       ${ribbonHtml}
       <div class="shop-item-sprite-container">
-        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png" class="shop-item-sprite" alt="${name}" loading="lazy">
+        <img src="${getArtworkUrl(getFirstStageId(id))}" class="shop-item-sprite" alt="${name}" loading="lazy">
         ${sparkleHtml}
         ${badgeHtml}
       </div>
@@ -276,7 +276,7 @@ function selectPokemon(id) {
   const isCaught = ownedCount > 0;
 
   if (confirmSprite) {
-    confirmSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+    confirmSprite.src = getArtworkUrl(getFirstStageId(id));
   }
   if (confirmName) {
     const canEvolve = !!EVOLUTIONS[String(id)] || !!EVOLUTIONS[id];
@@ -429,7 +429,8 @@ function triggerUnlockFlow(pokemonId) {
         familyId: String(pokemonId),
         level: 1,
         xp: 0,
-        stageId: String(pokemonId)
+        // Most families start at their dex number; Zygarde (718) starts as Zygarde Core.
+        stageId: getFirstStageId(pokemonId)
       };
       
       state.activePartnerInstanceId = instanceId;
@@ -520,7 +521,7 @@ function playUnlockAnimation(pokemonId, starCount, onComplete) {
   
   animOverlay.classList.remove('hidden');
   
-  animPokemonSprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemonId}.png`;
+  animPokemonSprite.src = getArtworkUrl(getFirstStageId(pokemonId));
   animPokemonSprite.classList.remove('revealed');
   animLockContainer.classList.remove('shattered', 'rattling');
   animLockIcon.classList.remove('shattered');

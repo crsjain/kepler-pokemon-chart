@@ -1,5 +1,5 @@
 import { state, saveState, rollNewWeeklyBadge } from './state.js';
-import { getPokemonName, POKEMON_TYPES } from './pokemon_data.js';
+import { getPokemonName, POKEMON_TYPES, getArtworkUrl } from './pokemon_data.js';
 import { isBackdropClick } from './modal_backdrop.js';
 
 let badgeSortMethod = 'date'; // 'date' | 'dex' | 'name'
@@ -134,7 +134,7 @@ export function renderBadgeCaseGrid() {
     card.dataset.id = badge.id;
     card.dataset.type = POKEMON_TYPES[badge.id] || 'Normal';
     
-    const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${badge.id}.png`;
+    const spriteUrl = `${getArtworkUrl(badge.id)}`;
     
     card.innerHTML = `
       <div class="badge-case-img-container">

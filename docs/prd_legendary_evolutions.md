@@ -34,13 +34,27 @@ For branching evolutions (such as Mewtwo branching into Mega Mewtwo X or Mega Me
 | **484** | Palkia | Origin Forme | Origin Palkia | `10246` |
 | **487** | Giratina | Origin Forme | Origin Giratina | `10007` |
 | **646** | Kyurem | Branching Choice | Black Kyurem / White Kyurem | `10022` / `10023` |
-| **718** | Zygarde | Complete Forme | Complete Zygarde | `10120` |
+| **718** | Zygarde | Five-stage line (§3.1) | Core → 10% → 50% → 100% Forme → Mega Zygarde | `90718`* / `10181` / `718` / `10120` / `10301` |
 | **719** | Diancie | Linear Evolution | Mega Diancie | `10075` |
 | **720** | Hoopa | Forme Change | Hoopa Unbound | `10086` |
 | **800** | Necrozma | Ultra Burst | Ultra Necrozma | `10157` |
 | **888** | Zacian | Crowned Form | Crowned Sword Zacian | `10188` |
 | **889** | Zamazenta | Crowned Form | Crowned Shield Zamazenta | `10189` |
 | **898** | Calyrex | Branching Choice | Ice Rider / Shadow Rider | `10193` / `10194` |
+
+### 3.1. Zygarde: an evolution every 5 levels (owner, 2026-11-06)
+
+Zygarde has more forms than any other legendary, so it evolves every 5 levels instead of once at Lv 10. The Shop still sells one "Zygarde" (`718`, 15 stars), but the partner starts as Zygarde Core.
+
+| Level | Form | Artwork ID |
+|---|---|---|
+| 1 | Zygarde Core | `90718`* (local `images/zygarde-core.png`) |
+| 5 | Zygarde 10% Forme | `10181` |
+| 10 | Zygarde 50% Forme | `718` (PokeAPI's default Zygarde art is the 50% Forme) |
+| 15 | Zygarde 100% Forme | `10120` |
+| 20 | Mega Zygarde | `10301` |
+
+\* PokeAPI has no Zygarde Core, so `90718` is an app-only ID. `LOCAL_ARTWORK` in `pokemon_data.js` maps it to the image in `images/`. Every sprite URL goes through `getArtworkUrl()` / `getSpriteUrl()`; never build a PokeAPI URL by hand. Zygarde Cell was left out at the owner's request. Mega Zygarde has no small PokeAPI sprite, so the mini HUD shows its artwork. The Shop shows and adopts the first stage (`getFirstStageId()`). Covered by TC137.
 
 *Note: Legendaries without official Mega/Primal/Origin forms (e.g. Mew #151, Lugia #249, Ho-Oh #250, Celebi #251, Jirachi #385, Arceus #493, Victini #494, Reshiram #643, Zekrom #644, Xerneas #716, Yveltal #717, Koraidon #1007, Miraidon #1008) are marked as `Fully Evolved form!` from Level 1, but can continue earning XP and leveling up.*
 
