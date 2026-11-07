@@ -842,8 +842,41 @@ button:disabled,
     background: #cbd5e1;
     border-radius: 3px;
   }
+  /* Narrow task column on phones (owner, 2026-11-07): ~128px instead of ~177px,
+     so about 4 day columns show beside the frozen column. The day columns keep
+     their ~54px width because the table's minimum shrinks with the column. */
   .weekly-grid {
-    min-width: 620px;
+    min-width: 560px;
+  }
+  .weekly-grid th.task-col-header {
+    width: 21%;
+  }
+  body[data-theme] .weekly-grid th.task-col-header {
+    padding-left: 8px !important;
+  }
+  body[data-theme] .weekly-grid td:first-child {
+    padding-left: 8px;
+    padding-right: 4px;
+  }
+  /* No descriptions ("Intellect +1", "Skill mastery") on phones; names wrap. */
+  .weekly-grid .task-concept {
+    display: none;
+  }
+  .weekly-grid .task-desc {
+    gap: 6px;
+  }
+  .weekly-grid .task-emoji {
+    font-size: 1.3rem;
+    width: 26px;
+  }
+  .weekly-grid .task-text-container {
+    min-width: 0;
+  }
+  .weekly-grid .task-name {
+    font-size: 0.85rem;
+    line-height: 1.15;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   /* Freeze the TRAINING TASK column while the days scroll sideways (owner,
      2026-11-07). Sticky cells need an opaque background, and with

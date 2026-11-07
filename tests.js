@@ -6257,7 +6257,7 @@ async function runSuite() {
                   if (selector.includes('.grid-scroll-wrapper') && cssText.includes('overflow-x: auto')) {
                     foundOverflowAuto = true;
                   }
-                  if (selector.includes('.weekly-grid') && cssText.includes('min-width: 620px')) {
+                  if (selector.includes('.weekly-grid') && cssText.includes('min-width: 560px')) {
                     foundMinWidth620 = true;
                   }
                   if (selector.includes('checkbox-cell') && cssText.includes('padding: 8px 3px')) {
@@ -6273,7 +6273,7 @@ async function runSuite() {
 
         assert(foundMobileMedia, "Media query @media (max-width: 767px) should exist in stylesheets");
         assert(foundOverflowAuto, "Mobile media query must declare .grid-scroll-wrapper { overflow-x: auto }");
-        assert(foundMinWidth620, "Mobile media query must declare .weekly-grid { min-width: 620px }");
+        assert(foundMinWidth620, "Mobile media query must declare .weekly-grid { min-width: 560px } (narrow frozen task column, day cells stay >= 50px)");
         assert(foundPaddingEnhanced, "Mobile media query must provide adequate padding (8px 3px) for touch cells");
 
         // 3. Verify Container Containment

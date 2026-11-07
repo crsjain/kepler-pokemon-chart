@@ -198,7 +198,7 @@ node run_headless_tests.js
 * **Test 71**: Unearned weekly badge and reward carry-over across week rollover.
 * **Test 72**: Smart Hybrid 3-State Exception Mode cycling, UI attributes, Overachiever +10 XP, and Smart Rollover auto-carryover (`✨ BONUS`) vs. auto-expiration (`💤 REST`).
 * **Test 73**: Parent Command Dock floating UI verification, semantic elements (`.exceptions-mode-badge`, `.exceptions-legend`, `.exceptions-done-btn`), computed `position: fixed`, `z-index: 998`, `96px` container bottom clearance padding, and `Escape` key dismissal.
-* **Test 74**: Responsive Viewport Policy verification: Zero horizontal scroll enforced on Desktop/Tablet ($\ge 768\text{px}$) via `overflow-x: hidden` and `table-layout: fixed`; horizontal scroll enabled on Mobile ($< 768\text{px}$) via stylesheet rule `@media (max-width: 767px)` with `overflow-x: auto`, `min-width: 620px`, and comfortable touch padding (`padding: 8px 3px`).
+* **Test 74**: Responsive Viewport Policy verification: Zero horizontal scroll enforced on Desktop/Tablet ($\ge 768\text{px}$) via `overflow-x: hidden` and `table-layout: fixed`; horizontal scroll enabled on Mobile ($< 768\text{px}$) via stylesheet rule `@media (max-width: 767px)` with `overflow-x: auto`, `min-width: 560px`, and comfortable touch padding (`padding: 8px 3px`).
 
 **Pass Criteria**: **74/74 tests passing with 0 failures.**
 
@@ -215,5 +215,5 @@ node run_headless_tests.js
 - [ ] Test 8: Child readability verified (clean `🌟`, `☆`, `❌`, `💤`, `➖` icons only; fractional counts accessible via parent hover tooltip).
 - [ ] Test 9: Floating XP animation timing (2.5s duration, 1.5s dwell phase) and screen edge clamping verified.
 - [ ] Test 10: Parent Command Dock verified (floats at bottom center during Exception Mode without colliding with sticky top Mini-HUD, `Escape` key dismisses, 96px bottom clearance protects page footer).
-- [ ] Test 11: Responsive Viewport Policy verified: Zero horizontal scroll on tablet/desktop ($\ge 768\text{px}$), horizontal scroll enabled on mobile ($< 768\text{px}$) with `min-width: 620px` and no overlapping Pokéball cells.
+- [ ] Test 11: Responsive Viewport Policy verified: Zero horizontal scroll on tablet/desktop ($\ge 768\text{px}$), horizontal scroll enabled on mobile ($< 768\text{px}$) with `min-width: 560px`, a frozen task column, and no overlapping Pokéball cells.
 - [ ] Automated suite: `node run_headless_tests.js` passes 74/74 tests (100%).
