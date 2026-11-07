@@ -845,6 +845,27 @@ button:disabled,
   .weekly-grid {
     min-width: 620px;
   }
+  /* Freeze the TRAINING TASK column while the days scroll sideways (owner,
+     2026-11-07). Sticky cells need an opaque background, and with
+     border-collapse their right border stays behind, so draw it as an inset
+     shadow plus a soft edge over the scrolled days. */
+  .weekly-grid th.task-col-header,
+  .weekly-grid td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    box-shadow: inset -2px 0 0 #e2e8f0, 3px 0 6px rgba(15, 23, 42, 0.08);
+  }
+  .weekly-grid th.task-col-header {
+    z-index: 3;
+  }
+  .weekly-grid td:first-child {
+    background: #ffffff;
+  }
+  .weekly-grid tr.total-row td:first-child,
+  .weekly-grid .task-row:hover td:first-child {
+    background: #f7fafc;
+  }
   .weekly-grid th.day-header,
   .weekly-grid td.checkbox-cell,
   .weekly-grid td.day-total-cell {
