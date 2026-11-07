@@ -24,7 +24,7 @@ export const POKEMON_MAP = {
   133: "Eevee", 134: "Vaporeon", 135: "Jolteon", 136: "Flareon",
   123: "Scyther",
   143: "Snorlax",
-  146: "Moltres",
+  144: "Articuno", 145: "Zapdos", 146: "Moltres",
   147: "Dratini", 148: "Dragonair",
   149: "Dragonite", 150: "Mewtwo", 151: "Mew",
   152: "Chikorita", 153: "Bayleef", 154: "Meganium",
@@ -189,7 +189,7 @@ export const POKEMON_MAP = {
 export const TIER_1_IDS = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 25, 26, 35, 36, 37, 38, 39, 40, 52, 53, 54, 
   55, 58, 59, 63, 64, 65, 66, 67, 68, 79, 80, 92, 93, 94, 95, 129, 130, 131, 133, 134, 135, 136, 
-  143, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 172, 
+  143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 172, 
   174, 175, 176, 179, 180, 181, 194, 195, 196, 197, 199, 208, 212, 214, 228, 229, 246, 247, 
   248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 280, 282, 
   303, 328, 329, 330, 359, 374, 375, 376, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 
@@ -1260,7 +1260,7 @@ export const POKEMON_TYPES = {
   131: "Water",
   133: "Normal", 134: "Water", 135: "Electric", 136: "Fire",
   143: "Normal", 446: "Normal",
-  146: "Fire",
+  144: "Ice", 145: "Electric", 146: "Fire",
   147: "Dragon", 148: "Dragon",
   149: "Dragon",
   150: "Psychic", 151: "Psychic",
@@ -1415,7 +1415,8 @@ export const POKEMON_TYPES = {
 };
 
 export const LEGENDARY_POKEMON_IDS = new Set([
-  146, 150, 151,        // Moltres, Mewtwo, Mew
+  144, 145, 146,        // Articuno, Zapdos, Moltres
+  150, 151,             // Mewtwo, Mew
   249, 250, 251,        // Lugia, Ho-Oh, Celebi
   380, 381, 382, 383, 384, 385, 386, // Gen 3 Legendaries
   483, 484, 487, 493, 494, // Gen 4 Legendaries

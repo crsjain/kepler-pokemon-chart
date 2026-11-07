@@ -6530,6 +6530,11 @@ async function runSuite() {
         const moltresCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="146"]');
         assert(moltresCard !== null && moltresCard.dataset.cost === '15', "Moltres (#146) is in the Shop at 15 stars (Legendary)");
         assert(moltresCard.querySelector('.shop-item-name').textContent.trim() === 'Moltres' && POKEMON_TYPES[146] === 'Fire', "Moltres card is named 'Moltres' and is Fire type");
+        for (const [id, birdName, birdType] of [[144, 'Articuno', 'Ice'], [145, 'Zapdos', 'Electric']]) {
+          const birdCard = document.querySelector(`#shop-items-grid .shop-item-card[data-id="${id}"]`);
+          assert(birdCard !== null && birdCard.dataset.cost === '15', `${birdName} (#${id}) is in the Shop at 15 stars (Legendary)`);
+          assert(birdCard.querySelector('.shop-item-name').textContent.trim() === birdName && POKEMON_TYPES[id] === birdType, `${birdName} card is named '${birdName}' and is ${birdType} type`);
+        }
 
         // Verify it has NO sparkle icon (no evolution linkage)
         const sparkle = gMoltresCard.querySelector('.shop-item-sparkle');
