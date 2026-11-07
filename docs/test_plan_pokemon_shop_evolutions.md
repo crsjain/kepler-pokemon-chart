@@ -25,8 +25,8 @@
 | Priority | Pokémon Line | Change Description | Expected Behavior |
 | :--- | :--- | :--- | :--- |
 | **P1** | Clefairy (`#35`) ➔ Clefable (`#36`) | Single stage evolution added | Clefairy evolves at LV 5 into Clefable; Clefairy has `✨` in shop. |
-| **P1** | Mawile (`#303`) ➔ Mega Mawile (`#10052`) | Mega evolution added | Mawile evolves at LV 10 into Mega Mawile; Mawile has `✨` in shop. |
-| **P1** | Absol (`#359`) ➔ Mega Absol (`#10057`) | Mega evolution added | Absol evolves at LV 10 into Mega Absol; Absol has `✨` in shop. |
+| **P1** | Mawile (`#303`) ➔ Mega Mawile (`#10052`) | Mega evolution added | Mawile evolves at LV 5 (was LV 10 until 2026-11-07) into Mega Mawile; Mawile has `✨` in shop. |
+| **P1** | Absol (`#359`) ➔ Mega Absol (`#10057`) | Mega evolution added | Absol evolves at LV 5 (was LV 10 until 2026-11-07) into Mega Absol; Absol has `✨` in shop. |
 | **P2** | Togepi (`#175`) ➔ Togetic (`#176`) ➔ Togekiss (`#468`) | 3-stage progression completed | Togepi evolves to Togetic at LV 5, then Togekiss at LV 10. |
 | **P3** | Abra (`#63`) ➔ Kadabra (`#64`) ➔ Alakazam (`#65`) | Middle stage restored | Kadabra is no longer skipped at LV 5; Alakazam evolves at LV 10. |
 | **P3** | Machop (`#66`) ➔ Machoke (`#67`) ➔ Machamp (`#68`) | Middle stage restored | Machoke is no longer skipped at LV 5; Machamp evolves at LV 10. |

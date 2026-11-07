@@ -691,7 +691,7 @@ export const EVOLUTIONS = {
   '214': {
     stages: [
       { level: 1, id: '214', name: 'Heracross' },
-      { level: 10, id: '10047', name: 'Mega Heracross' }
+      { level: 5, id: '10047', name: 'Mega Heracross' }
     ]
   },
   '228': {
@@ -745,7 +745,7 @@ export const EVOLUTIONS = {
   '303': {
     stages: [
       { level: 1, id: '303', name: 'Mawile' },
-      { level: 10, id: '10052', name: 'Mega Mawile' }
+      { level: 5, id: '10052', name: 'Mega Mawile' }
     ]
   },
   '328': {
@@ -760,8 +760,8 @@ export const EVOLUTIONS = {
       { level: 1, id: '359', name: 'Absol' }
     ],
     options: [
-      { id: '10057', name: 'Mega Absol', level: 10 },
-      { id: '10307', name: 'Mega Absol Z', level: 10 }
+      { id: '10057', name: 'Mega Absol', level: 5 },
+      { id: '10307', name: 'Mega Absol Z', level: 5 }
     ]
   },
   '374': {

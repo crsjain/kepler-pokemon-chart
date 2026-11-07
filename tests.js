@@ -6896,7 +6896,7 @@ async function runSuite() {
         assert(heracrossEvo !== undefined, "EVOLUTIONS['214'] must be defined");
         assert(heracrossEvo.stages.length === 2, "Heracross evolution must have 2 stages");
         assert(heracrossEvo.stages[0].id === '214' && heracrossEvo.stages[0].name === 'Heracross' && heracrossEvo.stages[0].level === 1, "Heracross stage 1 should be level 1 Heracross");
-        assert(heracrossEvo.stages[1].id === '10047' && heracrossEvo.stages[1].name === 'Mega Heracross' && heracrossEvo.stages[1].level === 10, "Heracross stage 2 should be level 10 Mega Heracross");
+        assert(heracrossEvo.stages[1].id === '10047' && heracrossEvo.stages[1].name === 'Mega Heracross' && heracrossEvo.stages[1].level === 5, "Heracross stage 2 should be level 5 Mega Heracross");
 
         // 3. Shop UI Affordances: 'Can evolve! ✨' Sparkle on cards & modal, isolation of evolved forms
         helpers.openPokemonShop();
@@ -7002,11 +7002,11 @@ async function runSuite() {
           await sleep(100);
         }
 
-        // 5. Partner Evolution Lifecycle: Heracross ➔ Mega Heracross at LV 10
+        // 5. Partner Evolution Lifecycle: Heracross ➔ Mega Heracross at LV 5
         state.activePartnerInstanceId = '214_test';
         state.partnersData['214_test'] = {
           familyId: '214',
-          level: 9,
+          level: 4,
           xp: 95,
           stageId: '214'
         };
@@ -7015,13 +7015,13 @@ async function runSuite() {
 
         const heracrossEvoText = evoHelper ? evoHelper.textContent.replace(/\u00a0/g, ' ') : '';
         assert(heracrossEvoText.includes('Mega Heracross'), `Heracross evolution helper should mention Mega Heracross, got: '${heracrossEvoText}'`);
-        assert(heracrossEvoText.includes('LV 10'), `Heracross evolution helper should indicate LV 10, got: '${heracrossEvoText}'`);
+        assert(heracrossEvoText.includes('LV 5'), `Heracross evolution helper should indicate LV 5, got: '${heracrossEvoText}'`);
 
-        // Check task to gain 5 XP -> Level 10 -> Evolves to Mega Heracross (10047)
+        // Check task to gain 5 XP -> Level 5 -> Evolves to Mega Heracross (10047)
         pianoCb.click();
         await sleep(300);
 
-        assert(state.partnersData['214_test'].level === 10, "Heracross partner should level up to 10");
+        assert(state.partnersData['214_test'].level === 5, "Heracross partner should level up to 5");
         assert(state.partnersData['214_test'].stageId === '10047', "Heracross partner should evolve into Mega Heracross (10047)");
         assert(document.getElementById('partner-name').textContent === 'Mega Heracross', "Partner name should update to Mega Heracross");
 
@@ -7032,13 +7032,13 @@ async function runSuite() {
           await sleep(100);
         }
 
-        // Uncheck task -> lose 5 XP -> Level 9, 95 XP -> Devolves back to Heracross (214)
-        state.partnersData['214_test'].level = 10;
+        // Uncheck task -> lose 5 XP -> Level 4, 95 XP -> Devolves back to Heracross (214)
+        state.partnersData['214_test'].level = 5;
         state.partnersData['214_test'].xp = 0;
         pianoCb.click();
         await sleep(300);
 
-        assert(state.partnersData['214_test'].level === 9, "Heracross partner should level down to 9");
+        assert(state.partnersData['214_test'].level === 4, "Heracross partner should level down to 4");
         assert(state.partnersData['214_test'].stageId === '214', "Heracross partner should devolve back to Heracross (214)");
         assert(document.getElementById('partner-name').textContent === 'Heracross', "Partner name should revert to Heracross");
 
@@ -12955,6 +12955,7 @@ async function runSuite() {
           }
           for (const fid of ['35', '95', '228', '447']) assert(lastLevel(fid) === 10, `Family ${fid}: Mega at Lv 10 (5 after its Lv 5 form)`);
           for (const fid of ['807', '386', '1017']) assert(lastLevel(fid) === 10, `Legendary ${fid}: evolves at Lv 10`);
+          for (const fid of ['214', '303', '359']) assert(lastLevel(fid) === 5, `Family ${fid}: single-stage Mega at Lv 5 (owner 2026-11-07)`);
           const necro = PD.EVOLUTIONS['800'];
           assert(necro.options.every(o => o.level === 5 && o.next[0].id === '10157' && o.next[0].level === 10), 'Necrozma: Dusk Mane / Dawn Wings at Lv 5, Ultra at Lv 10');
           assert(JSON.stringify(PD.EVOLUTIONS['4'].options.map(o => o.name)) === '["Mega Charizard X","Mega Charizard Y"]', 'Charizard chooses Mega X or Y');

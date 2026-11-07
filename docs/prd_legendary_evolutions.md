@@ -71,7 +71,8 @@ Zygarde has more forms than any other legendary, so it evolves every 5 levels in
 | Garchomp | Lv 15 choice: Mega Garchomp / Mega Garchomp Z |
 | Clefable, Steelix, Houndoom | final form (Lv 5) → Mega (Lv 10) |
 | Lucario | Lv 10 choice: Mega Lucario / Mega Lucario Z |
-| Absol | Lv 10 choice: Mega Absol / Mega Absol Z (Mega Absol was already Lv 10) |
+| Heracross, Mawile | Mega at Lv 5 (was Lv 10; moved to match the rule, owner 2026-11-07) |
+| Absol | Lv 5 choice: Mega Absol / Mega Absol Z (was Lv 10) |
 | Gardevoir, Gallade, Scizor, Slowbro | chosen at Lv 5 → their Mega at Lv 10 (Slowking, Kleavor have none) |
 | Lycanroc, Toxtricity | Lv 5 choice: Midday / Midnight / Dusk; Amped / Low Key |
 | Zeraora | Mega Zeraora at Lv 10 |
