@@ -6526,6 +6526,11 @@ async function runSuite() {
         assert(nameEl.textContent.trim() === 'G. Moltres', `Card name should be abbreviated to 'G. Moltres' to prevent truncation, got '${nameEl.textContent.trim()}'`);
         assert(nameEl.getAttribute('title') === 'Galarian Moltres', `Card name title attribute should be full 'Galarian Moltres', got '${nameEl.getAttribute('title')}'`);
 
+        // Kanto Moltres (#146) is sold too, as its own legendary (owner 2026-11-07).
+        const moltresCard = document.querySelector('#shop-items-grid .shop-item-card[data-id="146"]');
+        assert(moltresCard !== null && moltresCard.dataset.cost === '15', "Moltres (#146) is in the Shop at 15 stars (Legendary)");
+        assert(moltresCard.querySelector('.shop-item-name').textContent.trim() === 'Moltres' && POKEMON_TYPES[146] === 'Fire', "Moltres card is named 'Moltres' and is Fire type");
+
         // Verify it has NO sparkle icon (no evolution linkage)
         const sparkle = gMoltresCard.querySelector('.shop-item-sparkle');
         assert(sparkle === null, "Galarian Moltres should NOT have sparkle icon (no evolution linkage)");
