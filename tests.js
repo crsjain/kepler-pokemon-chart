@@ -13061,6 +13061,52 @@ async function runSuite() {
         }
       }
 
+      // ==========================================
+      // Test Case 139: Stars to Spend card — calm below 5, pastel prism at 5+
+      // ==========================================
+      if (__shouldRun('139')) {
+        console.log("Running Test Case 139: Stars to Spend card — calm below 5, pastel prism at 5+...");
+        const helpers = window.__test_helpers__;
+        const state = window.__app_state__;
+        helpers.resetState();
+        try {
+          const card = document.querySelector('#vault-modal .vault-stat-card.stat-spendable');
+          const need = document.getElementById('vault-stat-need');
+          assert(card && need, 'Stars to Spend card and its "more" hint exist');
+          assert(!document.querySelector('#vault-modal .stat-spendable .ribbon'), 'No READY badge on the card (owner decision)');
+
+          const setStars = (earned, traded) => {
+            state.starVault.earnedDates = Array.from({ length: earned }, (_, i) => `2026-06-${String(i + 1).padStart(2, '0')}`);
+            state.starVault.totalTraded = traded;
+            helpers.renderVault();
+          };
+
+          // Below 5: calm slate + hint
+          setStars(3, 0);
+          assert(!card.classList.contains('can-afford'), '3 stars: card stays calm');
+          assert(!need.classList.contains('hidden') && need.textContent === '2 more ⭐', `3 stars: hint reads "2 more ⭐" (got "${need.textContent}")`);
+          assert(getComputedStyle(card).backgroundImage === 'none', '3 stars: calm card has no gradient');
+
+          setStars(0, 0);
+          assert(need.textContent === '5 more ⭐', '0 stars: hint reads "5 more ⭐"');
+
+          // Exactly 5 (after trading): prism
+          setStars(90, 85);
+          assert(card.classList.contains('can-afford'), '5 to spend: card turns prism');
+          assert(need.classList.contains('hidden'), '5 to spend: hint hidden');
+          assert(getComputedStyle(card).backgroundImage.includes('linear-gradient'), '5 to spend: pastel prism gradient applied');
+
+          // 15 (Kepler's real numbers), then spending back below 5 returns to calm
+          setStars(100, 85);
+          assert(card.classList.contains('can-afford') && document.getElementById('vault-stat-remaining').textContent === '15', '15 to spend: prism with count 15');
+          setStars(100, 96);
+          assert(!card.classList.contains('can-afford') && need.textContent === '1 more ⭐', 'Spending down to 4 returns to calm with "1 more ⭐"');
+        } finally {
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       if (__onlyFilter && __ranTests.size === 0) {
         throw new Error(`&only=${__params.get('only')} matched no test case`);
       }

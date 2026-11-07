@@ -10,6 +10,12 @@ let vaultGrid = null;
 let statEarned = null;
 let statTraded = null;
 let statRemaining = null;
+let statNeed = null;
+let statSpendCard = null;
+
+// Cheapest Shop price (Common tier, see getPokemonCost). At or above it the
+// Stars to Spend card turns from calm slate into the pastel prism card.
+const MIN_POKEMON_COST = 5;
 
 // Pagination elements cache
 let currentPage = 0;
@@ -39,6 +45,8 @@ export function initVault() {
   statEarned = document.getElementById('vault-stat-earned');
   statTraded = document.getElementById('vault-stat-traded');
   statRemaining = document.getElementById('vault-stat-remaining');
+  statNeed = document.getElementById('vault-stat-need');
+  statSpendCard = statRemaining ? statRemaining.closest('.stat-spendable') : null;
 
   // Pagination elements
   pagePrevBtn = document.getElementById('vault-page-prev');
@@ -297,20 +305,28 @@ export function renderVault() {
   if (statTraded) statTraded.textContent = tradedCount;
   if (statRemaining) statRemaining.textContent = remainingCount;
 
+  // Calm slate below the cheapest price; pastel prism once a Pokémon is affordable.
+  const canAfford = remainingCount >= MIN_POKEMON_COST;
+  if (statSpendCard) statSpendCard.classList.toggle('can-afford', canAfford);
+  if (statNeed) {
+    statNeed.textContent = canAfford ? '' : `${MIN_POKEMON_COST - remainingCount} more ⭐`;
+    statNeed.classList.toggle('hidden', canAfford);
+  }
+
   // Toggle Spend Button state (disabled if nothing to spend)
   const tradeBtn = document.getElementById('vault-trade-open-btn');
   if (tradeBtn) {
     tradeBtn.disabled = false; // Always enabled to allow browsing
     tradeBtn.classList.remove('disabled');
     
-    if (remainingCount >= 5) {
+    if (canAfford) {
       tradeBtn.classList.add('ready-to-unlock');
       tradeBtn.classList.remove('locked-shop');
       tradeBtn.innerHTML = 'Go to Pokémon Shop! 🚀 <span class="subtext">(Ready to Unlock!)</span>';
     } else {
       tradeBtn.classList.remove('ready-to-unlock');
       tradeBtn.classList.add('locked-shop');
-      const needed = 5 - remainingCount;
+      const needed = MIN_POKEMON_COST - remainingCount;
       tradeBtn.innerHTML = `Go to Pokémon Shop! 🚀 <span class="subtext">(Earn ${needed} more stars to unlock Pokemon! 💪)</span>`;
     }
   }

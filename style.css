@@ -10588,14 +10588,62 @@ body[data-theme] #vault-modal .vault-stat-card .stat-value {
   color: var(--sk-text);
 }
 
+/* Stars to Spend: calm slate below the cheapest Pokémon price (5 ⭐), with an
+   "N more ⭐" hint; pastel prism card with a lip and a bigger number once a
+   Pokémon is affordable (.can-afford, set by renderVault). Static, no motion. */
 body[data-theme] #vault-modal .vault-stat-card.stat-spendable {
-  background: var(--sk-done-bg);
-  border-color: var(--sk-done-lip);
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 body[data-theme] #vault-modal .vault-stat-card.stat-spendable .stat-label,
 body[data-theme] #vault-modal .vault-stat-card.stat-spendable .stat-value {
+  color: var(--sk-text);
+}
+
+/* .stat-label is a flex row, so the space after the wrapped ⭐ collapses. */
+body[data-theme] #vault-modal .vault-stat-card.stat-spendable .stat-star {
+  margin-right: 0.3em;
+}
+
+body[data-theme] #vault-modal .vault-stat-card.stat-spendable .stat-need {
+  font-family: 'Nunito', 'Quicksand', sans-serif;
+  font-weight: 800;
+  font-size: 0.72rem;
+  color: var(--sk-muted);
+  margin-top: 1px;
+}
+
+body[data-theme] #vault-modal .vault-stat-card.stat-spendable.can-afford {
+  background: linear-gradient(135deg, #fee2e2 0%, #fef3c7 25%, #dcfce7 50%, #dbeafe 75%, #f3e8ff 100%);
+  border-color: transparent;
+  box-shadow: 0 4px 0 #c4b5fd;
+  transform: translateY(-2px);
+}
+
+body[data-theme="unicorn"] #vault-modal .vault-stat-card.stat-spendable.can-afford {
+  box-shadow: 0 4px 0 #d7a3ef;
+}
+
+body[data-theme] #vault-modal .vault-stat-card.stat-spendable.can-afford .stat-label,
+body[data-theme] #vault-modal .vault-stat-card.stat-spendable.can-afford .stat-value {
   color: var(--sk-today-fg);
+}
+
+body[data-theme] #vault-modal .vault-stat-card.stat-spendable.can-afford .stat-value {
+  font-size: 2.2rem;
+}
+
+/* The ⭐ emoji vanishes on the pale yellow band, so give it a thin dark outline. */
+body[data-theme] #vault-modal .vault-stat-card.stat-spendable.can-afford .stat-star {
+  display: inline-block;
+  filter: drop-shadow(0 0 1px #1e293b) drop-shadow(0 0 1px #1e293b);
+}
+
+@media (max-width: 480px) {
+  body[data-theme] #vault-modal .vault-stat-card.stat-spendable.can-afford .stat-value {
+    font-size: 1.9rem;
+  }
 }
 
 body[data-theme] #vault-modal #vault-trade-open-btn {
