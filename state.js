@@ -1,4 +1,4 @@
-import { TIER_1_IDS, TIER_2_IDS, getPokemonName, MEGA_POKEMON, STARTER_OPTIONS, STARTER_FAMILIES, EVOLUTIONS, POKEMON_MAP, EVOLVED_POKEMON_IDS, getPokemonCost, createStarterPikachu, getStageIndexForLevel } from './pokemon_data.js';
+import { TIER_1_IDS, TIER_2_IDS, getPokemonName, MEGA_POKEMON, STARTER_OPTIONS, STARTER_FAMILIES, EVOLUTIONS, POKEMON_MAP, EVOLVED_POKEMON_IDS, getPokemonCost, createStarterPikachu, getStageIndexForLevel, getBranchPath, resolveStageId } from './pokemon_data.js';
 import { formatLocalDate, getWeekStart, getSunday, getDateOfColumn, getLocalDate } from './date_utils.js';
 import { runMigrations, DEFAULT_WEEKLY_REWARDS, DEFAULT_MEGA_REWARDS, LATEST_SCHEMA_VERSION } from './migrations.js';
 
@@ -19,13 +19,17 @@ export function getStageInfo(familyId, stageId) {
   
   // Branching evolution families (Eevee, Mewtwo, Kyurem, Calyrex, Slowpoke, Scyther, Kubfu, etc.)
   if (evo.options) {
-    const chosen = evo.options.find(opt => String(opt.id) === String(stageId));
-    if (chosen) {
+    // A chosen form, or a later stage on its path (e.g. Mega Gardevoir after Gardevoir).
+    const branch = getBranchPath(evo, stageId);
+    if (branch) {
+      const current = branch.path[branch.index];
+      const next = branch.path[branch.index + 1] || null;
+      const startLevel = current.level || 5;
       return {
-        currentStage: { level: chosen.level || 5, id: String(chosen.id), name: chosen.name },
-        nextStage: null,
-        startLevel: chosen.level || 5,
-        endLevel: null
+        currentStage: { level: startLevel, id: String(current.id), name: current.name },
+        nextStage: next ? { level: next.level, id: String(next.id), name: next.name } : null,
+        startLevel,
+        endLevel: next ? next.level : null
       };
     }
     if (evo.stages) {
@@ -516,7 +520,19 @@ export function runStateDiagnostics() {
             if (evo.stages) {
               const expectedIndex = getStageIndexForLevel(evo, pData.level, pData.minStageId);
               const expectedStageId = String(evo.stages[expectedIndex].id);
-              if (String(pData.stageId) !== expectedStageId) {
+              // Like linear families, a pre-branch stage is left alone (Charizard and
+              // Raichu gained a Mega X/Y choice on 2026-11-07 and must not start
+              // re-staging old partners); only a chosen form below its level steps back.
+              const isPreBranchStage = evo.stages.some(s => String(s.id) === String(pData.stageId));
+              const currentIndex = evo.stages.findIndex(s => String(s.id) === String(pData.stageId));
+              const floorIndex = pData.minStageId !== undefined
+                ? evo.stages.findIndex(s => String(s.id) === String(pData.minStageId)) : -1;
+              if (isPreBranchStage && floorIndex !== -1 && currentIndex < floorIndex) {
+                // Starter Pikachu floor (family 172 also branches into Mega Raichu X/Y).
+                issues.push(`Stage ${pData.stageId} is below the minStageId floor for instance ${instanceId}.`);
+                pData.stageId = String(pData.minStageId);
+                fixed.push(`Raised stageId to floor '${pData.stageId}' for instance ${instanceId}.`);
+              } else if (!isPreBranchStage && String(pData.stageId) !== expectedStageId) {
                 issues.push(`Stage ${pData.stageId} invalid for level ${pData.level} (expected ${expectedStageId}) in mixed family ${fid}.`);
                 pData.stageId = expectedStageId;
                 fixed.push(`Corrected stageId to '${expectedStageId}' for instance ${instanceId}.`);
@@ -530,11 +546,21 @@ export function runStateDiagnostics() {
             }
           } else {
             const preBranchStageId = evo.stages ? String(evo.stages[evo.stages.length - 1].id) : String(fid);
-            const isValidBranchStage = String(pData.stageId) === preBranchStageId || evo.options.some(opt => String(opt.id) === String(pData.stageId));
+            const isValidBranchStage = String(pData.stageId) === preBranchStageId || !!getBranchPath(evo, pData.stageId);
             if (!isValidBranchStage) {
               issues.push(`Invalid stageId for branching instance ${instanceId}: ${pData.stageId}`);
               pData.stageId = preBranchStageId;
               fixed.push(`Reset stageId to '${preBranchStageId}'.`);
+            } else {
+              // On a chosen path, a stage above the partner's level (e.g. Mega
+              // Gardevoir at Lv 7) steps back to the stage that level allows.
+              const branch = getBranchPath(evo, pData.stageId);
+              if (branch && branch.index > 0 && pData.level < branch.path[branch.index].level) {
+                const expected = resolveStageId(fid, pData.level, pData.stageId, pData.minStageId);
+                issues.push(`Stage ${pData.stageId} is above level ${pData.level} for instance ${instanceId}.`);
+                pData.stageId = expected;
+                fixed.push(`Corrected stageId to '${expected}' for instance ${instanceId}.`);
+              }
             }
           }
         } else if (evo && evo.stages) {

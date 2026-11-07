@@ -5546,7 +5546,8 @@ async function runSuite() {
         assert(POKEMON_TYPES[95] === "Rock", "Onix type should be Rock");
         assert(POKEMON_TYPES[208] === "Steel", "Steelix type should be Steel");
         assert(EVOLUTIONS['95'] !== undefined, "Onix should have an evolution definition");
-        assert(EVOLUTIONS['95'].stages.length === 2, "Onix evolution should have 2 stages");
+        assert(EVOLUTIONS['95'].stages.length === 3, "Onix evolution should have 3 stages (Mega Steelix added 2026-11-07, TC138)");
+        assert(EVOLUTIONS['95'].stages[2].id === '10072' && EVOLUTIONS['95'].stages[2].level === 10, "Stage 3 should be Mega Steelix at level 10");
         assert(EVOLUTIONS['95'].stages[0].id === '95' && EVOLUTIONS['95'].stages[0].level === 1, "Stage 1 should be Onix at level 1");
         assert(EVOLUTIONS['95'].stages[1].id === '208' && EVOLUTIONS['95'].stages[1].level === 5, "Stage 2 should be Steelix at level 5");
         assert(EVOLVED_POKEMON_IDS.has(208), "Steelix (208) should be in EVOLVED_POKEMON_IDS");
@@ -12914,6 +12915,136 @@ async function runSuite() {
           assert(evoText().includes('Fully Evolved'), 'Mega Zygarde is fully evolved');
         } finally {
           document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
+      // 138. New Mega Evolutions and forms in evolution paths (owner 2026-11-07).
+      //      Normal/rare evolve every 5 levels, legendaries every 10, legendaries
+      //      with a series of forms every 5. A chosen form can keep evolving
+      //      (option.next), e.g. Gardevoir → Mega Gardevoir.
+      if (__shouldRun('138')) {
+        console.log("Running Test Case 138: New Megas & forms — linear, choice, and post-choice evolutions...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const state = window.__app_state__;
+        const PD = await import('./pokemon_data.js');
+        const modal = document.getElementById('eevee-modal');
+        const name = () => document.getElementById('partner-name').textContent;
+        const evoText = () => (document.getElementById('evolution-helper')?.textContent || '').replace(/\u00a0/g, ' ');
+        const setPartner = (fid, level, stageId, xp = 0) => {
+          state.activePartnerInstanceId = `${fid}_t138`;
+          state.partnersData[`${fid}_t138`] = { familyId: fid, level, xp, stageId };
+        };
+        const closeNotifs = () => document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+        try {
+          // (A) Data: every form is named, typed and never sold on its own; levels follow the rule.
+          for (const [fid, evo] of Object.entries(PD.EVOLUTIONS)) {
+            const ids = [...(evo.stages || []).map(s => s.id), ...(evo.options || []).flatMap(o => [o.id, ...(o.next || []).map(n => n.id)])];
+            for (const id of ids) {
+              if (id === fid) continue;
+              assert(PD.POKEMON_MAP[id] && PD.POKEMON_TYPES[id], `Form ${id} (family ${fid}) has a name and a type`);
+              assert(!PD.isBuyablePokemonId(id), `Form ${id} (family ${fid}) is not sold in the Shop`);
+            }
+          }
+          const lastLevel = fid => { const e = PD.EVOLUTIONS[fid]; return e.options ? e.options[0].level : e.stages[e.stages.length - 1].level; };
+          for (const fid of ['1', '4', '7', '63', '92', '129', '147', '152', '158', '172', '179', '246', '252', '255', '258', '374', '443', '498', '653', '656']) {
+            assert(lastLevel(fid) === 15, `Family ${fid}: Mega at Lv 15 (5 after its Lv 10 form)`);
+          }
+          for (const fid of ['35', '95', '228', '447']) assert(lastLevel(fid) === 10, `Family ${fid}: Mega at Lv 10 (5 after its Lv 5 form)`);
+          for (const fid of ['807', '386', '1017']) assert(lastLevel(fid) === 10, `Legendary ${fid}: evolves at Lv 10`);
+          const necro = PD.EVOLUTIONS['800'];
+          assert(necro.options.every(o => o.level === 5 && o.next[0].id === '10157' && o.next[0].level === 10), 'Necrozma: Dusk Mane / Dawn Wings at Lv 5, Ultra at Lv 10');
+          assert(JSON.stringify(PD.EVOLUTIONS['4'].options.map(o => o.name)) === '["Mega Charizard X","Mega Charizard Y"]', 'Charizard chooses Mega X or Y');
+
+          // (B) Linear Mega: Venusaur evolves into Mega Venusaur at Lv 15.
+          setPartner('1', 14, '3', 95);
+          helpers.renderState(false);
+          await sleep(30);
+          assert(evoText().includes('Mega Venusaur') && evoText().includes('LV 15'), `Venusaur's helper names Mega Venusaur at LV 15 (got "${evoText()}")`);
+          helpers.addXp(5);
+          helpers.renderState(false);
+          await sleep(100);
+          assert(state.partnersData['1_t138'].stageId === '10033' && name() === 'Mega Venusaur', `Venusaur evolves into Mega Venusaur at Lv 15 (got ${JSON.stringify(state.partnersData['1_t138'])}, name "${name()}", active ${state.activePartnerInstanceId})`);
+          closeNotifs();
+
+          // (C) Choice after a linear line: a Lv 15 Charizard is offered Mega X or Y.
+          modal.classList.add('hidden');
+          setPartner('4', 15, '6');
+          helpers.renderState(false);
+          await sleep(50);
+          assert(!modal.classList.contains('hidden'), 'Lv 15 Charizard opens the evolution choice');
+          assert(modal.querySelector('h2').textContent.includes('Charizard') && !modal.querySelector('h2').textContent.includes('Charmander'), `Dialog names Charizard, not Charmander (got "${modal.querySelector('h2').textContent}")`);
+          const opts = [...modal.querySelectorAll('.eevee-option-name')].map(e => e.textContent);
+          assert(JSON.stringify(opts) === '["Mega Charizard X","Mega Charizard Y"]', `Choices are Mega Charizard X / Y (got ${JSON.stringify(opts)})`);
+          modal.querySelectorAll('.eevee-option')[0].click();
+          await sleep(100);
+          assert(state.partnersData['4_t138'].stageId === '10034' && name() === 'Mega Charizard X', 'Picking X makes Mega Charizard X');
+          closeNotifs();
+
+          // (D) A chosen form keeps evolving: Gardevoir → Mega Gardevoir at Lv 10, and back at Lv 9.
+          setPartner('280', 9, '282', 95);
+          helpers.renderState(false);
+          await sleep(30);
+          assert(evoText().includes('Mega Gardevoir') && evoText().includes('LV 10'), `Gardevoir's helper names Mega Gardevoir at LV 10 (got "${evoText()}")`);
+          helpers.addXp(5);
+          helpers.renderState(false);
+          await sleep(100);
+          assert(state.partnersData['280_t138'].stageId === '10051' && name() === 'Mega Gardevoir', 'Gardevoir evolves into Mega Gardevoir at Lv 10');
+          closeNotifs();
+          helpers.addXp(-5, { quiet: true });
+          helpers.renderState(false);
+          await sleep(50);
+          assert(state.partnersData['280_t138'].level === 9 && state.partnersData['280_t138'].stageId === '282', 'Dropping to Lv 9 goes back to Gardevoir, not Ralts');
+
+          // (E) A Lv 12 Ralts picking Gallade lands straight on Mega Gallade.
+          modal.classList.add('hidden');
+          setPartner('280', 12, '280');
+          helpers.renderState(false);
+          await sleep(50);
+          assert(!modal.classList.contains('hidden'), 'Lv 12 Ralts opens the choice');
+          [...modal.querySelectorAll('.eevee-option')].find(o => o.textContent.includes('Gallade')).click();
+          await sleep(100);
+          assert(state.partnersData['280_t138'].stageId === '10068' && name() === 'Mega Gallade', 'A Lv 12 Ralts that picks Gallade becomes Mega Gallade');
+          closeNotifs();
+
+          // (F) Necrozma: choose Dawn Wings at Lv 5, Ultra Necrozma at Lv 10.
+          modal.classList.add('hidden');
+          setPartner('800', 9, '10156', 95);
+          helpers.renderState(false);
+          await sleep(30);
+          assert(evoText().includes('Ultra Necrozma') && evoText().includes('LV 10'), `Dawn Wings helper names Ultra Necrozma at LV 10 (got "${evoText()}")`);
+          helpers.addXp(5);
+          helpers.renderState(false);
+          await sleep(100);
+          assert(state.partnersData['800_t138'].stageId === '10157' && name() === 'Ultra Necrozma', 'Dawn Wings Necrozma becomes Ultra Necrozma at Lv 10');
+          closeNotifs();
+
+          // (G) Partners saved before this change stay valid: a Lv 12 Ultra Necrozma, a Lv 7
+          //     Lycanroc (now "Midday"), a Lv 6 Toxtricity (now "Amped"), a Lv 11 Mega Absol.
+          state.partnersData['n_old'] = { familyId: '800', level: 12, xp: 0, stageId: '10157' };
+          state.partnersData['l_old'] = { familyId: '744', level: 7, xp: 0, stageId: '745' };
+          state.partnersData['t_old'] = { familyId: '847', level: 6, xp: 0, stageId: '849' };
+          state.partnersData['a_old'] = { familyId: '359', level: 11, xp: 0, stageId: '10057' };
+          const diag = StateModule.runStateDiagnostics();
+          const ours = diag.issues.filter(i => /n_old|l_old|t_old|a_old|family (800|744|847|359)\b/.test(i));
+          assert(ours.length === 0, `Saved partners on the new paths need no fixing (got ${JSON.stringify(ours)})`);
+          assert(state.partnersData['l_old'].stageId === '745' && state.partnersData['n_old'].stageId === '10157', 'Saved Lycanroc and Ultra Necrozma keep their forms');
+
+          // (H) Legendaries that never changed: Zeraora gets Mega Zeraora at Lv 10; Deoxys chooses a Forme.
+          assert(PD.resolveStageId('807', 10, '807') === '10319' && PD.resolveStageId('807', 9, '807') === '807', 'Zeraora becomes Mega Zeraora at Lv 10');
+          setPartner('386', 10, '386');
+          modal.classList.add('hidden');
+          helpers.renderState(false);
+          await sleep(50);
+          const dOpts = [...modal.querySelectorAll('.eevee-option-name')].map(e => e.textContent);
+          assert(dOpts.length === 3 && dOpts.every(n => n.includes('Forme Deoxys')), `Lv 10 Deoxys chooses a Forme (got ${JSON.stringify(dOpts)})`);
+          modal.classList.add('hidden');
+        } finally {
+          closeNotifs();
+          modal.classList.add('hidden');
           helpers.resetState();
           await sleep(30);
         }

@@ -459,7 +459,7 @@ function handleLastWeekToggle(e) {
 
 import { playSound } from './audio.js';
 import { initVault, openVault, checkDayCompleted, renderVault, getStarsFromDates } from './vault.js';
-import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES, getStageIndexForLevel, getArtworkUrl, getSpriteUrl } from './pokemon_data.js';
+import { getPokemonName, TIER_1_IDS, TIER_2_IDS, STARTER_OPTIONS, MEGA_POKEMON, EVOLUTIONS, POKEMON_TYPES, getStageIndexForLevel, getArtworkUrl, getSpriteUrl, resolveStageId } from './pokemon_data.js';
 import { initBadgeCase, awardCurrentWeeklyBadge, revokeCurrentWeeklyBadge, renderBadgeCaseGrid } from './badges.js';
 import { initAdmin, refreshAdminScopeChip, adminNotice, showAdminToast, setReadBackupCodeMock, setCloudRestoreSlowMsMock, requestCloseAdmin, openAdminRewardsTab, holdToConfirm, resolveHoldMs, setHoldDurationMock } from './admin.js';
 import { initGuide, openGuide, renderGuide } from './guide.js';
@@ -1478,6 +1478,7 @@ function preloadImages() {
       if (evo.options) {
         evo.options.forEach(o => {
           imagesToPreload.push(`${getArtworkUrl(o.id)}`);
+          (o.next || []).forEach(n => imagesToPreload.push(getArtworkUrl(n.id)));
         });
       }
     }
@@ -4490,27 +4491,16 @@ function addXp(amount, { quiet = false } = {}) {
   if (levelChanged) {
     const evo = EVOLUTIONS[family];
     if (evo) {
-      const hasBranching = !!evo.options;
-      const branchThreshold = hasBranching ? (evo.options[0]?.level || 5) : Infinity;
-
-      if (stats.level < branchThreshold) {
-        if (evo.stages) {
-          const stageIdx = getStageIndexForLevel(evo, stats.level, stats.minStageId);
-          const targetStageId = String(evo.stages[stageIdx].id);
-          if (String(stats.stageId) !== targetStageId) {
-            const isDevolvingFromBranch = hasBranching && evo.options.some(opt => String(opt.id) === String(stats.stageId));
-            stats.stageId = targetStageId;
-            if (stats.level < oldLevel || isDevolvingFromBranch) {
-              devolved = true;
-            } else {
-              evolved = true;
-            }
-          }
+      // One resolver for every family: linear lines, branch choices, and forms
+      // that keep evolving after the choice (Mega Gardevoir, Ultra Necrozma).
+      // Before a choice is made it returns the pre-branch stage, so no change.
+      const targetStageId = resolveStageId(family, stats.level, stats.stageId, stats.minStageId);
+      if (String(stats.stageId) !== targetStageId) {
+        stats.stageId = targetStageId;
+        if (stats.level < oldLevel) {
+          devolved = true;
         } else {
-          if (String(stats.stageId) !== String(family)) {
-            stats.stageId = String(family);
-            devolved = true;
-          }
+          evolved = true;
         }
       }
     }
@@ -5176,7 +5166,10 @@ function showBranchEvolutionDialog(familyId, instanceId) {
   const evo = EVOLUTIONS[familyId];
   if (!evo || !evo.options) return;
   
-  const familyName = getPokemonName(familyId);
+  // Name the partner as it is now (Charizard, Raichu), not the family's first
+  // Pokémon (Charmander, Pichu): those lines branch after linear stages.
+  const branchStats = state.partnersData[instanceId || state.activePartnerInstanceId];
+  const familyName = branchStats ? getStageInfo(familyId, branchStats.stageId).currentStage.name : getPokemonName(familyId);
   const titleEl = eeveeModal.querySelector('h2');
   if (titleEl) {
     titleEl.textContent = `Evolve ${familyName}! ✨`;
@@ -5219,14 +5212,20 @@ function selectBranchEvolution(familyId, instanceId, evolvedId, evolvedName) {
   
   const targetInstanceId = instanceId || state.activePartnerInstanceId;
   const stats = state.partnersData[targetInstanceId];
+  const familyName = stats ? getStageInfo(familyId, stats.stageId).currentStage.name : getPokemonName(familyId);
   if (stats) {
-    stats.stageId = String(evolvedId);
+    // A partner already past a later stage of the chosen form (e.g. a Lv 12
+    // Ralts picking Gardevoir) lands on that stage (Mega Gardevoir).
+    stats.stageId = resolveStageId(familyId, stats.level, String(evolvedId), stats.minStageId);
+    if (stats.stageId !== String(evolvedId)) {
+      evolvedId = stats.stageId;
+      evolvedName = getStageInfo(familyId, stats.stageId).currentStage.name;
+    }
   }
   
   saveState();
   renderState(false);
   
-  const familyName = getPokemonName(familyId);
   CelebrationEngine.triggerCelebration(true);
   playSound('badge');
   showCustomNotification(

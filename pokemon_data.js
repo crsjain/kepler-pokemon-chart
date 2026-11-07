@@ -135,7 +135,54 @@ export const POKEMON_MAP = {
   10057: "Mega Absol",
   10174: "Galarian Zigzagoon",
   10175: "Galarian Linoone",
-  10191: "Rapid Strike Urshifu"
+  10191: "Rapid Strike Urshifu",
+
+  // Megas and forms added to evolution paths (owner 2026-11-07)
+  10033: "Mega Venusaur",
+  10034: "Mega Charizard X",
+  10035: "Mega Charizard Y",
+  10036: "Mega Blastoise",
+  10037: "Mega Alakazam",
+  10038: "Mega Gengar",
+  10041: "Mega Gyarados",
+  10281: "Mega Dragonite",
+  10278: "Mega Clefable",
+  10282: "Mega Meganium",
+  10283: "Mega Feraligatr",
+  10045: "Mega Ampharos",
+  10072: "Mega Steelix",
+  10046: "Mega Scizor",
+  10048: "Mega Houndoom",
+  10049: "Mega Tyranitar",
+  10065: "Mega Sceptile",
+  10050: "Mega Blaziken",
+  10064: "Mega Swampert",
+  10051: "Mega Gardevoir",
+  10068: "Mega Gallade",
+  10076: "Mega Metagross",
+  10058: "Mega Garchomp",
+  10309: "Mega Garchomp Z",
+  10059: "Mega Lucario",
+  10310: "Mega Lucario Z",
+  10307: "Mega Absol Z",
+  10286: "Mega Emboar",
+  10293: "Mega Delphox",
+  10294: "Mega Greninja",
+  10304: "Mega Raichu X",
+  10305: "Mega Raichu Y",
+  10071: "Mega Slowbro",
+  10319: "Mega Zeraora",
+  10001: "Attack Forme Deoxys",
+  10002: "Defense Forme Deoxys",
+  10003: "Speed Forme Deoxys",
+  10273: "Wellspring Mask Ogerpon",
+  10274: "Hearthflame Mask Ogerpon",
+  10275: "Cornerstone Mask Ogerpon",
+  10126: "Midnight Lycanroc",
+  10152: "Dusk Lycanroc",
+  10184: "Low Key Toxtricity",
+  10155: "Dusk Mane Necrozma",
+  10156: "Dawn Wings Necrozma"
 };
 
 export const TIER_1_IDS = [
@@ -276,6 +323,51 @@ export function getStageIndexForLevel(evo, level, minStageId) {
   return index;
 }
 
+/**
+ * Branching families (`evo.options`) may keep evolving after the child picks a
+ * form: an option can carry `next: [{ level, id, name }, ...]`, e.g. Gardevoir →
+ * Mega Gardevoir. Returns the chosen option's path (option first, then its
+ * `next` stages) and where `stageId` sits on it, or null when `stageId` is not
+ * on any option's path (the partner hasn't chosen yet). A stage shared by two
+ * paths (Ultra Necrozma) resolves to the first option that lists it.
+ */
+export function getBranchPath(evo, stageId) {
+  if (!evo || !evo.options) return null;
+  const sid = String(stageId);
+  for (const option of evo.options) {
+    const path = [option, ...(option.next || [])];
+    const index = path.findIndex(s => String(s.id) === sid);
+    if (index !== -1) return { option, path, index };
+  }
+  return null;
+}
+
+/**
+ * The stage id a partner should show at `level`. Keeps the child's branch
+ * choice; before a choice is made (or below the branch level) it returns the
+ * pre-branch stage, which is what triggers the choice dialog. Honours the
+ * `minStageId` floor like getStageIndexForLevel.
+ */
+export function resolveStageId(familyId, level, stageId, minStageId) {
+  const evo = EVOLUTIONS[String(familyId)];
+  if (!evo) return String(stageId || familyId);
+  if (!evo.options) {
+    return String(evo.stages[getStageIndexForLevel(evo, level, minStageId)].id);
+  }
+  const branchLevel = evo.options[0]?.level || 5;
+  const preBranchId = evo.stages ? String(evo.stages[evo.stages.length - 1].id) : String(familyId);
+  if (level < branchLevel) {
+    return evo.stages ? String(evo.stages[getStageIndexForLevel(evo, level, minStageId)].id) : String(familyId);
+  }
+  const branch = getBranchPath(evo, stageId);
+  if (!branch) return preBranchId;
+  let index = 0;
+  for (let i = 1; i < branch.path.length; i++) {
+    if (level >= branch.path[i].level) index = i; else break;
+  }
+  return String(branch.path[index].id);
+}
+
 // Evolution configurations
 export const EVOLUTIONS = {
   '172': {
@@ -283,6 +375,10 @@ export const EVOLUTIONS = {
       { level: 1, id: '172', name: 'Pichu' },
       { level: 5, id: '25', name: 'Pikachu' },
       { level: 10, id: '26', name: 'Raichu' }
+    ],
+    options: [
+      { id: '10304', name: 'Mega Raichu X', level: 15 },
+      { id: '10305', name: 'Mega Raichu Y', level: 15 }
     ]
   },
   '4': {
@@ -290,20 +386,26 @@ export const EVOLUTIONS = {
       { level: 1, id: '4', name: 'Charmander' },
       { level: 5, id: '5', name: 'Charmeleon' },
       { level: 10, id: '6', name: 'Charizard' }
+    ],
+    options: [
+      { id: '10034', name: 'Mega Charizard X', level: 15 },
+      { id: '10035', name: 'Mega Charizard Y', level: 15 }
     ]
   },
   '1': {
     stages: [
       { level: 1, id: '1', name: 'Bulbasaur' },
       { level: 5, id: '2', name: 'Ivysaur' },
-      { level: 10, id: '3', name: 'Venusaur' }
+      { level: 10, id: '3', name: 'Venusaur' },
+      { level: 15, id: '10033', name: 'Mega Venusaur' }
     ]
   },
   '7': {
     stages: [
       { level: 1, id: '7', name: 'Squirtle' },
       { level: 5, id: '8', name: 'Wartortle' },
-      { level: 10, id: '9', name: 'Blastoise' }
+      { level: 10, id: '9', name: 'Blastoise' },
+      { level: 15, id: '10036', name: 'Mega Blastoise' }
     ]
   },
   '133': {
@@ -415,8 +517,11 @@ export const EVOLUTIONS = {
   },
   '800': {
     stages: [
-      { level: 1, id: '800', name: 'Necrozma' },
-      { level: 10, id: '10157', name: 'Ultra Necrozma' }
+      { level: 1, id: '800', name: 'Necrozma' }
+    ],
+    options: [
+      { id: '10155', name: 'Dusk Mane Necrozma', level: 5, next: [{ level: 10, id: '10157', name: 'Ultra Necrozma' }] },
+      { id: '10156', name: 'Dawn Wings Necrozma', level: 5, next: [{ level: 10, id: '10157', name: 'Ultra Necrozma' }] }
     ]
   },
   '888': {
@@ -450,7 +555,8 @@ export const EVOLUTIONS = {
   '35': {
     stages: [
       { level: 1, id: '35', name: 'Clefairy' },
-      { level: 5, id: '36', name: 'Clefable' }
+      { level: 5, id: '36', name: 'Clefable' },
+      { level: 10, id: '10278', name: 'Mega Clefable' }
     ]
   },
   '37': {
@@ -488,7 +594,8 @@ export const EVOLUTIONS = {
     stages: [
       { level: 1, id: '63', name: 'Abra' },
       { level: 5, id: '64', name: 'Kadabra' },
-      { level: 10, id: '65', name: 'Alakazam' }
+      { level: 10, id: '65', name: 'Alakazam' },
+      { level: 15, id: '10037', name: 'Mega Alakazam' }
     ]
   },
   '66': {
@@ -503,7 +610,7 @@ export const EVOLUTIONS = {
       { level: 1, id: '79', name: 'Slowpoke' }
     ],
     options: [
-      { id: '80', name: 'Slowbro', level: 5 },
+      { id: '80', name: 'Slowbro', level: 5, next: [{ level: 10, id: '10071', name: 'Mega Slowbro' }] },
       { id: '199', name: 'Slowking', level: 5 }
     ]
   },
@@ -511,33 +618,38 @@ export const EVOLUTIONS = {
     stages: [
       { level: 1, id: '92', name: 'Gastly' },
       { level: 5, id: '93', name: 'Haunter' },
-      { level: 10, id: '94', name: 'Gengar' }
+      { level: 10, id: '94', name: 'Gengar' },
+      { level: 15, id: '10038', name: 'Mega Gengar' }
     ]
   },
   '95': {
     stages: [
       { level: 1, id: '95', name: 'Onix' },
-      { level: 5, id: '208', name: 'Steelix' }
+      { level: 5, id: '208', name: 'Steelix' },
+      { level: 10, id: '10072', name: 'Mega Steelix' }
     ]
   },
   '129': {
     stages: [
       { level: 1, id: '129', name: 'Magikarp' },
-      { level: 10, id: '130', name: 'Gyarados' }
+      { level: 10, id: '130', name: 'Gyarados' },
+      { level: 15, id: '10041', name: 'Mega Gyarados' }
     ]
   },
   '147': {
     stages: [
       { level: 1, id: '147', name: 'Dratini' },
       { level: 5, id: '148', name: 'Dragonair' },
-      { level: 10, id: '149', name: 'Dragonite' }
+      { level: 10, id: '149', name: 'Dragonite' },
+      { level: 15, id: '10281', name: 'Mega Dragonite' }
     ]
   },
   '152': {
     stages: [
       { level: 1, id: '152', name: 'Chikorita' },
       { level: 5, id: '153', name: 'Bayleef' },
-      { level: 10, id: '154', name: 'Meganium' }
+      { level: 10, id: '154', name: 'Meganium' },
+      { level: 15, id: '10282', name: 'Mega Meganium' }
     ]
   },
   '155': {
@@ -551,7 +663,8 @@ export const EVOLUTIONS = {
     stages: [
       { level: 1, id: '158', name: 'Totodile' },
       { level: 5, id: '159', name: 'Croconaw' },
-      { level: 10, id: '160', name: 'Feraligatr' }
+      { level: 10, id: '160', name: 'Feraligatr' },
+      { level: 15, id: '10283', name: 'Mega Feraligatr' }
     ]
   },
   '175': {
@@ -565,7 +678,8 @@ export const EVOLUTIONS = {
     stages: [
       { level: 1, id: '179', name: 'Mareep' },
       { level: 5, id: '180', name: 'Flaaffy' },
-      { level: 10, id: '181', name: 'Ampharos' }
+      { level: 10, id: '181', name: 'Ampharos' },
+      { level: 15, id: '10045', name: 'Mega Ampharos' }
     ]
   },
   '194': {
@@ -583,35 +697,40 @@ export const EVOLUTIONS = {
   '228': {
     stages: [
       { level: 1, id: '228', name: 'Houndour' },
-      { level: 5, id: '229', name: 'Houndoom' }
+      { level: 5, id: '229', name: 'Houndoom' },
+      { level: 10, id: '10048', name: 'Mega Houndoom' }
     ]
   },
   '246': {
     stages: [
       { level: 1, id: '246', name: 'Larvitar' },
       { level: 5, id: '247', name: 'Pupitar' },
-      { level: 10, id: '248', name: 'Tyranitar' }
+      { level: 10, id: '248', name: 'Tyranitar' },
+      { level: 15, id: '10049', name: 'Mega Tyranitar' }
     ]
   },
   '252': {
     stages: [
       { level: 1, id: '252', name: 'Treecko' },
       { level: 5, id: '253', name: 'Grovyle' },
-      { level: 10, id: '254', name: 'Sceptile' }
+      { level: 10, id: '254', name: 'Sceptile' },
+      { level: 15, id: '10065', name: 'Mega Sceptile' }
     ]
   },
   '255': {
     stages: [
       { level: 1, id: '255', name: 'Torchic' },
       { level: 5, id: '256', name: 'Combusken' },
-      { level: 10, id: '257', name: 'Blaziken' }
+      { level: 10, id: '257', name: 'Blaziken' },
+      { level: 15, id: '10050', name: 'Mega Blaziken' }
     ]
   },
   '258': {
     stages: [
       { level: 1, id: '258', name: 'Mudkip' },
       { level: 5, id: '259', name: 'Marshtomp' },
-      { level: 10, id: '260', name: 'Swampert' }
+      { level: 10, id: '260', name: 'Swampert' },
+      { level: 15, id: '10064', name: 'Mega Swampert' }
     ]
   },
   '280': {
@@ -619,8 +738,8 @@ export const EVOLUTIONS = {
       { level: 1, id: '280', name: 'Ralts' }
     ],
     options: [
-      { id: '282', name: 'Gardevoir', level: 5 },
-      { id: '475', name: 'Gallade', level: 5 }
+      { id: '282', name: 'Gardevoir', level: 5, next: [{ level: 10, id: '10051', name: 'Mega Gardevoir' }] },
+      { id: '475', name: 'Gallade', level: 5, next: [{ level: 10, id: '10068', name: 'Mega Gallade' }] }
     ]
   },
   '303': {
@@ -638,15 +757,19 @@ export const EVOLUTIONS = {
   },
   '359': {
     stages: [
-      { level: 1, id: '359', name: 'Absol' },
-      { level: 10, id: '10057', name: 'Mega Absol' }
+      { level: 1, id: '359', name: 'Absol' }
+    ],
+    options: [
+      { id: '10057', name: 'Mega Absol', level: 10 },
+      { id: '10307', name: 'Mega Absol Z', level: 10 }
     ]
   },
   '374': {
     stages: [
       { level: 1, id: '374', name: 'Beldum' },
       { level: 5, id: '375', name: 'Metang' },
-      { level: 10, id: '376', name: 'Metagross' }
+      { level: 10, id: '376', name: 'Metagross' },
+      { level: 15, id: '10076', name: 'Mega Metagross' }
     ]
   },
   '387': {
@@ -682,6 +805,10 @@ export const EVOLUTIONS = {
       { level: 1, id: '443', name: 'Gible' },
       { level: 5, id: '444', name: 'Gabite' },
       { level: 10, id: '445', name: 'Garchomp' }
+    ],
+    options: [
+      { id: '10058', name: 'Mega Garchomp', level: 15 },
+      { id: '10309', name: 'Mega Garchomp Z', level: 15 }
     ]
   },
   '446': {
@@ -694,6 +821,10 @@ export const EVOLUTIONS = {
     stages: [
       { level: 1, id: '447', name: 'Riolu' },
       { level: 5, id: '448', name: 'Lucario' }
+    ],
+    options: [
+      { id: '10059', name: 'Mega Lucario', level: 10 },
+      { id: '10310', name: 'Mega Lucario Z', level: 10 }
     ]
   },
   '495': {
@@ -707,7 +838,8 @@ export const EVOLUTIONS = {
     stages: [
       { level: 1, id: '498', name: 'Tepig' },
       { level: 5, id: '499', name: 'Pignite' },
-      { level: 10, id: '500', name: 'Emboar' }
+      { level: 10, id: '500', name: 'Emboar' },
+      { level: 15, id: '10286', name: 'Mega Emboar' }
     ]
   },
   '501': {
@@ -735,14 +867,16 @@ export const EVOLUTIONS = {
     stages: [
       { level: 1, id: '653', name: 'Fennekin' },
       { level: 5, id: '654', name: 'Braixen' },
-      { level: 10, id: '655', name: 'Delphox' }
+      { level: 10, id: '655', name: 'Delphox' },
+      { level: 15, id: '10293', name: 'Mega Delphox' }
     ]
   },
   '656': {
     stages: [
       { level: 1, id: '656', name: 'Froakie' },
       { level: 5, id: '657', name: 'Frogadier' },
-      { level: 10, id: '658', name: 'Greninja' }
+      { level: 10, id: '658', name: 'Greninja' },
+      { level: 15, id: '10294', name: 'Mega Greninja' }
     ]
   },
   '704': {
@@ -775,8 +909,12 @@ export const EVOLUTIONS = {
   },
   '744': {
     stages: [
-      { level: 1, id: '744', name: 'Rockruff' },
-      { level: 5, id: '745', name: 'Lycanroc' }
+      { level: 1, id: '744', name: 'Rockruff' }
+    ],
+    options: [
+      { id: '745', name: 'Midday Lycanroc', level: 5 },
+      { id: '10126', name: 'Midnight Lycanroc', level: 5 },
+      { id: '10152', name: 'Dusk Lycanroc', level: 5 }
     ]
   },
   '757': {
@@ -854,7 +992,7 @@ export const EVOLUTIONS = {
       { level: 1, id: '123', name: 'Scyther' }
     ],
     options: [
-      { id: '212', name: 'Scizor', level: 5 },
+      { id: '212', name: 'Scizor', level: 5, next: [{ level: 10, id: '10046', name: 'Mega Scizor' }] },
       { id: '900', name: 'Kleavor', level: 5 }
     ]
   },
@@ -880,8 +1018,11 @@ export const EVOLUTIONS = {
   },
   '847': {
     stages: [
-      { level: 1, id: '847', name: 'Toxel' },
-      { level: 5, id: '849', name: 'Toxtricity' }
+      { level: 1, id: '847', name: 'Toxel' }
+    ],
+    options: [
+      { id: '849', name: 'Amped Toxtricity', level: 5 },
+      { id: '10184', name: 'Low Key Toxtricity', level: 5 }
     ]
   },
   '926': {
@@ -920,6 +1061,33 @@ export const EVOLUTIONS = {
       { level: 1, id: '10174', name: 'Galarian Zigzagoon' },
       { level: 5, id: '10175', name: 'Galarian Linoone' },
       { level: 10, id: '863', name: 'Obstagoon' }
+    ]
+  },
+  // Legendaries/mythicals that gained forms (owner 2026-11-07)
+  '386': {
+    stages: [
+      { level: 1, id: '386', name: 'Deoxys' }
+    ],
+    options: [
+      { id: '10001', name: 'Attack Forme Deoxys', level: 10 },
+      { id: '10002', name: 'Defense Forme Deoxys', level: 10 },
+      { id: '10003', name: 'Speed Forme Deoxys', level: 10 }
+    ]
+  },
+  '807': {
+    stages: [
+      { level: 1, id: '807', name: 'Zeraora' },
+      { level: 10, id: '10319', name: 'Mega Zeraora' }
+    ]
+  },
+  '1017': {
+    stages: [
+      { level: 1, id: '1017', name: 'Ogerpon' }
+    ],
+    options: [
+      { id: '10273', name: 'Wellspring Mask Ogerpon', level: 10 },
+      { id: '10274', name: 'Hearthflame Mask Ogerpon', level: 10 },
+      { id: '10275', name: 'Cornerstone Mask Ogerpon', level: 10 }
     ]
   }
 };
@@ -1016,6 +1184,52 @@ export const EVOLVED_POKEMON_IDS = new Set([
   10157,        // Ultra Necrozma
   10188, 10189, // Crowned Sword Zacian, Crowned Shield Zamazenta
   10193, 10194, // Ice Rider Calyrex, Shadow Rider Calyrex
+  // Megas and forms added 2026-11-07
+  10033, // Mega Venusaur
+  10034, // Mega Charizard X
+  10035, // Mega Charizard Y
+  10036, // Mega Blastoise
+  10037, // Mega Alakazam
+  10038, // Mega Gengar
+  10041, // Mega Gyarados
+  10281, // Mega Dragonite
+  10278, // Mega Clefable
+  10282, // Mega Meganium
+  10283, // Mega Feraligatr
+  10045, // Mega Ampharos
+  10072, // Mega Steelix
+  10046, // Mega Scizor
+  10048, // Mega Houndoom
+  10049, // Mega Tyranitar
+  10065, // Mega Sceptile
+  10050, // Mega Blaziken
+  10064, // Mega Swampert
+  10051, // Mega Gardevoir
+  10068, // Mega Gallade
+  10076, // Mega Metagross
+  10058, // Mega Garchomp
+  10309, // Mega Garchomp Z
+  10059, // Mega Lucario
+  10310, // Mega Lucario Z
+  10307, // Mega Absol Z
+  10286, // Mega Emboar
+  10293, // Mega Delphox
+  10294, // Mega Greninja
+  10304, // Mega Raichu X
+  10305, // Mega Raichu Y
+  10071, // Mega Slowbro
+  10319, // Mega Zeraora
+  10001, // Attack Forme Deoxys
+  10002, // Defense Forme Deoxys
+  10003, // Speed Forme Deoxys
+  10273, // Wellspring Mask Ogerpon
+  10274, // Hearthflame Mask Ogerpon
+  10275, // Cornerstone Mask Ogerpon
+  10126, // Midnight Lycanroc
+  10152, // Dusk Lycanroc
+  10184, // Low Key Toxtricity
+  10155, // Dusk Mane Necrozma
+  10156, // Dawn Wings Necrozma
   10047,        // Mega Heracross
   10052,        // Mega Mawile
   10057,        // Mega Absol
@@ -1139,6 +1353,51 @@ export const POKEMON_TYPES = {
   10079: "Dragon",
   10245: "Steel", 10246: "Water", 10007: "Ghost",
   10022: "Dragon", 10023: "Dragon",
+  10033: "Grass",
+  10034: "Dragon",
+  10035: "Fire",
+  10036: "Water",
+  10037: "Psychic",
+  10038: "Ghost",
+  10041: "Water",
+  10281: "Dragon",
+  10278: "Fairy",
+  10282: "Grass",
+  10283: "Water",
+  10045: "Electric",
+  10072: "Steel",
+  10046: "Bug",
+  10048: "Dark",
+  10049: "Rock",
+  10065: "Grass",
+  10050: "Fire",
+  10064: "Water",
+  10051: "Psychic",
+  10068: "Psychic",
+  10076: "Steel",
+  10058: "Dragon",
+  10309: "Dragon",
+  10059: "Fighting",
+  10310: "Fighting",
+  10307: "Dark",
+  10286: "Fire",
+  10293: "Fire",
+  10294: "Water",
+  10304: "Electric",
+  10305: "Electric",
+  10071: "Water",
+  10319: "Electric",
+  10001: "Psychic",
+  10002: "Psychic",
+  10003: "Psychic",
+  10273: "Water",
+  10274: "Fire",
+  10275: "Rock",
+  10126: "Rock",
+  10152: "Rock",
+  10184: "Electric",
+  10155: "Steel",
+  10156: "Ghost",
   10120: "Dragon", 10181: "Dragon", 10301: "Dragon", 90718: "Dragon",
   10075: "Rock",
   10086: "Psychic",
