@@ -6243,6 +6243,7 @@ async function runSuite() {
         let foundOverflowAuto = false;
         let foundMinWidth620 = false;
         let foundPaddingEnhanced = false;
+        let foundCellIsolation = false;
 
         for (const sheet of document.styleSheets) {
           try {
@@ -6263,6 +6264,9 @@ async function runSuite() {
                   if (selector.includes('checkbox-cell') && cssText.includes('padding: 8px 3px')) {
                     foundPaddingEnhanced = true;
                   }
+                  if (selector.includes('td.checkbox-cell') && selector.includes('td.day-total-cell') && cssText.includes('isolation: isolate')) {
+                    foundCellIsolation = true;
+                  }
                 }
               }
             }
@@ -6275,6 +6279,7 @@ async function runSuite() {
         assert(foundOverflowAuto, "Mobile media query must declare .grid-scroll-wrapper { overflow-x: auto }");
         assert(foundMinWidth620, "Mobile media query must declare .weekly-grid { min-width: 560px } (narrow frozen task column, day cells stay >= 50px)");
         assert(foundPaddingEnhanced, "Mobile media query must provide adequate padding (8px 3px) for touch cells");
+        assert(foundCellIsolation, "Mobile day cells must isolate their stacking (isolation: isolate) so Pokéball centres and +XP badges stay under the frozen task column");
 
         // 3. Verify Container Containment
         const chartContainer = document.querySelector('.chart-container');

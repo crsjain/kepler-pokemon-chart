@@ -899,6 +899,14 @@ button:disabled,
   .weekly-grid .task-row:hover td:first-child {
     background: #f7fafc;
   }
+  /* Keep the day cells' own layers (Pokéball centre button z-index 10, +XP
+     badges) inside each cell, so the frozen column slides over them instead
+     of the yellow centres and badges floating on top of it (owner, 2026-11-08). */
+  .weekly-grid th.day-header,
+  .weekly-grid td.checkbox-cell,
+  .weekly-grid td.day-total-cell {
+    isolation: isolate;
+  }
   .weekly-grid th.day-header,
   .weekly-grid td.checkbox-cell,
   .weekly-grid td.day-total-cell {
