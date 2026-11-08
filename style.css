@@ -5127,13 +5127,39 @@ body.idle-mode * {
   padding: 5px;
 }
 
-/* Ready to Unlock button in Star Vault (glowing/pulsing green) */
+/* Ready to Unlock button in Star Vault. It plays ONE "ready!" pop when it appears
+   (Vault opens, or the child crosses the 5-star price), then sits still, so the
+   pastel prism Stars to Spend card is the only lasting signal. It used to pulse
+   forever (`pulse 1.5s infinite`). The keyframes keep the button's candy lip. */
 .pixel-btn.ready-to-unlock {
-  --badge-glow-rgba-low: rgba(16, 185, 129, 0.4);
-  --badge-glow-rgba-high: rgba(16, 185, 129, 0.8);
-  animation: pulse 1.5s infinite alternate;
-  box-shadow: 0 0 15px var(--badge-glow-rgba-high), 0 4px 0 #047857;
+  /* `backwards`, not `both`: after the pop the button's own hover/pressed styles apply. */
+  animation: shop-ready-pop 0.9s ease-out 0.3s 1 backwards;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.8), 0 4px 0 #047857;
   background-color: #10b981;
+}
+
+@keyframes shop-ready-pop {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 4px 0 var(--sk-cta-warm-lip, #d97706), 0 0 0 0 rgba(255, 203, 5, 0.75);
+  }
+  35% {
+    transform: scale(1.06);
+    box-shadow: 0 4px 0 var(--sk-cta-warm-lip, #d97706), 0 0 0 8px rgba(255, 203, 5, 0.45);
+  }
+  60% {
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 0 var(--sk-cta-warm-lip, #d97706), 0 0 0 16px rgba(255, 203, 5, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pixel-btn.ready-to-unlock {
+    animation: none;
+  }
 }
 .pixel-btn.ready-to-unlock:hover {
   background-color: #059669;

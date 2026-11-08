@@ -13096,6 +13096,12 @@ async function runSuite() {
           assert(need.classList.contains('hidden'), '5 to spend: hint hidden');
           assert(getComputedStyle(card).backgroundImage.includes('linear-gradient'), '5 to spend: pastel prism gradient applied');
 
+          // The shop button pops ONCE when ready (no infinite pulse)
+          const shopBtn = document.getElementById('vault-trade-open-btn');
+          const shopCs = getComputedStyle(shopBtn);
+          assert(shopBtn.classList.contains('ready-to-unlock'), '5 to spend: shop button is ready-to-unlock');
+          assert(shopCs.animationName === 'shop-ready-pop' && shopCs.animationIterationCount === '1', `Ready shop button plays a single pop (got ${shopCs.animationName} × ${shopCs.animationIterationCount})`);
+
           // 15 (Kepler's real numbers), then spending back below 5 returns to calm
           setStars(100, 85);
           assert(card.classList.contains('can-afford') && document.getElementById('vault-stat-remaining').textContent === '15', '15 to spend: prism with count 15');
