@@ -13091,6 +13091,9 @@ async function runSuite() {
           assert(!card.classList.contains('can-afford'), '3 stars: card stays calm');
           assert(!need.classList.contains('hidden') && need.textContent === '2 more ⭐', `3 stars: hint reads "2 more ⭐" (got "${need.textContent}")`);
           assert(getComputedStyle(card).backgroundImage === 'none', '3 stars: calm card has no gradient');
+          const calmBtn = document.getElementById('vault-trade-open-btn');
+          assert(calmBtn.classList.contains('locked-shop') && !calmBtn.disabled, '3 stars: shop button is locked-shop but still tappable');
+          assert(getComputedStyle(calmBtn).backgroundColor === 'rgb(226, 232, 240)', `3 stars: shop button is calm slate, not yellow (got ${getComputedStyle(calmBtn).backgroundColor})`);
 
           setStars(0, 0);
           assert(need.textContent === '5 more ⭐', '0 stars: hint reads "5 more ⭐"');
@@ -13105,6 +13108,7 @@ async function runSuite() {
           const shopBtn = document.getElementById('vault-trade-open-btn');
           const shopCs = getComputedStyle(shopBtn);
           assert(shopBtn.classList.contains('ready-to-unlock'), '5 to spend: shop button is ready-to-unlock');
+          assert(getComputedStyle(shopBtn).backgroundColor !== 'rgb(226, 232, 240)', '5 to spend: shop button leaves the calm slate');
           assert(shopCs.animationName === 'shop-ready-pop' && shopCs.animationIterationCount === '1', `Ready shop button plays a single pop (got ${shopCs.animationName} × ${shopCs.animationIterationCount})`);
 
           // 15 (Kepler's real numbers), then spending back below 5 returns to calm

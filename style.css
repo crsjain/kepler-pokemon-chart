@@ -10745,6 +10745,19 @@ body[data-theme] #vault-modal #vault-trade-open-btn {
   font-weight: 900;
 }
 
+/* Below 5 stars the shop button stays calm slate, matching the calm Stars to
+   Spend card, so yellow at 5+ actually means "you can buy one" (owner,
+   2026-11-08, "below 5 stays calm" mockup). Still tappable for browsing. */
+body[data-theme] #vault-modal #vault-trade-open-btn.locked-shop {
+  background: #e2e8f0;
+  color: #334155;
+  box-shadow: 0 4px 0 #94a3b8;
+}
+
+body[data-theme] #vault-modal #vault-trade-open-btn.locked-shop:hover {
+  background: #cbd5e1;
+}
+
 body[data-theme] #vault-modal .vault-grid-container {
   background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%);
   border: 4px solid var(--sk-pill-lip);
