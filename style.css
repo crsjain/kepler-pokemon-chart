@@ -10677,7 +10677,7 @@ body[data-theme] #vault-modal .vault-stat-card .stat-value {
 }
 
 /* Stars to Spend: calm slate below the cheapest Pokémon price (5 ⭐), with an
-   "N more ⭐" hint; pastel prism card with a lip and a bigger number once a
+   "N more ⭐" hint; pastel prism card with a ring and a bigger number once a
    Pokémon is affordable (.can-afford, set by renderVault). Static, no motion. */
 body[data-theme] #vault-modal .vault-stat-card.stat-spendable {
   background: #f1f5f9;
@@ -10698,19 +10698,23 @@ body[data-theme] #vault-modal .vault-stat-card.stat-spendable .stat-need {
   font-family: 'Nunito', 'Quicksand', sans-serif;
   font-weight: 800;
   font-size: 0.72rem;
-  color: var(--sk-muted);
+  /* #475569 on the #f1f5f9 calm card is ~7:1 in both themes. --sk-muted was
+     4.34:1, which fails WCAG AA for ~11.5px text. */
+  color: #475569;
   margin-top: 1px;
 }
 
+/* No candy lip or lift: this card isn't tappable, and a lip means "press me".
+   An even ring (no y-offset) highlights it instead. box-shadow, not border,
+   so the stat cards don't shift when it switches state. */
 body[data-theme] #vault-modal .vault-stat-card.stat-spendable.can-afford {
   background: linear-gradient(135deg, #fee2e2 0%, #fef3c7 25%, #dcfce7 50%, #dbeafe 75%, #f3e8ff 100%);
   border-color: transparent;
-  box-shadow: 0 4px 0 #c4b5fd;
-  transform: translateY(-2px);
+  box-shadow: 0 0 0 2px #c4b5fd;
 }
 
 body[data-theme="unicorn"] #vault-modal .vault-stat-card.stat-spendable.can-afford {
-  box-shadow: 0 4px 0 #d7a3ef;
+  box-shadow: 0 0 0 2px #d7a3ef;
 }
 
 body[data-theme] #vault-modal .vault-stat-card.stat-spendable.can-afford .stat-label,
@@ -10754,8 +10758,11 @@ body[data-theme] #vault-modal #vault-trade-open-btn.locked-shop {
   box-shadow: 0 4px 0 #94a3b8;
 }
 
-body[data-theme] #vault-modal #vault-trade-open-btn.locked-shop:hover {
-  background: #cbd5e1;
+/* hover: hover only, so iPads don't keep the hover shade after a tap. */
+@media (hover: hover) {
+  body[data-theme] #vault-modal #vault-trade-open-btn.locked-shop:hover {
+    background: #cbd5e1;
+  }
 }
 
 body[data-theme] #vault-modal .vault-grid-container {

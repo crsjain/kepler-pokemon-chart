@@ -2,6 +2,7 @@ import { state, saveState, isRestDay } from './state.js';
 import { formatLocalDate, getDateOfColumn, getLocalDate } from './date_utils.js';
 import { openPokemonShop } from './shop.js';
 import { isBackdropClick } from './modal_backdrop.js';
+import { COMMON_COST } from './pokemon_data.js';
 
 // DOM elements cache
 let vaultModal = null;
@@ -13,9 +14,9 @@ let statRemaining = null;
 let statNeed = null;
 let statSpendCard = null;
 
-// Cheapest Shop price (Common tier, see getPokemonCost). At or above it the
+// Cheapest Shop price (Common tier, from pokemon_data.js). At or above it the
 // Stars to Spend card turns from calm slate into the pastel prism card.
-const MIN_POKEMON_COST = 5;
+const MIN_POKEMON_COST = COMMON_COST;
 
 // Pagination elements cache
 let currentPage = 0;
@@ -327,7 +328,7 @@ export function renderVault() {
       tradeBtn.classList.remove('ready-to-unlock');
       tradeBtn.classList.add('locked-shop');
       const needed = MIN_POKEMON_COST - remainingCount;
-      tradeBtn.innerHTML = `Go to Pokémon Shop! 🚀 <span class="subtext">(Earn ${needed} more stars to unlock Pokemon! 💪)</span>`;
+      tradeBtn.innerHTML = `Go to Pokémon Shop! 🚀 <span class="subtext">(Earn ${needed} more stars to unlock Pokémon! 💪)</span>`;
     }
   }
 

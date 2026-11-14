@@ -13116,7 +13116,28 @@ async function runSuite() {
           assert(card.classList.contains('can-afford') && document.getElementById('vault-stat-remaining').textContent === '15', '15 to spend: prism with count 15');
           setStars(100, 96);
           assert(!card.classList.contains('can-afford') && need.textContent === '1 more ⭐', 'Spending down to 4 returns to calm with "1 more ⭐"');
+
+          // Feature review panel fixes (2026-11-14): hint contrast, ring not lip, single price source, copy.
+          const ringOnly = (cs) => /^rgb\(\d+, \d+, \d+\) 0px 0px 0px 2px$/.test(cs.boxShadow);
+          assert(getComputedStyle(need).color === 'rgb(71, 85, 105)', `Hint ink is #475569, ~7:1 on the calm card (got ${getComputedStyle(need).color})`);
+          assert(calmBtn.textContent.includes('unlock Pokémon!'), 'Calm button subtext spells "Pokémon"');
+          setStars(0, 0);
+          assert(need.textContent === `${getPokemonCost(25)} more ⭐`, `Vault threshold matches the Shop's Common price, getPokemonCost(25) (got "${need.textContent}")`);
+          setStars(10, 0);
+          let cs = getComputedStyle(card);
+          assert(cs.transform === 'none', `Prism card has no lift: not tappable (got ${cs.transform})`);
+          assert(ringOnly(cs) && cs.boxShadow.startsWith('rgb(196, 181, 253)'), `Prism card has an even lavender ring, no lip (got ${cs.boxShadow})`);
+          document.body.dataset.theme = 'unicorn';
+          cs = getComputedStyle(card);
+          assert(cs.transform === 'none' && ringOnly(cs) && cs.boxShadow.startsWith('rgb(215, 163, 239)'), `Unicorn: prism card has an orchid ring, no lip (got ${cs.boxShadow})`);
+          setStars(3, 0);
+          assert(getComputedStyle(calmBtn).backgroundColor === 'rgb(226, 232, 240)', 'Unicorn: shop button is calm slate below 5');
+          assert(getComputedStyle(need).color === 'rgb(71, 85, 105)', 'Unicorn: hint ink is #475569');
+          document.body.dataset.theme = 'pokemon';
+          setStars(4, 0);
+          assert(!card.classList.contains('can-afford') && need.textContent === '1 more ⭐', 'Threshold is one star below the cheapest Shop price');
         } finally {
+          document.body.dataset.theme = 'pokemon';
           helpers.resetState();
           await sleep(30);
         }

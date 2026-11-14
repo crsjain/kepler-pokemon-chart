@@ -48,10 +48,14 @@ A **zero-required day** is a day where every active activity is excused (all �
 *   **Access**: Click the "⭐ Vault" button next to the Daily Total row in the grid.
 *   **UI**: Renders stars inside a 10-column (5-column on mobile) "Royal Velvet" grid container.
 *   **Pagination**: Displays 40 slots per page (20 on mobile) with "Prev/Next" buttons to scroll through history.
+*   **Stars to Spend card** (updated 2026-11-14, Checkpoints 90–91 plus the feature review panel fixes):
+    *   **Below the cheapest Shop price** (`COMMON_COST`, 5 ⭐, exported from `pokemon_data.js` with `RARE_COST` 10 and `LEGENDARY_COST` 15; `vault.js` imports it, so the threshold can't drift from the Shop): calm slate card (`#f1f5f9` / `#cbd5e1`) with an **"N more ⭐"** hint in `#475569` (~7:1).
+    *   **At or above it** (`.can-afford`): static pastel prism gradient, a bigger number, and an even 2px ring (lavender `#c4b5fd`; orchid `#d7a3ef` in Unicorn). **No candy lip and no lift**, because the card isn't tappable and a lip means "press me" (UX Rule 12). No READY badge (owner decision).
 *   **Spend Shortcut (UX Link)**:
     *   An active button is always present at the bottom to visit the shop.
-    *   If the child has **5 or more remaining stars**: Shows a glowing, pulsing button: **"Go to Pokémon Shop! 🚀 (Ready to Unlock!)"**.
-    *   If they have **less than 5 stars**: Shows the button with text: **"Go to Pokémon Shop! 🚀 (Earn [X] more stars to unlock Pokemon! 💪)"** (where X is `5 - remainingStars`).
+    *   If the child has **5 or more remaining stars**: a yellow button, **"Go to Pokémon Shop! 🚀 (Ready to Unlock!)"**, that plays **one** `shop-ready-pop` (0.9 s) when it appears, then sits still. It used to pulse forever. Off under `prefers-reduced-motion`.
+    *   If they have **less than 5 stars**: a **calm slate** button (`#e2e8f0`, ink `#334155`), still tappable for browsing: **"Go to Pokémon Shop! 🚀 (Earn [X] more stars to unlock Pokémon! 💪)"** (where X is `5 - remainingStars`). Its hover shade applies only on `(hover: hover)` devices, so it doesn't stick after a tap on iPads.
+    *   Covered by TC139.
 
 ### 3.4. Pokémon Partner Unlock Shop (Tiered Star Spending)
 *   **Access**: Accessible at all times by clicking the "+" (Get New Pokémon) card inside the "Choose Your Partner" modal, or via the Star Vault Spend Shortcut.

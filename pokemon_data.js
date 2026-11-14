@@ -1433,11 +1433,17 @@ export const RARE_POKEMON_IDS = new Set([
   821, 847, 885, 935, 957
 ]);
 
+// Shop price tiers, in Vault stars. Single source of truth: the Star Vault's
+// "can afford" threshold reads COMMON_COST, so change prices only here.
+export const COMMON_COST = 5;
+export const RARE_COST = 10;
+export const LEGENDARY_COST = 15;
+
 export function getPokemonCost(id) {
   const numId = Number(id);
-  if (LEGENDARY_POKEMON_IDS.has(numId)) return 15;
-  if (RARE_POKEMON_IDS.has(numId)) return 10;
-  return 5;
+  if (LEGENDARY_POKEMON_IDS.has(numId)) return LEGENDARY_COST;
+  if (RARE_POKEMON_IDS.has(numId)) return RARE_COST;
+  return COMMON_COST;
 }
 
 /**
