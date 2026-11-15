@@ -13341,7 +13341,11 @@ async function runSuite() {
           assert(state.activeDay === (state.weekStartDay + 1) % 7 && state.grid[`${addDays(weekStart, 1)}-${task.id}`] === true, "Grace window: switched to yesterday and ticked it");
           helpers.clearParentGrace({ revertToToday: true });
           await sleep(30);
-          assert(state.activeDay === todayDay, "Ending the grace window returns to today");
+          assert(state.activeDay === todayDay, "Ending the grace window returns activeDay to today");
+          // Owner 2026-11-15: but the screen stays on the day being edited, locked again.
+          assert(helpers.getBigButtonsPreviewCol() === 1 && chart.classList.contains('preview-needs-pin'), "Locking again keeps showing yesterday as a locked preview");
+          assert(cards.querySelector('input[data-day="1"]') && !cards.querySelector('input[data-day="2"]'), "Locking again: the cards still show yesterday");
+          assert(cards.querySelector(`input[data-day="1"][data-task="${task.id}"]`).checked, "Locking again: yesterday's catch is still shown");
 
           // (f) Auto-return after the idle window (1.5 s in test mode, 60 s live).
           document.querySelectorAll('.notif-modal').forEach(el => el.remove());

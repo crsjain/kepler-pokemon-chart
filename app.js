@@ -264,16 +264,29 @@ function clearParentGrace({ revertToToday = true, notify = false } = {}) {
   if (revertToToday) {
     const todayRealDay = getLocalDate(state?.timezoneOffset).getDay();
     if (state.activeDay !== todayRealDay) {
+      // Big Buttons (owner 2026-11-15): keep showing the day the parent was
+      // editing, locked again, as a runtime preview. activeDay still returns
+      // to today, so the next catch lands on today and nothing stale syncs.
+      let keepCol = -1;
+      if (state.chartStyle === 'big-buttons' && !wasLastWeekEdit && !isViewingPastWeek()) {
+        keepCol = getWeekColumnStates(state, currentViewingWeekStartDate).findIndex(c => c.state.startsWith('ACTIVE'));
+      }
       state.activeDay = todayRealDay;
       saveState();
+      if (keepCol !== -1) {
+        bigButtonsPreviewCol = keepCol;
+        touchBigButtonsPreview();
+      }
       updateActiveColumnUI();
     }
   }
 
   if (notify) {
+    const stayed = bigButtonsPreviewCol !== null;
     showCustomNotification(
       "Edit Window Closed 🔒",
-      wasLastWeekEdit ? "Parent edit window ended. Back to this week!" : "Parent edit window ended. Back to Today!"
+      wasLastWeekEdit ? "Parent edit window ended. Back to this week!"
+        : (stayed ? "Parent edit window ended. This day is locked again." : "Parent edit window ended. Back to Today!")
     );
   }
 }

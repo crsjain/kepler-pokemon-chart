@@ -115,6 +115,7 @@ When `state.chartStyle === 'big-buttons'` and neither Exception Mode nor Fix Las
   - The previewed pill gets the grey `#94a3b8` ring. Today keeps its yellow state (Rule 13.6) and one tap on it returns. Tapping the active pill also returns.
   - **Back to the active day automatically:** after 60 s without a tap in the Big Buttons view (1.5 s in test mode); when the tablet wakes (`visibilitychange`); on profile switch, week navigation, entering Exception Mode / Fix last week, ending the grace window, and as soon as the previewed day becomes the active day.
   - **During a parent grace window**, a ball tap on a previewed day switches and ticks without "Switch Day?", because Big Buttons shows only one day at a time.
+  - **When the grace window ends** (timer or Lock Now), `state.activeDay` goes back to today, but the screen keeps showing the day being edited as a locked preview (padlocks back on, the 60 s auto-return applies). The timer notice reads "This day is locked again." (owner 2026-11-15). Back to Today still exits to today, and the Standard grid still returns to today.
 - Other pill taps delegate to the same header-click handler used by `.day-header[data-day]`:
   - **Today (`SELECTABLE_TODAY`)**: Switches `state.activeDay` immediately with zero modal.
   - **Past Day (`SELECTABLE_PAST`)**: *Standard grid only since 2026-11-15.* If `requiresParentApproval(col.dateStr)` is true (`state.lockPastDays`), prompts for the **Parent PIN** (`withParentApproval`) and then switches straight to that day; otherwise prompts `"Switch Day? 📅"`.
