@@ -2872,6 +2872,9 @@ function handleCheckboxChange(e) {
         saveState();
         updateActiveColumnUI();
       }
+      // Big Buttons (owner 2026-11-15): the PIN only unlocks the day. The cards
+      // re-render unlocked and the parent taps the ball again to catch it.
+      if (fromSimplified) return;
       // Re-query: updateActiveColumnUI() may have re-rendered the input.
       const scope = fromSimplified ? document.getElementById('simplified-cards-list') : document;
       const input = (scope && scope.querySelector(`input[data-day="${day}"][data-task="${taskId}"]`))

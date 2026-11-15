@@ -13312,7 +13312,7 @@ async function runSuite() {
           assert(helpers.getBigButtonsPreviewCol() === null && !chart.classList.contains('is-preview-day'), "Today pill clears the preview");
           assert(cards.querySelector('input[data-day="2"]'), "Cards are back on today");
 
-          // (d) Past ball → PIN → switches to that day and ticks it.
+          // (d) Past ball → PIN → unlocks that day; a second tap catches it (owner 2026-11-15).
           pill(0).click();
           await sleep(30);
           cards.querySelector(`input[data-day="0"][data-task="${task.id}"]`).click();
@@ -13322,8 +13322,14 @@ async function runSuite() {
           document.getElementById('password-submit-btn').click();
           await sleep(60);
           assert(state.activeDay === state.weekStartDay % 7, "After the PIN, activeDay is the previewed past day");
-          assert(state.grid[`${weekStart}-${task.id}`] === true, "After the PIN, the ball is ticked");
-          assert(helpers.getBigButtonsPreviewCol() === null, "The preview ends once that day is the active day");
+          assert(!state.grid[`${weekStart}-${task.id}`], "After the PIN, the ball is NOT ticked yet (unlock only)");
+          assert(helpers.getBigButtonsPreviewCol() === null && !chart.classList.contains('is-preview-day'), "After the PIN, the day shows unlocked (no preview, no padlock)");
+          const unlockedInput = cards.querySelector(`input[data-day="0"][data-task="${task.id}"]`);
+          assert(unlockedInput && !unlockedInput.checked && !unlockedInput.disabled, "The unlocked ball is tappable and still empty");
+          unlockedInput.click();
+          await sleep(40);
+          assert(pwModal.classList.contains('hidden') && confirmModal.classList.contains('hidden'), "Second tap: no PIN or confirm");
+          assert(state.grid[`${weekStart}-${task.id}`] === true, "Second tap catches the ball");
 
           // (e) During the grace window another past day ticks with no 'Switch Day?'.
           document.querySelectorAll('.notif-modal').forEach(el => el.remove());
