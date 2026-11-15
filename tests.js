@@ -13320,7 +13320,10 @@ async function runSuite() {
           const bannerWithBtn = banner.getBoundingClientRect().height;
           const btnRect = backBtn.getBoundingClientRect();
           const titleRect = document.getElementById('simplified-day-title').getBoundingClientRect();
-          assert(Math.abs(btnRect.top + btnRect.height / 2 - (titleRect.top + titleRect.height / 2)) < 6 && btnRect.left > titleRect.right, "Back to Today sits on the title's row, to its right");
+          assert(btnRect.left > titleRect.right && Math.abs(btnRect.top + btnRect.height / 2 - (titleRect.top + titleRect.height / 2)) < 6, "Back to Today sits on the title's row, to its right");
+          const bcs = getComputedStyle(backBtn);
+          assert(bcs.borderTopWidth === '0px' && bcs.borderTopLeftRadius === '999px' && bcs.fontFamily.includes('Fredoka'), `Back to Today uses the app's pill skin (border ${bcs.borderTopWidth}, radius ${bcs.borderTopLeftRadius}, font ${bcs.fontFamily})`);
+          assert(backBtn.querySelector('.btt-bolt') && getComputedStyle(backBtn.querySelector('.btt-bolt')).filter.includes('drop-shadow'), "The ⚡ gets a dark outline so it shows on yellow");
           pill(2).click();
           await sleep(30);
           assert(helpers.getBigButtonsPreviewCol() === null && !chart.classList.contains('is-preview-day'), "Today pill clears the preview");

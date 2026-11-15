@@ -2205,11 +2205,11 @@ function updateBackToTodayButton(colStates = getWeekColumnStates(state, currentV
   // keeps the one under the dates.
   const inBigButtonsView = state.chartStyle === 'big-buttons' && !isExceptionMode && !isLastWeekEditActive();
   const dayName = show ? ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][todayCol.dayOfWeek] : '';
-  if (show) backToTodayBtn.textContent = `⚡ Back to Today (${dayName})`;
+  if (show) backToTodayBtn.innerHTML = `<span class="btt-bolt" aria-hidden="true">⚡</span> Back to Today (${dayName})`;
   backToTodayBtn.classList.toggle('hidden', !show || inBigButtonsView);
   if (simplifiedBtn) {
     if (show) {
-      simplifiedBtn.innerHTML = `⚡ <span class="btt-long">Back to Today (${dayName})</span><span class="btt-short">Today</span>`;
+      simplifiedBtn.innerHTML = `<span class="btt-bolt" aria-hidden="true">⚡</span> <span class="btt-long">Back to Today (${dayName})</span><span class="btt-short">Today</span>`;
       simplifiedBtn.setAttribute('aria-label', `Back to today (${dayName})`);
     }
     simplifiedBtn.classList.toggle('hidden', !show || !inBigButtonsView);
