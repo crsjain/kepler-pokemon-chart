@@ -335,7 +335,7 @@ Update the colour-pinned tests in §10.4 deliberately, including TC128's Vault a
 
 ## 11. Background sparkle easter egg (owner, 2026-11-15)
 
-- Every **45–90 s** (random), 1–3 four-point white/gold sparkles twinkle (~1.6 s each, staggered 260 ms) in the open pink sky around the panels. **Purely decorative**: no sound, no taps (`pointer-events: none`), `aria-hidden`, nothing saved.
+- Every **20–45 s** (random; was 45–90 s, owner changed it the same day), 1–3 four-point white/gold sparkles twinkle (~1.6 s each, staggered 260 ms) in the open pink sky around the panels. **Purely decorative**: no sound, no taps (`pointer-events: none`), `aria-hidden`, nothing saved.
 - Placement: random points are kept only if the centre and four probes 14px beyond the sparkle's edge all land on the sky (`html`, `body`, `.app-container`, `.layout-container`, `.game-header`), so a sparkle never covers a panel, the title or a button. No free spot (e.g. a phone with no gutters) means no sparkle.
 - Skipped when: Pokémon theme, `prefers-reduced-motion`, tab hidden / screen off, any open `.modal`, Exception Mode / Fix last week, idle mode, boot skeleton. Switching to Pokémon hides any sparkle in flight.
 - Code: `sparkles.js` (`initBackgroundSparkles` from both boot paths), CSS `.bg-sparkle*` in the `skin-unicorn-checkbox` section. Test: TC144.

@@ -9406,7 +9406,7 @@ body[data-theme="unicorn"] .checkbox-cell.bonus-cell:not(.superseded-cell) .poke
 /* 3. Rest 💤 and 6. Not-on-the-plan dash are unchanged across themes. */
 
 /* ---- Background sparkle easter egg (sparkles.js, owner 2026-11-15) ---------
-   Every 45–90 s, 1–3 four-point sparkles twinkle in the open pink sky (never over
+   Every 20–45 s, 1–3 four-point sparkles twinkle in the open pink sky (never over
    panels). Decorative only: pointer-events none, hidden for Pokémon / reduced motion. */
 .bg-sparkle-layer {
   position: fixed;

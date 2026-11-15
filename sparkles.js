@@ -1,10 +1,10 @@
-// Princess-theme easter egg: every 45–90 s, one to three sparkles twinkle in the open pink
-// background around the panels (owner, 2026-11-15). Purely decorative: no sound, no taps,
+// Princess-theme easter egg: every 20–45 s, one to three sparkles twinkle in the open pink
+// background around the panels (owner, 2026-11-15; 45–90 s → 20–45 s same day). Purely decorative: no sound, no taps,
 // nothing saved. Skipped for the Pokémon theme, reduced motion, a hidden tab, open modals,
 // Exception Mode / Fix last week, idle mode and the boot skeleton.
 
-export const SPARKLE_MIN_MS = 45000;
-export const SPARKLE_MAX_MS = 90000;
+export const SPARKLE_MIN_MS = 20000;
+export const SPARKLE_MAX_MS = 45000;
 const SPARKLE_LIFE_MS = 1600;
 const SPARKLE_MARGIN = 14; // keep this far from any panel edge
 

@@ -13440,7 +13440,7 @@ async function runSuite() {
 
       if (__shouldRun('144')) {
         console.log("Running Test Case 144: Princess background sparkles — only in the open pink sky, only when nothing else is going on...");
-        // Owner, 2026-11-15: decorative easter egg, every 45–90 s, Unicorn theme only, never over panels.
+        // Owner, 2026-11-15: decorative easter egg, every 20–45 s, Unicorn theme only, never over panels.
         const prevTheme = document.body.dataset.theme;
         const helpers = window.__test_helpers__;
         const openModals = [...document.querySelectorAll('.modal:not(.hidden)')]; // e.g. a leftover level-up popup
@@ -13449,6 +13449,8 @@ async function runSuite() {
           document.body.dataset.theme = 'pokemon';
           assert(!helpers.canSparkle() && helpers.spawnBackgroundSparkles(3).length === 0, "Pokémon theme: no sparkles");
           document.body.dataset.theme = 'unicorn';
+          const sp = await import('./sparkles.js');
+          assert(sp.SPARKLE_MIN_MS === 20000 && sp.SPARKLE_MAX_MS === 45000, `sparkles every 20–45 s (got ${sp.SPARKLE_MIN_MS}–${sp.SPARKLE_MAX_MS} ms)`);
           assert(helpers.canSparkle(), `Unicorn theme with nothing open: sparkles allowed (hidden=${document.hidden}, booting=${document.body.classList.contains('app-booting')}, open modals=${[...document.querySelectorAll('.modal:not(.hidden)')].map(m => m.id || m.className).join('|')}, busy=${!!document.querySelector('.layout-container.exception-mode, .layout-container.last-week-edit')})`);
           // The headless viewport is small (≈780×437) with little open sky, and spots are random: retry.
           let made = [];
