@@ -9555,6 +9555,33 @@ body[data-theme] .trainer-info {
 
 body[data-theme] .weekly-badge-card {
   padding: 14px 16px;
+  /* Header pinned to the top like every other panel (owner 2026-11-15, option C);
+     the badge + status centre in whatever height is left (auto margins below). */
+  justify-content: flex-start;
+}
+
+/* When the card is taller than its content (stretched next to the chart or the
+   partner card) the badge grows from 60px up to 88px; images scale with it. */
+body[data-theme] .weekly-badge-card .badge-slot {
+  flex: 1 1 60px;
+  width: auto;
+  height: auto;
+  min-height: 60px;
+  max-height: 88px;
+  aspect-ratio: 1;
+  margin-top: auto;
+}
+
+body[data-theme] .weekly-badge-card .badge-status {
+  margin-bottom: auto;
+}
+
+/* Stacked left column (landscape): the partner card hugs its content and the
+   badge card takes any extra height, so no panel shows dead space at the bottom. */
+@media (min-width: 1024px) and (orientation: landscape) {
+  body[data-theme] .trainer-card {
+    grid-template-rows: auto 1fr;
+  }
 }
 
 body[data-theme] .mega-milestone-card {
@@ -9619,6 +9646,13 @@ body[data-theme] .trainer-card .xp-label {
   font-weight: 800;
   font-size: 0.75rem;
   color: var(--sk-muted);
+  /* "XP" left, "85 / 100" grouped right (not four tokens spread across the row). */
+  justify-content: flex-start;
+  gap: 3px;
+}
+
+body[data-theme] .trainer-card .xp-label #current-xp {
+  margin-left: auto;
 }
 
 body[data-theme] .trainer-card .xp-bar-outer {

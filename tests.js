@@ -13412,6 +13412,32 @@ async function runSuite() {
         }
       }
 
+      if (__shouldRun('143')) {
+        console.log("Running Test Case 143: Left cards stay top-aligned when stretched (partner hugs, badge takes the extra)...");
+        // Owner, 2026-11-15 (option C): next to a taller chart the partner card showed dead space and
+        // the badge card's header floated mid-card. Header pinned top; badge grows 60→88px and centres.
+        for (const theme of ['pokemon', 'unicorn']) {
+          document.body.dataset.theme = theme;
+          const card = document.querySelector('.weekly-badge-card');
+          const slot = document.getElementById('weekly-badge-slot');
+          const status = document.getElementById('badge-status');
+          assert(getComputedStyle(card).justifyContent === 'flex-start', `${theme}: badge card header sits at the top (justify-content flex-start)`);
+          const prevH = card.style.height;
+          card.style.height = '420px';
+          const cr = card.getBoundingClientRect(), hr = card.querySelector('.weekly-badge-header').getBoundingClientRect();
+          const sr = slot.getBoundingClientRect(), tr = status.getBoundingClientRect();
+          assert(hr.top - cr.top < 24, `${theme}: header stays within the top padding when the card is tall (gap ${Math.round(hr.top - cr.top)}px)`);
+          assert(Math.abs(sr.height - 88) < 1 && Math.abs(sr.width - sr.height) < 1, `${theme}: badge grows to an 88px circle when there is room (got ${sr.width}×${sr.height})`);
+          const above = sr.top - hr.bottom, below = cr.bottom - tr.bottom;
+          assert(above > 40 && below > 40, `${theme}: badge + status centre in the leftover space (above ${Math.round(above)}, below ${Math.round(below)})`);
+          card.style.height = prevH;
+          assert(slot.getBoundingClientRect().height >= 59.5, `${theme}: badge never shrinks below 60px`);
+          const xp = document.getElementById('current-xp');
+          assert(parseFloat(getComputedStyle(xp).marginLeft) > 0 || xp.getBoundingClientRect().left > document.querySelector('.trainer-card .xp-label').getBoundingClientRect().left + 40, `${theme}: "85 / 100" is grouped on the right of the XP row`);
+        }
+        document.body.dataset.theme = 'pokemon';
+      }
+
       if (__onlyFilter && __ranTests.size === 0) {
         throw new Error(`&only=${__params.get('only')} matched no test case`);
       }
