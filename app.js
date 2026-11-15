@@ -2176,24 +2176,35 @@ function updateActiveColumnUI() {
     });
   }
 
-  const backToTodayBtn = document.getElementById('back-to-today-btn');
-  if (backToTodayBtn) {
-    const isViewingPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
-    const hasActiveNonToday = colStates.some(c => c.state === 'ACTIVE_PAST' || c.state === 'ACTIVE_FUTURE');
-    // Only when today is actually in this grid. Once the week has ended there is
-    // no today column, and the pill used to jump to the same weekday of the ended
-    // week (docs/prd_week_over_start_new_week.md §1, §4.3).
-    const todayCol = colStates.find(c => c.state === 'SELECTABLE_TODAY');
-    if (!isViewingPastWeek && hasActiveNonToday && todayCol && state.activeDay !== -1) {
-      const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      backToTodayBtn.textContent = `⚡ Back to Today (${daysOfWeek[todayCol.dayOfWeek]})`;
-      backToTodayBtn.classList.remove('hidden');
-    } else {
-      backToTodayBtn.classList.add('hidden');
-    }
-  }
+  updateBackToTodayButton(colStates);
 
   renderSimplifiedView();
+}
+
+/**
+ * Shows "⚡ Back to Today (Day)" under the week dates whenever the chart is on a
+ * day of the current week other than today: the active day in either chart
+ * style, or a Big Buttons day preview (owner 2026-11-15). Never in past weeks
+ * or once the week has ended (no today column).
+ */
+function updateBackToTodayButton(colStates = getWeekColumnStates(state, currentViewingWeekStartDate)) {
+  const backToTodayBtn = document.getElementById('back-to-today-btn');
+  if (!backToTodayBtn) return;
+  const isViewingPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
+  const hasActiveNonToday = colStates.some(c => c.state === 'ACTIVE_PAST' || c.state === 'ACTIVE_FUTURE');
+  const isPreviewing = state.chartStyle === 'big-buttons' && bigButtonsPreviewCol !== null
+    && !isExceptionMode && !isLastWeekEditActive();
+  // Only when today is actually in this grid. Once the week has ended there is
+  // no today column, and the pill used to jump to the same weekday of the ended
+  // week (docs/prd_week_over_start_new_week.md §1, §4.3).
+  const todayCol = colStates.find(c => c.state === 'SELECTABLE_TODAY' || (isPreviewing && c.state === 'ACTIVE_TODAY'));
+  if (!isViewingPastWeek && (hasActiveNonToday || isPreviewing) && todayCol && state.activeDay !== -1) {
+    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    backToTodayBtn.textContent = `⚡ Back to Today (${daysOfWeek[todayCol.dayOfWeek]})`;
+    backToTodayBtn.classList.remove('hidden');
+  } else {
+    backToTodayBtn.classList.add('hidden');
+  }
 }
 
 function renderSimplifiedView() {
@@ -2243,6 +2254,7 @@ function renderSimplifiedView() {
     if (previewKind) chartContainerEl.dataset.preview = previewKind;
     else delete chartContainerEl.dataset.preview;
   }
+  updateBackToTodayButton(colStates);
 
   // Week over and no day picked yet: no pill is focused and one calm card asks
   // the child to pick a day or start the new week (prd_week_over_start_new_week.md §4.5).
@@ -3759,6 +3771,8 @@ function bindDayHeaderEvents() {
   const backToTodayBtn = document.getElementById('back-to-today-btn');
   if (backToTodayBtn) {
     backToTodayBtn.addEventListener('click', () => {
+      // A Big Buttons day preview ends here too (owner 2026-11-15).
+      clearBigButtonsPreview();
       // Land on today's column, not just today's weekday number: once the week
       // has ended that number points at the same weekday of the ended week.
       const todayCol = getWeekColumnStates(state, currentViewingWeekStartDate)

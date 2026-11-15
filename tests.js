@@ -13317,10 +13317,22 @@ async function runSuite() {
           assert(getComputedStyle(futCell, '::before').content === 'none', "Future preview: no padlock");
 
           // (c) Today's pill returns to the active day.
+          const backBtn = document.getElementById('back-to-today-btn');
+          assert(!backBtn.classList.contains('hidden') && backBtn.textContent.includes('Back to Today'), "Future preview: ⚡ Back to Today shows under the dates");
           pill(2).click();
           await sleep(30);
           assert(helpers.getBigButtonsPreviewCol() === null && !chart.classList.contains('is-preview-day'), "Today pill clears the preview");
           assert(cards.querySelector('input[data-day="2"]'), "Cards are back on today");
+          assert(backBtn.classList.contains('hidden'), "On today, Back to Today is hidden");
+
+          // (c2) ⚡ Back to Today ends a past-day preview (owner 2026-11-15).
+          pill(0).click();
+          await sleep(30);
+          assert(!backBtn.classList.contains('hidden'), "Past preview: ⚡ Back to Today shows");
+          backBtn.click();
+          await sleep(30);
+          assert(helpers.getBigButtonsPreviewCol() === null && state.activeDay === todayDay && cards.querySelector('input[data-day="2"]'), "Back to Today returns the cards to today");
+          assert(backBtn.classList.contains('hidden'), "Back to Today hides itself once on today");
 
           // (d) Past ball → PIN → unlocks that day; a second tap catches it (owner 2026-11-15).
           pill(0).click();
