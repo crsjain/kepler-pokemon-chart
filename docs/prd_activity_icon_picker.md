@@ -185,3 +185,45 @@ No `alert()` / `confirm()` (UX §6.2).
   - Transparent scrollbar track, a press state on icons, and the focus outline kept separate from the current-icon ring.
   - Focus goes to the current icon on open, and the field scrolls into view on focus (iPad keyboard).
 - **Declined (owner: keep the UX clean, less clutter):** an "Also used by…" duplicate-icon hint, and keyboard helper text under Any emoji.
+
+## 10. v2 — Emoji search replaces "Any emoji" (proposed 2026-11-15)
+
+**Ask (owner):** "Instead of 'any emoji'… swap in a standard emoji search function and let people choose from possible options." **Owner decisions:** search only (no category tabs), no "recently used" row.
+
+### 10.1 Layout changes
+
+- The **footer** ("Any emoji" field, Use button, warning message) is **removed**.
+- A **search field** sits at the top of the popover, under the header: `input[type=search].pixel-input.adm-emoji-search`, 44px, magnifier icon, placeholder "Search emoji", `aria-label="Search emoji"`, `maxlength="40"`. It stays fixed; only the grid scrolls.
+- **Empty search** → the curated groups as today (with "This activity" first for an off-list icon).
+- **Typing** → the groups are replaced by one "Results" group: every match from the full set, in Unicode order, with curated matches first. Same 48px cells, same current-icon highlight, same tap-to-choose.
+- **No matches** → one quiet line in `--adm-ink-2` ("No matches"). It's not an error, so no warning tone.
+- On open, focus still goes to the current icon (not the search field), so the iPad keyboard doesn't pop up until the parent taps Search.
+
+### 10.2 Matching
+
+- Case-insensitive. Each word typed must be the **start of a word** in the emoji's name or keywords ("vio" → 🎻; "dog" → 🐶 🐕 🦮 🐩 …). Several words must all match ("red heart").
+- **Pasting or typing an emoji** (`parseSingleEmoji` passes) shows that emoji as the single result, even if it isn't in the data. That keeps "paste any emoji" working without a separate field.
+- Anything else that matches nothing (e.g. 福) → "No matches".
+
+### 10.3 Data: `emoji_data.js` (new ES module)
+
+- Built by `tools/build_emoji_data.js` from **emojibase-data 16.0.3** `en/data.json` (MIT; attribution in the file header). The generated module is committed; the source JSON is not, and there's still no `package.json`.
+- **Kept:** Emoji ≤ **14.0** (the 🪥 / iPadOS 15.4 floor, so search never offers blank boxes); no skin-tone variants; no components (hair or skin swatches, regional indicator letters). That's about **1,875 emoji**, each `[emoji, name, keywords]`: **~118 KB raw, ~37 KB gzipped**.
+- **Small kid-activity keyword list** added on top, so common chart words find the curated icons. For example: "chinese" / "mandarin" → 💮 🀄 🉐 🧧; "homework" → 📚 ✏️ 📝; "practice" → 🎹 🎻; "chores" → 🧹 🧺 🧼; "brush teeth" → 🪥.
+- **Loaded lazily** with `import('./emoji_data.js')` the first time the picker opens, so the kid screens never load it. It goes in `ASSETS_TO_CACHE` and the importmap (TC90), so it works offline after the first visit. Until it has loaded, search covers only the curated icons.
+
+### 10.4 Removed
+
+- The "Any emoji" footer and its three error messages ("Paste or type an emoji first.", "Only emoji work as icons.", "Use just one emoji."). `parseSingleEmoji` stays, to recognise a pasted emoji.
+
+### 10.5 Test plan changes (TC140)
+
+- Replace step 4–5 (Any emoji) with:
+  - search "violin" → 🎻 in Results; tap → icon set, popover closed, draft unsaved;
+  - search "red heart" → ❤️ (multi-word AND);
+  - search "chinese" → includes 🀄 and 🉐 (keyword list);
+  - paste "🐉" → exactly one result, 🐉;
+  - search "福" and "zzqx" → "No matches";
+  - search "shaking" → no 🫨 (Emoji 15 is excluded);
+  - clearing the search restores the 7 curated groups.
+- TC90: `emoji_data.js` is cached and mapped. Everything else in TC140 is unchanged.
