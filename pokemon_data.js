@@ -44,7 +44,7 @@ export const POKEMON_MAP = {
   252: "Treecko", 253: "Grovyle", 254: "Sceptile",
   255: "Torchic", 256: "Combusken", 257: "Blaziken",
   258: "Mudkip", 259: "Marshtomp", 260: "Swampert",
-  280: "Ralts",
+  280: "Ralts", 281: "Kirlia",
   282: "Gardevoir", 303: "Mawile",
   328: "Trapinch", 329: "Vibrava",
   330: "Flygon",
@@ -735,12 +735,15 @@ export const EVOLUTIONS = {
     ]
   },
   '280': {
+    // Ralts → Kirlia (Lv 5) → choice of Gardevoir / Gallade (Lv 10) → Mega (Lv 15).
+    // Kirlia added 2026-11-15 (owner; nobody owned a Gardevoir or Gallade yet).
     stages: [
-      { level: 1, id: '280', name: 'Ralts' }
+      { level: 1, id: '280', name: 'Ralts' },
+      { level: 5, id: '281', name: 'Kirlia' }
     ],
     options: [
-      { id: '282', name: 'Gardevoir', level: 5, next: [{ level: 10, id: '10051', name: 'Mega Gardevoir' }] },
-      { id: '475', name: 'Gallade', level: 5, next: [{ level: 10, id: '10068', name: 'Mega Gallade' }] }
+      { id: '282', name: 'Gardevoir', level: 10, next: [{ level: 15, id: '10051', name: 'Mega Gardevoir' }] },
+      { id: '475', name: 'Gallade', level: 10, next: [{ level: 15, id: '10068', name: 'Mega Gallade' }] }
     ]
   },
   '303': {
@@ -1126,7 +1129,7 @@ export const EVOLVED_POKEMON_IDS = new Set([
   253, 254,   // Grovyle, Sceptile
   256, 257,   // Combusken, Blaziken
   259, 260,   // Marshtomp, Swampert
-  282,        // Gardevoir
+  281, 282,   // Kirlia, Gardevoir
   329, 330,   // Vibrava, Flygon
   375, 376,   // Metang, Metagross
   388, 389,   // Grotle, Torterra
@@ -1283,6 +1286,7 @@ export const POKEMON_TYPES = {
   255: "Fire", 256: "Fire", 257: "Fire",
   258: "Water", 259: "Water", 260: "Water",
   280: "Psychic",
+  281: "Psychic",
   282: "Psychic",
   303: "Steel",
   328: "Ground", 329: "Ground",

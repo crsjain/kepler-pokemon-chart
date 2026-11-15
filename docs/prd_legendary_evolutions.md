@@ -73,7 +73,8 @@ Zygarde has more forms than any other legendary, so it evolves every 5 levels in
 | Lucario | Lv 10 choice: Mega Lucario / Mega Lucario Z |
 | Heracross, Mawile | Mega at Lv 5 (was Lv 10; moved to match the rule, owner 2026-11-07) |
 | Absol | Lv 5 choice: Mega Absol / Mega Absol Z (was Lv 10) |
-| Gardevoir, Gallade, Scizor, Slowbro | chosen at Lv 5 → their Mega at Lv 10 (Slowking, Kleavor have none) |
+| Scizor, Slowbro | chosen at Lv 5 → their Mega at Lv 10 (Slowking, Kleavor have none) |
+| Ralts | Kirlia at Lv 5 → Lv 10 choice of Gardevoir / Gallade → their Mega at Lv 15. Kirlia added 2026-11-15 (owner; nobody owned a Gardevoir or Gallade, so no partner re-staged). An unchosen Ralts saved as `280` at Lv 10+ is moved to Kirlia by `runStateDiagnostics` on load, then gets the choice. |
 | Lycanroc, Toxtricity | Lv 5 choice: Midday / Midnight / Dusk; Amped / Low Key |
 | Zeraora | Mega Zeraora at Lv 10 |
 | Deoxys, Ogerpon | Lv 10 choice of Forme / Mask |

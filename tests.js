@@ -13000,30 +13000,58 @@ async function runSuite() {
           assert(state.partnersData['4_t138'].stageId === '10034' && name() === 'Mega Charizard X', 'Picking X makes Mega Charizard X');
           closeNotifs();
 
-          // (D) A chosen form keeps evolving: Gardevoir → Mega Gardevoir at Lv 10, and back at Lv 9.
-          setPartner('280', 9, '282', 95);
+          // (D) Ralts → Kirlia at Lv 5 (added 2026-11-15); a chosen form keeps evolving:
+          //     Gardevoir → Mega Gardevoir at Lv 15, and back at Lv 14.
+          const ralts = PD.EVOLUTIONS['280'];
+          assert(JSON.stringify(ralts.stages.map(s => [s.level, s.id])) === '[[1,"280"],[5,"281"]]', 'Ralts line: Ralts Lv 1 → Kirlia Lv 5');
+          assert(ralts.options.every(o => o.level === 10 && o.next[0].level === 15), 'Gardevoir / Gallade chosen at Lv 10, their Megas at Lv 15');
+          assert(PD.getPokemonName(281) === 'Kirlia' && !PD.isBuyablePokemonId(281) && PD.isBuyablePokemonId(280), 'Kirlia is named and not sold; Ralts still is');
+          modal.classList.add('hidden');
+          setPartner('280', 4, '280', 95);
           helpers.renderState(false);
           await sleep(30);
-          assert(evoText().includes('Mega Gardevoir') && evoText().includes('LV 10'), `Gardevoir's helper names Mega Gardevoir at LV 10 (got "${evoText()}")`);
           helpers.addXp(5);
           helpers.renderState(false);
           await sleep(100);
-          assert(state.partnersData['280_t138'].stageId === '10051' && name() === 'Mega Gardevoir', 'Gardevoir evolves into Mega Gardevoir at Lv 10');
+          assert(state.partnersData['280_t138'].level === 5 && state.partnersData['280_t138'].stageId === '281' && name() === 'Kirlia', 'Ralts evolves into Kirlia at Lv 5');
+          assert(modal.classList.contains('hidden'), 'No Gardevoir/Gallade choice yet at Lv 5');
+          closeNotifs();
+          setPartner('280', 9, '281', 95);
+          helpers.renderState(false);
+          await sleep(30);
+          helpers.addXp(5);
+          helpers.renderState(false);
+          await sleep(100);
+          assert(!modal.classList.contains('hidden'), 'Kirlia reaching Lv 10 opens the Gardevoir / Gallade choice');
+          assert(JSON.stringify([...modal.querySelectorAll('.eevee-option-name')].map(e => e.textContent)) === '["Gardevoir","Gallade"]', 'Choices are Gardevoir / Gallade');
+          modal.classList.add('hidden');
+          closeNotifs();
+          setPartner('280', 14, '282', 95);
+          helpers.renderState(false);
+          await sleep(30);
+          assert(evoText().includes('Mega Gardevoir') && evoText().includes('LV 15'), `Gardevoir's helper names Mega Gardevoir at LV 15 (got "${evoText()}")`);
+          helpers.addXp(5);
+          helpers.renderState(false);
+          await sleep(100);
+          assert(state.partnersData['280_t138'].stageId === '10051' && name() === 'Mega Gardevoir', 'Gardevoir evolves into Mega Gardevoir at Lv 15');
           closeNotifs();
           helpers.addXp(-5, { quiet: true });
           helpers.renderState(false);
           await sleep(50);
-          assert(state.partnersData['280_t138'].level === 9 && state.partnersData['280_t138'].stageId === '282', 'Dropping to Lv 9 goes back to Gardevoir, not Ralts');
+          assert(state.partnersData['280_t138'].level === 14 && state.partnersData['280_t138'].stageId === '282', 'Dropping to Lv 14 goes back to Gardevoir, not Kirlia');
 
-          // (E) A Lv 12 Ralts picking Gallade lands straight on Mega Gallade.
+          // (E) An old Lv 17 Ralts that never chose (saved as '280') is moved to Kirlia by
+          //     diagnostics on load, then picking Gallade lands straight on Mega Gallade.
           modal.classList.add('hidden');
-          setPartner('280', 12, '280');
+          setPartner('280', 17, '280');
+          runStateDiagnostics();
+          assert(state.partnersData['280_t138'].stageId === '281', `Diagnostics move an unchosen Lv 17 Ralts to Kirlia (got ${state.partnersData['280_t138'].stageId})`);
           helpers.renderState(false);
           await sleep(50);
-          assert(!modal.classList.contains('hidden'), 'Lv 12 Ralts opens the choice');
+          assert(!modal.classList.contains('hidden'), 'Lv 17 Kirlia opens the choice');
           [...modal.querySelectorAll('.eevee-option')].find(o => o.textContent.includes('Gallade')).click();
           await sleep(100);
-          assert(state.partnersData['280_t138'].stageId === '10068' && name() === 'Mega Gallade', 'A Lv 12 Ralts that picks Gallade becomes Mega Gallade');
+          assert(state.partnersData['280_t138'].stageId === '10068' && name() === 'Mega Gallade', 'A Lv 17 Ralts that picks Gallade becomes Mega Gallade');
           closeNotifs();
 
           // (F) Necrozma: choose Dawn Wings at Lv 5, Ultra Necrozma at Lv 10.
