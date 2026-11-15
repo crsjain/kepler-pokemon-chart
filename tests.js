@@ -3915,7 +3915,7 @@ async function runSuite() {
 
         state.starVault.earnedDates.push("2026-07-04", "2026-07-05"); // 5 stars
         helpers.renderState(false);
-        assert(tradeBtn && tradeBtn.textContent.includes('(Ready to Unlock!)'), 'Vault shortcut button should show Ready to Unlock at 5 stars');
+        assert(tradeBtn && tradeBtn.textContent.includes('(Ready for a Normal Pokémon!)'), 'Vault shortcut button should say Ready for a Normal Pokémon at 5 stars');
 
         // 2. Open Shop and verify pricing tiers on cards
         helpers.openPokemonShop();
@@ -13101,15 +13101,31 @@ async function runSuite() {
           // Exactly 5 (after trading): prism
           setStars(90, 85);
           assert(card.classList.contains('can-afford'), '5 to spend: card turns prism');
-          assert(need.classList.contains('hidden'), '5 to spend: hint hidden');
+          assert(!need.classList.contains('hidden') && need.textContent === '5 more ⭐ for Rare', `5 to spend: next-goal line reads "5 more ⭐ for Rare" (got "${need.textContent}")`);
           assert(getComputedStyle(card).backgroundImage.includes('linear-gradient'), '5 to spend: pastel prism gradient applied');
 
           // The shop button pops ONCE when ready (no infinite pulse)
           const shopBtn = document.getElementById('vault-trade-open-btn');
           const shopCs = getComputedStyle(shopBtn);
           assert(shopBtn.classList.contains('ready-to-unlock'), '5 to spend: shop button is ready-to-unlock');
+          assert(shopBtn.textContent.includes('(Ready for a Normal Pokémon!)'), `5 to spend: button names the Normal tier (got "${shopBtn.textContent}")`);
           assert(getComputedStyle(shopBtn).backgroundColor !== 'rgb(226, 232, 240)', '5 to spend: shop button leaves the calm slate');
           assert(shopCs.animationName === 'shop-ready-pop' && shopCs.animationIterationCount === '1', `Ready shop button plays a single pop (got ${shopCs.animationName} × ${shopCs.animationIterationCount})`);
+
+          // Option 3 (owner, 2026-11-15): next-goal line + best tier on the button, at each tier edge.
+          const tierCases = [
+            [9, '1 more ⭐ for Rare', 'Ready for a Normal Pokémon!'],
+            [10, '5 more ⭐ for Legendary', 'Ready for a Rare Pokémon!'],
+            [12, '3 more ⭐ for Legendary', 'Ready for a Rare Pokémon!'],
+            [15, 'Legendary ready!', 'Ready for any Pokémon, even a Legendary!'],
+            [40, 'Legendary ready!', 'Ready for any Pokémon, even a Legendary!'],
+          ];
+          for (const [n, hint, cta] of tierCases) {
+            setStars(n, 0);
+            assert(need.textContent === hint, `${n} to spend: hint reads "${hint}" (got "${need.textContent}")`);
+            assert(shopBtn.textContent.includes(`(${cta})`), `${n} to spend: button reads "${cta}" (got "${shopBtn.textContent}")`);
+          }
+          assert(getComputedStyle(need).color === getComputedStyle(document.getElementById('vault-stat-remaining')).color, 'Next-goal line uses the prism card ink, same as the number');
 
           // 15 (Kepler's real numbers), then spending back below 5 returns to calm
           setStars(100, 85);

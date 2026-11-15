@@ -2,7 +2,7 @@ import { state, saveState, isRestDay } from './state.js';
 import { formatLocalDate, getDateOfColumn, getLocalDate } from './date_utils.js';
 import { openPokemonShop } from './shop.js';
 import { isBackdropClick } from './modal_backdrop.js';
-import { COMMON_COST } from './pokemon_data.js';
+import { COMMON_COST, RARE_COST, LEGENDARY_COST } from './pokemon_data.js';
 
 // DOM elements cache
 let vaultModal = null;
@@ -17,6 +17,30 @@ let statSpendCard = null;
 // Cheapest Shop price (Common tier, from pokemon_data.js). At or above it the
 // Stars to Spend card turns from calm slate into the pastel prism card.
 const MIN_POKEMON_COST = COMMON_COST;
+
+// Shop tiers, cheapest first. Names match the Shop's cost filter. Used for the
+// next-goal line ("3 more ⭐ for Rare") and the button's "Ready for a …" copy,
+// so 5 stars doesn't read as "you can buy anything" (2026-11-15, Option 3).
+const SHOP_TIERS = [
+  { cost: COMMON_COST, name: 'Normal' },
+  { cost: RARE_COST, name: 'Rare' },
+  { cost: LEGENDARY_COST, name: 'Legendary' },
+];
+
+// The text under the Stars to Spend number: below the cheapest price it is the
+// calm "N more ⭐"; at or above it, the next tier up or "Legendary ready!".
+export function getSpendHint(stars) {
+  if (stars < MIN_POKEMON_COST) return `${MIN_POKEMON_COST - stars} more ⭐`;
+  const next = SHOP_TIERS.find(t => stars < t.cost);
+  return next ? `${next.cost - stars} more ⭐ for ${next.name}` : 'Legendary ready!';
+}
+
+// The shop button's subtext once at least one Pokémon is affordable.
+function getReadyCopy(stars) {
+  const best = SHOP_TIERS.filter(t => stars >= t.cost).pop();
+  if (best === SHOP_TIERS[SHOP_TIERS.length - 1]) return 'Ready for any Pokémon, even a Legendary!';
+  return `Ready for a ${best.name} Pokémon!`;
+}
 
 // Pagination elements cache
 let currentPage = 0;
@@ -310,8 +334,8 @@ export function renderVault() {
   const canAfford = remainingCount >= MIN_POKEMON_COST;
   if (statSpendCard) statSpendCard.classList.toggle('can-afford', canAfford);
   if (statNeed) {
-    statNeed.textContent = canAfford ? '' : `${MIN_POKEMON_COST - remainingCount} more ⭐`;
-    statNeed.classList.toggle('hidden', canAfford);
+    statNeed.textContent = getSpendHint(remainingCount);
+    statNeed.classList.remove('hidden');
   }
 
   // Toggle Spend Button state (disabled if nothing to spend)
@@ -323,7 +347,7 @@ export function renderVault() {
     if (canAfford) {
       tradeBtn.classList.add('ready-to-unlock');
       tradeBtn.classList.remove('locked-shop');
-      tradeBtn.innerHTML = 'Go to Pokémon Shop! 🚀 <span class="subtext">(Ready to Unlock!)</span>';
+      tradeBtn.innerHTML = `Go to Pokémon Shop! 🚀 <span class="subtext">(${getReadyCopy(remainingCount)})</span>`;
     } else {
       tradeBtn.classList.remove('ready-to-unlock');
       tradeBtn.classList.add('locked-shop');

@@ -51,9 +51,10 @@ A **zero-required day** is a day where every active activity is excused (all �
 *   **Stars to Spend card** (updated 2026-11-14, Checkpoints 90–91 plus the feature review panel fixes):
     *   **Below the cheapest Shop price** (`COMMON_COST`, 5 ⭐, exported from `pokemon_data.js` with `RARE_COST` 10 and `LEGENDARY_COST` 15; `vault.js` imports it, so the threshold can't drift from the Shop): calm slate card (`#f1f5f9` / `#cbd5e1`) with an **"N more ⭐"** hint in `#475569` (~7:1).
     *   **At or above it** (`.can-afford`): static pastel prism gradient, a bigger number, and an even 2px ring (lavender `#c4b5fd`; orchid `#d7a3ef` in Unicorn). **No candy lip and no lift**, because the card isn't tappable and a lip means "press me" (UX Rule 12). No READY badge (owner decision).
+    *   **Next-goal line** (owner picked Option 3, 2026-11-15): at 5+ the hint slot stays visible in the prism ink (`--sk-today-fg`) and names the next tier up: **"N more ⭐ for Rare"** (5–9), **"N more ⭐ for Legendary"** (10–14), **"Legendary ready!"** (15+). Why: a "ready" signal only at the cheapest price nudged spending over saving, while 23 Rare and 45 Legendary Pokémon cost 10–15. One goal at a time; tier names match the Shop's cost filter (Normal · Rare · Legendary). `getSpendHint()` in `vault.js`.
 *   **Spend Shortcut (UX Link)**:
     *   An active button is always present at the bottom to visit the shop.
-    *   If the child has **5 or more remaining stars**: a yellow button, **"Go to Pokémon Shop! 🚀 (Ready to Unlock!)"**, that plays **one** `shop-ready-pop` (0.9 s) when it appears, then sits still. It used to pulse forever. Off under `prefers-reduced-motion`.
+    *   If the child has **5 or more remaining stars**: a yellow button that names the best tier they can buy: **"Go to Pokémon Shop! 🚀 (Ready for a Normal Pokémon!)"** (5–9), **"(Ready for a Rare Pokémon!)"** (10–14), **"(Ready for any Pokémon, even a Legendary!)"** (15+). It plays **one** `shop-ready-pop` (0.9 s) when it appears, then sits still. It used to pulse forever. Off under `prefers-reduced-motion`.
     *   If they have **less than 5 stars**: a **calm slate** button (`#e2e8f0`, ink `#334155`), still tappable for browsing: **"Go to Pokémon Shop! 🚀 (Earn [X] more stars to unlock Pokémon! 💪)"** (where X is `5 - remainingStars`). Its hover shade applies only on `(hover: hover)` devices, so it doesn't stick after a tap on iPads.
     *   Covered by TC139.
 
@@ -170,8 +171,8 @@ Open your browser's Developer Tools Console (`F12` or `Cmd+Option+I`) alongside 
      location.reload();
    })();
    ```
-2. **Ready to Unlock State**:
-   - Open the **⭐ Vault** modal. The Spend button should now glow and pulse, reading: **"Go to Pokémon Shop! 🚀 (Ready to Unlock!)"**.
+2. **Ready State**:
+   - Open the **⭐ Vault** modal. The Stars to Spend card turns pastel prism with **"N more ⭐ for Rare"** under the number, and the Spend button pops once, reading: **"Go to Pokémon Shop! 🚀 (Ready for a Normal Pokémon!)"**.
    - Click it to go to the shop.
    - The cards in the shop should now look colorful and be styled as **affordable** (glowing border on hover, lock badges removed).
 3. **Cancel Early Gesture**:

@@ -10718,7 +10718,8 @@ body[data-theme="unicorn"] #vault-modal .vault-stat-card.stat-spendable.can-affo
 }
 
 body[data-theme] #vault-modal .vault-stat-card.stat-spendable.can-afford .stat-label,
-body[data-theme] #vault-modal .vault-stat-card.stat-spendable.can-afford .stat-value {
+body[data-theme] #vault-modal .vault-stat-card.stat-spendable.can-afford .stat-value,
+body[data-theme] #vault-modal .vault-stat-card.stat-spendable.can-afford .stat-need {
   color: var(--sk-today-fg);
 }
 
