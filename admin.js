@@ -918,6 +918,7 @@ export function initAdmin(callbacks) {
     tasksList.addEventListener('input', refreshActivitiesDirty);
     tasksList.addEventListener('change', refreshActivitiesDirty);
   }
+  bindEmojiPickerDismiss();
 
   const chartStyleCard = document.getElementById('admin-chart-style-placeholder');
   if (chartStyleCard) {
@@ -1252,6 +1253,7 @@ const ADMIN_LANDING_SECTION = 'today';
 function showAdminSection(section) {
   const modal = adminModal || document.getElementById('admin-modal');
   if (!modal || !section) return;
+  closeEmojiPicker();
   modal.querySelectorAll('.admin-nav-btn').forEach(btn => {
     const selected = btn.dataset.adminSection === section;
     btn.setAttribute('aria-selected', selected ? 'true' : 'false');
@@ -1502,7 +1504,43 @@ function handleAdminPopState() {
   closeAdminPanel();
 }
 
-const TASK_EMOJI_CHOICES = ['🎹', '🧮', '📚', '✏️', '💮', '🧪', '🎨', '🏃', '🧹', '🥦', '📝'];
+/* Activity icon picker (docs/prd_activity_icon_picker.md). Owner-curated list;
+   🪥 (Emoji 14) needs iPadOS 15.4+, everything else is Emoji 13 or older. */
+const TASK_EMOJI_GROUPS = [
+  { label: 'School', emoji: ['📚', '✏️', '📝', '🧮', '🔢', '🔤', '🧪', '🔬', '🌍', '💻'] },
+  { label: 'Languages', emoji: ['💮', '🀄', '🗣️', '🔠'] },
+  { label: 'Music & Art', emoji: ['🎹', '🎻', '🎸', '🥁', '🎺', '🎤', '🎨', '✂️', '🧶', '🩰'] },
+  { label: 'Sports', emoji: ['🏃', '⚽', '🏀', '🏊', '🚴', '🤸', '🥋', '🎾', '🧘', '⛸️'] },
+  { label: 'Chores', emoji: ['🧹', '🛏️', '🧺', '🍽️', '🧸', '🪴', '🐶', '🗑️', '🧼', '👕'] },
+  { label: 'Healthy habits', emoji: ['🪥', '🥦', '🍎', '💧', '🛁', '😴'] },
+  { label: 'Kindness', emoji: ['💖', '🤝', '🙏', '😊', '🎁', '✉️'] }
+];
+const TASK_EMOJI_CHOICES = TASK_EMOJI_GROUPS.flatMap(g => g.emoji);
+
+/** '✏️' and '✏' (no U+FE0F) look the same, so match icons without the selector. */
+const normEmoji = (s) => String(s || '').replace(/\uFE0F/g, '');
+const isCuratedEmoji = (e) => TASK_EMOJI_CHOICES.some(c => normEmoji(c) === normEmoji(e));
+
+const SINGLE_EMOJI_RE = /^(?:\p{Regional_Indicator}{2}|[#*0-9]\uFE0F?\u20E3|\p{Extended_Pictographic}[\uFE0F\u{1F3FB}-\u{1F3FF}]*(?:\u200D\p{Extended_Pictographic}[\uFE0F\u{1F3FB}-\u{1F3FF}]*)*)$/u;
+// Text-style symbols (©, ™, ‼, ❤ without U+FE0F) render as plain black glyphs; require emoji presentation.
+const EMOJI_PRESENTATION_RE = /\p{Emoji_Presentation}|\uFE0F|\u20E3|\p{Regional_Indicator}/u;
+
+/**
+ * "Any emoji" validation: exactly one emoji grapheme (ZWJ families, skin
+ * tones, flags and keycaps included). Returns { emoji } or { error }.
+ */
+function parseSingleEmoji(text) {
+  const t = String(text || '').trim();
+  if (!t) return { error: 'Type or paste an emoji first.' };
+  let graphemes = 1;
+  if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {
+    graphemes = [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(t)].length;
+  }
+  if (graphemes !== 1 || !SINGLE_EMOJI_RE.test(t) || !EMOJI_PRESENTATION_RE.test(t)) {
+    return { error: 'Just one emoji, please — like 🦄.' };
+  }
+  return { emoji: t };
+}
 
 /**
  * Builds one Activities row. `isNew` marks a draft-only row (data-new="1")
@@ -1530,7 +1568,8 @@ function buildAdminTaskItem(task, isNew) {
           <span class="adm-task-name"></span>
           <span class="adm-task-instr"></span>
         </div>
-        <select class="task-emoji-select" aria-label="Activity icon">
+        <button type="button" class="adm-emoji-tile-btn" aria-haspopup="dialog" aria-expanded="false"></button>
+        <select class="task-emoji-select" aria-label="Activity icon" tabindex="-1">
           ${emojiOptions}
         </select>
         <input type="text" class="task-name-input" aria-label="Activity name">
@@ -1570,6 +1609,7 @@ function buildAdminTaskItem(task, isNew) {
   item.querySelector('.edit-task-btn').addEventListener('click', () => {
     setTaskRowEditing(item, !item.classList.contains('is-editing'), { focus: true });
   });
+  item.querySelector('.adm-emoji-tile-btn').addEventListener('click', () => toggleEmojiPicker(item));
   ['.task-name-input', '.task-instructions-input', '.task-emoji-select'].forEach(sel => {
     item.querySelector(sel).addEventListener(sel === '.task-emoji-select' ? 'change' : 'input', () => syncTaskSummary(item));
   });
@@ -1585,7 +1625,11 @@ function buildAdminTaskItem(task, isNew) {
 function syncTaskSummary(item) {
   const name = item.querySelector('.task-name-input').value.trim();
   const instr = item.querySelector('.task-instructions-input').value.trim();
-  item.querySelector('.adm-task-emoji').textContent = item.querySelector('.task-emoji-select').value || '📝';
+  const emoji = item.querySelector('.task-emoji-select').value || '📝';
+  item.querySelector('.adm-task-emoji').textContent = emoji;
+  const tile = item.querySelector('.adm-emoji-tile-btn');
+  tile.textContent = emoji;
+  tile.setAttribute('aria-label', `Activity icon ${emoji}, change icon`);
   const nameEl = item.querySelector('.adm-task-name');
   nameEl.textContent = name || 'Untitled activity';
   nameEl.classList.toggle('is-empty', !name);
@@ -1612,6 +1656,7 @@ function setTaskRowEditing(item, editing, { focus = false } = {}) {
     }
   }
   item.classList.toggle('is-editing', editing);
+  if (!editing && emojiPicker && emojiPicker.item === item) closeEmojiPicker();
   item.querySelector('.edit-task-btn').setAttribute('aria-expanded', String(editing));
   syncTaskSummary(item);
   if (!focus) return;
@@ -1620,6 +1665,161 @@ function setTaskRowEditing(item, editing, { focus = false } = {}) {
   } else {
     item.querySelector('.edit-task-btn').focus({ preventScroll: true });
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * Activity icon picker (docs/prd_activity_icon_picker.md). The hidden
+ * <select class="task-emoji-select"> stays the row's value store; a pick sets
+ * its value and fires a bubbling `change`, the same path the select used, so
+ * syncTaskSummary, the dirty count, Save bar and unsaved guard are untouched.
+ * One popover at a time, built on open and removed on close.
+ * ------------------------------------------------------------------------- */
+let emojiPicker = null; // { item, tile, pop }
+let emojiSwallow = null; // { target, t } — the click of an outside tap that closed the picker
+
+function isEmojiPickerOpen() {
+  if (emojiPicker && !emojiPicker.pop.isConnected) emojiPicker = null; // row re-rendered underneath
+  return !!emojiPicker;
+}
+
+function closeEmojiPicker({ focusTile = false } = {}) {
+  if (!emojiPicker) return;
+  const { tile, pop } = emojiPicker;
+  emojiPicker = null;
+  pop.remove();
+  tile.setAttribute('aria-expanded', 'false');
+  if (focusTile && tile.isConnected) tile.focus({ preventScroll: true });
+}
+
+function toggleEmojiPicker(item) {
+  if (isEmojiPickerOpen() && emojiPicker.item === item) {
+    closeEmojiPicker({ focusTile: true });
+    return;
+  }
+  openEmojiPicker(item);
+}
+
+function setRowEmoji(item, emoji) {
+  const select = item.querySelector('.task-emoji-select');
+  if (![...select.options].some(o => o.value === emoji)) {
+    const opt = document.createElement('option');
+    opt.value = emoji;
+    opt.textContent = emoji;
+    select.prepend(opt);
+  }
+  select.value = emoji;
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function openEmojiPicker(item) {
+  closeEmojiPicker();
+  const tile = item.querySelector('.adm-emoji-tile-btn');
+  const current = item.querySelector('.task-emoji-select').value || '📝';
+  const groups = isCuratedEmoji(current)
+    ? TASK_EMOJI_GROUPS
+    : [{ label: 'This activity', emoji: [current] }, ...TASK_EMOJI_GROUPS];
+
+  const pop = document.createElement('div');
+  pop.className = 'adm-emoji-popover';
+  pop.setAttribute('role', 'dialog');
+  pop.setAttribute('aria-label', 'Choose an icon');
+  pop.innerHTML = `
+      <div class="adm-emoji-head">
+        <h3 class="adm-emoji-title">Choose an icon</h3>
+        <button type="button" class="pixel-btn adm-icon-btn adm-tertiary adm-emoji-close" aria-label="Close icon picker" title="Close">✕</button>
+      </div>
+      <div class="adm-emoji-body">
+        ${groups.map(g => `
+        <div class="adm-emoji-group" role="group" aria-label="${escapeHtml(g.label)}">
+          <div class="adm-emoji-group-label" aria-hidden="true">${escapeHtml(g.label)}</div>
+          <div class="adm-emoji-grid">
+            ${g.emoji.map(e => `<button type="button" class="adm-emoji-cell" data-emoji="${escapeHtml(e)}" aria-pressed="${normEmoji(e) === normEmoji(current)}" aria-label="${escapeHtml(e)}">${escapeHtml(e)}</button>`).join('')}
+          </div>
+        </div>`).join('')}
+      </div>
+      <div class="adm-emoji-foot">
+        <label class="adm-emoji-label" for="adm-emoji-input">Any emoji</label>
+        <div class="adm-emoji-custom-row">
+          <input type="text" id="adm-emoji-input" class="pixel-input adm-emoji-input" placeholder="e.g. 🦄" maxlength="16" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-describedby="adm-emoji-msg">
+          <button type="button" class="pixel-btn adm-secondary adm-emoji-use">Use</button>
+        </div>
+        <div id="adm-emoji-msg" class="adm-emoji-msg hidden" aria-live="polite"></div>
+      </div>
+    `;
+
+  const pick = (emoji) => {
+    if (normEmoji(emoji) !== normEmoji(current)) setRowEmoji(item, emoji);
+    closeEmojiPicker({ focusTile: true });
+  };
+  pop.querySelectorAll('.adm-emoji-cell').forEach(btn => {
+    btn.addEventListener('click', () => pick(btn.dataset.emoji));
+  });
+  pop.querySelector('.adm-emoji-close').addEventListener('click', () => closeEmojiPicker({ focusTile: true }));
+  const input = pop.querySelector('.adm-emoji-input');
+  const msg = pop.querySelector('.adm-emoji-msg');
+  const useCustom = () => {
+    const result = parseSingleEmoji(input.value);
+    if (result.error) {
+      msg.textContent = result.error;
+      msg.classList.remove('hidden');
+      return;
+    }
+    pick(result.emoji);
+  };
+  pop.querySelector('.adm-emoji-use').addEventListener('click', useCustom);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      useCustom();
+    }
+  });
+  input.addEventListener('input', () => msg.classList.add('hidden'));
+  // Keep the field and Use above the iPad keyboard.
+  input.addEventListener('focus', () => {
+    if (typeof input.scrollIntoView === 'function') input.scrollIntoView({ block: 'nearest' });
+  });
+
+  item.appendChild(pop);
+  emojiPicker = { item, tile, pop };
+  tile.setAttribute('aria-expanded', 'true');
+  // Focus the current icon, not the field, so the iPad keyboard doesn't cover the grid.
+  const first = pop.querySelector('.adm-emoji-cell[aria-pressed="true"]') || pop.querySelector('.adm-emoji-cell');
+  if (first) first.focus({ preventScroll: true });
+  if (typeof pop.scrollIntoView === 'function') pop.scrollIntoView({ block: 'nearest' });
+}
+
+/**
+ * Registered once (capture phase, so it runs before Admin's document handler
+ * and app.js's window handler). No-ops while no picker is open.
+ * - Escape closes only the picker.
+ * - An outside tap closes it, and its click is swallowed so it neither closes
+ *   Admin via the backdrop nor presses what was under it. Only the click that
+ *   belongs to that same tap is swallowed: a tap that became a scroll never
+ *   clicks, and a stale flag must not eat the next real tap (panel review).
+ */
+function bindEmojiPickerDismiss() {
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !isEmojiPickerOpen()) return;
+    e.stopPropagation();
+    e.preventDefault();
+    closeEmojiPicker({ focusTile: true });
+  }, true);
+  document.addEventListener('pointerdown', (e) => {
+    emojiSwallow = null;
+    if (!isEmojiPickerOpen()) return;
+    const { pop, tile } = emojiPicker;
+    if (pop.contains(e.target) || tile.contains(e.target)) return;
+    closeEmojiPicker();
+    emojiSwallow = { target: e.target, t: Date.now() };
+  }, true);
+  document.addEventListener('click', (e) => {
+    const s = emojiSwallow;
+    emojiSwallow = null;
+    // A real tap's pointerdown and click share the same innermost target.
+    if (!s || Date.now() - s.t > 700 || e.target !== s.target) return;
+    e.stopPropagation();
+    e.preventDefault();
+  }, true);
 }
 
 function escapeHtml(text) {
@@ -1729,6 +1929,7 @@ function renderAdminTasksList() {
   const container = document.getElementById('admin-tasks-list');
   if (!container) return;
 
+  closeEmojiPicker();
   container.innerHTML = '';
   const tasks = state.tasks || [];
   tasks
@@ -1748,6 +1949,7 @@ function renderAdminTasksList() {
  */
 function removeTask(item) {
   if (!item) return;
+  if (emojiPicker && emojiPicker.item === item) closeEmojiPicker();
   if (item.dataset.new === '1') {
     item.remove();
     refreshActivitiesDirty();

@@ -13493,6 +13493,181 @@ async function runSuite() {
         }
       }
 
+      // ==========================================
+      // Test Case 140: Activity icon picker (docs/prd_activity_icon_picker.md)
+      // ==========================================
+      if (__shouldRun('140')) {
+        console.log("Running Test Case 140: Activity icon picker — grouped grid, Any emoji, Escape/outside close, off-list kept...");
+        const helpers = window.__test_helpers__;
+        const live = window.__app_state__;
+        helpers.resetState();
+        await sleep(30);
+        const $ = id => document.getElementById(id);
+        const shown = el => !!el && el.getClientRects().length > 0;
+        const pop = () => document.querySelector('#admin-modal .adm-emoji-popover');
+        const rows = () => [...document.querySelectorAll('#admin-tasks-list .admin-task-item')].filter(r => r.dataset.removed !== '1');
+        const cell = (e) => pop().querySelector(`.adm-emoji-cell[data-emoji="${e}"]`);
+        const groupLabels = () => [...pop().querySelectorAll('.adm-emoji-group-label')].map(l => l.textContent);
+        const pressed = () => [...pop().querySelectorAll('.adm-emoji-cell[aria-pressed="true"]')].map(c => c.dataset.emoji);
+        const escape = () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        const tryCustom = (text) => {
+          pop().querySelector('.adm-emoji-input').value = text;
+          pop().querySelector('.adm-emoji-use').click();
+        };
+        const prevTheme = document.body.dataset.theme;
+        document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+        try {
+          const active = live.tasks.filter(t => t.active !== false);
+          assert(active.length >= 3, 'Default state has at least 3 activities');
+          active[1].emoji = '🦄'; // off-list
+          active[2].emoji = '✏';  // pencil without U+FE0F
+          $('admin-btn').click();
+          await sleep(60);
+          $('password-input').value = helpers.ADMIN_PASSWORD;
+          $('password-submit-btn').click();
+          await sleep(60);
+          $('admin-tab-tasks').click();
+          await sleep(30);
+          document.querySelector('#admin-modal .modal-content').getAnimations().forEach(a => a.finish());
+          const [first, second, third] = rows();
+          const sel = (row) => row.querySelector('.task-emoji-select');
+          const tile = (row) => row.querySelector('.adm-emoji-tile-btn');
+
+          // 1. Edit mode shows the tile button; the select stays hidden as the value store.
+          assert(!shown(tile(first)), 'Tile button is hidden in read mode');
+          first.querySelector('.edit-task-btn').click();
+          await sleep(20);
+          assert(shown(tile(first)) && !shown(sel(first)), 'Edit mode shows the tile button, not the select');
+          assert(tile(first).textContent === active[0].emoji && tile(first).getAttribute('aria-haspopup') === 'dialog', 'Tile shows the icon and announces a dialog');
+
+          // 2. Open: 7 groups, big cells, current icon pressed.
+          tile(first).click();
+          await sleep(20);
+          assert(pop() && first.contains(pop()) && tile(first).getAttribute('aria-expanded') === 'true', 'Tile opens the popover inside the row');
+          assert(pop().getAttribute('role') === 'dialog', 'Popover is a dialog');
+          assert(groupLabels().join('|') === 'School|Languages|Music & Art|Sports|Chores|Healthy habits|Kindness', `7 curated groups in order (got ${groupLabels().join('|')})`);
+          const cells = [...pop().querySelectorAll('.adm-emoji-cell')];
+          assert(cells.length === 56, `56 curated icons (got ${cells.length})`);
+          assert(cells.every(c => { const r = c.getBoundingClientRect(); return r.width >= 44 && r.height >= 44; }), 'Every icon is a 44px+ target');
+          assert(pressed().length === 1 && pressed()[0] === active[0].emoji, `Current icon is highlighted (got ${pressed()})`);
+          assert(document.activeElement && document.activeElement.classList.contains('adm-emoji-cell'), 'Focus lands on an icon, not the text field');
+          assert(!pop().querySelector('.pixel-btn:not([class*="adm-"])'), 'Popover buttons use the adm-* dialect');
+
+          // 3. Pick from a group: closes, updates tile/summary/select, marks draft unsaved.
+          cell('⚽').click();
+          await sleep(20);
+          assert(!pop() && tile(first).getAttribute('aria-expanded') === 'false', 'Picking closes the popover');
+          assert(sel(first).value === '⚽' && tile(first).textContent === '⚽' && first.querySelector('.adm-task-emoji').textContent === '⚽', 'Pick updates select, tile and summary');
+          assert(!$('admin-activities-savebar').classList.contains('hidden'), 'Pick marks the Activities draft unsaved');
+          assert(document.activeElement === tile(first), 'Focus returns to the tile');
+
+          // 4. Any emoji: valid custom emoji is kept and shows as "This activity".
+          tile(first).click();
+          await sleep(20);
+          tryCustom('🐉');
+          await sleep(20);
+          assert(!pop() && sel(first).value === '🐉', 'Any emoji sets a custom icon');
+          tile(first).click();
+          await sleep(20);
+          assert(groupLabels()[0] === 'This activity' && pressed().join() === '🐉', 'Custom icon shows first, highlighted, under "This activity"');
+
+          // 5. Invalid input: inline message, popover stays open, value unchanged.
+          const msg = () => pop().querySelector('.adm-emoji-msg');
+          for (const bad of ['', 'ab', '🎹🎹', '1', '©', '❤']) {
+            tryCustom(bad);
+            await sleep(5);
+            assert(pop() && shown(msg()) && msg().textContent.length > 0, `"${bad}" is rejected with an inline message`);
+            assert(sel(first).value === '🐉', `"${bad}" leaves the icon unchanged`);
+          }
+          pop().querySelector('.adm-emoji-input').dispatchEvent(new Event('input', { bubbles: true }));
+          assert(!shown(msg()), 'Typing again hides the message');
+
+          // 6. Escape closes only the picker; Admin stays open.
+          escape();
+          await sleep(20);
+          assert(!pop() && !$('admin-modal').classList.contains('hidden'), 'Escape closes the picker, not Admin');
+          assert(document.activeElement === tile(first), 'Escape returns focus to the tile');
+
+          // Outside tap on the backdrop: closes the picker; the click is swallowed (no close, no guard).
+          tile(first).click();
+          await sleep(20);
+          $('admin-modal').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+          $('admin-modal').click();
+          await sleep(20);
+          assert(!pop(), 'Outside tap closes the picker');
+          assert(!$('admin-modal').classList.contains('hidden') && $('confirm-modal').classList.contains('hidden'), 'Outside tap does not close Admin or open the unsaved guard');
+
+          // A tap that became a scroll (pointerdown, no click) must not eat the next real tap.
+          tile(first).click();
+          await sleep(20);
+          $('admin-tasks-list').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+          assert(!pop(), 'Pointerdown outside closes the picker');
+          first.querySelector('.edit-task-btn').click();
+          await sleep(20);
+          assert(!first.classList.contains('is-editing'), 'The next real tap (Done) still works');
+
+          // 7. Off-list emoji preserved; FE0F-insensitive highlight.
+          assert(second.querySelector('.adm-task-emoji').textContent === '🦄', 'Off-list icon shows in the summary');
+          second.querySelector('.edit-task-btn').click();
+          await sleep(20);
+          tile(second).click();
+          await sleep(20);
+          assert(groupLabels()[0] === 'This activity' && pressed().join() === '🦄', 'Off-list icon is offered and highlighted');
+          pop().querySelector('.adm-emoji-close').click();
+          await sleep(20);
+          assert(!pop() && document.activeElement === tile(second), '✕ closes and returns focus');
+          third.querySelector('.edit-task-btn').click();
+          await sleep(20);
+          assert(!second.classList.contains('is-editing'), 'Opening another row closes the previous one');
+          tile(third).click();
+          await sleep(20);
+          assert(groupLabels()[0] === 'School' && pressed().join() === '✏️', 'A bare ✏ highlights the curated ✏️ with no duplicate group');
+          cell('✏️').click(); // same icon: no change
+          await sleep(20);
+          assert(sel(third).value === '✏', 'Tapping the current icon changes nothing');
+
+          $('admin-save-tasks-btn').click();
+          await sleep(80);
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          const saved = live.tasks.filter(t => t.active !== false);
+          assert(saved[0].emoji === '🐉' && saved[1].emoji === '🦄' && saved[2].emoji === '✏', `Save keeps custom, off-list and bare icons (got ${saved.slice(0, 3).map(t => t.emoji).join(' ')})`);
+
+          // 8. New draft row + Unicorn theme.
+          document.body.dataset.theme = 'unicorn';
+          $('admin-add-task-btn').click();
+          await sleep(20);
+          const newRow = rows()[rows().length - 1];
+          assert(newRow.dataset.new === '1' && shown(tile(newRow)), 'New draft row shows the tile button');
+          tile(newRow).click();
+          await sleep(20);
+          const pr = pop().getBoundingClientRect();
+          assert(pr.width > 200 && getComputedStyle(pop()).backgroundColor === 'rgb(255, 255, 255)', 'Picker renders on the white admin surface in the Unicorn theme');
+          assert([...pop().querySelectorAll('.adm-emoji-cell')].every(c => c.getBoundingClientRect().width >= 44), 'Unicorn theme keeps 44px+ icons');
+          cell('🧹').click();
+          await sleep(20);
+          assert(sel(newRow).value === '🧹', 'Picker sets a new row icon before Save');
+
+          // 9. Re-render (Discard) while open clears the picker; next Escape closes Admin.
+          tile(newRow).click();
+          await sleep(20);
+          $('admin-discard-tasks-btn').click();
+          await sleep(20);
+          assert(!pop() && !rows().some(r => r.dataset.new === '1'), 'Discard removes the picker and the draft row');
+          escape();
+          await sleep(30);
+          assert($('admin-modal').classList.contains('hidden'), 'With no picker open, Escape closes Admin again');
+        } finally {
+          document.body.dataset.theme = prevTheme || 'pokemon';
+          if (!$('admin-modal').classList.contains('hidden')) {
+            $('admin-discard-tasks-btn').click();
+            document.getElementById('close-admin-modal-btn').click();
+          }
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
       if (__onlyFilter && __ranTests.size === 0) {
         throw new Error(`&only=${__params.get('only')} matched no test case`);
       }

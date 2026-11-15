@@ -1,6 +1,6 @@
 # PRD: Activity Icon Picker (Admin › Activities)
 
-**Status:** Draft for owner review · **Owner:** crsjain · **Date:** 2026-11-08
+**Status:** Implemented 2026-11-15 (TC140, cache v314) · **Owner:** crsjain · **Date:** 2026-11-08
 **Origin:** Checkpoint 90 §1, "More activity icons → grid emoji picker" (approved 2026-11-07).
 **Reserves:** TC140 · **Schema:** none (`task.emoji` stays a plain string)
 
@@ -58,7 +58,7 @@ same path the select uses today.
 | Viewport | Popover | Body max-height | Columns of 48px buttons |
 | :--- | :--- | :--- | :--- |
 | Tablet / desktop (> 520px) | 368px wide, left edge aligned to the tile | 320px | 6 |
-| Phone (≤ 520px) | Full row width (left/right 0) | 50vh | 6 on 390px |
+| Phone (≤ 520px) | Full row width (left/right 0) | 40vh (keeps the Any emoji field inside the pane) | 5 on 390px |
 
 The popover scrolls into view (`block: 'nearest'`) when it opens near the bottom of the pane.
 
@@ -85,8 +85,7 @@ All 11 current choices are included, so every existing activity is highlighted i
 | 🩰 ballet shoes | 12.0 | 13.2+ |
 | 🧮 🧶 🧺 🧼 🧸 | 11.0 | 12.1+ |
 
-Everything else is Emoji 10 (iOS 11.1) or older. **Open question Q1:** keep 🪥, or swap it
-for 🦷 (tooth, Emoji 10) if a kids' tablet is on iPadOS < 15.4?
+Everything else is Emoji 10 (iOS 11.1) or older. **Owner decision (Q1):** keep 🪥.
 
 ## 5. Interactions
 
@@ -97,7 +96,7 @@ for 🦷 (tooth, Emoji 10) if a kids' tablet is on iPadOS < 15.4?
 | Tap the current emoji | Closes with no change (the draft stays clean, since dirty means "differs from state"). |
 | Any emoji + Use / Enter | Valid → same as tapping an emoji. Invalid → inline message, field keeps its text, popover stays open. |
 | Escape | Closes the popover only (it handles Escape first and stops propagation), focuses the tile. Admin stays open. |
-| Tap outside | Closes the popover only. That tap is swallowed: it doesn't close Admin via the backdrop and doesn't press whatever was under it (e.g. 🗑). |
+| Tap outside | Closes the popover only. That tap is swallowed: it doesn't close Admin via the backdrop and doesn't press whatever was under it (e.g. 🗑). Only the click with the **same target** as that pointerdown, within 700ms, is swallowed; the flag clears on the next pointerdown, so a tap that turned into a scroll can't eat the next real tap. |
 | ✕ | Closes, focuses the tile. |
 | Tap tile again | Toggles closed. |
 
@@ -115,9 +114,12 @@ Save Activities, and the unsaved guard on close.
 2. Split into graphemes with `Intl.Segmenter('en', { granularity: 'grapheme' })`. If
    `Intl.Segmenter` isn't available, fall back to the regex in step 3 matching the whole string.
 3. Accept only exactly **one** grapheme that is an emoji:
-   `\p{Extended_Pictographic}`, a flag (two `\p{Regional_Indicator}`), or a keycap (`[#*0-9]\uFE0F?\u20E3`).
-   This covers ZWJ families, skin tones and flags.
-4. Otherwise: "Just one emoji, please — like 🦄." (for "ab", "🎹🎹", "1", "Piano" and similar).
+   `\p{Extended_Pictographic}` (with optional U+FE0F, skin tones and ZWJ joins), a flag
+   (two `\p{Regional_Indicator}`), or a keycap (`[#*0-9]\uFE0F?\u20E3`).
+4. It must also have **emoji presentation** (`\p{Emoji_Presentation}`, U+FE0F, keycap or flag),
+   so text-style symbols such as ©, ™ and ❤ without U+FE0F (plain black glyphs on a tablet) are
+   rejected. The field has `maxlength="16"`.
+5. Otherwise: "Just one emoji, please — like 🦄." (for "ab", "🎹🎹", "1", "Piano" and similar).
 
 No `alert()` / `confirm()` (UX §6.2).
 
@@ -168,7 +170,15 @@ No `alert()` / `confirm()` (UX §6.2).
 
 **Regression:** TC1/TC58 (sets `.task-emoji-select` ~L280), the test at ~L8685 (`value = '🧹'`), TC97 (adm-* classes), TC104 (summary rows), TC90 (cache). Full suite 100% green.
 
-## 9. Open questions
+## 9. Decisions and panel review (2026-11-08 → 2026-11-15)
 
-- **Q1:** 🪥 needs iPadOS 15.4+. Keep it, or use 🦷?
-- **Q2:** On phones, full-row-width popover inside the row (as mocked), or a bottom sheet? The mock uses the in-row version: simpler, and no fixed positioning inside the animated modal.
+- **Q1:** keep 🪥 (owner). **Q2:** phones use the full-row-width popover inside the row, not a bottom sheet (owner).
+- Feature review panel: approved with mitigations, all built:
+  - Only the click matching the outside pointerdown is swallowed (§5).
+  - Icons are matched ignoring U+FE0F, so a saved bare `✏` highlights the curated `✏️` and never shows twice. Stored strings are kept as they are.
+  - Validation requires emoji presentation (§5.1).
+  - The picker closes when the list re-renders (Save, Discard, profile sync), on ✓ Done, on 🗑, and on a tab switch. A disconnected popover counts as closed.
+  - Escape is handled in the capture phase with `stopPropagation()` and `preventDefault()`.
+  - Transparent scrollbar track, a press state on icons, and the focus outline kept separate from the current-icon ring.
+  - Focus goes to the current icon on open, and the field scrolls into view on focus (iPad keyboard).
+- **Declined (owner: keep the UX clean, less clutter):** an "Also used by…" duplicate-icon hint, and keyboard helper text under Any emoji.
