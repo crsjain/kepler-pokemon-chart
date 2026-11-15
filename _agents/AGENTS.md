@@ -196,6 +196,7 @@ graph TD
     APP --> BADGES["badges.js — badge case"]
     APP --> GUIDE["guide.js — task guide"]
     APP --> AUDIO["audio.js — 8-bit WebAudio"]
+    APP --> SPARK["sparkles.js — princess background sparkles"]
     STATE --> MIG["migrations.js<br/>schema upgrades + reward defaults"]
     STATE --> DATES["date_utils.js<br/>week math, local dates"]
     STATE --> DATA["pokemon_data.js<br/>Pokédex, evolutions, costs"]

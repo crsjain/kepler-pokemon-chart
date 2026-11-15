@@ -521,6 +521,7 @@ import { initAdmin, refreshAdminScopeChip, adminNotice, showAdminToast, setReadB
 import { initGuide, openGuide, renderGuide } from './guide.js';
 import { initShop, openPokemonShop, resetShopSession } from './shop.js';
 import { isBackdropClick, bindBackdropDismiss } from './modal_backdrop.js';
+import { initBackgroundSparkles, spawnBackgroundSparkles, pickSparkleSpot, canSparkle } from './sparkles.js';
 
 // DOM Elements
 const pokemonSprite = document.getElementById('pokemon-sprite');
@@ -824,6 +825,7 @@ function initFirebaseUI() {
     initBadgeCase();
     initGuide();
     initShop({ renderAppState: (rebuild) => renderState(rebuild) });
+  initBackgroundSparkles();
     renderState(true);
     markAppReady();
   }
@@ -1409,6 +1411,7 @@ function selectProfile(profileId) {
       initBadgeCase();
       initGuide();
       initShop({ renderAppState: (rebuild) => renderState(rebuild) });
+  initBackgroundSparkles();
       
       // Re-render UI
       renderState(true);
@@ -5405,6 +5408,7 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     configurable: true
   });
   window.__test_helpers__ = {
+    spawnBackgroundSparkles, pickSparkleSpot, canSparkle,
     resetState: () => {
       resetStateToDefault();
       currentViewingWeekStartDate = null;

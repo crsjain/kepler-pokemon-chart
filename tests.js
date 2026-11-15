@@ -13438,6 +13438,59 @@ async function runSuite() {
         document.body.dataset.theme = 'pokemon';
       }
 
+      if (__shouldRun('144')) {
+        console.log("Running Test Case 144: Princess background sparkles — only in the open pink sky, only when nothing else is going on...");
+        // Owner, 2026-11-15: decorative easter egg, every 45–90 s, Unicorn theme only, never over panels.
+        const prevTheme = document.body.dataset.theme;
+        const helpers = window.__test_helpers__;
+        const openModals = [...document.querySelectorAll('.modal:not(.hidden)')]; // e.g. a leftover level-up popup
+        openModals.forEach(m => m.classList.add('hidden'));
+        try {
+          document.body.dataset.theme = 'pokemon';
+          assert(!helpers.canSparkle() && helpers.spawnBackgroundSparkles(3).length === 0, "Pokémon theme: no sparkles");
+          document.body.dataset.theme = 'unicorn';
+          assert(helpers.canSparkle(), `Unicorn theme with nothing open: sparkles allowed (hidden=${document.hidden}, booting=${document.body.classList.contains('app-booting')}, open modals=${[...document.querySelectorAll('.modal:not(.hidden)')].map(m => m.id || m.className).join('|')}, busy=${!!document.querySelector('.layout-container.exception-mode, .layout-container.last-week-edit')})`);
+          // The headless viewport is small (≈780×437) with little open sky, and spots are random: retry.
+          let made = [];
+          for (let i = 0; i < 25 && made.length === 0; i++) made = helpers.spawnBackgroundSparkles(3);
+          assert(made.length >= 1, `at least one free spot in the pink sky (made ${made.length}; vp ${innerWidth}x${innerHeight}; samples ${[[5,5],[innerWidth/2,8],[8,innerHeight/2],[innerWidth-8,innerHeight-8]].map(([x,y])=>{const e=document.elementFromPoint(x,y);return e?(e.tagName+'.'+e.className+'#'+e.id):'null'}).join(' | ')})`);
+          const layer = document.querySelector('.bg-sparkle-layer');
+          assert(layer && getComputedStyle(layer).pointerEvents === 'none' && layer.getAttribute('aria-hidden') === 'true', "sparkle layer is untappable and hidden from screen readers");
+          for (const s of made) {
+            const x = parseFloat(s.style.getPropertyValue('--x')), y = parseFloat(s.style.getPropertyValue('--y'));
+            const under = document.elementFromPoint(x, y);
+            assert(under && (['HTML', 'BODY'].includes(under.tagName) || ['app-container', 'layout-container', 'game-header'].some(c => under.classList.contains(c))), `sparkle at ${x},${y} sits on the sky, not on ${under && (under.id || under.className)}`);
+            assert(!s.closest('.chart-container, .trainer-card, .mega-milestone-card, .bottom-section'), "sparkle is not inside a panel");
+            assert(getComputedStyle(s).animationName === 'bg-sparkle-twinkle', "sparkle twinkles");
+          }
+          document.body.dataset.theme = 'pokemon';
+          assert(getComputedStyle(layer).display === 'none', "switching to Pokémon hides any sparkle in flight");
+          document.body.dataset.theme = 'unicorn';
+          // Busy moments: no sparkles.
+          const modal = document.getElementById('confirm-modal');
+          modal.classList.remove('hidden');
+          assert(!helpers.canSparkle(), "an open modal pauses sparkles");
+          modal.classList.add('hidden');
+          const lc = document.querySelector('.layout-container');
+          lc.classList.add('exception-mode');
+          assert(!helpers.canSparkle(), "Exception Mode pauses sparkles");
+          lc.classList.remove('exception-mode');
+          document.body.classList.add('idle-mode');
+          assert(!helpers.canSparkle(), "idle mode (tablet may sleep): no sparkles");
+          document.body.classList.remove('idle-mode');
+          document.body.classList.add('app-booting');
+          assert(!helpers.canSparkle(), "boot skeleton: no sparkles");
+          document.body.classList.remove('app-booting');
+          // Sparkles clean themselves up.
+          await sleep(2800, true); // real time: twinkle 1.6s + 260ms stagger each + 400ms fallback timer
+          assert(layer.children.length === 0, `sparkles remove themselves after twinkling (left ${layer.children.length})`);
+        } finally {
+          document.querySelector('.bg-sparkle-layer')?.replaceChildren();
+          openModals.forEach(m => m.classList.remove('hidden'));
+          document.body.dataset.theme = prevTheme || 'pokemon';
+        }
+      }
+
       if (__onlyFilter && __ranTests.size === 0) {
         throw new Error(`&only=${__params.get('only')} matched no test case`);
       }

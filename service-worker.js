@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poke-chart-cache-v311';
+const CACHE_NAME = 'poke-chart-cache-v312';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -17,6 +17,7 @@ const ASSETS_TO_CACHE = [
   './rewards_admin.js',
   './audio.js',
   './modal_backdrop.js',
+  './sparkles.js',
   './particles.js',
   './icon.png',
   './images/zygarde-core.png',
