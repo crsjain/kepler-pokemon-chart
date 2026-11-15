@@ -4785,6 +4785,9 @@ async function runSuite() {
         assert(!headers[1].classList.contains('past-week-header'), "Current week SAT header should NOT have past-week-header class");
 
         // Verify computed background color is not the past-week grey (#cbd5e1 = rgb(203, 213, 225))
+        // .day-header has a 0.2s background-color transition; finish it so we read the
+        // settled colour, not a mid-transition (or not-yet-started) grey. Fixes a flake.
+        headers[0].getAnimations().forEach(an => an.finish());
         const friBg = window.getComputedStyle(headers[0]).backgroundColor;
         assert(!friBg.includes('203, 213, 225'), "Current week FRI header should not be grey");
 
@@ -4805,6 +4808,7 @@ async function runSuite() {
         assert(!headers[1].classList.contains('past-week-header'), "Returned current week SAT header should NOT have past-week-header class");
 
         // Check computed colors for current week
+        headers[0].getAnimations().forEach(an => an.finish()); // settle the 0.2s transition (see above)
         const returnedFriBg = window.getComputedStyle(headers[0]).backgroundColor;
         assert(!returnedFriBg.includes('203, 213, 225'), "Returned current week FRI header should NOT be grey");
 
@@ -13214,6 +13218,14 @@ async function runSuite() {
             assert(cs.paddingTop === `${padTop}px`, `${theme}: ${sel} padding-top drops by 12px to ${padTop}px (got ${cs.paddingTop})`);
             assert(['auto', 'scroll'].includes(cs.overflowY), `${theme}: ${sel} is the scroller (overflow-y ${cs.overflowY})`);
           }
+          // One place to change: the inset is a token, and paddings/pills derive from it.
+          const vaultShell = document.querySelector('#vault-modal .vault-modal-content');
+          assert(getComputedStyle(vaultShell).getPropertyValue('--shell-scroll-inset').trim() === '12px', `${theme}: --shell-scroll-inset is 12px`);
+          vaultShell.style.setProperty('--shell-scroll-inset', '16px');
+          const tuned = getComputedStyle(vaultShell);
+          const tunedPill = getComputedStyle(document.getElementById('close-vault-modal-btn'));
+          assert(tuned.borderTopWidth === '16px' && tuned.paddingTop === '9px' && tunedPill.top === '-1px', `${theme}: changing only the token moves border, padding and × pill together (got ${tuned.borderTopWidth} / ${tuned.paddingTop} / ${tunedPill.top})`);
+          vaultShell.style.removeProperty('--shell-scroll-inset');
           const pill = getComputedStyle(document.getElementById('close-vault-modal-btn'));
           assert(pill.top === '3px', `${theme}: Vault × pill moves up 12px to stay put (got ${pill.top})`);
         }

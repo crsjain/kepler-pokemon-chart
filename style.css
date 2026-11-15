@@ -10490,75 +10490,81 @@ body[data-theme] #level-up-modal .modal-content {
    These shells scroll themselves, and a scrollbar runs the full height of the
    padding box. border-radius doesn't clip it, so on phones and tablets the
    overlay bar stuck out past the rounded top and bottom corners (owner,
-   2026-11-15). A 12px transparent top/bottom border keeps the bar (and
-   scrolled content) inside the curve: at 6px from the edge a 26px corner
-   curves in ~9.4px. The background still paints under the border, and each
-   padding drops by 12px, so the panel looks the same. Works for overlay
-   scrollbars too, which ignore ::-webkit-scrollbar styling. TC141. */
+   2026-11-15). A transparent top/bottom border (--shell-scroll-inset, 12px)
+   keeps the bar and scrolled content inside the curve: at 6px from the edge a
+   26px corner curves in ~9.4px. Works for overlay scrollbars too, which ignore
+   ::-webkit-scrollbar styling. UX Rule 5, TC141.
+
+   One place to change: each shell only declares its DESIGN padding
+   (--shell-pad-top / --shell-pad-bottom, i.e. the spacing you see). The rule
+   below subtracts the inset, so the panel looks the same. Bottom padding never
+   drops below --shell-lip-room (4px), because scrolling clips children at the
+   padding edge and would cut off a button's 4px lip. To add a scrolling shell:
+   add its selector to both lists and set its two padding variables. */
 body[data-theme] #partner-modal .modal-content,
 body[data-theme] #pokemon-shop-modal .modal-content,
 body[data-theme] #vault-modal .vault-modal-content,
 body[data-theme] #partner-showcase-modal .partner-showcase-content,
 body[data-theme] .notif-modal:not(.adm-surface):not(.toast) .modal-content {
-  border-top: 12px solid transparent !important;
-  border-bottom: 12px solid transparent !important;
+  --shell-scroll-inset: 12px;
+  --shell-lip-room: 4px;
+  --shell-pad-top: 25px;
+  --shell-pad-bottom: 25px;
+  border-top: var(--shell-scroll-inset) solid transparent !important;
+  border-bottom: var(--shell-scroll-inset) solid transparent !important;
   /* Gradient backgrounds (showcase header) start at the outer edge, as before. */
   background-origin: border-box !important;
+  padding-top: max(0px, calc(var(--shell-pad-top) - var(--shell-scroll-inset)));
+  padding-bottom: max(var(--shell-lip-room), calc(var(--shell-pad-bottom) - var(--shell-scroll-inset)));
 }
 
-/* Absolute children are placed from the padding edge, which is now 12px lower,
-   so the × pills move up 12px to stay where they were. */
-body[data-theme] #vault-modal .vault-modal-content .modal-close-btn {
-  top: 3px;   /* 15px - 12px */
-}
-
-body[data-theme] #partner-showcase-modal .partner-showcase-content .modal-close-btn {
-  top: 0;     /* 12px - 12px */
-}
-
-body[data-theme] #pokemon-shop-modal .shop-close-btn {
-  top: -2px;  /* 10px - 12px */
-}
-
-body[data-theme] #partner-modal .modal-content,
-body[data-theme] #pokemon-shop-modal .modal-content,
-body[data-theme] #vault-modal .vault-modal-content {
-  padding-top: 13px;    /* 25px - 12px */
-  padding-bottom: 13px;
-}
-
+/* Design paddings (what you see). Partner, Shop and Vault use the 25px default. */
 body[data-theme] #partner-showcase-modal .partner-showcase-content {
-  padding-top: 12px;    /* 24px - 12px */
-  padding-bottom: 6px;  /* 18px - 12px */
+  --shell-pad-top: 24px;
+  --shell-pad-bottom: 18px;
 }
 
 body[data-theme] .notif-modal:not(.adm-surface):not(.toast) .modal-content {
-  padding-top: 8px;     /* 20px - 12px */
-  padding-bottom: 8px;
+  --shell-pad-top: 20px;
+  --shell-pad-bottom: 20px;
 }
 
 @media (max-width: 480px) {
   body[data-theme] #pokemon-shop-modal .modal-content {
-    padding-top: 6px;   /* 18px - 12px */
-    padding-bottom: 6px;
+    --shell-pad-top: 18px;
+    --shell-pad-bottom: 18px;
   }
 
   body[data-theme] #vault-modal .vault-modal-content {
-    padding-top: 3px;   /* 15px - 12px */
-    padding-bottom: 3px;
+    --shell-pad-top: 15px;
+    --shell-pad-bottom: 15px;
   }
 
   body[data-theme] #partner-showcase-modal .partner-showcase-content {
-    padding-top: 8px;   /* 20px - 12px */
-    padding-bottom: 4px; /* 14px - 12px = 2px, raised to 4px so the button's 4px lip isn't clipped */
+    --shell-pad-top: 20px;
+    --shell-pad-bottom: 14px;
   }
 }
 
 @media (max-height: 600px) {
   body[data-theme] .notif-modal:not(.adm-surface):not(.toast) .modal-content {
-    padding-top: 0;     /* 12px - 12px */
-    padding-bottom: 4px; /* room for the buttons' 4px lip (scrolling clips at the padding edge) */
+    --shell-pad-top: 12px;
+    --shell-pad-bottom: 12px;
   }
+}
+
+/* Absolute children are placed from the padding edge, which the inset moved
+   down, so the × pills subtract it to stay where they were. */
+body[data-theme] #vault-modal .vault-modal-content .modal-close-btn {
+  top: calc(15px - var(--shell-scroll-inset));
+}
+
+body[data-theme] #partner-showcase-modal .partner-showcase-content .modal-close-btn {
+  top: calc(12px - var(--shell-scroll-inset));
+}
+
+body[data-theme] #pokemon-shop-modal .shop-close-btn {
+  top: calc(10px - var(--shell-scroll-inset));
 }
 
 /* ---- Kid Modal Titles (Fredoka 700, no pixel outlines) ---- */
