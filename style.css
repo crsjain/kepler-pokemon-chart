@@ -8608,13 +8608,8 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
 }
 
 /* ---- Activity icon picker (docs/prd_activity_icon_picker.md, TC140) --------
-   Edit mode shows a 44px tile button; tapping it opens a popover inside the
-   row. The popover is a surface (no pixel frame), the cells are plain buttons
-   (not .pixel-btn, so TC97's adm-* rule doesn't apply to them). */
-#admin-modal #admin-pane-tasks .admin-task-item {
-  position: relative;
-}
-
+   Edit mode shows a 44px tile button; tapping it opens #admin-emoji-dialog
+   (styles further down, after the Settings rows). */
 #admin-modal #admin-pane-tasks .adm-emoji-tile-btn {
   position: relative;
   display: grid;
@@ -8656,180 +8651,9 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   transform: translateY(2px);
 }
 
-#admin-modal #admin-pane-tasks .adm-emoji-tile-btn:focus-visible,
-#admin-modal .adm-emoji-cell:focus-visible {
+#admin-modal #admin-pane-tasks .adm-emoji-tile-btn:focus-visible {
   outline: 2px solid var(--adm-focus);
   outline-offset: 2px;
-}
-
-#admin-modal .adm-emoji-popover {
-  position: absolute;
-  z-index: 20;
-  top: 62px; /* row padding 10 + tile 44 + 8 */
-  left: 10px;
-  width: 368px;
-  max-width: calc(100% - 20px);
-  display: flex;
-  flex-direction: column;
-  border: 2px solid var(--adm-line);
-  border-radius: 12px;
-  background: var(--adm-surface);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22), 0 2px 6px rgba(15, 23, 42, 0.12);
-  color: var(--adm-ink);
-  text-align: left;
-}
-
-/* Little pointer up to the tile */
-#admin-modal .adm-emoji-popover::before {
-  content: '';
-  position: absolute;
-  top: -9px;
-  left: 14px;
-  width: 14px;
-  height: 14px;
-  border-top: 2px solid var(--adm-line);
-  border-left: 2px solid var(--adm-line);
-  background: var(--adm-surface);
-  transform: rotate(45deg);
-}
-
-#admin-modal .adm-emoji-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 8px 4px 16px;
-}
-
-#admin-modal .adm-emoji-title {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--adm-ink);
-}
-
-/* Header and footer stay put; only the groups scroll (UX Rule 4). Transparent
-   track so the rounded card corners stay clean (UX Rule 5). */
-#admin-modal .adm-emoji-body {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-height: 320px;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 0 12px 8px;
-  scrollbar-color: #cbd5e1 transparent;
-}
-
-#admin-modal .adm-emoji-body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-#admin-modal .adm-emoji-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-#admin-modal .adm-emoji-group-label {
-  padding-left: 4px;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--adm-ink-2);
-}
-
-#admin-modal .adm-emoji-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, 48px);
-  gap: 4px;
-}
-
-#admin-modal .adm-emoji-cell {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  padding: 0;
-  border: 2px solid transparent;
-  border-radius: 10px;
-  background: transparent;
-  font-size: 28px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-#admin-modal .adm-emoji-cell:hover {
-  background: var(--adm-secondary-fill);
-}
-
-#admin-modal .adm-emoji-cell:active {
-  transform: scale(0.94);
-}
-
-/* Current icon: border ring (focus uses outline, so the two never merge) */
-#admin-modal .adm-emoji-cell[aria-pressed="true"] {
-  border-color: var(--adm-primary);
-  background: var(--adm-secondary-fill);
-}
-
-#admin-modal .adm-emoji-foot {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border-top: 1px solid var(--adm-line);
-}
-
-#admin-modal .adm-emoji-label {
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: var(--adm-ink-2);
-}
-
-#admin-modal .adm-emoji-custom-row {
-  display: flex;
-  gap: 8px;
-}
-
-#admin-modal .adm-emoji-custom-row .adm-emoji-input {
-  flex: 1 1 auto;
-  min-width: 0;
-  width: 100%;
-  margin: 0;
-}
-
-#admin-modal .adm-emoji-custom-row .adm-emoji-use {
-  flex: 0 0 auto;
-  min-height: 44px;
-  margin: 0;
-  padding: 0 18px;
-}
-
-/* Warning tone shared with the wrong-PIN line: burnt orange, never red */
-#admin-modal .adm-emoji-msg {
-  padding: 8px 10px;
-  border: 1.5px solid #ea580c;
-  border-radius: 8px;
-  background: #fff7ed;
-  color: #c2410c;
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-@media (max-width: 520px) {
-  #admin-modal .adm-emoji-popover {
-    left: 0;
-    right: 0;
-    width: auto;
-    max-width: none;
-  }
-
-  /* 40vh keeps the whole popover (header + grid + Any emoji) inside the phone's Admin pane */
-  #admin-modal .adm-emoji-body {
-    max-height: 40vh;
-  }
 }
 
 #admin-modal #admin-pane-tasks .adm-task-summary {
@@ -8915,6 +8739,283 @@ body.app-booting.app-boot-failed .pokemon-sprite-wrapper::before {
   #admin-modal #admin-pane-tasks .adm-task-actions {
     flex: 1 1 100%;
     justify-content: flex-end;
+  }
+}
+
+/* Icon picker dialog (#admin-emoji-dialog, prd_activity_icon_picker.md §10.6):
+   stacked over Admin like the restore dialog. Top-aligned so the search box and
+   first results stay above the iPad keyboard; the card is never taller than the
+   screen, and only the grid scrolls. Admin tokens are re-declared because the
+   dialog lives outside #admin-modal. */
+#admin-emoji-dialog {
+  --adm-ink: #1e293b;
+  --adm-ink-2: #475569;
+  --adm-line: #e2e8f0;
+  --adm-line-strong: #cbd5e1;
+  --adm-surface: #ffffff;
+  --adm-frame: #2d3748;
+  --adm-primary: #2a71d0;
+  --adm-primary-pressed: #1d4f90;
+  --adm-secondary-fill: #e3edfb;
+  --adm-field-line: #7d8ca3;
+  --adm-focus: #1d4f90;
+  /* Same layer as the restore dialog: above Admin, below notifications. */
+  z-index: 190000;
+  align-items: flex-start;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+#admin-emoji-dialog .adm-emoji-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(520px, 100%);
+  max-width: none;
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 3px solid var(--adm-frame);
+  border-radius: 16px;
+  background: var(--adm-surface);
+  box-sizing: border-box;
+  color: var(--adm-ink);
+  text-align: left;
+}
+
+#admin-emoji-dialog .adm-emoji-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 8px 20px;
+}
+
+#admin-emoji-dialog .adm-emoji-current {
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--adm-secondary-fill);
+  font-size: 22px;
+  line-height: 1;
+}
+
+#admin-emoji-dialog .adm-emoji-titles {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+#admin-emoji-dialog h2 {
+  margin: 0;
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.15rem;
+  font-weight: normal;
+  color: var(--adm-ink);
+}
+
+#admin-emoji-dialog .adm-emoji-activity {
+  overflow: hidden;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--adm-ink-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#admin-emoji-dialog .pixel-btn.adm-icon-btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border-radius: 10px;
+}
+
+#admin-emoji-dialog .adm-emoji-search-wrap {
+  position: relative;
+  padding: 0 20px 12px;
+}
+
+/* Magnifier drawn in CSS (no emoji, no inline SVG markup) */
+#admin-emoji-dialog .adm-emoji-search-wrap::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 34px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--adm-ink-2);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+#admin-emoji-dialog .adm-emoji-search-wrap::after {
+  content: '';
+  position: absolute;
+  top: 27px;
+  left: 46px;
+  width: 7px;
+  height: 2px;
+  background: var(--adm-ink-2);
+  transform: rotate(45deg);
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+#admin-emoji-dialog .adm-emoji-search {
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  padding: 0 12px 0 40px;
+  border: 1.5px solid var(--adm-field-line);
+  border-radius: 8px;
+  background: var(--adm-surface);
+  box-shadow: inset 0 2px 3px rgba(15, 23, 42, 0.08);
+  box-sizing: border-box;
+  color: var(--adm-ink);
+  font-family: 'Quicksand', sans-serif;
+  font-size: 16px; /* 16px stops iOS zooming into the field */
+  font-weight: 600;
+}
+
+#admin-emoji-dialog .adm-emoji-search:focus {
+  border-color: var(--adm-primary);
+  outline: none;
+}
+
+/* Header and search stay put; only the groups scroll (UX Rule 4). Transparent
+   track so the rounded card corners stay clean (UX Rule 5). */
+#admin-emoji-dialog .adm-emoji-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--adm-line);
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+#admin-emoji-dialog .adm-emoji-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#admin-emoji-dialog .adm-emoji-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#admin-emoji-dialog .adm-emoji-group-label {
+  padding-left: 4px;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--adm-ink-2);
+}
+
+#admin-emoji-dialog .adm-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 52px);
+  gap: 4px;
+}
+
+#admin-emoji-dialog .adm-emoji-cell {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: 0;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#admin-emoji-dialog .adm-emoji-cell:hover {
+  background: var(--adm-secondary-fill);
+}
+
+#admin-emoji-dialog .adm-emoji-cell:active {
+  transform: scale(0.94);
+}
+
+/* Current icon: border ring (focus uses outline, so the two never merge) */
+#admin-emoji-dialog .adm-emoji-cell[aria-pressed="true"] {
+  border-color: var(--adm-primary);
+  background: var(--adm-secondary-fill);
+}
+
+#admin-emoji-dialog :is(.adm-emoji-cell, .adm-emoji-search, .pixel-btn):focus-visible {
+  outline: 2px solid var(--adm-focus);
+  outline-offset: 2px;
+}
+
+#admin-emoji-dialog .adm-emoji-empty {
+  margin: 0;
+  padding: 12px 4px;
+  font-family: 'Quicksand', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--adm-ink-2);
+}
+
+@media (max-width: 520px) {
+  #admin-emoji-dialog {
+    padding: 12px;
+  }
+
+  #admin-emoji-dialog .adm-emoji-dialog {
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+
+  #admin-emoji-dialog .adm-emoji-head {
+    padding-left: 16px;
+  }
+
+  #admin-emoji-dialog .adm-emoji-search-wrap {
+    padding: 0 16px 12px;
+  }
+
+  #admin-emoji-dialog .adm-emoji-search-wrap::before {
+    left: 30px;
+  }
+
+  #admin-emoji-dialog .adm-emoji-search-wrap::after {
+    left: 42px;
+  }
+
+  #admin-emoji-dialog .adm-emoji-body {
+    padding: 12px 16px 16px;
+  }
+
+  #admin-emoji-dialog .adm-emoji-grid {
+    grid-template-columns: repeat(auto-fill, 48px);
+  }
+
+  #admin-emoji-dialog .adm-emoji-cell {
+    width: 48px;
+    height: 48px;
+    font-size: 28px;
   }
 }
 

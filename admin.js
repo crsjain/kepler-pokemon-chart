@@ -324,6 +324,7 @@ function topAdminLayer() {
   if (!adminModal || adminModal.classList.contains('hidden')) return null;
   if (isShown('password-modal') || isShown('add-profile-modal')) return null;
   if (isShown('admin-restore-dialog')) return document.getElementById('admin-restore-dialog');
+  if (isShown('admin-emoji-dialog')) return document.getElementById('admin-emoji-dialog');
   const confirmEl = document.getElementById('confirm-modal');
   if (confirmEl && !confirmEl.classList.contains('hidden')) {
     return confirmEl.getAttribute('data-surface') === 'admin' ? confirmEl : null;
@@ -361,7 +362,7 @@ function isLayerAboveAdminOpen() {
     return !!el && !el.classList.contains('hidden');
   };
   return open('confirm-modal') || open('edit-rewards-modal') || open('password-modal') ||
-    open('add-profile-modal') || open('admin-restore-dialog') ||
+    open('add-profile-modal') || open('admin-restore-dialog') || open('admin-emoji-dialog') ||
     !!document.querySelector('.notif-modal:not(.hidden):not(.toast)');
 }
 
@@ -918,7 +919,7 @@ export function initAdmin(callbacks) {
     tasksList.addEventListener('input', refreshActivitiesDirty);
     tasksList.addEventListener('change', refreshActivitiesDirty);
   }
-  bindEmojiPickerDismiss();
+  bindEmojiPicker();
 
   const chartStyleCard = document.getElementById('admin-chart-style-placeholder');
   if (chartStyleCard) {
@@ -1526,21 +1527,16 @@ const SINGLE_EMOJI_RE = /^(?:\p{Regional_Indicator}{2}|[#*0-9]\uFE0F?\u20E3|\p{E
 const EMOJI_PRESENTATION_RE = /\p{Emoji_Presentation}|\uFE0F|\u20E3|\p{Regional_Indicator}/u;
 
 /**
- * "Any emoji" validation: exactly one emoji grapheme (ZWJ families, skin
- * tones, flags and keycaps included). Returns { emoji } or { error }.
+ * A pasted or typed emoji in the search box: exactly one emoji grapheme (ZWJ
+ * families, skin tones, flags and keycaps included) with emoji presentation,
+ * so text-style symbols (©, ™, ❤ without U+FE0F) don't count. Emoji or null.
  */
 function parseSingleEmoji(text) {
   const t = String(text || '').trim();
-  if (!t) return { error: 'Paste or type an emoji first.' };
-  const isEmoji = (g) => SINGLE_EMOJI_RE.test(g) && EMOJI_PRESENTATION_RE.test(g);
-  let parts = [t];
-  if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {
-    parts = [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(t)].map(s => s.segment);
-  }
-  if (parts.length === 1 && isEmoji(t)) return { emoji: t };
-  // Several real emoji (🎹🎹) get their own hint; anything else (福, ab, 1, ©) isn't an emoji.
-  if (parts.length > 1 && parts.every(isEmoji)) return { error: 'Use just one emoji.' };
-  return { error: 'Only emoji work as icons.' };
+  if (!t || !SINGLE_EMOJI_RE.test(t) || !EMOJI_PRESENTATION_RE.test(t)) return null;
+  if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function' &&
+      [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(t)].length !== 1) return null;
+  return t;
 }
 
 /**
@@ -1669,35 +1665,93 @@ function setTaskRowEditing(item, editing, { focus = false } = {}) {
 }
 
 /* ---------------------------------------------------------------------------
- * Activity icon picker (docs/prd_activity_icon_picker.md). The hidden
- * <select class="task-emoji-select"> stays the row's value store; a pick sets
- * its value and fires a bubbling `change`, the same path the select used, so
- * syncTaskSummary, the dirty count, Save bar and unsaved guard are untouched.
- * One popover at a time, built on open and removed on close.
+ * Activity icon picker (docs/prd_activity_icon_picker.md §10). Tapping an open
+ * row's icon tile opens #admin-emoji-dialog, stacked over Admin and sized to
+ * the screen (only the grid scrolls). The hidden <select class="task-emoji-
+ * select"> stays the row's value store; a pick sets its value and fires a
+ * bubbling `change` (the select's old path), so syncTaskSummary, the dirty
+ * count, Save bar and unsaved guard are untouched.
+ * Search covers ~1,850 emoji from emoji_data.js, loaded on first open.
  * ------------------------------------------------------------------------- */
-let emojiPicker = null; // { item, tile, pop }
-let emojiSwallow = null; // { target, t } — the click of an outside tap that closed the picker
+let emojiPicker = null; // { item, tile, current }
+let emojiIndexPromise = null;
+let emojiIndex = null; // [{ e, words }]
+
+function emojiDialogEl() {
+  return document.getElementById('admin-emoji-dialog');
+}
 
 function isEmojiPickerOpen() {
-  if (emojiPicker && !emojiPicker.pop.isConnected) emojiPicker = null; // row re-rendered underneath
+  const dialog = emojiDialogEl();
+  if (emojiPicker && (!emojiPicker.item.isConnected || !dialog || dialog.classList.contains('hidden'))) {
+    emojiPicker = null;
+  }
   return !!emojiPicker;
 }
 
-function closeEmojiPicker({ focusTile = false } = {}) {
-  if (!emojiPicker) return;
-  const { tile, pop } = emojiPicker;
-  emojiPicker = null;
-  pop.remove();
-  tile.setAttribute('aria-expanded', 'false');
-  if (focusTile && tile.isConnected) tile.focus({ preventScroll: true });
+/** Lazy import (kid screens never load the data). Retries after a failure. */
+function loadEmojiIndex() {
+  if (!emojiIndexPromise) {
+    emojiIndexPromise = import('./emoji_data.js')
+      .then(({ EMOJI_DATA }) => {
+        emojiIndex = EMOJI_DATA.map(([e, name, keywords]) => ({
+          e,
+          words: `${name} ${keywords}`.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
+        }));
+        return emojiIndex;
+      })
+      .catch(err => {
+        console.error('Icon search data failed to load:', err);
+        emojiIndexPromise = null;
+        return null;
+      });
+  }
+  return emojiIndexPromise;
 }
 
-function toggleEmojiPicker(item) {
-  if (isEmojiPickerOpen() && emojiPicker.item === item) {
-    closeEmojiPicker({ focusTile: true });
+/**
+ * Search results: a pasted emoji is its own single result; otherwise every
+ * typed word must start a word of the name or keywords. Curated icons first.
+ */
+function searchEmoji(query) {
+  const pasted = parseSingleEmoji(query);
+  if (pasted) return [pasted];
+  const terms = String(query).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  if (terms.length === 0 || !emojiIndex) return [];
+  const hits = emojiIndex
+    .filter(row => terms.every(t => row.words.some(w => w.startsWith(t))))
+    .map(row => row.e);
+  // A hit that is a curated icon uses the curated spelling (the data writes some
+  // with U+FE0F, e.g. ⚽️), so picking it from search stores the same string.
+  const curated = hits.map(e => TASK_EMOJI_CHOICES.find(c => normEmoji(c) === normEmoji(e))).filter(Boolean);
+  return [...curated, ...hits.filter(e => !isCuratedEmoji(e))];
+}
+
+function renderEmojiPickerBody() {
+  const body = document.getElementById('admin-emoji-body');
+  const search = document.getElementById('admin-emoji-search');
+  if (!body || !search || !emojiPicker) return;
+  const { current } = emojiPicker;
+  const cell = (e) => `<button type="button" class="adm-emoji-cell" data-emoji="${escapeHtml(e)}" aria-pressed="${normEmoji(e) === normEmoji(current)}" aria-label="${escapeHtml(e)}">${escapeHtml(e)}</button>`;
+  const group = (g) => `
+      <div class="adm-emoji-group" role="group" aria-label="${escapeHtml(g.label)}">
+        <div class="adm-emoji-group-label" aria-hidden="true">${escapeHtml(g.label)}</div>
+        <div class="adm-emoji-grid">${g.emoji.map(cell).join('')}</div>
+      </div>`;
+  const query = search.value.trim();
+  if (!query) {
+    const groups = isCuratedEmoji(current)
+      ? TASK_EMOJI_GROUPS
+      : [{ label: 'This activity', emoji: [current] }, ...TASK_EMOJI_GROUPS];
+    body.innerHTML = groups.map(group).join('');
+    body.dataset.view = 'curated';
     return;
   }
-  openEmojiPicker(item);
+  const hits = searchEmoji(query);
+  body.innerHTML = hits.length
+    ? group({ label: 'Results', emoji: hits })
+    : '<p class="adm-emoji-empty" role="status">No matches</p>';
+  body.dataset.view = hits.length ? 'results' : 'empty';
 }
 
 function setRowEmoji(item, emoji) {
@@ -1712,114 +1766,85 @@ function setRowEmoji(item, emoji) {
   select.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
+function pickEmoji(emoji) {
+  if (!isEmojiPickerOpen()) return;
+  const { item, current } = emojiPicker;
+  if (normEmoji(emoji) !== normEmoji(current)) setRowEmoji(item, emoji);
+  closeEmojiPicker({ focusTile: true });
+}
+
+function closeEmojiPicker({ focusTile = false } = {}) {
+  const dialog = emojiDialogEl();
+  const picker = emojiPicker;
+  emojiPicker = null;
+  if (dialog) dialog.classList.add('hidden');
+  if (!picker) return;
+  picker.tile.setAttribute('aria-expanded', 'false');
+  if (focusTile && picker.tile.isConnected) picker.tile.focus({ preventScroll: true });
+}
+
 function openEmojiPicker(item) {
+  const dialog = emojiDialogEl();
+  if (!dialog) return;
   closeEmojiPicker();
   const tile = item.querySelector('.adm-emoji-tile-btn');
   const current = item.querySelector('.task-emoji-select').value || '📝';
-  const groups = isCuratedEmoji(current)
-    ? TASK_EMOJI_GROUPS
-    : [{ label: 'This activity', emoji: [current] }, ...TASK_EMOJI_GROUPS];
-
-  const pop = document.createElement('div');
-  pop.className = 'adm-emoji-popover';
-  pop.setAttribute('role', 'dialog');
-  pop.setAttribute('aria-label', 'Choose an icon');
-  pop.innerHTML = `
-      <div class="adm-emoji-head">
-        <h3 class="adm-emoji-title">Choose an icon</h3>
-        <button type="button" class="pixel-btn adm-icon-btn adm-tertiary adm-emoji-close" aria-label="Close icon picker" title="Close">✕</button>
-      </div>
-      <div class="adm-emoji-body">
-        ${groups.map(g => `
-        <div class="adm-emoji-group" role="group" aria-label="${escapeHtml(g.label)}">
-          <div class="adm-emoji-group-label" aria-hidden="true">${escapeHtml(g.label)}</div>
-          <div class="adm-emoji-grid">
-            ${g.emoji.map(e => `<button type="button" class="adm-emoji-cell" data-emoji="${escapeHtml(e)}" aria-pressed="${normEmoji(e) === normEmoji(current)}" aria-label="${escapeHtml(e)}">${escapeHtml(e)}</button>`).join('')}
-          </div>
-        </div>`).join('')}
-      </div>
-      <div class="adm-emoji-foot">
-        <label class="adm-emoji-label" for="adm-emoji-input">Any emoji</label>
-        <div class="adm-emoji-custom-row">
-          <input type="text" id="adm-emoji-input" class="pixel-input adm-emoji-input" placeholder="e.g. 🦄" maxlength="16" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-describedby="adm-emoji-msg">
-          <button type="button" class="pixel-btn adm-secondary adm-emoji-use">Use</button>
-        </div>
-        <div id="adm-emoji-msg" class="adm-emoji-msg hidden" aria-live="polite"></div>
-      </div>
-    `;
-
-  const pick = (emoji) => {
-    if (normEmoji(emoji) !== normEmoji(current)) setRowEmoji(item, emoji);
-    closeEmojiPicker({ focusTile: true });
-  };
-  pop.querySelectorAll('.adm-emoji-cell').forEach(btn => {
-    btn.addEventListener('click', () => pick(btn.dataset.emoji));
-  });
-  pop.querySelector('.adm-emoji-close').addEventListener('click', () => closeEmojiPicker({ focusTile: true }));
-  const input = pop.querySelector('.adm-emoji-input');
-  const msg = pop.querySelector('.adm-emoji-msg');
-  const useCustom = () => {
-    const result = parseSingleEmoji(input.value);
-    if (result.error) {
-      msg.textContent = result.error;
-      msg.classList.remove('hidden');
-      return;
-    }
-    pick(result.emoji);
-  };
-  pop.querySelector('.adm-emoji-use').addEventListener('click', useCustom);
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      useCustom();
-    }
-  });
-  input.addEventListener('input', () => msg.classList.add('hidden'));
-  // Keep the field and Use above the iPad keyboard.
-  input.addEventListener('focus', () => {
-    if (typeof input.scrollIntoView === 'function') input.scrollIntoView({ block: 'nearest' });
-  });
-
-  item.appendChild(pop);
-  emojiPicker = { item, tile, pop };
+  emojiPicker = { item, tile, current };
+  document.getElementById('admin-emoji-current').textContent = current;
+  document.getElementById('admin-emoji-activity').textContent =
+    item.querySelector('.task-name-input').value.trim() || 'Untitled activity';
+  const search = document.getElementById('admin-emoji-search');
+  search.value = '';
+  renderEmojiPickerBody();
+  dialog.classList.remove('hidden');
   tile.setAttribute('aria-expanded', 'true');
-  // Focus the current icon, not the field, so the iPad keyboard doesn't cover the grid.
-  const first = pop.querySelector('.adm-emoji-cell[aria-pressed="true"]') || pop.querySelector('.adm-emoji-cell');
-  if (first) first.focus({ preventScroll: true });
-  if (typeof pop.scrollIntoView === 'function') pop.scrollIntoView({ block: 'nearest' });
+  const body = document.getElementById('admin-emoji-body');
+  body.scrollTop = 0;
+  // Focus the current icon, not the search box, so the iPad keyboard stays down.
+  const focusCell = body.querySelector('.adm-emoji-cell[aria-pressed="true"]') || body.querySelector('.adm-emoji-cell');
+  if (focusCell) {
+    focusCell.focus({ preventScroll: true });
+    if (typeof focusCell.scrollIntoView === 'function') focusCell.scrollIntoView({ block: 'nearest' });
+  }
+  loadEmojiIndex().then(() => {
+    // Data arrived while a search was already typed: show its results.
+    if (isEmojiPickerOpen() && search.value.trim()) renderEmojiPickerBody();
+  });
 }
 
-/**
- * Registered once (capture phase, so it runs before Admin's document handler
- * and app.js's window handler). No-ops while no picker is open.
- * - Escape closes only the picker.
- * - An outside tap closes it, and its click is swallowed so it neither closes
- *   Admin via the backdrop nor presses what was under it. Only the click that
- *   belongs to that same tap is swallowed: a tap that became a scroll never
- *   clicks, and a stale flag must not eat the next real tap (panel review).
- */
-function bindEmojiPickerDismiss() {
+function toggleEmojiPicker(item) {
+  if (isEmojiPickerOpen() && emojiPicker.item === item) {
+    closeEmojiPicker({ focusTile: true });
+    return;
+  }
+  openEmojiPicker(item);
+}
+
+/** Wired once from initAdmin. Escape, ✕ and the scrim close only the picker. */
+function bindEmojiPicker() {
+  const dialog = emojiDialogEl();
+  if (!dialog) return;
+  bindBackdropDismiss(dialog, () => closeEmojiPicker({ focusTile: true }));
+  document.getElementById('admin-emoji-close-btn').addEventListener('click', () => closeEmojiPicker({ focusTile: true }));
+  document.getElementById('admin-emoji-body').addEventListener('click', (e) => {
+    const cell = e.target.closest('.adm-emoji-cell');
+    if (cell) pickEmoji(cell.dataset.emoji);
+  });
+  const search = document.getElementById('admin-emoji-search');
+  search.addEventListener('input', renderEmojiPickerBody);
+  search.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const first = document.querySelector('#admin-emoji-body .adm-emoji-cell');
+    if (search.value.trim() && first) pickEmoji(first.dataset.emoji);
+  });
+  // Capture phase: runs before Admin's document handler and app.js's window
+  // handler, so Escape never closes Admin underneath the picker.
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape' || !isEmojiPickerOpen()) return;
     e.stopPropagation();
     e.preventDefault();
     closeEmojiPicker({ focusTile: true });
-  }, true);
-  document.addEventListener('pointerdown', (e) => {
-    emojiSwallow = null;
-    if (!isEmojiPickerOpen()) return;
-    const { pop, tile } = emojiPicker;
-    if (pop.contains(e.target) || tile.contains(e.target)) return;
-    closeEmojiPicker();
-    emojiSwallow = { target: e.target, t: Date.now() };
-  }, true);
-  document.addEventListener('click', (e) => {
-    const s = emojiSwallow;
-    emojiSwallow = null;
-    // A real tap's pointerdown and click share the same innermost target.
-    if (!s || Date.now() - s.t > 700 || e.target !== s.target) return;
-    e.stopPropagation();
-    e.preventDefault();
   }, true);
 }
 

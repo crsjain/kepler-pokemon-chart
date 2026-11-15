@@ -1,6 +1,6 @@
 # PRD: Activity Icon Picker (Admin › Activities)
 
-**Status:** Implemented 2026-11-15 (TC140, cache v314) · **Owner:** crsjain · **Date:** 2026-11-08
+**Status:** Implemented 2026-11-15. v1 in-row popover (cache v314) was replaced the same day by v2: a stacked dialog with emoji search (§10, cache v317, TC140). §3–§8 describe v1; where they conflict, §10 wins. · **Owner:** crsjain · **Date:** 2026-11-08
 **Origin:** Checkpoint 90 §1, "More activity icons → grid emoji picker" (approved 2026-11-07).
 **Reserves:** TC140 · **Schema:** none (`task.emoji` stays a plain string)
 
@@ -186,7 +186,7 @@ No `alert()` / `confirm()` (UX §6.2).
   - Focus goes to the current icon on open, and the field scrolls into view on focus (iPad keyboard).
 - **Declined (owner: keep the UX clean, less clutter):** an "Also used by…" duplicate-icon hint, and keyboard helper text under Any emoji.
 
-## 10. v2 — Emoji search replaces "Any emoji" (proposed 2026-11-15)
+## 10. v2 — Emoji search replaces "Any emoji" (built 2026-11-15)
 
 **Ask (owner):** "Instead of 'any emoji'… swap in a standard emoji search function and let people choose from possible options." **Owner decisions:** search only (no category tabs), no "recently used" row.
 
@@ -228,7 +228,7 @@ No `alert()` / `confirm()` (UX §6.2).
   - clearing the search restores the 7 curated groups.
 - TC90: `emoji_data.js` is cached and mapped. Everything else in TC140 is unchanged.
 
-### 10.6 Layout: stacked dialog instead of an in-row popover (proposed 2026-11-15)
+### 10.6 Layout: stacked dialog instead of an in-row popover (built 2026-11-15)
 
 **Problem (owner, iPad landscape):** the in-row popover is cut off: "I can't see the entire thing at once, which feels odd." It lives inside Admin's scrolling pane, so on a short screen (1024×640) its top or bottom always falls outside the visible area.
 
@@ -242,7 +242,7 @@ No `alert()` / `confirm()` (UX §6.2).
 | Outside tap | Its own scrim catches it, so the "swallow the click" workaround goes away | Keeps the workaround |
 | Link to the row | Header shows the current icon and the activity name | Pointer arrow next to the tile |
 
-**Decision (proposed): A.**
+**Decision: A** (owner: "Build").
 
 - `#admin-emoji-dialog.modal` with `role=dialog`, `aria-modal`, `aria-labelledby`, stacked above `#admin-modal`.
 - **Header:** the current icon tile, then "Choose an icon" with the activity name as a grey sub-line (no truncated long titles), then ✕.
@@ -253,3 +253,11 @@ No `alert()` / `confirm()` (UX §6.2).
 - **Removed:** the capture-phase outside-tap / click-swallow listeners.
 - **Mockup:** conv 33cfc8c4 `activity_icon_picker_dialog_mockup.html`.
 - **TC140 changes:** the dialog is fully inside the viewport at 1024×640 and 390×844 (its rect is within `innerHeight`); the scrim click closes the picker and Admin stays open with no guard; Escape closes only the picker. The stale-swallow step is dropped, since that mechanism is gone.
+
+### 10.7 Build notes (2026-11-15)
+
+- `emoji_data.js` has **1,849** emoji (119 KB). `tools/build_emoji_data.js` also drops lone regional indicator letters (🇦), which emojibase files under Flags.
+- A search hit that is a curated icon is shown and stored in the **curated spelling**. The data writes some with U+FE0F (⚽️, 🀄️), so without this a searched ⚽ would differ from the curated ⚽, read as a change, and show twice.
+- **Enter** in the search box picks the first result; with an empty search it does nothing.
+- The dialog shrinks to fit its content while searching, so the results stay right under the search box above the iPad keyboard.
+- Checked by screenshot at 1024×640 (the dialog is 16–624px tall) and 390×844 (12–832px). TC140 asserts the dialog fits the test viewport; Chrome headless can't change the viewport from page JS.
