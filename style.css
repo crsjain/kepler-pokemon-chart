@@ -10486,6 +10486,81 @@ body[data-theme] #level-up-modal .modal-content {
   background: var(--sk-modal-header-bg) !important;
 }
 
+/* ---- Scrolling kid shells: keep the scrollbar out of the 26px corners ----
+   These shells scroll themselves, and a scrollbar runs the full height of the
+   padding box. border-radius doesn't clip it, so on phones and tablets the
+   overlay bar stuck out past the rounded top and bottom corners (owner,
+   2026-11-15). A 12px transparent top/bottom border keeps the bar (and
+   scrolled content) inside the curve: at 6px from the edge a 26px corner
+   curves in ~9.4px. The background still paints under the border, and each
+   padding drops by 12px, so the panel looks the same. Works for overlay
+   scrollbars too, which ignore ::-webkit-scrollbar styling. TC141. */
+body[data-theme] #partner-modal .modal-content,
+body[data-theme] #pokemon-shop-modal .modal-content,
+body[data-theme] #vault-modal .vault-modal-content,
+body[data-theme] #partner-showcase-modal .partner-showcase-content,
+body[data-theme] .notif-modal:not(.adm-surface):not(.toast) .modal-content {
+  border-top: 12px solid transparent !important;
+  border-bottom: 12px solid transparent !important;
+  /* Gradient backgrounds (showcase header) start at the outer edge, as before. */
+  background-origin: border-box !important;
+}
+
+/* Absolute children are placed from the padding edge, which is now 12px lower,
+   so the × pills move up 12px to stay where they were. */
+body[data-theme] #vault-modal .vault-modal-content .modal-close-btn {
+  top: 3px;   /* 15px - 12px */
+}
+
+body[data-theme] #partner-showcase-modal .partner-showcase-content .modal-close-btn {
+  top: 0;     /* 12px - 12px */
+}
+
+body[data-theme] #pokemon-shop-modal .shop-close-btn {
+  top: -2px;  /* 10px - 12px */
+}
+
+body[data-theme] #partner-modal .modal-content,
+body[data-theme] #pokemon-shop-modal .modal-content,
+body[data-theme] #vault-modal .vault-modal-content {
+  padding-top: 13px;    /* 25px - 12px */
+  padding-bottom: 13px;
+}
+
+body[data-theme] #partner-showcase-modal .partner-showcase-content {
+  padding-top: 12px;    /* 24px - 12px */
+  padding-bottom: 6px;  /* 18px - 12px */
+}
+
+body[data-theme] .notif-modal:not(.adm-surface):not(.toast) .modal-content {
+  padding-top: 8px;     /* 20px - 12px */
+  padding-bottom: 8px;
+}
+
+@media (max-width: 480px) {
+  body[data-theme] #pokemon-shop-modal .modal-content {
+    padding-top: 6px;   /* 18px - 12px */
+    padding-bottom: 6px;
+  }
+
+  body[data-theme] #vault-modal .vault-modal-content {
+    padding-top: 3px;   /* 15px - 12px */
+    padding-bottom: 3px;
+  }
+
+  body[data-theme] #partner-showcase-modal .partner-showcase-content {
+    padding-top: 8px;   /* 20px - 12px */
+    padding-bottom: 4px; /* 14px - 12px = 2px, raised to 4px so the button's 4px lip isn't clipped */
+  }
+}
+
+@media (max-height: 600px) {
+  body[data-theme] .notif-modal:not(.adm-surface):not(.toast) .modal-content {
+    padding-top: 0;     /* 12px - 12px */
+    padding-bottom: 4px; /* room for the buttons' 4px lip (scrolling clips at the padding edge) */
+  }
+}
+
 /* ---- Kid Modal Titles (Fredoka 700, no pixel outlines) ---- */
 body[data-theme] #partner-modal .modal-content h2,
 body[data-theme] #partner-showcase-modal h2.showcase-name,

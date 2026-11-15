@@ -11812,8 +11812,11 @@ async function runSuite() {
           kidModalShells.forEach(sel => {
             const el = document.querySelector(sel);
             const cs = getComputedStyle(el);
-            assert(cs.borderTopLeftRadius === '26px' && cs.borderTopWidth === '0px',
-              `${sel} must use 26px borderless panel in Unicorn theme (got radius=${cs.borderTopLeftRadius}, border=${cs.borderTopWidth})`);
+            // Scrolling shells carry a 12px *transparent* top/bottom border that keeps the
+            // scrollbar out of the corners (TC141); it is invisible, so it still counts as borderless.
+            const invisibleTop = cs.borderTopWidth === '0px' || cs.borderTopColor === 'transparent' || /rgba\(\d+, \d+, \d+, 0\)/.test(cs.borderTopColor);
+            assert(cs.borderTopLeftRadius === '26px' && invisibleTop && cs.borderLeftWidth === '0px',
+              `${sel} must use 26px borderless panel in Unicorn theme (got radius=${cs.borderTopLeftRadius}, border=${cs.borderTopWidth} ${cs.borderTopColor}, left=${cs.borderLeftWidth})`);
           });
           assert(document.getElementById('showcase-role-label').textContent === 'PRINCESS', "Showcase eyebrow switches to PRINCESS in Unicorn theme");
           assert(document.getElementById('showcase-ok-btn').textContent === "Let's Go Sparkle! ✨", "Showcase CTA switches to Let's Go Sparkle! ✨ in Unicorn theme");
@@ -13185,6 +13188,36 @@ async function runSuite() {
           helpers.resetState();
           await sleep(30);
         }
+      }
+
+      if (__shouldRun('141')) {
+        console.log("Running Test Case 141: Scrolling kid modals keep the scrollbar inside the rounded corners...");
+        // Owner, 2026-11-15 (Android tablet screenshot): the partner picker's scrollbar ran past the
+        // modal's rounded top and bottom. border-radius doesn't clip a scroller's own scrollbar, so the
+        // scrolling shells get a 12px transparent top/bottom border (padding drops 12px to compensate).
+        const shells = [
+          ['#partner-modal .modal-content', 13],
+          ['#pokemon-shop-modal .modal-content', 13],
+          ['#vault-modal .vault-modal-content', 13],
+          ['#partner-showcase-modal .partner-showcase-content', 12],
+        ];
+        for (const theme of ['pokemon', 'unicorn']) {
+          document.body.dataset.theme = theme;
+          for (const [sel, padTop] of shells) {
+            const el = document.querySelector(sel);
+            assert(el, `${sel} exists`);
+            const cs = getComputedStyle(el);
+            const clear = (c) => c === 'transparent' || /rgba\(\d+, \d+, \d+, 0\)/.test(c);
+            assert(cs.borderTopWidth === '12px' && cs.borderBottomWidth === '12px', `${theme}: ${sel} has 12px top/bottom borders (got ${cs.borderTopWidth} / ${cs.borderBottomWidth})`);
+            assert(clear(cs.borderTopColor) && clear(cs.borderBottomColor) && cs.borderLeftWidth === '0px', `${theme}: ${sel} borders are transparent, sides stay borderless`);
+            assert(cs.backgroundOrigin === 'border-box', `${theme}: ${sel} background starts at the outer edge`);
+            assert(cs.paddingTop === `${padTop}px`, `${theme}: ${sel} padding-top drops by 12px to ${padTop}px (got ${cs.paddingTop})`);
+            assert(['auto', 'scroll'].includes(cs.overflowY), `${theme}: ${sel} is the scroller (overflow-y ${cs.overflowY})`);
+          }
+          const pill = getComputedStyle(document.getElementById('close-vault-modal-btn'));
+          assert(pill.top === '3px', `${theme}: Vault × pill moves up 12px to stay put (got ${pill.top})`);
+        }
+        document.body.dataset.theme = 'pokemon';
       }
 
       if (__onlyFilter && __ranTests.size === 0) {
