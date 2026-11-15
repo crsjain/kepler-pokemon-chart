@@ -2710,6 +2710,18 @@ function stopExceptionMode() {
   }
   // Re-render so Prev/Next get their normal enabled state back.
   if (wasActive) {
+    // Big Buttons (owner 2026-11-15): days picked while setting exceptions are a
+    // parent's working view. Done ✅ lands back on today so the hearts are ready
+    // to tap, instead of leaving the child on the last day edited.
+    if (state.chartStyle === 'big-buttons' && !isViewingPastWeek()) {
+      const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
+      const todayCol = getWeekColumnStates(state, currentViewingWeekStartDate).find(c => c.dateStr === todayStr);
+      if (todayCol && state.activeDay !== todayCol.dayOfWeek) {
+        state.activeDay = todayCol.dayOfWeek;
+        saveState();
+      }
+      clearBigButtonsPreview();
+    }
     renderState(false);
     // Exceptions can complete the week (award) or reopen it (take back). Judge
     // once at Done ✅, not on every tap, so cycling a cell through 🔴 ✨ 💤 never

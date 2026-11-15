@@ -124,6 +124,7 @@ When `state.chartStyle === 'big-buttons'` and neither Exception Mode nor Fix Las
   - **Viewing an Archived Historical Week (`◀ Prev`)**: All cards render in read-only `historical` state (`disabled`), and clicking any day pill on the 7-day strip previews that day's cards in the archived week (`viewingHistoricalDayIndex`).
 
 ### 3.4 Automatic Full-Week Grid in Parent Edit Modes
+- **Done ✅ lands on today (owner, 2026-11-15; TC142).** In Big Buttons, a day picked while setting exceptions is only the parent's working view. Leaving Exception Mode sets `state.activeDay` back to today (when today is in the week) and clears any preview, so the hearts are ready to tap. The Standard grid keeps the picked day.
 - When the parent enters **Exception Mode** (`.layout-container.exception-mode`) or **Fix Last Week** (`.layout-container.last-week-edit`):
   - CSS automatically hides `#simplified-today-view` and reveals `.grid-scroll-wrapper` (the full 7-day table).
   - The parent sees all 7 days × all tasks at once to cycle `🔴 ➔ ✨ ➔ 💤` or fix last week's ticks.

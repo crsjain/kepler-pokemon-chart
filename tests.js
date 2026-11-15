@@ -13382,9 +13382,15 @@ async function runSuite() {
           await sleep(30);
           document.getElementById('exceptions-btn').click();
           await sleep(40);
+          // Owner 2026-11-15: a day picked while in Exception Mode doesn't stick after Done ✅.
+          document.querySelector('.day-header[data-day="0"]').click();
+          await sleep(30);
+          assert(state.activeDay === state.weekStartDay % 7, "Exception Mode: picking another day moves the active day");
           document.getElementById('exceptions-done-btn').click();
           await sleep(40);
           assert(helpers.getBigButtonsPreviewCol() === null, "Exception Mode drops the preview");
+          assert(state.activeDay === todayDay && cards.querySelector('input[data-day="2"]'), "Done ✅ in Big Buttons lands back on today");
+          assert(document.getElementById('back-to-today-btn').classList.contains('hidden'), "Done ✅: no Back to Today needed");
         } finally {
           window.__mock_allow_future_edits__ = prevFuture;
           helpers.clearBigButtonsPreview();
