@@ -227,3 +227,29 @@ No `alert()` / `confirm()` (UX §6.2).
   - search "shaking" → no 🫨 (Emoji 15 is excluded);
   - clearing the search restores the 7 curated groups.
 - TC90: `emoji_data.js` is cached and mapped. Everything else in TC140 is unchanged.
+
+### 10.6 Layout: stacked dialog instead of an in-row popover (proposed 2026-11-15)
+
+**Problem (owner, iPad landscape):** the in-row popover is cut off: "I can't see the entire thing at once, which feels odd." It lives inside Admin's scrolling pane, so on a short screen (1024×640) its top or bottom always falls outside the visible area.
+
+**Options weighed:**
+
+| | A. Stacked dialog over Admin (recommended) | B. Adaptive anchored popover |
+| :--- | :--- | :--- |
+| Always fully visible | Yes: sized to the screen, only the grid scrolls | Only when the row has room above or below; landscape leaves ~200px |
+| iPad keyboard (search) | Top-aligned, so search and the first results stay above the keyboard | The space it measured disappears when the keyboard opens |
+| Code | Reuses the existing stacked-dialog pattern (`#admin-restore-dialog`, `.adm-dialog`) | Measuring and repositioning with `position: fixed` on scroll, resize and keyboard; fragile |
+| Outside tap | Its own scrim catches it, so the "swallow the click" workaround goes away | Keeps the workaround |
+| Link to the row | Header shows the current icon and the activity name | Pointer arrow next to the tile |
+
+**Decision (proposed): A.**
+
+- `#admin-emoji-dialog.modal` with `role=dialog`, `aria-modal`, `aria-labelledby`, stacked above `#admin-modal`.
+- **Header:** the current icon tile, then "Choose an icon" with the activity name as a grey sub-line (no truncated long titles), then ✕.
+- **Search** sits below the header. **Body:** the curated groups or Results, the only part that scrolls.
+- **Size:** `width: min(520px, 100% - 32px)`, top-aligned 16px from the top, `max-height: calc(100dvh - 32px)` (with a `100vh` fallback). Cells grow to 52px on tablets; 48px on phones (≤ 520px), where the dialog fills the screen width minus 12px margins.
+- **Phones:** this replaces the earlier in-row popover (§9 Q2), so both form factors use one pattern.
+- **Closing:** ✕, the scrim (backdrop) and Escape close only the picker. It's added to `isLayerAboveAdminOpen()` so Admin's Escape and backdrop never fire underneath, and focus returns to the tile.
+- **Removed:** the capture-phase outside-tap / click-swallow listeners.
+- **Mockup:** conv 33cfc8c4 `activity_icon_picker_dialog_mockup.html`.
+- **TC140 changes:** the dialog is fully inside the viewport at 1024×640 and 390×844 (its rect is within `innerHeight`); the scrim click closes the picker and Admin stays open with no guard; Escape closes only the picker. The stale-swallow step is dropped, since that mechanism is gone.
