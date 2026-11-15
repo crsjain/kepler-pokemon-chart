@@ -13317,13 +13317,20 @@ async function runSuite() {
           assert(getComputedStyle(futCell, '::before').content === 'none', "Future preview: no padlock");
 
           // (c) Today's pill returns to the active day.
-          const backBtn = document.getElementById('back-to-today-btn');
-          assert(!backBtn.classList.contains('hidden') && backBtn.textContent.includes('Back to Today'), "Future preview: ⚡ Back to Today shows under the dates");
+          const backBtn = document.getElementById('simplified-back-to-today-btn');
+          const banner = document.querySelector('.simplified-day-banner');
+          assert(!backBtn.classList.contains('hidden') && backBtn.textContent.includes('Back to Today'), "Future preview: ⚡ Back to Today shows in the day title row");
+          assert(document.getElementById('back-to-today-btn').classList.contains('hidden'), "Big Buttons: the copy under the dates stays hidden (dates row never grows)");
+          const bannerWithBtn = banner.getBoundingClientRect().height;
+          const btnRect = backBtn.getBoundingClientRect();
+          const titleRect = document.getElementById('simplified-day-title').getBoundingClientRect();
+          assert(Math.abs(btnRect.top + btnRect.height / 2 - (titleRect.top + titleRect.height / 2)) < 6 && btnRect.left > titleRect.right, "Back to Today sits on the title's row, to its right");
           pill(2).click();
           await sleep(30);
           assert(helpers.getBigButtonsPreviewCol() === null && !chart.classList.contains('is-preview-day'), "Today pill clears the preview");
           assert(cards.querySelector('input[data-day="2"]'), "Cards are back on today");
           assert(backBtn.classList.contains('hidden'), "On today, Back to Today is hidden");
+          assert(Math.abs(banner.getBoundingClientRect().height - bannerWithBtn) < 1, `The title row keeps its height without the button (${bannerWithBtn} vs ${banner.getBoundingClientRect().height})`);
 
           // (c2) ⚡ Back to Today ends a past-day preview (owner 2026-11-15).
           pill(0).click();

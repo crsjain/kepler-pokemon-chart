@@ -10228,6 +10228,41 @@ body[data-theme] .layout-container:not(.exception-mode):not(.last-week-edit) .ch
 
 body[data-theme] .simplified-day-banner {
   padding: 2px 2px 0;
+  flex-wrap: nowrap;
+}
+
+/* Big Buttons "⚡ Back to Today" sits at the right end of the day title row, so the
+   dates row never grows when previewing another day (owner 2026-11-15). It must fit
+   inside the title's line box: the banner keeps the same height with it shown. */
+body[data-theme] .simplified-day-banner .simplified-day-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body[data-theme] .simplified-day-banner .pixel-btn.simplified-back-to-today {
+  flex: 0 0 auto;
+  /* Negative block margins let the pill (≈33px with its lip) overhang into the
+     banner padding and the 10px gap below instead of growing the 26px row. */
+  margin: -4px 0 -4px auto;
+  background: var(--sk-now-bg);
+  color: #1e293b; /* Rule 13B */
+  box-shadow: 0 3px 0 var(--sk-now-lip);
+  line-height: 1.2;
+}
+
+body[data-theme] .simplified-back-to-today .btt-short {
+  display: none;
+}
+
+@media (max-width: 520px) {
+  body[data-theme] .simplified-back-to-today .btt-long {
+    display: none;
+  }
+  body[data-theme] .simplified-back-to-today .btt-short {
+    display: inline;
+  }
 }
 
 /* Tray padding is uneven on purpose: the pills carry a 3px lip and the Vault/today

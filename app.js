@@ -2189,6 +2189,7 @@ function updateActiveColumnUI() {
  */
 function updateBackToTodayButton(colStates = getWeekColumnStates(state, currentViewingWeekStartDate)) {
   const backToTodayBtn = document.getElementById('back-to-today-btn');
+  const simplifiedBtn = document.getElementById('simplified-back-to-today-btn');
   if (!backToTodayBtn) return;
   const isViewingPastWeek = state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate);
   const hasActiveNonToday = colStates.some(c => c.state === 'ACTIVE_PAST' || c.state === 'ACTIVE_FUTURE');
@@ -2198,12 +2199,20 @@ function updateBackToTodayButton(colStates = getWeekColumnStates(state, currentV
   // no today column, and the pill used to jump to the same weekday of the ended
   // week (docs/prd_week_over_start_new_week.md §1, §4.3).
   const todayCol = colStates.find(c => c.state === 'SELECTABLE_TODAY' || (isPreviewing && c.state === 'ACTIVE_TODAY'));
-  if (!isViewingPastWeek && (hasActiveNonToday || isPreviewing) && todayCol && state.activeDay !== -1) {
-    const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    backToTodayBtn.textContent = `⚡ Back to Today (${daysOfWeek[todayCol.dayOfWeek]})`;
-    backToTodayBtn.classList.remove('hidden');
-  } else {
-    backToTodayBtn.classList.add('hidden');
+  const show = !isViewingPastWeek && (hasActiveNonToday || isPreviewing) && todayCol && state.activeDay !== -1;
+  // Big Buttons shows its copy in the day title row so the dates row never grows
+  // (owner 2026-11-15); the full grid (Standard, Exception Mode, Fix last week)
+  // keeps the one under the dates.
+  const inBigButtonsView = state.chartStyle === 'big-buttons' && !isExceptionMode && !isLastWeekEditActive();
+  const dayName = show ? ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][todayCol.dayOfWeek] : '';
+  if (show) backToTodayBtn.textContent = `⚡ Back to Today (${dayName})`;
+  backToTodayBtn.classList.toggle('hidden', !show || inBigButtonsView);
+  if (simplifiedBtn) {
+    if (show) {
+      simplifiedBtn.innerHTML = `⚡ <span class="btt-long">Back to Today (${dayName})</span><span class="btt-short">Today</span>`;
+      simplifiedBtn.setAttribute('aria-label', `Back to today (${dayName})`);
+    }
+    simplifiedBtn.classList.toggle('hidden', !show || !inBigButtonsView);
   }
 }
 
@@ -3781,8 +3790,7 @@ function bindDayHeaderEvents() {
   });
 
   const backToTodayBtn = document.getElementById('back-to-today-btn');
-  if (backToTodayBtn) {
-    backToTodayBtn.addEventListener('click', () => {
+  const goBackToToday = () => {
       // A Big Buttons day preview ends here too (owner 2026-11-15).
       clearBigButtonsPreview();
       // Land on today's column, not just today's weekday number: once the week
@@ -3798,8 +3806,11 @@ function bindDayHeaderEvents() {
       updateActiveColumnUI();
       // Returning to Today is an explicit exit from past-day editing.
       clearParentGrace({ revertToToday: false });
-    });
-  }
+  };
+  if (backToTodayBtn) backToTodayBtn.addEventListener('click', goBackToToday);
+  // Big Buttons' copy in the day title row (owner 2026-11-15).
+  const simplifiedBackToTodayBtn = document.getElementById('simplified-back-to-today-btn');
+  if (simplifiedBackToTodayBtn) simplifiedBackToTodayBtn.addEventListener('click', goBackToToday);
 
   const parentGraceLockBtn = document.getElementById('parent-grace-lock-btn');
   if (parentGraceLockBtn) {
