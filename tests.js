@@ -13285,17 +13285,17 @@ async function runSuite() {
           assert(helpers.getBigButtonsPreviewCol() === 0, "Past pill: column 0 is previewed");
           assert(chart.classList.contains('is-preview-day') && chart.dataset.preview === 'past' && chart.classList.contains('preview-needs-pin'), "Past preview: container flags past + needs PIN");
           assert(pill(0).classList.contains('is-focused') && pill(0).getAttribute('aria-pressed') === 'true', "Past preview: the tapped pill is focused");
-          assert(pill(2).dataset.columnState === 'active_today', "Past preview: today's pill keeps its active state (yellow)");
-          // Owner pick "B" (2026-11-15): solid theme-accent fill (Poké Blue #1d4ed8 here), white label, white icon disc.
-          const pillCs = getComputedStyle(pill(0));
-          assert(pillCs.backgroundColor === 'rgb(29, 78, 216)', `Past preview: previewed pill is solid Poké Blue (got ${pillCs.backgroundColor})`);
-          assert(getComputedStyle(pill(0).querySelector('.simplified-pill-day')).color === 'rgb(255, 255, 255)', "Past preview: previewed pill label is white");
-          assert(getComputedStyle(pill(0).querySelector('.simplified-pill-star')).backgroundColor === 'rgb(255, 255, 255)', "Past preview: the ❌ sits in a white disc");
-          assert(getComputedStyle(pill(2)).backgroundColor !== 'rgb(29, 78, 216)' && getComputedStyle(pill(2)).backgroundImage.includes('gradient'), "Today's pill keeps its yellow gradient, not the accent");
+          assert(pill(2).dataset.columnState === 'active_today', "Past preview: today's pill keeps its active column state");
+          // Owner 2026-11-15: yellow follows the day the cards show; today's pill goes plain while previewing.
+          const settle = (el) => { getComputedStyle(el).backgroundImage; el.getAnimations().forEach(an => an.finish()); };
+          settle(pill(0)); settle(pill(2));
+          assert(getComputedStyle(pill(0)).backgroundImage.includes('rgb(255, 216, 74)'), `Past preview: previewed pill takes the active-day yellow (got ${getComputedStyle(pill(0)).backgroundImage})`);
+          assert(getComputedStyle(pill(0).querySelector('.simplified-pill-day')).color === 'rgb(30, 41, 59)', "Past preview: previewed pill label is #1e293b (Rule 13B)");
+          assert(getComputedStyle(pill(2)).backgroundImage === 'none' && getComputedStyle(pill(2)).backgroundColor === 'rgb(255, 255, 255)', "Past preview: today's pill is plain white while previewing");
+          assert(getComputedStyle(pill(0).querySelector('.simplified-pill-star')).backgroundColor !== 'rgb(255, 255, 255)', "Past preview: no white icon disc any more");
           document.body.dataset.theme = 'unicorn';
-          getComputedStyle(pill(0)).backgroundColor; // flush style, then settle any pill transition
-          pill(0).getAnimations().forEach(an => an.finish());
-          assert(getComputedStyle(pill(0)).backgroundColor === 'rgb(126, 34, 206)', `Unicorn: previewed pill is Royal Amethyst (got ${getComputedStyle(pill(0)).backgroundColor})`);
+          settle(pill(0));
+          assert(getComputedStyle(pill(0)).backgroundImage.includes('rgb(254, 240, 138)'), `Unicorn: previewed pill takes the gold→blush today gradient (got ${getComputedStyle(pill(0)).backgroundImage})`);
           document.body.dataset.theme = 'pokemon';
           assert(cards.querySelector('input[data-day="0"]') && !cards.querySelector('input[data-day="2"]'), "Past preview: cards show column 0");
           assert(title.textContent.includes("'s Quests"), `Past preview title (got ${title.textContent})`);
