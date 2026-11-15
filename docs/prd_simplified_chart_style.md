@@ -108,12 +108,18 @@ When `state.chartStyle === 'big-buttons'` and neither Exception Mode nor Fix Las
        - **Not on the Plan (`.out-of-range-cell`)**: Card carries `.is-out-of-range`; a muted dash replaces the ball, with the parent tooltip (`offPlanTooltip`).
   3. **Star ribbon legibility**: day labels use `#475569` (≈ 6.8:1) instead of the faint inherited slate; the active pill keeps `#1e293b`.
 
-### 3.3 Day Switching & Past-Day PIN Lock
-- Clicking a `.simplified-day-pill[data-day]` delegates to the exact same header-click handler used by `.day-header[data-day]`:
+### 3.3 Day Switching, Day Preview & Past-Day PIN Lock
+- **Day preview (owner, 2026-11-15; TC142).** In the current week, tapping a `.simplified-day-pill[data-day]` only changes which day the cards show. There's no PIN and no "Switch Day?", and nothing is saved or synced: `bigButtonsPreviewCol` in app.js is runtime-only, and `state.activeDay` doesn't change. The PIN is needed only to *edit* a past day.
+  - **Past day:** cards follow the B3 past-week recipe (white, no candy lip, balls at 45%) via `.chart-container.is-preview-day[data-preview="past"]`. The 🔒 badge shows only when a ball tap would ask for the PIN (`.preview-needs-pin` = `requiresParentApproval`). A ball tap uses the normal `handleCheckboxChange` path: PIN (lock on) or "Switch Day?" (lock off), then it switches to that day and ticks.
+  - **Future day:** title `⚡ Thursday — coming soon!` (`dayTitleEmoji` per theme). Balls are disabled with an aria-label of "Coming soon". There is never a padlock and never a PIN (the debug Future Edits switch keeps its old behaviour).
+  - The previewed pill gets the grey `#94a3b8` ring. Today keeps its yellow state (Rule 13.6) and one tap on it returns. Tapping the active pill also returns.
+  - **Back to the active day automatically:** after 60 s without a tap in the Big Buttons view (1.5 s in test mode); when the tablet wakes (`visibilitychange`); on profile switch, week navigation, entering Exception Mode / Fix last week, ending the grace window, and as soon as the previewed day becomes the active day.
+  - **During a parent grace window**, a ball tap on a previewed day switches and ticks without "Switch Day?", because Big Buttons shows only one day at a time.
+- Other pill taps delegate to the same header-click handler used by `.day-header[data-day]`:
   - **Today (`SELECTABLE_TODAY`)**: Switches `state.activeDay` immediately with zero modal.
-  - **Past Day (`SELECTABLE_PAST`)**: If `requiresParentApproval(col.dateStr)` is true (`state.lockPastDays`), prompts for the **Parent PIN** (`withParentApproval`) and then switches straight to that day; otherwise prompts `"Switch Day? 📅"`.
+  - **Past Day (`SELECTABLE_PAST`)**: *Standard grid only since 2026-11-15.* If `requiresParentApproval(col.dateStr)` is true (`state.lockPastDays`), prompts for the **Parent PIN** (`withParentApproval`) and then switches straight to that day; otherwise prompts `"Switch Day? 📅"`.
   - **Viewing a Past Day**: The `#back-to-today-btn` (`⚡ Back to Today`) pill appears in `.week-navigation-container` as usual so child or parent can jump back to Today in one tap.
-  - **Week over (2026-11-03):** once the week has ended but the grid hasn't been reset, and no day is active, no day pill is focused. The title reads "Last week is done!", the cards area shows one "Pick a day to fix, or start your new week 🚀" card (`.simplified-week-over-card`, no lip), and `🚀 Start New Week` sits under the week dates. Back to Today never shows when today isn't in the grid. See [`prd_week_over_start_new_week.md`](prd_week_over_start_new_week.md) §4.5.
+  - **Week over (2026-11-03):** once the week has ended but the grid hasn't been reset, and no day is active, no day pill is focused. The title reads "Last week is done!", the cards area shows one "Pick a day to look back, or start your new week 🚀" card (`.simplified-week-over-card`, no lip), and `🚀 Start New Week` sits under the week dates. Back to Today never shows when today isn't in the grid. See [`prd_week_over_start_new_week.md`](prd_week_over_start_new_week.md) §4.5.
   - **Viewing an Archived Historical Week (`◀ Prev`)**: All cards render in read-only `historical` state (`disabled`), and clicking any day pill on the 7-day strip previews that day's cards in the archived week (`viewingHistoricalDayIndex`).
 
 ### 3.4 Automatic Full-Week Grid in Parent Edit Modes
@@ -190,7 +196,7 @@ Cards flex between **64px and 84px**, so short lists fill the tray with roomy ca
      - Today's `.simplified-day-pill` updates from `☆` (`.future-star`) to `🌟` (`.unlocked`)
      - Card action pill updates from `Complete` to `⭐ Done!`.
    - **Day Strip Navigation & Past-Day PIN Lock**:
-     - Enable `state.lockPastDays = true` and clear parent grace. Click a past day pill on `#simplified-day-strip` → assert `#password-modal` opens (`Parent PIN 🔑`).
+     - Enable `state.lockPastDays = true` and clear parent grace. Click a past day pill on `#simplified-day-strip` → assert no `#password-modal` (day preview, TC142). Then click a ball on that day → assert `#password-modal` opens (`Parent PIN 🔑`).
      - Unlock with PIN → assert `state.activeDay` switches to that past day and `#simplified-cards-list` renders that day's task states.
    - **Parent Exception Mode & Fix Last Week Auto-Grid Fallback**:
      - Call `startExceptionMode()` → assert `.grid-scroll-wrapper` becomes visible (`display !== 'none'`) and `#simplified-today-view` hides so the parent can edit the full 7-day grid.
@@ -208,7 +214,7 @@ Cards flex between **64px and 84px**, so short lists fill the tray with roomy ca
 | **Q1** | Should Theme and Chart Style be independent per-child settings? | **Yes, two independent settings** (2026-10-25) and two separate PRDs (`docs/prd_unicorn_princess_theme.md` and `docs/prd_simplified_chart_style.md`). |
 | **Q2** | How should Simplified View present tasks for a 5yo with 1–3 activities? | **"Today Focus" view** (2026-10-25): big, tactile task cards for the active day + a simple 7-day star strip at the top. |
 | **Q3** | Which reward loops stay active in Simplified View? | **Companion leveling & evolving, Daily Stars & Star Vault streak, and Weekly Badge & 4-week Mega Milestone** (2026-10-25). (Kindness Quests ignored as unshipped.) |
-| **Q4** | How should day switching, weekly goal progress, and parent full-week editing work? | **Tap a day in the 7-day star strip to switch days** (respecting the Past-Day PIN lock), **omit task-specific weekly counters (`4 of 5 days` / goal dots) on the Floating Stadium Pill cards** so younger children focus purely on finishing today's tasks and earning all 7 daily stars/crowns for the week, and **automatically show the full 7-day grid during Parent Exception Mode or "Fix Last Week"** (2026-10-25). |
+| **Q4** | How should day switching, weekly goal progress, and parent full-week editing work? | **Tap a day in the 7-day star strip to switch days** (respecting the Past-Day PIN lock; since 2026-11-15 a tap only previews the day, and the PIN is asked when a past-day ball is tapped — §3.3), **omit task-specific weekly counters (`4 of 5 days` / goal dots) on the Floating Stadium Pill cards** so younger children focus purely on finishing today's tasks and earning all 7 daily stars/crowns for the week, and **automatically show the full 7-day grid during Parent Exception Mode or "Fix Last Week"** (2026-10-25). |
 
 ---
 

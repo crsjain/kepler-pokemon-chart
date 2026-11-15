@@ -91,6 +91,7 @@ The Weekly Training Grid uses a centralized state machine with 4 distinct chroma
    - **Header**: Neutral Slate Grey (`#cbd5e1`), Slate Text (`#64748b`), `cursor: not-allowed`.
    - **Cells**: Dimmed (0.45 Opacity), read-only historical record honoring past earned badges and stars.
    - **Big Buttons (`.chart-container.is-past-week`)**: same recipe, never a tint. Cards stay solid white with readable names and full-colour emoji, lose the candy lip and hover lift, and only the catch ball / heart fades to 0.45 with a small slate padlock badge (SVG, not emoji). The focused day pill gets a grey `#94a3b8` ring, never today-yellow. Rest 💤 / off-plan cards keep their stripes and get no padlock. No "Back to Today" banner (owner, 2026-10-30).
+   - **Big Buttons day preview, current week (`.chart-container.is-preview-day`, owner 2026-11-15)**: tapping another day's pill uses the same recipe without the PIN. The padlock shows only on a past day whose ball would ask for the PIN (`.preview-needs-pin`), and **never on future days**: they are "coming soon", not forbidden. Today's pill keeps its yellow. See `prd_simplified_chart_style.md` §3.3.
 
 6. **Themes (owner, 2026-10-30)**: day cells stay **solid white inside the chart panel in every theme**. Only the selectable header colour follows the theme: Poké Blue `#2a71d0` (Pokémon) or Royal Amethyst `#7e22ce` (Unicorn), both with white text. Yellow, or the Unicorn gold→blush gradient, always means *active / today*, with `#1e293b` text. Never use yellow for anything else in the chart, including a focused past day.
 

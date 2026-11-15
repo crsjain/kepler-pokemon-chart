@@ -103,6 +103,46 @@ let viewingHistoricalDayIndex = 0;
 let lastViewedWeekForSimplified = null;
 let lastJustCheckedKey = null;
 
+/* Big Buttons day preview (prd_simplified_chart_style.md §3.3, owner 2026-11-15).
+   In the current week a day-pill tap only changes which day the cards show:
+   no PIN, no "Switch Day?", nothing saved or synced. Editing a past day still
+   goes through the ball tap → handleCheckboxChange → withParentApproval path.
+   Runtime-only; returns to the active day after a minute without taps, when
+   the tablet wakes, on profile/week change and whenever activeDay changes. */
+let bigButtonsPreviewCol = null; // column index being previewed, or null
+let bigButtonsPreviewTimer = null;
+
+function getBigButtonsPreviewMs() {
+  return location.search.includes('runTests=true') ? 1500 : 60 * 1000;
+}
+
+function clearBigButtonsPreview({ render = false } = {}) {
+  if (bigButtonsPreviewTimer) {
+    clearTimeout(bigButtonsPreviewTimer);
+    bigButtonsPreviewTimer = null;
+  }
+  if (bigButtonsPreviewCol === null) return false;
+  bigButtonsPreviewCol = null;
+  if (render) renderSimplifiedView();
+  return true;
+}
+
+// (Re)starts the one-minute "back to the active day" timer while previewing.
+function touchBigButtonsPreview() {
+  if (bigButtonsPreviewCol === null) return;
+  if (bigButtonsPreviewTimer) clearTimeout(bigButtonsPreviewTimer);
+  bigButtonsPreviewTimer = setTimeout(() => {
+    bigButtonsPreviewTimer = null;
+    clearBigButtonsPreview({ render: true });
+  }, getBigButtonsPreviewMs());
+}
+
+function setBigButtonsPreview(colIndex) {
+  bigButtonsPreviewCol = colIndex;
+  touchBigButtonsPreview();
+  renderSimplifiedView();
+}
+
 const APP_VERSION = 'v1.8.0 (v58)';
 
 // The debug "Future Edits" switch is remembered per device on the LOCAL test site
@@ -214,6 +254,8 @@ function clearParentGrace({ revertToToday = true, notify = false } = {}) {
   if (dock) dock.classList.add('hidden');
 
   if (!wasActive) return;
+
+  clearBigButtonsPreview();
 
   // Fix last week shares this session: ending it returns to the current week.
   const wasLastWeekEdit = isLastWeekEditActive();
@@ -384,6 +426,7 @@ function refreshFixLastWeekButton() {
 function startLastWeekEdit() {
   const interval = getLastArchivedInterval();
   if (!interval) return false;
+  clearBigButtonsPreview();
   stopExceptionMode();
   lastWeekEditStart = interval.startDate;
   currentViewingWeekStartDate = interval.startDate;
@@ -1285,6 +1328,7 @@ function renderAdminProfilesList() {
 function selectProfile(profileId) {
   // Never leak one child's unlocked session into another's chart.
   clearParentGrace({ revertToToday: false });
+  clearBigButtonsPreview();
   // Likewise, abandon any half-finished shop adoption. Its grant callback fires
   // seconds after the hold and would otherwise write into the profile that
   // happens to be active when it lands.
@@ -2017,6 +2061,7 @@ export function renderState(rebuildGrid = false) {
   if (currentViewingWeekStartDate !== lastViewedWeekForSimplified) {
     lastViewedWeekForSimplified = currentViewingWeekStartDate;
     viewingHistoricalDayIndex = 0;
+    clearBigButtonsPreview();
   }
 
   // 5. Render Grid Table (conditional build vs update)
@@ -2162,7 +2207,30 @@ function renderSimplifiedView() {
   const viewingStartDay = currentInterval ? currentInterval.weekStartDay : (state.weekStartDay !== undefined ? state.weekStartDay : 0);
   const isPastWeek = !!(state.weekStartDate && (currentViewingWeekStartDate < state.weekStartDate));
 
+  const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
   let focusedColIndex = colStates.findIndex(c => c.state.startsWith('ACTIVE'));
+
+  // Day preview (current week only). Dropped when it points at the active day,
+  // a superseded day, or a parent mode that shows the full grid.
+  let previewKind = null;
+  if (bigButtonsPreviewCol !== null) {
+    const pc = colStates[bigButtonsPreviewCol];
+    const previewValid = !isPastWeek && !isExceptionMode && !isLastWeekEditActive() && pc
+      && pc.state !== 'SUPERSEDED' && !pc.state.startsWith('ACTIVE');
+    if (previewValid) {
+      focusedColIndex = bigButtonsPreviewCol;
+      previewKind = pc.dateStr < todayStr ? 'past' : 'future';
+    } else {
+      clearBigButtonsPreview();
+    }
+  }
+  if (chartContainerEl) {
+    chartContainerEl.classList.toggle('is-preview-day', !!previewKind);
+    chartContainerEl.classList.toggle('preview-needs-pin', previewKind === 'past' && requiresParentApproval(colStates[focusedColIndex].dateStr));
+    if (previewKind) chartContainerEl.dataset.preview = previewKind;
+    else delete chartContainerEl.dataset.preview;
+  }
+
   // Week over and no day picked yet: no pill is focused and one calm card asks
   // the child to pick a day or start the new week (prd_week_over_start_new_week.md §4.5).
   const weekOverNoDay = focusedColIndex === -1 && !isPastWeek && isWeekAwaitingReset();
@@ -2172,7 +2240,6 @@ function renderSimplifiedView() {
 
   const dayNamesShort = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   const dayNamesFull = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const todayStr = formatLocalDate(getLocalDate(state?.timezoneOffset));
 
   let stripHtml = '';
   for (let d = 0; d < 7; d++) {
@@ -2221,7 +2288,7 @@ function renderSimplifiedView() {
     if (dayTitleEl) dayTitleEl.textContent = `${getThemeCopy(state.theme).dayTitleEmoji} Last week is done!`;
     cardsListEl.innerHTML = `
       <div class="simplified-week-over-card" role="status">
-        <span class="simplified-week-over-text">Pick a day to fix, or start your new week 🚀</span>
+        <span class="simplified-week-over-text">Pick a day to look back, or start your new week 🚀</span>
       </div>
     `;
     return;
@@ -2236,7 +2303,9 @@ function renderSimplifiedView() {
 
   if (dayTitleEl) {
     const dayEmoji = getThemeCopy(state.theme).dayTitleEmoji;
-    dayTitleEl.textContent = isFocusedToday ? `${dayEmoji} Today — ${focusedDayName}` : `${dayEmoji} ${focusedDayName}'s Quests`;
+    dayTitleEl.textContent = isFocusedToday
+      ? `${dayEmoji} Today — ${focusedDayName}`
+      : (previewKind === 'future' ? `${dayEmoji} ${focusedDayName} — coming soon!` : `${dayEmoji} ${focusedDayName}'s Quests`);
   }
 
   const tasks = (state.tasks || []).filter(task => isTaskActiveInWeek(task, currentViewingWeekStartDate));
@@ -2287,6 +2356,9 @@ function renderSimplifiedView() {
       actionPillText = 'Rest day';
     } else if (isBonus) {
       actionPillText = checked ? 'Bonus caught! +10 XP' : 'Bonus';
+    }
+    if (previewKind === 'future' && shouldDisable && !isOutOfRange && !isRest) {
+      actionPillText = 'Coming soon';
     }
 
     const taskName = task.name || 'Unknown';
@@ -2583,6 +2655,7 @@ function updateStartNewWeekButton() {
 }
 
 function startExceptionMode() {
+  clearBigButtonsPreview();
   if (isViewingPastWeek()) {
     adminNotice("Read-Only 🔒", "Cannot edit exceptions for past weeks.");
     return;
@@ -2811,6 +2884,20 @@ function handleCheckboxChange(e) {
   }
 
   if (clickedRealDay !== state.activeDay) {
+    // Big Buttons shows one day at a time, so during a parent grace window a
+    // ball tap can't land on the wrong day: switch and tick without asking.
+    if (isParentGraceActive() && cb.closest('#simplified-cards-list')) {
+      const intendedChecked = cb.checked;
+      state.activeDay = clickedRealDay;
+      saveState();
+      updateActiveColumnUI();
+      const input = document.querySelector(`#simplified-cards-list input[data-day="${day}"][data-task="${taskId}"]`);
+      if (!input) return;
+      input.checked = intendedChecked;
+      handleCheckboxChange({ target: input, preventDefault: () => {} });
+      return;
+    }
+
     cb.checked = !cb.checked; // Revert visually first
     
     const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -3258,6 +3345,7 @@ function bindGridBodyEvents() {
       }
     });
     simplifiedCardsList.addEventListener('click', (e) => {
+      touchBigButtonsPreview(); // a tap while previewing restarts the one-minute return
       if (e.target.closest('.pokeball-checkbox')) return;
       const card = e.target.closest('.simplified-task-card');
       if (!card) return;
@@ -3563,6 +3651,21 @@ function handleDayColumnSelect(clickedColumn) {
     viewingHistoricalDayIndex = clickedColumn;
     renderSimplifiedView();
     return;
+  }
+
+  // Current week in Big Buttons: a pill tap previews that day (no PIN, nothing
+  // saved). Only today still switches straight away (zero friction back).
+  if (state.chartStyle === 'big-buttons' && !isViewingPastWeek() && !isExceptionMode && !isLastWeekEditActive()) {
+    if (col.state === 'SUPERSEDED') return;
+    if (col.state.startsWith('ACTIVE')) {
+      clearBigButtonsPreview({ render: true });
+      return;
+    }
+    if (col.state !== 'SELECTABLE_TODAY') {
+      setBigButtonsPreview(clickedColumn);
+      return;
+    }
+    clearBigButtonsPreview();
   }
 
   if (!col.canSelectHeader) return;
@@ -4737,6 +4840,11 @@ if (!location.search.includes('runTests=true') && !location.search.includes('run
   });
 }
 
+// A tablet that wakes up shows the active day again, never a stale preview.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') clearBigButtonsPreview({ render: true });
+});
+
 // A reward is stored by its option value (built-in options use a short key such
 // as "Dessert Outing"); show parents and kids the label they picked from the list.
 function getRewardLabel(value, options) {
@@ -5257,6 +5365,8 @@ if (location.search.includes('runTests=true') || location.search.includes('runMi
     renderState: (rebuildGrid) => renderState(rebuildGrid),
     addXp: (amount, opts) => addXp(amount, opts),
     setViewingWeekStartDate: (dateStr) => { currentViewingWeekStartDate = dateStr; },
+  getBigButtonsPreviewCol: () => bigButtonsPreviewCol,
+  clearBigButtonsPreview,
     ADMIN_PASSWORD: ADMIN_PASSWORD,
     resetWeekGrid: (carryOver) => resetWeekGrid(carryOver),
     checkAndTriggerWeeklySuccess: () => checkAndTriggerWeeklySuccess(),

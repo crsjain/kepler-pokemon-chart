@@ -12105,10 +12105,15 @@ async function runSuite() {
           pill0.click();
           await sleep(40);
           const confirmModal = document.getElementById('confirm-modal');
-          assert(!confirmModal.classList.contains('hidden'), "Tapping a selectable_past day pill opens 'Switch Day?' confirm");
+          // Since 2026-11-15 a pill tap only previews the day (TC142); the ball tap asks.
+          assert(confirmModal.classList.contains('hidden'), "Tapping a selectable_past day pill previews it without 'Switch Day?'");
+          cardsListEl.querySelector('input[data-day="0"]').click();
+          await sleep(40);
+          assert(!confirmModal.classList.contains('hidden'), "Tapping a ball on the previewed past day opens 'Switch Day?' confirm");
           document.getElementById('confirm-yes-btn').click();
           await sleep(40);
           assert(state.activeDay === state.weekStartDay % 7, "Confirming switches activeDay to the tapped pill's day");
+          helpers.clearBigButtonsPreview();
 
           // Now switch back to column 2 (today) and enable state.lockPastDays = true.
           state.activeDay = (state.weekStartDay + 2) % 7;
@@ -12119,9 +12124,13 @@ async function runSuite() {
           stripEl.querySelector('.simplified-day-pill[data-day="0"]').click();
           await sleep(40);
           const pwModal = document.getElementById('password-modal');
-          assert(!pwModal.classList.contains('hidden'), "With lockPastDays=true, tapping a past day pill prompts for Parent PIN");
+          assert(pwModal.classList.contains('hidden'), "With lockPastDays=true, tapping a past day pill previews it without the PIN");
+          cardsListEl.querySelector('input[data-day="0"]').click();
+          await sleep(40);
+          assert(!pwModal.classList.contains('hidden'), "With lockPastDays=true, tapping a ball on that past day prompts for Parent PIN");
           document.getElementById('password-cancel-btn').click();
           await sleep(30);
+          helpers.clearBigButtonsPreview();
 
           // Restore original weekStartDate before step 9.
           state.lockPastDays = false;
@@ -12401,7 +12410,7 @@ async function runSuite() {
           await sleep(30);
           assert(document.querySelectorAll('.simplified-day-pill').length === 7 && !document.querySelector('.simplified-day-pill.is-focused'), "Big Buttons: no day pill is focused");
           const card = document.querySelector('#simplified-cards-list .simplified-week-over-card');
-          assert(card && card.textContent.includes('Pick a day to fix'), "Big Buttons: the week-over card shows");
+          assert(card && card.textContent.includes('Pick a day to look back'), "Big Buttons: the week-over card shows");
           assert(!document.querySelector('#simplified-cards-list .simplified-task-card'), "Big Buttons: no task cards before a day is picked");
           assert(document.getElementById('simplified-day-title').textContent.includes('Last week is done!'), "Big Buttons title says last week is done");
           assert(getComputedStyle(card).cursor !== 'pointer', "The week-over card isn't a button");
@@ -13230,6 +13239,129 @@ async function runSuite() {
           assert(pill.top === '3px', `${theme}: Vault × pill moves up 12px to stay put (got ${pill.top})`);
         }
         document.body.dataset.theme = 'pokemon';
+      }
+
+      if (__shouldRun('142')) {
+        console.log("Running Test Case 142: Big Buttons day preview — look at any day without the PIN, PIN only to edit a past day...");
+        // Owner, 2026-11-15 (prd_simplified_chart_style.md §3.3): a pill tap in the current week
+        // only changes which day the cards show. Nothing is saved; a past-day ball still needs the PIN.
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const state = window.__app_state__;
+        const fmt = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+        const addDays = (s0, n) => { const d = new Date(s0 + 'T00:00:00'); d.setDate(d.getDate() + n); return fmt(d); };
+        const chart = document.querySelector('.chart-container');
+        const strip = document.getElementById('simplified-day-strip');
+        const cards = document.getElementById('simplified-cards-list');
+        const title = document.getElementById('simplified-day-title');
+        const pwModal = document.getElementById('password-modal');
+        const confirmModal = document.getElementById('confirm-modal');
+        const pill = (d) => strip.querySelector(`.simplified-day-pill[data-day="${d}"]`);
+        const prevFuture = window.__mock_allow_future_edits__;
+        try {
+          window.__mock_allow_future_edits__ = false;
+          state.reward = 'Sticker Pack';
+          state.megaReward = 'Unicorn Plush';
+          state.chartStyle = 'big-buttons';
+          // Column 0 = two days ago, 1 = yesterday, 2 = today, 4 = two days ahead.
+          const weekStart = addDays(fmt(new Date()), -2);
+          state.weekStartDate = weekStart;
+          state.weekStartDay = new Date(weekStart + 'T00:00:00').getDay();
+          const todayDay = (state.weekStartDay + 2) % 7;
+          state.activeDay = todayDay;
+          state.lockPastDays = true;
+          helpers.clearParentGrace();
+          helpers.setViewingWeekStartDate(weekStart);
+          helpers.renderState(true);
+          await sleep(30);
+          const task = state.tasks.find(t => !t.deletedAt && t.active !== false);
+
+          // (a) Past pill: preview, no PIN, nothing saved.
+          pill(0).click();
+          await sleep(30);
+          assert(pwModal.classList.contains('hidden') && confirmModal.classList.contains('hidden'), "Past pill: no PIN and no 'Switch Day?'");
+          assert(state.activeDay === todayDay, "Past pill: activeDay is unchanged (preview is runtime-only)");
+          assert(helpers.getBigButtonsPreviewCol() === 0, "Past pill: column 0 is previewed");
+          assert(chart.classList.contains('is-preview-day') && chart.dataset.preview === 'past' && chart.classList.contains('preview-needs-pin'), "Past preview: container flags past + needs PIN");
+          assert(pill(0).classList.contains('is-focused') && pill(0).getAttribute('aria-pressed') === 'true', "Past preview: the tapped pill is focused");
+          assert(pill(2).dataset.columnState === 'active_today', "Past preview: today's pill keeps its active state (yellow)");
+          assert(getComputedStyle(pill(0)).boxShadow.includes('inset'), "Past preview: previewed pill gets the grey ring, not yellow");
+          assert(cards.querySelector('input[data-day="0"]') && !cards.querySelector('input[data-day="2"]'), "Past preview: cards show column 0");
+          assert(title.textContent.includes("'s Quests"), `Past preview title (got ${title.textContent})`);
+          const pastCard = cards.querySelector('.simplified-task-card:not(.is-rest):not(.is-out-of-range)');
+          assert(getComputedStyle(pastCard).boxShadow === 'none', "Past preview: cards drop the candy lip");
+          const pastCell = pastCard.querySelector('.simplified-card-cell');
+          assert(getComputedStyle(pastCell, '::before').content !== 'none', "Past preview with the lock on: padlock badge on the ball");
+
+          // (b) Future pill: preview, "coming soon", disabled balls, no padlock, never a PIN.
+          pill(4).click();
+          await sleep(30);
+          assert(pwModal.classList.contains('hidden'), "Future pill: no PIN");
+          assert(helpers.getBigButtonsPreviewCol() === 4 && chart.dataset.preview === 'future' && !chart.classList.contains('preview-needs-pin'), "Future preview: container flags future, no PIN");
+          assert(title.textContent.includes('coming soon'), `Future preview title says coming soon (got ${title.textContent})`);
+          const futInputs = [...cards.querySelectorAll('input[data-day="4"]')];
+          assert(futInputs.length > 0 && futInputs.every(i => i.disabled), "Future preview: balls are disabled");
+          assert(futInputs.some(i => i.getAttribute('aria-label').includes('Coming soon')), "Future preview: aria-label explains 'Coming soon'");
+          const futCell = cards.querySelector('.simplified-task-card:not(.is-rest):not(.is-out-of-range) .simplified-card-cell');
+          assert(getComputedStyle(futCell, '::before').content === 'none', "Future preview: no padlock");
+
+          // (c) Today's pill returns to the active day.
+          pill(2).click();
+          await sleep(30);
+          assert(helpers.getBigButtonsPreviewCol() === null && !chart.classList.contains('is-preview-day'), "Today pill clears the preview");
+          assert(cards.querySelector('input[data-day="2"]'), "Cards are back on today");
+
+          // (d) Past ball → PIN → switches to that day and ticks it.
+          pill(0).click();
+          await sleep(30);
+          cards.querySelector(`input[data-day="0"][data-task="${task.id}"]`).click();
+          await sleep(40);
+          assert(!pwModal.classList.contains('hidden'), "Past-day ball asks for the PIN");
+          document.getElementById('password-input').value = helpers.ADMIN_PASSWORD;
+          document.getElementById('password-submit-btn').click();
+          await sleep(60);
+          assert(state.activeDay === state.weekStartDay % 7, "After the PIN, activeDay is the previewed past day");
+          assert(state.grid[`${weekStart}-${task.id}`] === true, "After the PIN, the ball is ticked");
+          assert(helpers.getBigButtonsPreviewCol() === null, "The preview ends once that day is the active day");
+
+          // (e) During the grace window another past day ticks with no 'Switch Day?'.
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          pill(1).click();
+          await sleep(30);
+          cards.querySelector(`input[data-day="1"][data-task="${task.id}"]`).click();
+          await sleep(40);
+          assert(confirmModal.classList.contains('hidden') && pwModal.classList.contains('hidden'), "Grace window: no 'Switch Day?' and no PIN");
+          assert(state.activeDay === (state.weekStartDay + 1) % 7 && state.grid[`${addDays(weekStart, 1)}-${task.id}`] === true, "Grace window: switched to yesterday and ticked it");
+          helpers.clearParentGrace({ revertToToday: true });
+          await sleep(30);
+          assert(state.activeDay === todayDay, "Ending the grace window returns to today");
+
+          // (f) Auto-return after the idle window (1.5 s in test mode, 60 s live).
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          pill(4).click();
+          await sleep(30);
+          assert(helpers.getBigButtonsPreviewCol() === 4, "Previewing a future day again");
+          await sleep(1700, true);
+          assert(helpers.getBigButtonsPreviewCol() === null && !chart.classList.contains('is-preview-day') && cards.querySelector('input[data-day="2"]'), "After a quiet minute the cards return to today");
+
+          // (g) Parent modes and the Standard grid ignore previews.
+          pill(0).click();
+          await sleep(30);
+          document.getElementById('exceptions-btn').click();
+          await sleep(40);
+          document.getElementById('exceptions-done-btn').click();
+          await sleep(40);
+          assert(helpers.getBigButtonsPreviewCol() === null, "Exception Mode drops the preview");
+        } finally {
+          window.__mock_allow_future_edits__ = prevFuture;
+          helpers.clearBigButtonsPreview();
+          helpers.clearParentGrace();
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          ['confirm-modal', 'password-modal'].forEach(id => document.getElementById(id).classList.add('hidden'));
+          helpers.resetState();
+          await sleep(30);
+        }
       }
 
       if (__onlyFilter && __ranTests.size === 0) {

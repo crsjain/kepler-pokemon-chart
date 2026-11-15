@@ -10143,6 +10143,57 @@ body[data-theme] .chart-container.is-past-week .simplified-task-card:not(.is-res
   pointer-events: none;
 }
 
+/* ---- Big Buttons day preview, current week (owner 2026-11-15) ----
+   A pill tap shows another day's cards without the PIN (prd_simplified_chart_style.md §3.3).
+   Same B3 recipe as past weeks: white cards, no candy lip (Rule 12), balls fade,
+   grey ring on the previewed pill; today keeps its yellow (Rule 13.6).
+   The padlock appears only on a past day whose ball tap asks for the PIN;
+   future days never get one (they are "coming soon", not forbidden). */
+body[data-theme] .chart-container.is-preview-day .simplified-day-pill.is-focused:not([data-column-state^="active"]) {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 3px #94a3b8;
+  transform: none;
+}
+
+body[data-theme] .chart-container.is-preview-day .simplified-task-card:not(.is-rest):not(.is-out-of-range),
+body[data-theme] .chart-container.is-preview-day .simplified-task-card:not(.is-rest):not(.is-out-of-range):hover {
+  background: #ffffff;
+  box-shadow: none;
+  transform: none;
+}
+
+body[data-theme] .chart-container.is-preview-day[data-preview="future"] .simplified-task-card {
+  cursor: default;
+}
+
+body[data-theme] .chart-container.is-preview-day .simplified-card-name {
+  color: #334155;
+}
+
+body[data-theme] .chart-container.is-preview-day .checkbox-cell.simplified-card-cell .pokeball-checkbox.simplified-jumbo-checkbox .pokeball.simplified-catch-ball {
+  opacity: 0.45;
+  box-shadow: none;
+  transform: none;
+}
+
+body[data-theme] .chart-container.is-preview-day.preview-needs-pin .simplified-task-card:not(.is-rest):not(.is-out-of-range) .checkbox-cell.simplified-card-cell {
+  position: relative;
+}
+
+body[data-theme] .chart-container.is-preview-day.preview-needs-pin .simplified-task-card:not(.is-rest):not(.is-out-of-range) .checkbox-cell.simplified-card-cell::before {
+  content: '';
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  z-index: 30;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M8 10.5V8a4 4 0 0 1 8 0v2.5' fill='none' stroke='%23475569' stroke-width='2.4' stroke-linecap='round'/><rect x='5.5' y='10' width='13' height='10' rx='2.5' fill='%23475569'/><circle cx='12' cy='14.6' r='1.6' fill='%23ffffff'/></svg>") center / 16px 16px no-repeat;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+  pointer-events: none;
+}
+
 /* ---- Big Buttons compact rhythm (owner, 2026-10-30) ----
    The chart panel used to be ~50–150px taller than the left column, which stretched
    the trainer / Mega cards with empty space. A tighter rhythm makes the panel the same
