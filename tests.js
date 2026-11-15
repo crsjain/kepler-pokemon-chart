@@ -1421,21 +1421,17 @@ async function runSuite() {
         assert(!exceptionsBanner.classList.contains('hidden'), "Banner should be visible");
         assert(layoutContainer.classList.contains('exception-mode'), "Layout should have exception-mode class");
         
-        // 17.1b Test Header click in Exception Mode (should switch activeDay without prompt)
+        // 17.1b Header clicks in Exception Mode are inert (owner 2026-11-15: it edits the whole week).
+        const dayBefore = state.activeDay;
         const tueHeader = document.querySelector('.day-header[data-day="2"]');
         assert(tueHeader !== null, "Tuesday header should exist");
+        assert(getComputedStyle(tueHeader).pointerEvents === 'none', "Exception Mode: day headers take no taps");
         tueHeader.click();
         await sleep(50);
-        assert(state.activeDay === 2, "Active day should switch to Tuesday (2) immediately on header click in Exception Mode");
+        assert(state.activeDay === dayBefore, "Exception Mode: clicking a day header doesn't change the active day");
         const exceptionConfirmModal = document.getElementById('confirm-modal');
         assert(exceptionConfirmModal.classList.contains('hidden'), "Confirm Modal should not open on header click in Exception Mode");
-        
-        // Switch back to Monday (1)
-        const monHeader = document.querySelector('.day-header[data-day="1"]');
-        assert(monHeader !== null, "Monday header should exist");
-        monHeader.click();
-        await sleep(50);
-        assert(state.activeDay === 1, "Active day should switch back to Monday (1)");
+        assert(document.getElementById('back-to-today-btn').classList.contains('hidden'), "Exception Mode: no Back to Today");
         
         // 17.2 Test Excusing a cell (Wednesday Piano = day 3, task piano)
         const wedPianoInput = document.querySelector('input[data-day="3"][data-task="piano"]');
@@ -13389,10 +13385,14 @@ async function runSuite() {
           await sleep(30);
           document.getElementById('exceptions-btn').click();
           await sleep(40);
-          // Owner 2026-11-15: a day picked while in Exception Mode doesn't stick after Done ✅.
-          document.querySelector('.day-header[data-day="0"]').click();
+          // Owner 2026-11-15: Exception Mode edits the whole week; day headers are inert and there's no Back to Today.
+          state.activeDay = state.weekStartDay % 7; // e.g. left on a past day from an earlier edit window
+          helpers.renderState(false);
           await sleep(30);
-          assert(state.activeDay === state.weekStartDay % 7, "Exception Mode: picking another day moves the active day");
+          assert(document.getElementById('back-to-today-btn').classList.contains('hidden'), "Exception Mode: no Back to Today, even off today");
+          document.querySelector('.day-header[data-day="1"]').click();
+          await sleep(30);
+          assert(state.activeDay === state.weekStartDay % 7, "Exception Mode: a day-header tap doesn't change the active day");
           document.getElementById('exceptions-done-btn').click();
           await sleep(40);
           assert(helpers.getBigButtonsPreviewCol() === null, "Exception Mode drops the preview");

@@ -2139,7 +2139,7 @@ function updateActiveColumnUI() {
     }
     th.dataset.columnState = col.state.toLowerCase();
     th.title = col.tooltip;
-    th.style.cursor = col.canSelectHeader ? 'pointer' : (col.state.startsWith('ACTIVE') ? 'default' : 'not-allowed');
+    th.style.cursor = isExceptionMode ? 'default' : (col.canSelectHeader ? 'pointer' : (col.state.startsWith('ACTIVE') ? 'default' : 'not-allowed'));
   });
 
   const tbody = document.getElementById('grid-tbody');
@@ -2199,7 +2199,7 @@ function updateBackToTodayButton(colStates = getWeekColumnStates(state, currentV
   // no today column, and the pill used to jump to the same weekday of the ended
   // week (docs/prd_week_over_start_new_week.md §1, §4.3).
   const todayCol = colStates.find(c => c.state === 'SELECTABLE_TODAY' || (isPreviewing && c.state === 'ACTIVE_TODAY'));
-  const show = !isViewingPastWeek && (hasActiveNonToday || isPreviewing) && todayCol && state.activeDay !== -1;
+  const show = !isExceptionMode && !isViewingPastWeek && (hasActiveNonToday || isPreviewing) && todayCol && state.activeDay !== -1;
   // Big Buttons shows its copy in the day title row so the dates row never grows
   // (owner 2026-11-15); the full grid (Standard, Exception Mode, Fix last week)
   // keeps the one under the dates.
@@ -2702,6 +2702,8 @@ function startExceptionMode() {
   if (layoutContainer) {
     layoutContainer.classList.add('exception-mode');
   }
+  // No Back to Today while editing the whole week (owner 2026-11-15).
+  updateBackToTodayButton();
   // Close Parent Admin modal to reveal the grid
   if (adminModal) {
     adminModal.classList.add('hidden');
@@ -3722,12 +3724,9 @@ function handleDayColumnSelect(clickedColumn) {
   const clickedRealDay = (state.weekStartDay + clickedColumn) % 7;
   
   if (state.activeDay !== clickedRealDay) {
-    if (isExceptionMode) {
-      state.activeDay = clickedRealDay;
-      saveState();
-      updateActiveColumnUI();
-      return;
-    }
+    // Exception Mode edits the whole week at once, so picking a day means nothing
+    // there (owner 2026-11-15): headers are inert until Done ✅.
+    if (isExceptionMode) return;
 
     // Parent approval gate for previous days. On success the passcode
     // stands in for the "Switch Day?" confirmation.

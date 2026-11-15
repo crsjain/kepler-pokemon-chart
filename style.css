@@ -2397,6 +2397,13 @@ input:checked + .slider:before {
   background-color: rgba(255, 255, 255, 0.15);
 }
 
+/* Exception Mode edits the whole week at once: day headers are inert there, with
+   no hover or tap (owner 2026-11-15). */
+.layout-container.exception-mode .day-header {
+  pointer-events: none;
+  cursor: default;
+}
+
 /* 1. SUPERSEDED (Forward-hashed dates) - Highest Precedence */
 .day-header.superseded-header,
 .day-header[data-column-state="superseded"] {
