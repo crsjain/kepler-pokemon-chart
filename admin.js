@@ -1531,15 +1531,16 @@ const EMOJI_PRESENTATION_RE = /\p{Emoji_Presentation}|\uFE0F|\u20E3|\p{Regional_
  */
 function parseSingleEmoji(text) {
   const t = String(text || '').trim();
-  if (!t) return { error: 'Type or paste an emoji first.' };
-  let graphemes = 1;
+  if (!t) return { error: 'Paste or type an emoji first.' };
+  const isEmoji = (g) => SINGLE_EMOJI_RE.test(g) && EMOJI_PRESENTATION_RE.test(g);
+  let parts = [t];
   if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {
-    graphemes = [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(t)].length;
+    parts = [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(t)].map(s => s.segment);
   }
-  if (graphemes !== 1 || !SINGLE_EMOJI_RE.test(t) || !EMOJI_PRESENTATION_RE.test(t)) {
-    return { error: 'Just one emoji, please — like 🦄.' };
-  }
-  return { emoji: t };
+  if (parts.length === 1 && isEmoji(t)) return { emoji: t };
+  // Several real emoji (🎹🎹) get their own hint; anything else (福, ab, 1, ©) isn't an emoji.
+  if (parts.length > 1 && parts.every(isEmoji)) return { error: 'Use just one emoji.' };
+  return { error: 'Only emoji work as icons.' };
 }
 
 /**

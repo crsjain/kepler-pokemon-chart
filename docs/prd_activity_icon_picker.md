@@ -110,7 +110,7 @@ Save Activities, and the unsaved guard on close.
 
 `parseSingleEmoji(text)` → emoji string or `null`:
 
-1. Trim whitespace. Empty → "Type or paste an emoji first."
+1. Trim whitespace. Empty → "Paste or type an emoji first."
 2. Split into graphemes with `Intl.Segmenter('en', { granularity: 'grapheme' })`. If
    `Intl.Segmenter` isn't available, fall back to the regex in step 3 matching the whole string.
 3. Accept only exactly **one** grapheme that is an emoji:
@@ -119,7 +119,10 @@ Save Activities, and the unsaved guard on close.
 4. It must also have **emoji presentation** (`\p{Emoji_Presentation}`, U+FE0F, keycap or flag),
    so text-style symbols such as ©, ™ and ❤ without U+FE0F (plain black glyphs on a tablet) are
    rejected. The field has `maxlength="16"`.
-5. Otherwise: "Just one emoji, please — like 🦄." (for "ab", "🎹🎹", "1", "Piano" and similar).
+5. Error copy (copy pass 2026-11-15, owner found "Just one emoji" unclear for 福):
+   - Several real emoji ("🎹🎹") → "Use just one emoji."
+   - Anything that isn't an emoji ("福", "ab", "1", "©", "Piano") → "Only emoji work as icons."
+   - Style: plain, parent-facing, no exclamation marks, "emoji" as the plural.
 
 No `alert()` / `confirm()` (UX §6.2).
 

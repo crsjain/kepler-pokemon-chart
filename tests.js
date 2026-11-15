@@ -13573,12 +13573,17 @@ async function runSuite() {
 
           // 5. Invalid input: inline message, popover stays open, value unchanged.
           const msg = () => pop().querySelector('.adm-emoji-msg');
-          for (const bad of ['', 'ab', '🎹🎹', '1', '©', '❤']) {
+          for (const bad of ['', 'ab', '福', '🎹🎹', '1', '©', '❤']) {
             tryCustom(bad);
             await sleep(5);
             assert(pop() && shown(msg()) && msg().textContent.length > 0, `"${bad}" is rejected with an inline message`);
             assert(sel(first).value === '🐉', `"${bad}" leaves the icon unchanged`);
           }
+          const copyFor = async (text) => { tryCustom(text); await sleep(5); return msg().textContent; };
+          assert(await copyFor('') === 'Paste or type an emoji first.', 'Empty field: asks for an emoji');
+          assert(await copyFor('福') === 'Only emoji work as icons.', 'A Chinese character: says only emoji work');
+          assert(await copyFor('ab') === 'Only emoji work as icons.', 'Letters: says only emoji work');
+          assert(await copyFor('🎹🎹') === 'Use just one emoji.', 'Two emoji: asks for just one');
           pop().querySelector('.adm-emoji-input').dispatchEvent(new Event('input', { bubbles: true }));
           assert(!shown(msg()), 'Typing again hides the message');
 
