@@ -10145,14 +10145,30 @@ body[data-theme] .chart-container.is-past-week .simplified-task-card:not(.is-res
 
 /* ---- Big Buttons day preview, current week (owner 2026-11-15) ----
    A pill tap shows another day's cards without the PIN (prd_simplified_chart_style.md §3.3).
-   Same B3 recipe as past weeks: white cards, no candy lip (Rule 12), balls fade,
-   grey ring on the previewed pill; today keeps its yellow (Rule 13.6).
+   Same B3 recipe as past weeks: white cards, no candy lip (Rule 12), balls fade;
+   the previewed pill is a solid theme-accent fill; today keeps its yellow (Rule 13.6).
    The padlock appears only on a past day whose ball tap asks for the PIN;
    future days never get one (they are "coming soon", not forbidden). */
 body[data-theme] .chart-container.is-preview-day .simplified-day-pill.is-focused:not([data-column-state^="active"]) {
-  background: #ffffff;
-  box-shadow: inset 0 0 0 3px #94a3b8;
+  /* Owner pick "B" (2026-11-15): the grey ring was easy to miss. A solid theme-accent
+     pill (Poké Blue / Royal Amethyst, the Standard grid's "selectable" colour) with
+     white text; yellow stays today-only (Rule 13.6). */
+  background: var(--sk-accent);
+  box-shadow: 0 3px 0 var(--sk-accent-deep);
   transform: none;
+}
+
+body[data-theme] .chart-container.is-preview-day .simplified-day-pill.is-focused:not([data-column-state^="active"]) .simplified-pill-day {
+  color: #ffffff;
+}
+
+/* ❌ / ☆ / ⭐ / 💤 sit in a white disc so they stay readable on the accent fill. */
+body[data-theme] .chart-container.is-preview-day .simplified-day-pill.is-focused:not([data-column-state^="active"]) .simplified-pill-star {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  border-radius: 50%;
+  background: #ffffff;
 }
 
 body[data-theme] .chart-container.is-preview-day .simplified-task-card:not(.is-rest):not(.is-out-of-range),

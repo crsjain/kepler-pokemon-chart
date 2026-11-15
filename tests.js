@@ -13286,7 +13286,17 @@ async function runSuite() {
           assert(chart.classList.contains('is-preview-day') && chart.dataset.preview === 'past' && chart.classList.contains('preview-needs-pin'), "Past preview: container flags past + needs PIN");
           assert(pill(0).classList.contains('is-focused') && pill(0).getAttribute('aria-pressed') === 'true', "Past preview: the tapped pill is focused");
           assert(pill(2).dataset.columnState === 'active_today', "Past preview: today's pill keeps its active state (yellow)");
-          assert(getComputedStyle(pill(0)).boxShadow.includes('inset'), "Past preview: previewed pill gets the grey ring, not yellow");
+          // Owner pick "B" (2026-11-15): solid theme-accent fill (Poké Blue #1d4ed8 here), white label, white icon disc.
+          const pillCs = getComputedStyle(pill(0));
+          assert(pillCs.backgroundColor === 'rgb(29, 78, 216)', `Past preview: previewed pill is solid Poké Blue (got ${pillCs.backgroundColor})`);
+          assert(getComputedStyle(pill(0).querySelector('.simplified-pill-day')).color === 'rgb(255, 255, 255)', "Past preview: previewed pill label is white");
+          assert(getComputedStyle(pill(0).querySelector('.simplified-pill-star')).backgroundColor === 'rgb(255, 255, 255)', "Past preview: the ❌ sits in a white disc");
+          assert(getComputedStyle(pill(2)).backgroundColor !== 'rgb(29, 78, 216)' && getComputedStyle(pill(2)).backgroundImage.includes('gradient'), "Today's pill keeps its yellow gradient, not the accent");
+          document.body.dataset.theme = 'unicorn';
+          getComputedStyle(pill(0)).backgroundColor; // flush style, then settle any pill transition
+          pill(0).getAnimations().forEach(an => an.finish());
+          assert(getComputedStyle(pill(0)).backgroundColor === 'rgb(126, 34, 206)', `Unicorn: previewed pill is Royal Amethyst (got ${getComputedStyle(pill(0)).backgroundColor})`);
+          document.body.dataset.theme = 'pokemon';
           assert(cards.querySelector('input[data-day="0"]') && !cards.querySelector('input[data-day="2"]'), "Past preview: cards show column 0");
           assert(title.textContent.includes("'s Quests"), `Past preview title (got ${title.textContent})`);
           const pastCard = cards.querySelector('.simplified-task-card:not(.is-rest):not(.is-out-of-range)');
