@@ -13547,7 +13547,7 @@ async function runSuite() {
           assert(pop().getAttribute('role') === 'dialog', 'Popover is a dialog');
           assert(groupLabels().join('|') === 'School|Languages|Music & Art|Sports|Chores|Healthy habits|Kindness', `7 curated groups in order (got ${groupLabels().join('|')})`);
           const cells = [...pop().querySelectorAll('.adm-emoji-cell')];
-          assert(cells.length === 56, `56 curated icons (got ${cells.length})`);
+          assert(cells.length === 57, `57 curated icons (got ${cells.length})`);
           assert(cells.every(c => { const r = c.getBoundingClientRect(); return r.width >= 44 && r.height >= 44; }), 'Every icon is a 44px+ target');
           assert(pressed().length === 1 && pressed()[0] === active[0].emoji, `Current icon is highlighted (got ${pressed()})`);
           assert(document.activeElement && document.activeElement.classList.contains('adm-emoji-cell'), 'Focus lands on an icon, not the text field');

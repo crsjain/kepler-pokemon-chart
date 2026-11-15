@@ -1508,7 +1508,7 @@ function handleAdminPopState() {
    🪥 (Emoji 14) needs iPadOS 15.4+, everything else is Emoji 13 or older. */
 const TASK_EMOJI_GROUPS = [
   { label: 'School', emoji: ['📚', '✏️', '📝', '🧮', '🔢', '🔤', '🧪', '🔬', '🌍', '💻'] },
-  { label: 'Languages', emoji: ['💮', '🀄', '🗣️', '🔠'] },
+  { label: 'Languages', emoji: ['💮', '🀄', '🉐', '🗣️', '🔠'] },
   { label: 'Music & Art', emoji: ['🎹', '🎻', '🎸', '🥁', '🎺', '🎤', '🎨', '✂️', '🧶', '🩰'] },
   { label: 'Sports', emoji: ['🏃', '⚽', '🏀', '🏊', '🚴', '🤸', '🥋', '🎾', '🧘', '⛸️'] },
   { label: 'Chores', emoji: ['🧹', '🛏️', '🧺', '🍽️', '🧸', '🪴', '🐶', '🗑️', '🧼', '👕'] },

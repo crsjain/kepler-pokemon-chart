@@ -14,7 +14,7 @@ list is clumsy on the iPad picker wheel. The quick fix (a longer `<select>` with
 ## 2. Solution summary
 
 In an open (✏️) Activities row, the icon becomes a **tappable tile button**. Tapping
-it opens a **popover grid** of about 56 curated emoji in 7 groups, plus an
+it opens a **popover grid** of 57 curated emoji in 7 groups, plus an
 **Any emoji** field for anything else on the iPad keyboard.
 
 The `<select>` **stays in the DOM, hidden**, as the row's value store, so the draft
@@ -62,19 +62,19 @@ same path the select uses today.
 
 The popover scrolls into view (`block: 'nearest'`) when it opens near the bottom of the pane.
 
-## 4. Curated list (56)
+## 4. Curated list (57)
 
 | Group | Emoji |
 | :--- | :--- |
 | School | 📚 ✏️ 📝 🧮 🔢 🔤 🧪 🔬 🌍 💻 |
-| Languages | 💮 🀄 🗣️ 🔠 |
+| Languages | 💮 🀄 🉐 🗣️ 🔠 |
 | Music & Art | 🎹 🎻 🎸 🥁 🎺 🎤 🎨 ✂️ 🧶 🩰 |
 | Sports | 🏃 ⚽ 🏀 🏊 🚴 🤸 🥋 🎾 🧘 ⛸️ |
 | Chores | 🧹 🛏️ 🧺 🍽️ 🧸 🪴 🐶 🗑️ 🧼 👕 |
 | Healthy habits | 🪥 🥦 🍎 💧 🛁 😴 |
 | Kindness | 💖 🤝 🙏 😊 🎁 ✉️ |
 
-All 11 current choices are included, so every existing activity is highlighted in its group.
+🉐 ("bargain" ideograph, Emoji 1.0) was added to Languages at the owner's request on 2026-11-15, as a colour stand-in for Chinese characters like 福. All 11 current choices are included, so every existing activity is highlighted in its group.
 
 **Old-iPad check** (the newest emoji in the list):
 
