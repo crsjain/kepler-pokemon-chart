@@ -12859,13 +12859,65 @@ async function runSuite() {
           await sleep(30);
           assert(state.weeklyClaimed !== true, "A ticked rest day can't win the week while a required day is missing");
 
-          // Owner decision 2026-11-04: a completed ✨ bonus still makes up a missed day.
+          // Before the 2026-11-15 cutoff (owner decision 2026-11-04): a completed ✨ bonus
+          // still makes up a missed day.
+          StateModule.setBonusNoMakeupStartMock('9999-12-31');
           state.excused[`${ds(6)}-${task.id}`] = 'bonus'; // Saturday stays ticked, now as a bonus
-          assert(StateModule.countsTowardGoal(task, ds(6), state) === true, "A completed bonus counts toward the goal");
+          assert(StateModule.countsTowardGoal(task, ds(6), state) === true, "Before the cutoff a completed bonus counts toward the goal");
           helpers.renderState(false);
           await sleep(30);
-          assert(cell.textContent.trim() === '5 / 5' && cell.classList.contains('completed'), `The bonus tick makes up the missed day: 5 / 5 (got "${cell.textContent.trim()}")`);
+          assert(cell.textContent.trim() === '5 / 5' && cell.classList.contains('completed'), `Before the cutoff the bonus tick makes up the missed day: 5 / 5 (got "${cell.textContent.trim()}")`);
         } finally {
+          StateModule.setBonusNoMakeupStartMock(null);
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
+      // 145. ✨ Bonus ticks no longer make up a missed required day (owner 2026-11-16,
+      //      reversing 2026-11-04): the Nov 8–14 screenshot read "4 / 1 ✅" for Writing with
+      //      Saturday missed, so the week was won with 6 stars.
+      if (__shouldRun('145')) {
+        console.log("Running Test Case 145: Bonus balls don't count toward the Goal column or the weekly win...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        const state = window.__app_state__;
+        const ds = d => { const dt = new Date(state.weekStartDate + 'T00:00:00'); dt.setDate(dt.getDate() + d); return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`; };
+        try {
+          StateModule.setBonusNoMakeupStartMock('2000-01-01');
+          state.reward = 'Ice cream';
+          state.megaReward = 'Zoo trip';
+          const [task, ...others] = state.tasks;
+          for (let d = 0; d < 7; d++) others.forEach(t => { state.grid[`${ds(d)}-${t.id}`] = true; });
+          // `task` mirrors the screenshot: Sun–Fri bonus (4 done, 2 not), Saturday required and missed.
+          for (let d = 0; d < 6; d++) state.excused[`${ds(d)}-${task.id}`] = 'bonus';
+          [0, 1, 4, 5].forEach(d => { state.grid[`${ds(d)}-${task.id}`] = true; });
+          assert(StateModule.countsTowardGoal(task, ds(0), state) === false, "A completed bonus doesn't count toward the goal");
+          helpers.saveState();
+          helpers.renderState(true);
+          await sleep(40);
+          const cell = document.querySelector(`.task-total-cell[data-task="${task.id}"]`);
+          assert(cell.textContent.trim() === '0 / 1' && !cell.classList.contains('completed'), `Goal reads 0 / 1, not 4 / 1 ✅ (got "${cell.textContent.trim()}")`);
+          helpers.checkAndTriggerWeeklySuccess();
+          await sleep(30);
+          assert(state.weeklyClaimed !== true, "Bonus balls can't win the week while a required day is missing");
+
+          // Ticking the required Saturday wins it: bonus balls are extra, not required.
+          state.grid[`${ds(6)}-${task.id}`] = true;
+          helpers.renderState(false);
+          await sleep(30);
+          assert(cell.textContent.trim() === '1 / 1' && cell.classList.contains('completed'), `Goal reads 1 / 1 ✅ (got "${cell.textContent.trim()}")`);
+
+          // A 💤 rest day still lowers the goal.
+          state.grid[`${ds(6)}-${task.id}`] = false;
+          state.excused[`${ds(6)}-${task.id}`] = 'rest';
+          helpers.renderState(false);
+          await sleep(30);
+          assert(cell.textContent.trim() === '0 / 0' && cell.classList.contains('completed'), `A rest day still excuses Saturday: 0 / 0 ✅ (got "${cell.textContent.trim()}")`);
+        } finally {
+          StateModule.setBonusNoMakeupStartMock(null);
           document.querySelectorAll('.notif-modal').forEach(el => el.remove());
           helpers.resetState();
           await sleep(30);

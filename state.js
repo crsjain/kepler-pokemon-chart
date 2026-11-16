@@ -905,11 +905,27 @@ export function milestonesHidden(s = state) {
 // cell was ticked before a parent marked it rest), but the denominator
 // (getTaskRequiredDays) already leaves rest days out, so counting the tick showed
 // e.g. "7 / 6" (owner bug report 2026-11-04).
+//
+// ✨ Bonus ticks: from BONUS_NO_MAKEUP_START on they never count either, so a
+// bonus can't make up a missed required day and the week is won only when every
+// required day is ticked (owner 2026-11-16, reversing the 2026-11-04 "make up a
+// day" decision). Bonus days are already left out of the denominator. Earlier
+// dates keep the old rule so past weeks' Goal columns still match the badges
+// they won.
+const DEFAULT_BONUS_NO_MAKEUP_START = '2026-11-15';
+let bonusNoMakeupStart = DEFAULT_BONUS_NO_MAKEUP_START;
+
+// Test hook: pass a date string to move the cutoff, or null to restore the default.
+export function setBonusNoMakeupStartMock(dateStr) {
+  bonusNoMakeupStart = dateStr || DEFAULT_BONUS_NO_MAKEUP_START;
+}
+
 export function countsTowardGoal(task, dateStr, currentState = state) {
   const key = `${dateStr}-${task.id}`;
   if (!(currentState.grid && currentState.grid[key])) return false;
   const excusedVal = currentState.excused && currentState.excused[key];
   if (excusedVal === 'rest' || excusedVal === true) return false;
+  if (excusedVal === 'bonus' && dateStr >= bonusNoMakeupStart) return false;
   return !isTaskOffPlan(task, dateStr);
 }
 
