@@ -283,6 +283,7 @@ export const WIPE_PRESERVED_KEYS = [
   'lockPastDays',
   'chartStyle',
   'hideMilestones',
+  'rewardsView',
   'theme',
   'adminPassword',
   'volume',
@@ -897,7 +898,35 @@ export function isTaskOffPlan(task, dateStr, currentState = state) {
 // grid always shows the Mega card and reward pickers. Single source for the
 // CSS hook, the tick gate, the win pop-up and the new-week copy.
 export function milestonesHidden(s = state) {
-  return !!s && s.chartStyle === 'big-buttons' && s.hideMilestones === true;
+  return !!s && s.chartStyle === 'big-buttons' && getRewardsView(s) === 'simple';
+}
+
+// Rewards view (§10.7, owner 2026-11-23): 'full' (default), 'badges' (badges &
+// milestones, no rewards) or 'simple' (weekly badge & stars only, the §10 view).
+// Stored as optional `rewardsView`; a legacy `hideMilestones: true` reads as
+// 'simple', so no migration. This is the setting; rewardsHidden() and
+// milestonesHidden() apply it (Big Buttons only).
+export const REWARDS_VIEWS = ['full', 'badges', 'simple'];
+
+export function getRewardsView(s = state) {
+  if (!s) return 'full';
+  if (s.rewardsView === 'badges' || s.rewardsView === 'simple') return s.rewardsView;
+  if (s.rewardsView === undefined && s.hideMilestones === true) return 'simple';
+  return 'full';
+}
+
+// Write the setting. Mirrors `hideMilestones` so a tablet on an older build
+// keeps the 'simple' view.
+export function setRewardsView(view, s = state) {
+  if (view === 'badges' || view === 'simple') s.rewardsView = view;
+  else delete s.rewardsView;
+  if (view === 'simple') s.hideMilestones = true;
+  else delete s.hideMilestones;
+}
+
+// No reward pickers, tick gate, reward boxes, claims or quote.
+export function rewardsHidden(s = state) {
+  return !!s && s.chartStyle === 'big-buttons' && getRewardsView(s) !== 'full';
 }
 
 // Does this tick count toward the Goal column and the weekly win? Only on-plan

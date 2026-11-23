@@ -12654,19 +12654,20 @@ async function runSuite() {
           document.getElementById('admin-tab-today').click();
           await sleep(30);
           const row = document.getElementById('admin-milestones-row');
-          const toggle = document.getElementById('admin-show-milestones-toggle');
-          assert(row && !shown(row), "The milestones switch row is hidden under Standard (never just greyed out)");
+          const toggle = document.getElementById('admin-rewards-view-select');
+          assert(row && !shown(row), "The rewards view row is hidden under Standard (never just greyed out)");
           document.querySelector('#admin-chart-style-placeholder input[value="big-buttons"]').click();
           await sleep(40);
           assert(shown(row), "The milestones switch row appears once Big Buttons is selected");
           assert(row.previousElementSibling && row.previousElementSibling.id === 'admin-chart-style-placeholder', "The switch sits right under Chart style");
-          assert(toggle.checked === true, "The switch starts on (milestones shown)");
+          assert(toggle.value === 'full', "The rewards view starts on Badges & rewards");
           assert(row.querySelectorAll('[style]').length === 0, "The switch row has zero inline styles (UX Rule 8)");
 
-          // 2. Turning it off writes the field, flashes Saved, and hides the four elements.
-          toggle.click();
+          // 2. "Weekly badge & stars" (§10.7) writes the field (mirrored to hideMilestones), flashes Saved, and hides the four elements.
+          toggle.value = 'simple';
+          toggle.dispatchEvent(new Event('change', { bubbles: true }));
           await sleep(40);
-          assert(state.hideMilestones === true, "Switching off sets state.hideMilestones = true");
+          assert(state.hideMilestones === true && state.rewardsView === 'simple', "Weekly badge & stars sets rewardsView 'simple' and hideMilestones = true");
           const savedBadge = row.closest('.adm-card').querySelector('[data-admin-saved-status]');
           assert(savedBadge && savedBadge.classList.contains('is-visible'), "Switching flashes inline 'Saved ✓'");
           document.getElementById('close-admin-modal-btn').click();
@@ -13741,6 +13742,173 @@ async function runSuite() {
             document.getElementById('close-admin-modal-btn').click();
           }
           document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          helpers.resetState();
+          await sleep(30);
+        }
+      }
+
+      // 146. Rewards view: three choices (docs/prd_simplified_chart_style.md §10.7).
+      //      "Badges, no rewards" keeps badges + Mega but drops pickers, tick gate,
+      //      reward boxes and the quote; a picked reward is never dropped silently;
+      //      a pending change starts at the archive; past no-reward weeks show a note.
+      if (__shouldRun('146')) {
+        console.log("Running Test Case 146: Rewards view (Badges, no rewards / Weekly badge & stars)...");
+        const helpers = window.__test_helpers__;
+        helpers.resetState();
+        await sleep(30);
+        let state = window.__app_state__;
+        const shown = el => !!el && getComputedStyle(el).display !== 'none';
+        const $ = id => document.getElementById(id);
+        const adminModal = $('admin-modal');
+        const confirmModal = $('confirm-modal');
+        const ds = d => { const dt = new Date(state.weekStartDate + 'T00:00:00'); dt.setDate(dt.getDate() + d); return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`; };
+        const openAdmin = async () => {
+          $('admin-btn').click();
+          await sleep(80);
+          $('password-input').value = helpers.ADMIN_PASSWORD;
+          $('password-submit-btn').click();
+          await sleep(80);
+          $('admin-tab-today').click();
+          await sleep(30);
+        };
+        const pick = async (val) => {
+          const sel = $('admin-rewards-view-select');
+          sel.value = val;
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+          await sleep(40);
+        };
+        try {
+          // 1. Legacy hideMilestones reads as 'simple'; the dropdown has three choices.
+          assert(StateModule.getRewardsView({ hideMilestones: true }) === 'simple', "Legacy hideMilestones: true reads as 'simple'");
+          assert(StateModule.getRewardsView({}) === 'full', "No field reads as 'full'");
+          assert(StateModule.WIPE_PRESERVED_KEYS.includes('rewardsView'), "WIPE_PRESERVED_KEYS keeps rewardsView");
+          state.chartStyle = 'big-buttons';
+          state.reward = '';
+          state.megaReward = '';
+          helpers.saveState();
+          helpers.renderState(true);
+          await sleep(40);
+          await openAdmin();
+          const sel = $('admin-rewards-view-select');
+          assert(sel && sel.options.length === 3, "The rewards view dropdown has three choices");
+          assert($('admin-milestones-row').querySelectorAll('[style]').length === 0, "The row has zero inline styles (UX Rule 8)");
+
+          // 2. No reward picked: Badges, no rewards applies at once, no confirm.
+          await pick('badges');
+          assert(confirmModal.classList.contains('hidden'), "No confirm when no reward is picked");
+          assert(state.rewardsView === 'badges' && state.hideMilestones === undefined, "Badges, no rewards sets rewardsView 'badges' (hideMilestones off)");
+          $('close-admin-modal-btn').click();
+          await sleep(40);
+          assert(document.body.dataset.rewards === 'hidden' && document.body.dataset.milestones === 'shown', "body: rewards hidden, milestones shown");
+          assert(shown(document.querySelector('.mega-milestone-card')), "The Mega Milestone card stays");
+          ['weekly-reward-container', 'mega-reward-container'].forEach(id => assert(!shown($(id)), `${id} is hidden`));
+          assert(!shown(document.querySelector('.motivational-quote')), "The motivational quote is hidden");
+
+          // No tick gate.
+          const card = document.querySelector('#simplified-cards-list .simplified-task-card');
+          card.querySelector('input[type="checkbox"]').click();
+          await sleep(40);
+          assert(Object.keys(state.grid).some(k => k.endsWith(`-${card.dataset.task}`) && state.grid[k] === true), "A tick sticks with no rewards picked");
+          assert(![...document.querySelectorAll('.notif-modal')].some(m => m.textContent.includes('ATTENTION, TRAINER')), "No 'ATTENTION, TRAINER' pop-up");
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+
+          // Week 4 win: the Mega pop-up, no reward boxes, no claims.
+          state.megaWeeks = 3;
+          state.claimedRewardsHistory = [];
+          for (let d = 0; d < 7; d++) state.tasks.forEach(t => { state.grid[`${ds(d)}-${t.id}`] = true; });
+          helpers.checkAndTriggerWeeklySuccess();
+          await sleep(40);
+          const notif = [...document.querySelectorAll('.notif-modal')].pop();
+          assert(state.weeklyClaimed === true, "The week is won");
+          assert(notif && notif.textContent.includes('MEGA'), "Week 4 shows the Mega celebration");
+          assert(notif.querySelectorAll('.reward-box').length === 0, "No reward boxes");
+          assert(state.claimedRewardsHistory.length === 0, "No reward claims");
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+
+          // Archive: the week records the view; rewards back on → past week shows the note.
+          const archivedWeek = state.weekStartDate;
+          helpers.resetWeekGrid(true);
+          await sleep(40);
+          state = window.__app_state__;
+          assert(state.weeklyHistory[archivedWeek] && state.weeklyHistory[archivedWeek].rewardsView === 'badges', "The archived week records rewardsView 'badges'");
+          StateModule.setRewardsView('full', state);
+          helpers.setViewingWeekStartDate(archivedWeek);
+          helpers.renderState(true);
+          await sleep(40);
+          const footer = document.querySelector('.bottom-section');
+          assert(footer.dataset.pastRewards === 'none', "Past no-reward week: footer data-past-rewards='none'");
+          assert(!shown($('weekly-reward-container')) && !shown($('mega-reward-container')), "Past no-reward week: no blank pickers");
+          assert(shown($('past-week-rewards-note')) && $('past-week-rewards-note').textContent.includes('Badges-only week'), "Past no-reward week shows the note");
+          helpers.setViewingWeekStartDate(state.weekStartDate);
+          helpers.renderState(true);
+          await sleep(40);
+          assert(footer.dataset.pastRewards === 'shown' && shown($('weekly-reward-container')), "The current week shows the pickers again");
+
+          // 3. Reward picked → confirm. Cancel keeps everything.
+          state.reward = 'Blanket Fort';
+          state.megaReward = 'New Book';
+          helpers.saveState();
+          await openAdmin();
+          await pick('badges');
+          assert(!confirmModal.classList.contains('hidden'), "Picked rewards: the confirm opens");
+          assert($('confirm-message').textContent.includes('Blanket Fort') || $('confirm-message').textContent.includes('Master Builder'), "The confirm names the picked reward");
+          $('confirm-no-btn').click();
+          await sleep(30);
+          assert(StateModule.getRewardsView(state) === 'full' && state.pendingRewardsView === undefined && $('admin-rewards-view-select').value === 'full', "Cancel changes nothing and resets the dropdown");
+
+          // Start next week: pending, reward kept, status line shows.
+          await pick('badges');
+          $('confirm-yes-btn').click();
+          await sleep(40);
+          assert(state.pendingRewardsView === 'badges' && StateModule.getRewardsView(state) === 'full', "Start next week sets a pending view");
+          assert(state.reward === 'Blanket Fort' && state.megaReward === 'New Book', "The picked rewards are kept");
+          assert(shown($('admin-rewards-view-status')) && $('admin-rewards-view-status').textContent.startsWith('Starts '), "The status line shows when it starts");
+          assert($('admin-rewards-view-select').value === 'badges', "The dropdown shows the pending choice");
+          $('close-admin-modal-btn').click();
+          await sleep(40);
+          assert(document.body.dataset.rewards === 'shown', "Until then the child still sees the pickers");
+
+          // Unwon week archives → pending applies and the carried-over reward is dropped (R6).
+          // Make the active week last week (ended, unwon) so the reset archives it.
+          state.grid = {};
+          state.weeklyClaimed = false;
+          const now = new Date();
+          const realStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() - (state.weekStartDay || 0) + 7) % 7));
+          realStart.setDate(realStart.getDate() - 7);
+          const pendingWeek = `${realStart.getFullYear()}-${String(realStart.getMonth() + 1).padStart(2, '0')}-${String(realStart.getDate()).padStart(2, '0')}`;
+          delete state.weeklyHistory[pendingWeek];
+          state.weekStartDate = pendingWeek;
+          helpers.saveState();
+          helpers.resetWeekGrid(true);
+          await sleep(40);
+          state = window.__app_state__;
+          assert(state.weekStartDate > pendingWeek, `The ended week was archived (now ${state.weekStartDate})`);
+          assert(StateModule.getRewardsView(state) === 'badges' && state.pendingRewardsView === undefined, "The pending view starts at the archive");
+          assert(state.reward === '' && state.megaReward === '', "A carried-over reward is dropped when rewards become hidden");
+          assert(state.weeklyHistory[pendingWeek] && state.weeklyHistory[pendingWeek].reward === 'Blanket Fort' && !state.weeklyHistory[pendingWeek].rewardsView, "The archived week keeps its reward and no rewardsView");
+
+          // Switch now: applies at once and clears the picks.
+          StateModule.setRewardsView('full', state);
+          delete state.pendingRewardsView;
+          state.reward = 'Blanket Fort';
+          state.megaReward = '';
+          helpers.saveState();
+          await openAdmin();
+          await pick('simple');
+          assert(!confirmModal.classList.contains('hidden'), "Switch now path: the confirm opens");
+          $('confirm-third-btn').click();
+          await sleep(40);
+          assert(state.rewardsView === 'simple' && state.hideMilestones === true && state.reward === '' && state.pendingRewardsView === undefined, "Switch now applies Weekly badge & stars and clears the pick");
+          // Picking the current view again cancels nothing harmful.
+          await pick('simple');
+          assert(confirmModal.classList.contains('hidden') && state.rewardsView === 'simple', "Re-picking the current view is a no-op");
+          $('close-admin-modal-btn').click();
+          await sleep(40);
+          assert(document.body.dataset.milestones === 'hidden' && !shown(document.querySelector('.mega-milestone-card')), "Weekly badge & stars hides the Mega card");
+        } finally {
+          document.querySelectorAll('.notif-modal').forEach(el => el.remove());
+          confirmModal.classList.add('hidden');
+          adminModal.classList.add('hidden');
           helpers.resetState();
           await sleep(30);
         }

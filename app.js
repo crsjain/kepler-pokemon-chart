@@ -24,6 +24,9 @@ import {
   registerOnSave,
   getEarliestDataWeekStartDate,
   milestonesHidden,
+  rewardsHidden,
+  getRewardsView,
+  setRewardsView,
   countsTowardGoal
 } from './state.js';
 import { formatLocalDate, getWeekStart, getDateOfColumn, getLocalDate, getFormattedDateRange, getHistoricalWeekIntervals, getWeekColumnStates, getColumnState } from './date_utils.js';
@@ -1989,10 +1992,12 @@ export function renderState(rebuildGrid = false) {
   let rewardVal = state.reward || '';
   let megaRewardVal = state.megaReward || '';
   
+  let pastNote = '';
   if (isPastWeek) {
     const history = state.weeklyHistory[currentViewingWeekStartDate] || {};
     rewardVal = history.reward || '';
     megaRewardVal = history.megaReward || '';
+    pastNote = pastWeekNoRewardsNote(state.weeklyHistory[currentViewingWeekStartDate]);
     
     rewardSelect.disabled = true;
     megaRewardSelect.disabled = true;
@@ -2000,6 +2005,10 @@ export function renderState(rebuildGrid = false) {
     rewardSelect.disabled = false;
     megaRewardSelect.disabled = false;
   }
+  const footerEl = document.querySelector('.bottom-section');
+  const pastNoteEl = document.getElementById('past-week-rewards-note');
+  if (footerEl) footerEl.dataset.pastRewards = pastNote ? 'none' : 'shown';
+  if (pastNoteEl) pastNoteEl.textContent = pastNote;
   
   rewardSelect.value = rewardVal;
   megaRewardSelect.value = megaRewardVal;
@@ -2073,6 +2082,8 @@ export function renderState(rebuildGrid = false) {
   // "Show milestones & rewards" (prd_simplified_chart_style.md §10): style.css hides
   // the Mega card, reward pickers and quote from this one attribute.
   document.body.dataset.milestones = milestonesHidden() ? 'hidden' : 'shown';
+  // Rewards view (§10.7): pickers, quote, tick gate and reward boxes.
+  document.body.dataset.rewards = rewardsHidden() ? 'hidden' : 'shown';
   refreshMilestonesSwitch();
   if (currentViewingWeekStartDate !== lastViewedWeekForSimplified) {
     lastViewedWeekForSimplified = currentViewingWeekStartDate;
@@ -2992,8 +3003,8 @@ function handleCheckboxChange(e) {
     return;
   }
   
-  // Skipped when milestones are hidden: the child can't see the pickers (§10).
-  if (!milestonesHidden() && (!state.reward || !state.megaReward)) {
+  // Skipped when rewards are hidden: the child can't see the pickers (§10, §10.7).
+  if (!rewardsHidden() && (!state.reward || !state.megaReward)) {
     cb.checked = false;
     showCustomNotification(
       "⚠️ ATTENTION, TRAINER! ⚠️",
@@ -3460,13 +3471,46 @@ function dismissProfilePicker() {
   return true;
 }
 
-// Admin › Settings › Look & Feel › "Show milestones & rewards" (§10). The row only
-// shows under Big Buttons; the Standard grid always shows milestones.
+// Admin › Settings › Look & Feel › "Rewards view" (§10.7). The row only shows
+// under Big Buttons; the Standard grid always shows milestones and rewards. The
+// dropdown shows a pending choice (it starts next week) with a status line.
+const REWARDS_VIEW_NAMES = {
+  full: 'Badges & rewards',
+  badges: 'Badges, no rewards',
+  simple: 'Weekly badge & stars'
+};
+
 function refreshMilestonesSwitch() {
   const row = document.getElementById('admin-milestones-row');
-  const toggle = document.getElementById('admin-show-milestones-toggle');
+  const select = document.getElementById('admin-rewards-view-select');
+  const status = document.getElementById('admin-rewards-view-status');
   if (row) row.classList.toggle('hidden', state.chartStyle !== 'big-buttons');
-  if (toggle) toggle.checked = state.hideMilestones !== true;
+  const pending = state.pendingRewardsView;
+  if (select) select.value = pending !== undefined ? pending : getRewardsView();
+  if (status) {
+    if (pending !== undefined && state.weekStartDate) {
+      const next = new Date(state.weekStartDate + 'T00:00:00');
+      next.setDate(next.getDate() + 7);
+      const when = next.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      const child = state.childName || 'Your child';
+      status.textContent = `Starts ${when}. ${child} keeps this week's reward until then. Choose "${REWARDS_VIEW_NAMES[getRewardsView()]}" to cancel.`;
+      status.classList.remove('hidden');
+    } else {
+      status.textContent = '';
+      status.classList.add('hidden');
+    }
+  }
+}
+
+// Past weeks while rewards are shown (§10.7 R7): a week that ended with rewards
+// hidden, or with no reward saved at all, shows one calm line in place of the
+// two greyed-out pickers. Returns the line, or '' to show the pickers.
+function pastWeekNoRewardsNote(history) {
+  if (!history) return '';
+  if (history.rewardsView === 'badges') return '🏅 Badges-only week: no rewards';
+  if (history.rewardsView === 'simple') return '⭐ Weekly badge & stars week: no rewards';
+  if (!history.reward && !history.megaReward) return 'No rewards this week';
+  return '';
 }
 
 /**
@@ -4162,7 +4206,8 @@ function bindWeekStartDayEvents() {
                 weeklyClaimed: !!state.weeklyClaimed,
                 badgeId: state.activeWeeklyBadgeId,
                 xpEarned: calculateWeekXpEarned(oldWeekStartDate),
-                megaWeeks: state.megaWeeks !== undefined ? state.megaWeeks : 0
+                megaWeeks: state.megaWeeks !== undefined ? state.megaWeeks : 0,
+                ...archivedRewardsViewField()
               };
             }
 
@@ -4183,6 +4228,8 @@ function bindWeekStartDayEvents() {
               state.weeklyClaimed = false;
               state.reward = '';
             }
+            // The old week has ended here too, so a pending rewards view starts (§10.7).
+            applyPendingRewardsView();
           }
           
           state.weekStartDay = newStartDay;
@@ -4384,8 +4431,10 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
       weeklyClaimed: wasClaimed,
       badgeId: state.activeWeeklyBadgeId,
       xpEarned: calculateWeekXpEarned(oldWeekStartDate),
-      megaWeeks: state.megaWeeks !== undefined ? state.megaWeeks : 0
+      megaWeeks: state.megaWeeks !== undefined ? state.megaWeeks : 0,
+      ...archivedRewardsViewField()
     };
+    applyPendingRewardsView();
     
     const oldStartDay = state.weeklyHistory[oldWeekStartDate]?.weekStartDay !== undefined ? state.weeklyHistory[oldWeekStartDate].weekStartDay : (state.weekStartDay || 0);
     const newStartDay = pendingDay !== undefined ? pendingDay : 0;
@@ -4433,8 +4482,10 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
       weeklyClaimed: true,
       badgeId: oldBadgeId,
       xpEarned: calculateWeekXpEarned(oldWeekStartDate),
-      megaWeeks: state.megaWeeks
+      megaWeeks: state.megaWeeks,
+      ...archivedRewardsViewField()
     };
+    applyPendingRewardsView();
 
     rollNewWeeklyBadge();
     state.megaWeeks += 1;
@@ -4468,8 +4519,10 @@ function resetWeekGrid(carryOverExceptions = false, oldStartDay = state.weekStar
       weeklyClaimed: false,
       badgeId: oldBadgeId,
       xpEarned: calculateWeekXpEarned(oldWeekStartDate),
-      megaWeeks: state.megaWeeks
+      megaWeeks: state.megaWeeks,
+      ...archivedRewardsViewField()
     };
+    applyPendingRewardsView();
     
     const newWeekStartDate = currentRealWeekStart;
     state.weekStartDate = newWeekStartDate;
@@ -4845,7 +4898,7 @@ function openStartNewWeekConfirm() {
       ? (hideMega
         ? 'Last week is saved with its badge. Start a fresh grid of training.'
         : `Last week is saved with its badge. Start a fresh grid for Week ${nextWeekNum} of training.`)
-      : (hideMega
+      : (rewardsHidden()
         ? 'Missed a check last week? Tap Not Yet and finish it first. Your badge carries over to the new week.'
         : 'Missed a check last week? Tap Not Yet and finish it first. Your badge and reward carry over to the new week.'));
   showCustomConfirm(
@@ -4908,6 +4961,26 @@ function getRewardLabel(value, options) {
   return match && match.text ? match.text : value;
 }
 
+// Rewards view (§10.7). An archived week records the view it ended in when
+// rewards were hidden, so past weeks never show a blank picker for it (R7).
+function archivedRewardsViewField() {
+  return rewardsHidden() ? { rewardsView: getRewardsView() } : {};
+}
+
+// A rewards view chosen with "Start next week" starts when the week is archived
+// (every archive path calls this after writing the history entry). A reward
+// carried over from an unwon week is dropped when rewards become hidden (R6).
+function applyPendingRewardsView() {
+  if (state.pendingRewardsView === undefined) return;
+  const next = state.pendingRewardsView;
+  delete state.pendingRewardsView;
+  setRewardsView(next);
+  if (rewardsHidden()) {
+    state.reward = '';
+    state.megaReward = '';
+  }
+}
+
 // Called after a pokeball tick, when Exception Mode ends (Done ✅), and after
 // saving Activities. Any of them can award or take back the week's badge
 // (owner 2026-10-21); saving Activities asks the parent first.
@@ -4929,8 +5002,10 @@ function checkAndTriggerWeeklySuccess(changedTaskId = null) {
     const activePokemon = getStageInfo(family, stats.stageId).currentStage;
     
     if (!state.claimedRewardsHistory) state.claimedRewardsHistory = [];
-    // Milestones hidden (§10, owner D2): no reward at all, so record no claims.
-    const hideRewards = milestonesHidden();
+    // Rewards hidden (§10 D2, §10.7 R3): no reward at all, so record no claims.
+    // Badges & milestones still shows Week N and the Mega celebration.
+    const hideRewards = rewardsHidden();
+    const hideMega = milestonesHidden();
     
     if (!hideRewards) state.claimedRewardsHistory.unshift({
       date: new Date().toISOString(),
@@ -4956,12 +5031,12 @@ function checkAndTriggerWeeklySuccess(changedTaskId = null) {
     renderProgress();
     
     const weekDisplayNum = state.megaWeeks + 1;
-    const isMegaWeek = weekDisplayNum === 4 && !hideRewards;
+    const isMegaWeek = weekDisplayNum === 4 && !hideMega;
     
     CelebrationEngine.triggerCelebration(isMegaWeek);
     playSound(isMegaWeek ? 'megaSuccess' : 'badge');
     
-    let successMessage = hideRewards
+    let successMessage = hideMega
       ? `<p class="notif-desc">${state.childName || 'Trainer'} has completed all training goals <strong>this week</strong>!</p>`
       : `<p class="notif-desc">${state.childName || 'Trainer'} has completed all training goals for <strong>Week ${weekDisplayNum}</strong>!</p>`;
     if (!hideRewards) {

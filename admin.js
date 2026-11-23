@@ -6,7 +6,9 @@ import {
   replaceState,
   ADMIN_PASSWORD,
   DAYS,
-  getStageInfo
+  getStageInfo,
+  getRewardsView,
+  setRewardsView
 } from './state.js';
 import { formatLocalDate } from './date_utils.js';
 import { isBackdropClick, bindBackdropDismiss } from './modal_backdrop.js';
@@ -102,6 +104,11 @@ export function showAdminToast(title, message) {
 /* ---------------------------------------------------------------------------
  * Inline "Saved ✓" for auto-saving Settings controls (aria-live=polite, 2s).
  * ------------------------------------------------------------------------- */
+function refreshRewardsViewSelect() {
+  const select = document.getElementById('admin-rewards-view-select');
+  if (select) select.value = state.pendingRewardsView !== undefined ? state.pendingRewardsView : getRewardsView();
+}
+
 function flashAdminSaved(fromEl) {
   const card = fromEl && fromEl.closest('.adm-card');
   const status = card && card.querySelector('[data-admin-saved-status]');
@@ -936,17 +943,73 @@ export function initAdmin(callbacks) {
     });
   }
 
-  // "Show milestones & rewards" (prd_simplified_chart_style.md §10). Under Big
-  // Buttons only; renderState shows/hides the row and syncs the switch.
-  const showMilestonesToggle = document.getElementById('admin-show-milestones-toggle');
-  if (showMilestonesToggle) {
-    showMilestonesToggle.addEventListener('change', () => {
-      const hide = !showMilestonesToggle.checked;
-      if (hide) state.hideMilestones = true;
-      else delete state.hideMilestones;
-      saveState();
-      renderState(true);
-      flashAdminSaved(showMilestonesToggle);
+  // Rewards view (prd_simplified_chart_style.md §10.7). Under Big Buttons only;
+  // renderState shows/hides the row and syncs the dropdown and status line.
+  const rewardsViewSelect = document.getElementById('admin-rewards-view-select');
+  if (rewardsViewSelect) {
+    rewardsViewSelect.addEventListener('change', () => {
+      const val = ['badges', 'simple'].includes(rewardsViewSelect.value) ? rewardsViewSelect.value : 'full';
+      const current = getRewardsView();
+      const done = () => {
+        saveState();
+        renderState(true);
+        flashAdminSaved(rewardsViewSelect);
+      };
+      // Picking the current view again cancels a pending change.
+      if (val === current) {
+        delete state.pendingRewardsView;
+        return done();
+      }
+      // R5: never drop a reward the child already picked without asking.
+      const picked = [state.reward, state.megaReward].filter(Boolean);
+      if (current === 'full' && val !== 'full' && picked.length > 0) {
+        const labelOf = (v, opts) => {
+          const m = (opts || []).find(o => o && o.value === v);
+          return m && m.text ? m.text : v;
+        };
+        const names = [];
+        if (state.reward) names.push(labelOf(state.reward, state.weeklyRewardOptions));
+        if (state.megaReward) names.push(labelOf(state.megaReward, state.megaRewardOptions));
+        const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const child = esc(state.childName || 'Your child');
+        const list = names.map(n => `<strong>${esc(n)}</strong>`).join(' and ');
+        showCustomConfirm(
+          'Change the rewards view? 🎁',
+          `<div class="confirm-detail"><div class="schedule-hero-card"><div class="schedule-hero-label">🎁 REWARD ALREADY PICKED</div><div class="schedule-hero-main">${child} picked ${list} this week.</div><div class="schedule-hero-sub">If you switch now, ${child} won't see ${names.length > 1 ? 'these rewards' : 'this reward'} anymore, and ${names.length > 1 ? 'they' : 'it'} won't be recorded when the week is won. Or keep ${names.length > 1 ? 'them' : 'it'} and start the new view next week.</div></div></div>`,
+          () => {
+            state.pendingRewardsView = val;
+            done();
+          },
+          () => {
+            // Cancel: put the dropdown back.
+            refreshRewardsViewSelect();
+          },
+          'Start next week',
+          'Cancel',
+          'pixel-btn info',
+          'pixel-btn greyed-out',
+          {
+            ...ADMIN_SURFACE,
+            backdrop: 'cancel',
+            onCancel: () => refreshRewardsViewSelect(),
+            third: {
+              label: 'Switch now',
+              className: 'pixel-btn',
+              onClick: () => {
+                delete state.pendingRewardsView;
+                setRewardsView(val);
+                state.reward = '';
+                state.megaReward = '';
+                done();
+              }
+            }
+          }
+        );
+        return;
+      }
+      delete state.pendingRewardsView;
+      setRewardsView(val);
+      done();
     });
   }
 
