@@ -316,3 +316,40 @@ A 4-week Mega horizon and two dropdowns of written rewards mean nothing to a pre
 - [x] PRD §10 written (2026-11-04)
 - [x] Build + TC134, cache bump, full suite green (2026-11-04)
 - [ ] Owner VQA, then deploy via `pokemon-session-wrapup`; set Alden to Big Buttons and switch milestones off.
+
+### 10.7 Rewards view: three choices (owner, 2026-11-23)
+
+**Status**: Approved by the owner 2026-11-23. Replaces the §10 switch with one dropdown.
+**For**: Lyra (5) keeps badges but finds picking written rewards each week a hurdle because she doesn't read quickly yet; Alden (under 5) keeps today's §10 view.
+
+#### Owner decisions
+| # | Decision |
+| :--- | :--- |
+| R1 | **One dropdown, three choices**, in the same Look & Feel row (`#admin-milestones-row`), under Big Buttons only. Two switches were rejected: four combinations, one of them meaningless. |
+| R2 | **🏆 Badges, milestones & rewards** (default) — unchanged. |
+| R3 | **🏅 Badges & milestones, no rewards** — the weekly badge, the Mega Milestone card and the 4th-week Mega celebration stay; the reward pickers, the "choose your rewards first" tick gate, the reward boxes, reward claims and the motivational quote go. There is **no physical reward**: a parent who wants one switches rewards back on. |
+| R4 | **⭐ Weekly badge & stars only** — exactly the §10 view (no Mega card, no rewards, no quote; the weekly badge pop-up stays). |
+| R5 | **Nothing the child was promised disappears silently.** Changing to a no-rewards view while this week has a reward picked asks the parent: **Start next week** (recommended; the picked reward stays until the week ends) or **Switch now** (the child stops seeing the picked reward and it isn't recorded when the week is won), or Cancel. |
+| R6 | When a pending change starts at the next week, a reward carried over from an **unwon** week is dropped (it wasn't earned; the unearned badge still carries over). |
+| R7 | **Past weeks never show a blank picker for a no-rewards week.** After rewards come back on, such a week shows one calm line in place of the two pickers, and its badges and Mega slots show normally. |
+
+#### Behaviour
+- **Field**: `state.rewardsView` = `'badges'` \| `'simple'`; absent = full. Legacy `hideMilestones: true` reads as `'simple'`, so Alden needs no migration. Writes mirror `hideMilestones` (true only for `'simple'`) so a tablet on an older build keeps his view. `rewardsView` is in `WIPE_PRESERVED_KEYS`. No schema bump.
+- **Helpers** (`state.js`): `getRewardsView(s)` (the setting), `rewardsHidden(s)` (Big Buttons and not full), `milestonesHidden(s)` (Big Buttons and `'simple'`; unchanged meaning). Standard always shows everything.
+- **Main screen**: `body[data-rewards]` hides `#weekly-reward-container`, `#mega-reward-container` and `.motivational-quote`; `body[data-milestones]` hides `.mega-milestone-card` (and keeps its landscape layout rule).
+- **Win**: no claims and no reward boxes while rewards are hidden. Badges & milestones keeps "Week N" copy and the Mega celebration on week 4; Weekly badge & stars keeps the §10 weekly pop-up.
+- **Start New Week dialog**: an unwon week says the badge carries over, never "badge and reward", while rewards are hidden.
+- **Pending change**: `state.pendingRewardsView` (`'full'` \| `'badges'` \| `'simple'`) applies when the week is archived (every archive path), after the archive records the old view. The dropdown shows the chosen value with a status line "Starts <weekday, date>. <Child> keeps this week's reward until then." Picking the current view again cancels it.
+- **Archive**: `weeklyHistory[week].rewardsView` is written when the week ended with rewards hidden.
+- **Past weeks with rewards shown**: if the entry's `rewardsView` hides rewards, or the week has neither reward saved, the footer gets `data-past-rewards="none"` and `#past-week-rewards-note` reads "🏅 Badges & milestones week: no rewards", "⭐ Weekly badge & stars week: no rewards", or (no record) "No rewards this week".
+
+#### Tests: TC146 (+ TC134 updated for the dropdown)
+1. Admin dropdown: three options, Big Buttons only; Weekly badge & stars sets `rewardsView: 'simple'` and `hideMilestones: true`; legacy `hideMilestones: true` reads as simple.
+2. Badges & milestones: Mega card visible, pickers and quote hidden, no tick gate, week-4 win shows the Mega pop-up with no reward boxes and no claims.
+3. Reward picked + switch: the confirm appears; Start next week keeps the reward and sets the pending view; archiving applies it and clears a carried-over reward; Switch now clears the picks at once.
+4. Past week archived in Badges & milestones, rewards back on: pickers hidden, the note shows.
+
+#### Rollout
+- [x] Owner decisions R1–R7 (2026-11-23)
+- [ ] Build + TC146, cache bump, full suite green
+- [ ] Owner VQA; set Lyra to Badges & milestones (start next week)
