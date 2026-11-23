@@ -9675,6 +9675,16 @@ body[data-theme] .bottom-section[data-past-rewards="none"] .past-week-rewards-no
   padding: 10px 12px;
 }
 
+/* Admin: the Rewards view option names are long ("Badges, Mega Milestones &
+   Physical Rewards"), so this row always stacks: label and help on top, the
+   dropdown full width below, at every width (UX Rule 7). */
+#admin-modal #admin-pane-today .adm-setting-row.adm-setting-row-stacked {
+  grid-template-columns: minmax(0, 1fr);
+}
+#admin-modal #admin-pane-today .adm-setting-row.adm-setting-row-stacked select.pixel-select {
+  width: 100%;
+}
+
 /* Admin: the pending-change line under the Rewards view help text. */
 .admin-rewards-view-status {
   color: #b45309;

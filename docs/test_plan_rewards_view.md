@@ -1,10 +1,10 @@
 # Manual Test Plan: Rewards view (3 choices) + Change Week Start Day copy
 
 **Covers commits:** `86c9c72` (PRD §10.7), `73c1a2e` (Rewards view), `885ccc3` (Change Week Start Day copy)
-**Build:** cache `poke-chart-cache-v321`, all modules + `style.css` `?v=11.70`, `particles.js?v=10.8`
+**Build:** cache `poke-chart-cache-v322`, all modules + `style.css` `?v=11.71`, `particles.js?v=10.8`
 **Spec:** [`prd_simplified_chart_style.md`](prd_simplified_chart_style.md) §10.7 (owner decisions R1–R7); [`prd_historical_weeks.md`](prd_historical_weeks.md) (Permanent Notice)
 **Automated coverage:** `TC146` (new), `TC134` (updated for the dropdown), `TC64` (modal copy). Run `node run_headless_tests.js 64,134,146`, then the full suite.
-**Supersedes:** §1 of [`test_plan_show_milestones_switch.md`](test_plan_show_milestones_switch.md) (the switch is now a dropdown). The rest of that plan still applies to **⭐ Weekly badge & stars**.
+**Supersedes:** §1 of [`test_plan_show_milestones_switch.md`](test_plan_show_milestones_switch.md) (the switch is now a dropdown). The rest of that plan still applies to **⭐ Badges only**.
 
 > [!CAUTION]
 > **Switch now** clears the child's picked rewards, and **Change Week Start Day** can't be undone. Run §4–§6 and §8 on a **test child on local staging**, never on Kepler, Lyra or Alden in prod.
@@ -18,7 +18,7 @@
 | **Local (staging)** | `python3 -m http.server 8000` → `http://crsjain.c.googlers.com:8000/`. Emulator login `crsjain+staging@gmail.com`. Local Parent PIN. |
 | **Prod** | `https://crsjain.github.io/kepler-pokemon-chart/`, after the wrap-up deploy (§9 only). |
 
-- [ ] **Cache check:** hard-refresh. Admin › 💾 Data shows the new version, or DevTools › Application › Cache Storage shows `poke-chart-cache-v321`.
+- [ ] **Cache check:** hard-refresh. Admin › 💾 Data shows the new version, or DevTools › Application › Cache Storage shows `poke-chart-cache-v322`.
 - [ ] **Test child:** create or pick a test child, set **🧸 Chart style = Big Buttons**. Note their Mega count (`N / 4 Weeks`).
 - [ ] **Debug Sidebar:** Admin › 💾 Data › Advanced › **Debug Sidebar** on. You'll use **Future Edits** and **Mega cycle week**.
 
@@ -31,19 +31,20 @@ Open **🔒 Admin › 🗓️ Settings › Look & Feel**.
 1. **Chart style = Standard:**
    - [ ] There's **no** "🎁 Rewards view" row (hidden, not greyed out).
 2. **Chart style = Big Buttons:**
-   - [ ] The **🎁 Rewards view** row appears directly under Chart style, with help text *"\"Badges, no rewards\" skips picking rewards each week. \"Weekly badge & stars\" also hides Mega Milestones, for children under 6. …"*
-   - [ ] The dropdown has exactly three choices: **🏆 Badges & rewards**, **🏅 Badges, no rewards**, **⭐ Weekly badge & stars**, and starts on **🏆 Badges & rewards**.
+   - [ ] The **🎁 Rewards view** row appears directly under Chart style, with help text *"\"Badges & Mega Milestones\" skips picking physical rewards each week. \"Badges only\" also hides the Mega Milestone card, for younger children. …"*
+   - [ ] The row is **stacked** at every width: label and help on top, the dropdown full width below, so the long option names are never clipped.
+   - [ ] The dropdown has exactly three choices: **🏆 Badges, Mega Milestones & Physical Rewards**, **🏅 Badges & Mega Milestones**, **⭐ Badges only**, and starts on **🏆 Badges, Mega Milestones & Physical Rewards**.
    - [ ] No option text is clipped in the dropdown.
 3. **Phone width (portrait phone or DevTools ≤ 430px):**
    - [ ] The row wraps cleanly (label/help above, dropdown full width or below). Nothing overflows or overlaps.
 4. **Alden (legacy setting):** switch to a child who had the old milestones switch **off** (Alden on local, if present):
-   - [ ] The dropdown shows **⭐ Weekly badge & stars** with no action needed, and his main screen looks exactly as before.
+   - [ ] The dropdown shows **⭐ Badges only** with no action needed, and his main screen looks exactly as before.
 
 ---
 
-## 2. 🏅 Badges, no rewards (Lyra's view)
+## 2. 🏅 Badges & Mega Milestones (no physical rewards)
 
-With **no** rewards picked, choose **🏅 Badges, no rewards**.
+With **no** rewards picked, choose **🏅 Badges & Mega Milestones**.
 
 - [ ] No confirm dialog opens; an inline **Saved ✓** flashes.
 
@@ -77,9 +78,9 @@ Tap **🚀 Start New Week** (or Admin › Tonight's Check-in › Start a new wee
 
 ---
 
-## 3. ⭐ Weekly badge & stars (Alden's view)
+## 3. ⭐ Badges only (Lyra's and Alden's view)
 
-Choose **⭐ Weekly badge & stars**.
+Choose **⭐ Badges only**.
 - [ ] The Mega card, both pickers and the quote are gone. Badge card and 🏆 Case stay.
 - [ ] Ticking works with no reward pop-up.
 - [ ] Winning week 4 shows **WEEKLY SUCCESS** (never Mega) with "this week" copy and no reward boxes.
@@ -89,26 +90,26 @@ Choose **⭐ Weekly badge & stars**.
 
 ## 4. A reward is already picked: the confirm (R5)
 
-Set the dropdown back to **🏆 Badges & rewards**, close Admin, and pick a Weekly reward and a Mega reward on the main screen.
+Set the dropdown back to **🏆 Badges, Mega Milestones & Physical Rewards**, close Admin, and pick a Weekly reward and a Mega reward on the main screen.
 
-Reopen Admin and choose **🏅 Badges, no rewards**:
+Reopen Admin and choose **🏅 Badges & Mega Milestones**:
 - [ ] **"Change the rewards view? 🎁"** opens, naming the child and **both** picked rewards by their labels (e.g. *🏰 Master Builder… and 📚 Epic Upgrade…*).
 - [ ] It explains that switching now hides the reward(s) and they won't be recorded on a win.
 - [ ] Buttons: **Start next week** (blue, primary), **Switch now**, **Cancel**. Focus starts on **Cancel**.
 
 ### 4.1 Cancel
-- [ ] **Cancel** (and, separately, a tap on the dimmed backdrop) closes it with nothing changed; the dropdown is back on **🏆 Badges & rewards**; the pickers still show the rewards on the main screen.
+- [ ] **Cancel** (and, separately, a tap on the dimmed backdrop) closes it with nothing changed; the dropdown is back on **🏆 Badges, Mega Milestones & Physical Rewards**; the pickers still show the rewards on the main screen.
 
 ### 4.2 Start next week
-Choose **🏅 Badges, no rewards** again → **Start next week**.
-- [ ] The dropdown shows **🏅 Badges, no rewards**, with an amber line under the help text: *"Starts \<Sun, Nov 29\>. \<Child\> keeps this week's reward until then. Choose \"Badges & rewards\" to cancel."* (date = the next week start).
+Choose **🏅 Badges & Mega Milestones** again → **Start next week**.
+- [ ] The dropdown shows **🏅 Badges & Mega Milestones**, with an amber line under the help text: *"Starts \<Sun, Nov 29\>. \<Child\> keeps this week's reward until then. Choose \"Badges & rewards\" to cancel."* (date = the next week start).
 - [ ] Close Admin: the child **still sees both pickers with their rewards**; ticking works normally.
-- [ ] Reopen Admin, choose **🏆 Badges & rewards**: the status line disappears (pending cancelled) and nothing else changes. Set it to pending again for §5.
+- [ ] Reopen Admin, choose **🏆 Badges, Mega Milestones & Physical Rewards**: the status line disappears (pending cancelled) and nothing else changes. Set it to pending again for §5.
 
 ### 4.3 Switch now
-On a second test child (or reset picks), pick rewards, then choose **⭐ Weekly badge & stars** → **Switch now**.
+On a second test child (or reset picks), pick rewards, then choose **⭐ Badges only** → **Switch now**.
 - [ ] Applies immediately: Mega card, pickers and quote are gone.
-- [ ] Switch the dropdown back to **🏆 Badges & rewards**: the pickers come back **empty** (the picks were cleared).
+- [ ] Switch the dropdown back to **🏆 Badges, Mega Milestones & Physical Rewards**: the pickers come back **empty** (the picks were cleared).
 
 ---
 
@@ -119,11 +120,11 @@ Use the child left pending in §4.2.
 ### 5.1 Won week
 With **Future Edits**, win the week, then Admin › Tonight's Check-in › **Start a new week** → Let's Go.
 - [ ] The win pop-up (before the reset) still showed the **reward box** — the reward was honoured this week.
-- [ ] After the reset: the view is **🏅 Badges, no rewards** (pickers + quote gone, Mega card shown) and the Admin status line is gone.
+- [ ] After the reset: the view is **🏅 Badges & Mega Milestones** (pickers + quote gone, Mega card shown) and the Admin status line is gone.
 
 ### 5.2 Unwon week: carried-over reward is dropped (R6)
 Set up pending again on a test child with rewards picked and the week **not** won. End the week by applying a **Change Week Start Day** to today or an earlier day (this archives the current week immediately — see §8 for the copy check).
-- [ ] After applying: the view is **🏅 Badges, no rewards** and the reward did **not** carry over (turning rewards back on shows empty pickers).
+- [ ] After applying: the view is **🏅 Badges & Mega Milestones** and the reward did **not** carry over (turning rewards back on shows empty pickers).
 - [ ] The unwon badge **did** carry over (same "THIS WEEK'S BADGE").
 
 > [!NOTE]
@@ -133,9 +134,9 @@ Set up pending again on a test child with rewards picked and the week **not** wo
 
 ## 6. Past weeks after rewards come back on (R7)
 
-On the child from §2 (several weeks played in **🏅 Badges, no rewards**), switch the dropdown to **🏆 Badges & rewards**. On the main screen tap **◀ Prev Week**:
-- [ ] For a week played in Badges, no rewards: both greyed-out pickers are replaced by one centred line **"🏅 Badges-only week: no rewards"**. Its badge and Mega slots show normally.
-- [ ] For a week played in Weekly badge & stars: **"⭐ Weekly badge & stars week: no rewards"**.
+On the child from §2 (several weeks played in **🏅 Badges & Mega Milestones**), switch the dropdown to **🏆 Badges, Mega Milestones & Physical Rewards**. On the main screen tap **◀ Prev Week**:
+- [ ] For a week played in Badges & Mega Milestones: both greyed-out pickers are replaced by one centred line **"🏅 Badges & Mega Milestones week: no rewards"**. Its badge and Mega slots show normally.
+- [ ] For a week played in Badges only: **"⭐ Badges-only week: no rewards"**.
 - [ ] For a week that had rewards picked: the greyed-out pickers show those rewards (unchanged).
 - [ ] **Next Week ▶** back to the current week: the live pickers return (empty, ready to pick).
 - [ ] Check the line in both themes; no inline styles, readable slate text.
@@ -144,10 +145,10 @@ On the child from §2 (several weeks played in **🏅 Badges, no rewards**), swi
 
 ## 7. Other children, Standard and parent modes
 
-- [ ] **Standard** with the dropdown left on Badges, no rewards: Standard shows the Mega card, pickers and quote anyway, and the reward tick gate is back. Switch back to Big Buttons: the setting is remembered.
+- [ ] **Standard** with the dropdown left on Badges & Mega Milestones: Standard shows the Mega card, pickers and quote anyway, and the reward tick gate is back. Switch back to Big Buttons: the setting is remembered.
 - [ ] Switch Trainer to another child: their view is unaffected (the setting is per child).
 - [ ] **Exception Mode** → Done ✅: rewards stay hidden afterwards.
-- [ ] **Fix last week**: works normally; no reward boxes for a Badges, no rewards child.
+- [ ] **Fix last week**: works normally; no reward boxes for a Badges & Mega Milestones child.
 - [ ] **Wipe All Progress** on the test child: the Rewards view setting stays (it's a parent setting).
 
 ---
@@ -165,12 +166,12 @@ Admin › 🗓️ Settings › **Week start day** → pick **today or an earlier
 ## 9. Prod rollout
 
 1. Deploy via the wrap-up (`pokemon-session-wrapup`).
-2. On **both tablets**: Admin › 💾 Data › **Reload latest version** until each shows cache `v321`.
-3. Check **Alden**: the dropdown already shows **⭐ Weekly badge & stars**; his screen is unchanged.
-4. Set **Lyra** → **🏅 Badges, no rewards**. If she has a reward picked this week, choose **Start next week**.
+2. On **both tablets**: Admin › 💾 Data › **Reload latest version** until each shows cache `v322`.
+3. Check **Alden**: the dropdown already shows **⭐ Badges only**; his screen is unchanged.
+4. Set **Lyra** → **⭐ Badges only**. If she has a reward picked this week, choose **Start next week**.
    - [ ] The status line shows next Sunday's date; Lyra still sees her reward until then.
-   - [ ] After the new week starts: no pickers, no quote; badge and Mega card shown on both tablets.
+   - [ ] After the new week starts: no pickers, no quote, no Mega Milestone card; the weekly badge card shows on both tablets.
 5. - [ ] Kepler looks unchanged.
 
 > [!NOTE]
-> A tablet still on an older build keeps Alden's view (the old `hideMilestones` field is still written) but shows Lyra's reward pickers until it updates. That's why step 2 comes first.
+> A tablet still on an older build keeps Alden's and Lyra's ⭐ view (the old `hideMilestones` field is still written for Badges only). Step 2 still comes first so the new dropdown is there.

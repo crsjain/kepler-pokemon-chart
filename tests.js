@@ -13753,7 +13753,7 @@ async function runSuite() {
       //      reward boxes and the quote; a picked reward is never dropped silently;
       //      a pending change starts at the archive; past no-reward weeks show a note.
       if (__shouldRun('146')) {
-        console.log("Running Test Case 146: Rewards view (Badges, no rewards / Weekly badge & stars)...");
+        console.log("Running Test Case 146: Rewards view (Badges & Mega Milestones / Badges only)...");
         const helpers = window.__test_helpers__;
         helpers.resetState();
         await sleep(30);
@@ -13839,7 +13839,7 @@ async function runSuite() {
           const footer = document.querySelector('.bottom-section');
           assert(footer.dataset.pastRewards === 'none', "Past no-reward week: footer data-past-rewards='none'");
           assert(!shown($('weekly-reward-container')) && !shown($('mega-reward-container')), "Past no-reward week: no blank pickers");
-          assert(shown($('past-week-rewards-note')) && $('past-week-rewards-note').textContent.includes('Badges-only week'), "Past no-reward week shows the note");
+          assert(shown($('past-week-rewards-note')) && $('past-week-rewards-note').textContent.includes('Badges & Mega Milestones week'), "Past no-reward week shows the note");
           helpers.setViewingWeekStartDate(state.weekStartDate);
           helpers.renderState(true);
           await sleep(40);

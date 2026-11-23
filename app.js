@@ -3475,9 +3475,9 @@ function dismissProfilePicker() {
 // under Big Buttons; the Standard grid always shows milestones and rewards. The
 // dropdown shows a pending choice (it starts next week) with a status line.
 const REWARDS_VIEW_NAMES = {
-  full: 'Badges & rewards',
-  badges: 'Badges, no rewards',
-  simple: 'Weekly badge & stars'
+  full: 'Badges, Mega Milestones & Physical Rewards',
+  badges: 'Badges & Mega Milestones',
+  simple: 'Badges only'
 };
 
 function refreshMilestonesSwitch() {
@@ -3507,8 +3507,8 @@ function refreshMilestonesSwitch() {
 // two greyed-out pickers. Returns the line, or '' to show the pickers.
 function pastWeekNoRewardsNote(history) {
   if (!history) return '';
-  if (history.rewardsView === 'badges') return '🏅 Badges-only week: no rewards';
-  if (history.rewardsView === 'simple') return '⭐ Weekly badge & stars week: no rewards';
+  if (history.rewardsView === 'badges') return '🏅 Badges & Mega Milestones week: no rewards';
+  if (history.rewardsView === 'simple') return '⭐ Badges-only week: no rewards';
   if (!history.reward && !history.megaReward) return 'No rewards this week';
   return '';
 }
