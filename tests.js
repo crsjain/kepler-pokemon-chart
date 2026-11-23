@@ -5293,6 +5293,7 @@ async function runSuite() {
         const warningCallout = document.querySelector(".transition-warning-callout");
         assert(warningCallout !== null, "Permanent schedule change warning callout should exist");
         assert(warningCallout.textContent.includes("Permanent Schedule Change"), "Warning callout should have header text");
+        assert(warningCallout.textContent.includes("Fix last week") && !warningCallout.textContent.includes("cannot be edited"), "Warning callout points to Fix last week, not 'history cannot be edited'");
 
         confirmYesBtn.click();
         await sleep(100);

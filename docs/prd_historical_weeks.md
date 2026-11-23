@@ -72,7 +72,7 @@ When a parent alters the **Week Start Day** in Parent Admin (`adminWeekStartSele
 *   **Behavior**: Immediately locks and archives the current week slice into `weeklyHistory` and initializes a fresh active week starting on the selected day.
 *   **Smart History Consolidation**:
     *   If multiple shifts occur within the same 7-day window, the system consolidates completions under the primary week anchor rather than fragmenting history into 1-day micro-entries.
-*   **Permanent Notice**: Prompts the parent with a warning callout explaining that past history will be saved and cannot be edited.
+*   **Permanent Notice**: Prompts the parent with a warning callout explaining that the current chart will be saved to history (its check marks can still be fixed with ✏️ Fix last week, per `prd_parent_edit_last_week.md`) and that the start day change can't be undone. (Copy updated 2026-11-23: the old "past training history cannot be edited" stopped being true when Fix last week shipped.)
 
 ---
 

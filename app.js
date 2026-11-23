@@ -4170,7 +4170,7 @@ function bindWeekStartDayEvents() {
           </div>
           <div class="transition-warning-callout">
             <div class="transition-callout-title">⚠️ Permanent Schedule Change</div>
-            <div class="transition-callout-desc">Applying this change will save your current chart to history. Because past training history cannot be edited, this schedule change cannot be undone.</div>
+            <div class="transition-callout-desc">Applying this change saves your current chart to history. You can still fix its check marks with <strong>✏️ Fix last week</strong>, but the new start day can't be undone.</div>
           </div>
         </div>
       `;
