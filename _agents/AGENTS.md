@@ -136,6 +136,7 @@ Manual/verification guides: `test_plan_pokemon_shop_evolutions.md`,
 `test_plan_badge_retraction_and_fix_last_week.md`,
 `test_plan_modal_theme_alignment.md`,
 `test_plan_show_milestones_switch.md`,
+`test_plan_rewards_view.md`,
 `manual_test_guide_adaptive_weeks.md`.
 
 UX rules live separately in `_agents/rules/ux-guidelines.md` (see §6.3).
