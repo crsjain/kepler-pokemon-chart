@@ -24,7 +24,7 @@ application. **Use this block to initialize your next pair-programming session.*
 
 ### Known Follow-ups / Nice-to-haves
 
-- [ ] **README line on bonus balls is stale**: the "Goal Column Counts" bullet still says a completed ✨ bonus "can make up a missed day", which stopped being true on 2026-11-15 (the Elective Bonus bullet is correct). Offered to fix; not yet requested.
+- [x] **README line on bonus balls was stale**: the "Goal Column Counts" bullet said a completed ✨ bonus "can make up a missed day". Fixed after the CP97 deploy at owner request (docs-only follow-up commit).
 - [ ] **Older tablet builds** show rewards for a child on 🏅 Badges & Mega Milestones until they update (only ⭐ is mirrored to the legacy `hideMilestones` field). Harmless; reload tablets before switching a child.
 - [ ] **Legacy past weeks with no reward saved** (e.g. Alden's weeks from before `rewardsView` existed) read "No rewards this week" in the 🏆 view; there's no record of which view they used.
 - [ ] **Unwon carried-over reward + pending view (R6)** is only exercised automatically (TC146) or by applying a Change Week Start Day on a test child; a real Sunday rollover hasn't been watched yet.

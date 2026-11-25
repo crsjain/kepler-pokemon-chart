@@ -88,7 +88,7 @@ A gamified weekly behavior and task reward chart styled with a Pokémon theme fo
   - **Landscape Split-View Height Stabilization**: Chart table heights are strictly stabilized between current and historical archived weeks by locking `#badge-status` height to `2.6em` with concise copy (`"Clear all goals to unlock!"`), ensuring sub-pixel identical chart heights across week navigation.
   - **Extended XP Float Readability**: Floating XP notifications feature a 2.5s duration with a 1.5s+ motionless dwell phase in rounded `Fredoka One` typography, horizontal viewport edge clamping, and clean messaging (`+20 XP! 🎉`, `+10 XP Super Trainer! 🚀`).
   - **Smart Rollover Policy**: Elective bonus tasks (`'bonus'`) automatically carry over to new weeks, while temporary rest passes (`'rest'`) automatically expire.
-  - **Goal Column Counts**: only required days count toward an activity's Goal: a 💤 rest day never counts, even if it was ticked before a parent marked it rest (so it reads `6 / 6`, never `7 / 6`). A completed ✨ bonus still counts and can make up a missed day.
+  - **Goal Column Counts**: only required days count toward an activity's Goal: a 💤 rest day never counts, even if it was ticked before a parent marked it rest (so it reads `6 / 6`, never `7 / 6`). From Nov 15, 2026 a completed ✨ bonus doesn't count either, so it can't make up a missed required day (earlier weeks keep the old math, e.g. Nov 8–14 still reads `4 / 1 ✅`).
 
 ---
 
