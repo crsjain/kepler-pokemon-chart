@@ -1,7 +1,7 @@
 # Manual Test Plan: Rewards view (3 choices) + Change Week Start Day copy
 
 **Covers commits:** `86c9c72` (PRD §10.7), `73c1a2e` (Rewards view), `885ccc3` (Change Week Start Day copy)
-**Build:** cache `poke-chart-cache-v322`, all modules + `style.css` `?v=11.71`, `particles.js?v=10.8`
+**Build:** cache `poke-chart-cache-v323`, all modules + `style.css` `?v=11.72`, `particles.js?v=10.8`
 **Spec:** [`prd_simplified_chart_style.md`](prd_simplified_chart_style.md) §10.7 (owner decisions R1–R7); [`prd_historical_weeks.md`](prd_historical_weeks.md) (Permanent Notice)
 **Automated coverage:** `TC146` (new), `TC134` (updated for the dropdown), `TC64` (modal copy). Run `node run_headless_tests.js 64,134,146`, then the full suite.
 **Supersedes:** §1 of [`test_plan_show_milestones_switch.md`](test_plan_show_milestones_switch.md) (the switch is now a dropdown). The rest of that plan still applies to **⭐ Badges only**.
@@ -18,7 +18,7 @@
 | **Local (staging)** | `python3 -m http.server 8000` → `http://crsjain.c.googlers.com:8000/`. Emulator login `crsjain+staging@gmail.com`. Local Parent PIN. |
 | **Prod** | `https://crsjain.github.io/kepler-pokemon-chart/`, after the wrap-up deploy (§9 only). |
 
-- [ ] **Cache check:** hard-refresh. Admin › 💾 Data shows the new version, or DevTools › Application › Cache Storage shows `poke-chart-cache-v322`.
+- [ ] **Cache check:** hard-refresh. Admin › 💾 Data shows the new version, or DevTools › Application › Cache Storage shows `poke-chart-cache-v323`.
 - [ ] **Test child:** create or pick a test child, set **🧸 Chart style = Big Buttons**. Note their Mega count (`N / 4 Weeks`).
 - [ ] **Debug Sidebar:** Admin › 💾 Data › Advanced › **Debug Sidebar** on. You'll use **Future Edits** and **Mega cycle week**.
 
@@ -140,6 +140,7 @@ On the child from §2 (several weeks played in **🏅 Badges & Mega Milestones**
 - [ ] For a week that had rewards picked: the greyed-out pickers show those rewards (unchanged).
 - [ ] **Next Week ▶** back to the current week: the live pickers return (empty, ready to pick).
 - [ ] Check the line in both themes; no inline styles, readable slate text.
+- [ ] Switch the dropdown to **🏅 Badges & Mega Milestones** or **⭐ Badges only** and go **◀ Prev** again: the bottom panel shows **no** note and no pickers, only the toolbar.
 
 ---
 
@@ -166,7 +167,7 @@ Admin › 🗓️ Settings › **Week start day** → pick **today or an earlier
 ## 9. Prod rollout
 
 1. Deploy via the wrap-up (`pokemon-session-wrapup`).
-2. On **both tablets**: Admin › 💾 Data › **Reload latest version** until each shows cache `v322`.
+2. On **both tablets**: Admin › 💾 Data › **Reload latest version** until each shows cache `v323`.
 3. Check **Alden**: the dropdown already shows **⭐ Badges only**; his screen is unchanged.
 4. Set **Lyra** → **⭐ Badges only**. If she has a reward picked this week, choose **Start next week**.
    - [ ] The status line shows next Sunday's date; Lyra still sees her reward until then.

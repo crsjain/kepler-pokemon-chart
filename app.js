@@ -1997,7 +1997,9 @@ export function renderState(rebuildGrid = false) {
     const history = state.weeklyHistory[currentViewingWeekStartDate] || {};
     rewardVal = history.reward || '';
     megaRewardVal = history.megaReward || '';
-    pastNote = pastWeekNoRewardsNote(state.weeklyHistory[currentViewingWeekStartDate]);
+    // Only in the full view: the reduced views hide the reward area entirely,
+    // on past weeks too (owner, 2026-11-25).
+    pastNote = rewardsHidden() ? '' : pastWeekNoRewardsNote(state.weeklyHistory[currentViewingWeekStartDate]);
     
     rewardSelect.disabled = true;
     megaRewardSelect.disabled = true;

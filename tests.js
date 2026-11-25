@@ -13840,6 +13840,14 @@ async function runSuite() {
           assert(footer.dataset.pastRewards === 'none', "Past no-reward week: footer data-past-rewards='none'");
           assert(!shown($('weekly-reward-container')) && !shown($('mega-reward-container')), "Past no-reward week: no blank pickers");
           assert(shown($('past-week-rewards-note')) && $('past-week-rewards-note').textContent.includes('Badges & Mega Milestones week'), "Past no-reward week shows the note");
+          // The note belongs to the full view only: in a reduced view the past week shows no reward area at all.
+          ['badges', 'simple'].forEach(v => {
+            StateModule.setRewardsView(v, state);
+            helpers.renderState(true);
+            assert(footer.dataset.pastRewards === 'shown' && !shown($('past-week-rewards-note')), `Past week in '${v}' view: no 'no rewards' note`);
+            assert(!shown($('weekly-reward-container')) && !shown($('mega-reward-container')), `Past week in '${v}' view: no pickers`);
+          });
+          StateModule.setRewardsView('full', state);
           helpers.setViewingWeekStartDate(state.weekStartDate);
           helpers.renderState(true);
           await sleep(40);
